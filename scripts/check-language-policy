@@ -1,0 +1,251 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Contrôle de la politique de langue du dépôt JoIDE (D3, ADR-012).
+
+Adapté de scripts/check-language-policy de jjoblab/celeris@f9001fc
+(Apache-2.0 — voir NOTICE) : mêmes principes, périmètre réduit et un
+contrôle propre à JoIDE (messages d'exception).
+
+Vérifie, sur tous les fichiers versionnés :
+  1. identifiants non ASCII dans le code Java (hors commentaires et
+     chaînes) ;
+  2. messages d'exception en anglais : tout « throw new …("…") » doit
+     être ASCII et hors d'un petit lexique français ;
+  3. présence d'une Javadoc pour les classes publiques ;
+  4. typographie française des fichiers Markdown (espace insécable
+     avant « ; », « : », « ! », « ? »).
+
+Les fichiers de données de test (src/test/resources, y compris les
+fixtures Java volontairement fausses qui servent à tester ce script et
+les autres contrôles) sont exclus : ce sont des données, pas du code.
+
+Le point d'extension « parité values/values-fr » (ADR-008 de celeris)
+resterait inactif jusqu'à P8 : il n'est pas repris ici.
+
+Usage :  python3 scripts/check-language-policy [chemin] [--fix]
+Le mode --fix corrige la typographie (4) ; tout le reste échoue.
+"""
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+NON_BREAKING = {
+    ";": "\u202f",
+    ":": "\u00a0",
+    "!": "\u202f",
+    "?": "\u202f",
+}
+
+# Lexique français sans accent typique des messages d'exception (les
+# mots accentués sont déjà attrapés par le contrôle ASCII).
+MOTS_FRANCAIS = re.compile(
+    r"\b(fichier|fichiers|introuvable|invalide|erreur|erreur|valeur|"
+    r"valeurs|chemin|chemins|chaine|chaines|methode|methodes|"
+    r"annule|annulee|interdit|interdite|manquant|manquante)\b")
+
+EXCLUDED_PARTS = (
+    os.sep + "src" + os.sep + "test" + os.sep + "resources",
+    os.sep + ".git" + os.sep,
+    os.sep + "build" + os.sep,
+    os.sep + ".gradle" + os.sep,
+)
+
+
+def git_files() -> list:
+    out = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        capture_output=True, text=True,
+    )
+    return [f for f in out.stdout.splitlines() if f.strip()]
+
+
+def walk_files(path: str) -> list:
+    files = []
+    for root, _dirs, names in os.walk(path):
+        full = root + os.sep
+        if any(part in root + os.sep for part in EXCLUDED_PARTS):
+            continue
+        files.extend(os.path.join(root, n) for n in names)
+    return files
+
+
+def strip_java_comments_and_strings(text: str) -> str:
+    """Retire commentaires et chaînes pour ne garder que le code."""
+    out = []
+    i, n = 0, len(text)
+    state = "code"
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ""
+        if state == "code":
+            if c == "/" and nxt == "/":
+                state = "line"
+                i += 2
+                continue
+            if c == "/" and nxt == "*":
+                state = "block"
+                i += 2
+                continue
+            if c == '"':
+                state = "string"
+                i += 1
+                continue
+            out.append(c)
+        elif state == "line":
+            if c == "\n":
+                state = "code"
+                out.append(c)
+        elif state == "block":
+            if c == "*" and nxt == "/":
+                state = "code"
+                i += 2
+                continue
+        elif state == "string":
+            if c == "\\":
+                i += 2
+                continue
+            if c == '"':
+                state = "code"
+        i += 1
+    return "".join(out)
+
+
+def extract_exception_messages(text: str) -> list:
+    """Messages littéraux des « throw new …("…") »."""
+    messages = []
+    for m in re.finditer(
+            r"throw\s+new\s+[\w.]+\s*\(\s*\"((?:[^\"\\]|\\.)*)\"", text):
+        messages.append(m.group(1))
+    return messages
+
+
+def check_java_identifiers(path: str) -> list:
+    """Signale tout caractère non ASCII hors commentaires et chaînes."""
+    problems = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except (OSError, UnicodeDecodeError):
+        return problems
+    code = strip_java_comments_and_strings(text)
+    for m in re.finditer(r"[^\x00-\x7f]", code):
+        line = code.count("\n", 0, m.start()) + 1
+        problems.append(f"{path}:{line}: caractere non ASCII dans le code")
+    for message in extract_exception_messages(text):
+        if re.search(r"[^\x00-\x7f]", message):
+            line = text.count("\n", 0, text.find(message)) + 1
+            problems.append(
+                f"{path}:{line}: message d'exception non ASCII"
+                f" : \"{message[:40]}\"")
+        elif MOTS_FRANCAIS.search(message):
+            line = text.count("\n", 0, text.find(message)) + 1
+            problems.append(
+                f"{path}:{line}: message d'exception probablement francais"
+                f" : \"{message[:40]}\"")
+    return problems
+
+
+def check_typography(path: str, fix: bool) -> list:
+    """Vérifie (ou corrige) l'espace insécable avant ; : ! ? en Markdown."""
+    problems = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    except (OSError, UnicodeDecodeError):
+        return problems
+    pattern = re.compile(r"(?<=[^\s`]) ([;:!?])(?=[\s\u00a0\u202f]|$)")
+    hits = list(pattern.finditer(text))
+    if not hits:
+        return problems
+    if fix:
+        fixed = pattern.sub(lambda m: NON_BREAKING[m.group(1)] + m.group(1),
+                            text)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(fixed)
+        return problems
+    for m in hits:
+        line = text.count("\n", 0, m.start()) + 1
+        problems.append(
+            f"{path}:{line}: espace secable avant « {m.group(1)} » "
+            "(utiliser une espace insecable)"
+        )
+    return problems
+
+
+def check_javadoc(path: str) -> list:
+    """Exige une Javadoc au-dessus de chaque classe publique."""
+    problems = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return problems
+    for i, line in enumerate(lines):
+        if re.search(
+                r"^\s*public\s+(final\s+)?(abstract\s+)?(sealed\s+)?"
+                r"(class|interface|enum|record)\s", line):
+            j = i - 1
+            profondeur = 0
+            while j >= 0:
+                extrait = lines[j].strip()
+                if profondeur > 0:
+                    profondeur += extrait.count("(") - extrait.count(")")
+                    j -= 1
+                    continue
+                if extrait.startswith("@"):
+                    delta = extrait.count("(") - extrait.count(")")
+                    if delta > 0:
+                        profondeur = delta
+                    j -= 1
+                    continue
+                break
+            has_doc = False
+            while j >= 0 and lines[j].strip().startswith(
+                    ("*", "/*", "/**", "*/")):
+                if "/**" in lines[j]:
+                    has_doc = True
+                j -= 1
+            if not has_doc:
+                problems.append(f"{path}:{i + 1}: classe publique sans Javadoc")
+    return problems
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Politique de langue JoIDE")
+    parser.add_argument("chemin", nargs="?", default=".")
+    parser.add_argument("--fix", action="store_true",
+                        help="corrige la typographie")
+    args = parser.parse_args()
+
+    if os.path.isdir(os.path.join(args.chemin, ".git")):
+        files = git_files()
+    else:
+        files = []
+    if not files:
+        files = walk_files(args.chemin)
+
+    problems = []
+    for f in sorted(files):
+        if any(part in f + os.sep or part in f for part in EXCLUDED_PARTS):
+            continue
+        if f.endswith(".java"):
+            problems += check_java_identifiers(f)
+            problems += check_javadoc(f)
+        elif f.endswith(".md"):
+            problems += check_typography(f, args.fix)
+
+    if args.fix and not problems:
+        print("politique de langue : typographie corrigee, aucun autre"
+              " probleme")
+        return 0
+    for p in problems:
+        print(p)
+    print(f"politique de langue : {len(problems)} probleme(s)")
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
