@@ -4,11 +4,11 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Paramètres d'un tier de projet synthétique (ADR-014).
+ * Paramètres d'un tier de projet synthétique.
  *
  * <p>Les graines sont des constantes commitées : à tier égal, la
  * génération doit reproduire les mêmes octets. Les tailles suivent les
- * exigences du prompt (§7 P0) : S = 5 modules / 500 fichiers,
+ * gabarits de référence : S = 5 modules / 500 fichiers,
  * M = 50 / 5 000, L = 200 / 30 000, XL = 500 / 100 000.</p>
  */
 public enum TierSpec {
@@ -50,7 +50,7 @@ public enum TierSpec {
         return valueOf(name.toUpperCase(Locale.ROOT));
     }
 
-    /** @return le nombre de fichiers sources (85 % du total, ADR-014) */
+    /** @return le nombre de fichiers sources (85 % du total) */
     public int sourceFiles() {
         return (int) ((long) totalFiles * 85 / 100);
     }

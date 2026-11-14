@@ -1,8 +1,6 @@
 /**
- * Adaptateurs vers les briques existantes (éditeur, serveurs de langage, aperçu) derrière des interfaces JoIDE — P8.
+ * Adaptateurs vers les briques existantes (éditeur, serveurs de langage, aperçu) derrière des interfaces JoIDE.
  *
- * <p>Invariants : placeholder en P0 : aucun type tiers ne fuit dans l'API des modules core.
- *
- * <p>Phase de remplissage : P8 (squelette en P0, ADR-011).</p>
+ * <p>Invariants : aucun type tiers ne fuit dans l'API des modules core.
  */
 package jo.joide.ide;

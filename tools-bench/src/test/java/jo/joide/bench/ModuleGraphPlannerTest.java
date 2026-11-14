@@ -17,7 +17,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * Propriétés du graphe de modules planifié (ADR-014) : couches
+ * Propriétés du graphe de modules planifié : couches
  * strictement descendantes, acyclicité (Kahn indépendant), au moins une
  * dépendance par module au-dessus de la base, hubs concentrateurs.
  */

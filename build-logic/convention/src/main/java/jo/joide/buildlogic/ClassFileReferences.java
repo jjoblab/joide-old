@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lecture du pool de constantes d'un fichier de classe compilé
- * (ADR-013) : références de classes et de membres, forme utilisée par le
- * contrôle API 28.
+ * Lecture du pool de constantes d'un fichier de classe compilé :
+ * références de classes et de membres, forme utilisée par le contrôle
+ * API 28.
  *
  * <p>Ne lit que le pool (aucune traversée des champs/méthodes déclarés) :
  * le contrôle porte sur ce que la classe référence, pas sur ce qu'elle
- * déclare. Un échec de lecture est une erreur, jamais un silence (§4.2).</p>
+ * déclare. Un échec de lecture est une erreur, jamais un silence.</p>
  */
 public final class ClassFileReferences {
 

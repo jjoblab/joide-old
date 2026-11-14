@@ -1,12 +1,11 @@
 // JoIDE — dépôt unique, modules purs JVM (critère : constructibles et
-// testables SANS SDK Android, comme celeris M1). Les modules Android
-// (app-android deviendra réel en P8) rejoindront le conditionnel SDK
-// documenté en ADR-015 : inclusion seulement si ANDROID_HOME (ou
+// testables SANS SDK Android). Les modules Android
+// rejoindront le conditionnel SDK : inclusion seulement si ANDROID_HOME (ou
 // local.properties) est détecté, refus explicite par JOIDE_SKIP_ANDROID=1.
-// En P0, les 14 modules sont des projets JVM vides ou presque : la règle
+// Les modules démarrent comme des projets JVM vides ou presque : la règle
 // de dépendances (gradle/module-graph.txt) couvre déjà le graphe cible.
 pluginManagement {
-    // Les conventions vivent dans le build isolé build-logic (ADR-011).
+    // Les conventions vivent dans le build isolé build-logic.
     includeBuild("build-logic")
     repositories {
         google()

@@ -10,12 +10,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Métriques de bench et codage TOML des baselines (ADR-014).
+ * Métriques de bench et codage TOML des baselines.
  *
  * <p>Le format est un sous-ensemble plat — sections entre crochets,
  * scalaires uniquement — rendu et relu par cette seule classe. Aucun
  * horodatage : une baseline ne doit différer que si les mesures ou la
- * graine changent (§8.5 du plan P0).</p>
+ * graine changent.</p>
  */
 public final class BenchMetrics {
 
@@ -105,7 +105,7 @@ public final class BenchMetrics {
     /** @return le rendu TOML complet des métriques */
     public String render() {
         StringBuilder out = new StringBuilder(512);
-        out.append("# Baseline tools-bench (ADR-014) — regenerable : ")
+        out.append("# Baseline tools-bench — regenerable : ")
                 .append("./gradlew :tools-bench:bench -Ptier=")
                 .append(tier).append("\n");
         out.append("schema = \"").append(SCHEMA).append("\"\n");

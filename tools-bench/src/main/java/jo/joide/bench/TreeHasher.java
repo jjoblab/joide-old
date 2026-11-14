@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Hash d'arbre (Merkle) sur un répertoire (ADR-014).
+ * Hash d'arbre (Merkle) sur un répertoire.
  *
  * <p>Chaque fichier contribue SHA-256(chemin relatif LF + SHA-256 du
  * contenu) ; les fichiers sont combinés dans l'ordre lexicographique
@@ -47,8 +47,8 @@ public final class TreeHasher {
      *
      * @param root répertoire à hasher
      * @return la racine Merkle et les statistiques
-     * @throws IOException si un fichier est illisible (jamais un
-     *                     digest silencieux, §4.2)
+     * @throws IOException si un fichier est illisible — jamais un
+     *                     digest silencieux
      */
     public static Result hashTree(Path root) throws IOException {
         Objects.requireNonNull(root, "root");

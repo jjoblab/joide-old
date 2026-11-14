@@ -14,10 +14,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Échec volontaire du contrôle API 28 (critère d'acceptation P0, §7) :
+ * Échec volontaire du contrôle API 28 :
  * un module de fixture utilise java.util.HexFormat — présent dans le
  * JDK 17 (donc compilable avec --release 17), ABSENT de l'API Android
- * 28 (constat ADR-013) — la tâche checkApi28 doit l'attraper ; un
+ * 28 — la tâche checkApi28 doit l'attraper ; un
  * module conforme doit passer.
  */
 class Api28KitTest {

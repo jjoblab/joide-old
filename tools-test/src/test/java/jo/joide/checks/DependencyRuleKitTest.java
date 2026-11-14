@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Échec volontaire de la règle de dépendances (critère d'acceptation
- * P0, §7) : un mini-projet Gradle généré — branché sur le VRAI
+ * Échec volontaire de la règle de dépendances : un mini-projet
+ * Gradle généré — branché sur le VRAI
  * build-logic du dépôt — déclare une dépendance remontante interdite
  * par son propre module-graph.txt ; la configuration du build doit
  * échouer avec le message de la règle.

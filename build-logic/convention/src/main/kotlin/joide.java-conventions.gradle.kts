@@ -1,8 +1,8 @@
-// Convention de base des modules JoIDE (ADR-015) : javac strict — le
-// compilateur est le SEUL outil de qualité (§10 : ni Checkstyle, ni PMD,
+// Convention de base des modules JoIDE : javac strict — le compilateur
+// est le SEUL outil de qualité (ni Checkstyle, ni PMD,
 // ni analyse statique tierce, ni seuil de couverture) —, artefacts 17
-// construits au JDK 21 (D2), UTF-8, plateforme de test JUnit 5, règle de
-// dépendances (ADR-011) et contrôle API 28 (ADR-013).
+// construits au JDK 21, UTF-8, plateforme de test JUnit 5, règle de
+// dépendances et contrôle API 28.
 
 import jo.joide.buildlogic.Api28ScanTask
 import jo.joide.buildlogic.DependencyRuleCheck
@@ -28,7 +28,7 @@ tasks.withType<Javadoc>().configureEach {
     options.encoding = "UTF-8"
 }
 
-// Tests : JUnit 5 uniquement (§10), aucune dépendance de test tierce.
+// Tests : JUnit 5 uniquement, aucune dépendance de test tierce.
 dependencies {
     "testImplementation"(libs.findLibrary("junit-jupiter").get())
     "testRuntimeOnly"(libs.findLibrary("junit-platform-launcher").get())
@@ -42,19 +42,19 @@ tasks.withType<Test>().configureEach {
     }
 }
 
-// Règle de dépendances (ADR-011) : vérifiée à la configuration de chaque
+// Règle de dépendances : vérifiée à la configuration de chaque
 // build — une arête hors gradle/module-graph.txt échoue immédiatement.
 project.afterEvaluate {
     DependencyRuleCheck.enforce(project, rootProject.file("gradle/module-graph.txt"))
 }
 
-// Contrôle API 28 (D4, ADR-013) : lecture du pool de constantes des
+// Contrôle API 28 : lecture du pool de constantes des
 // classes produites, comparaison aux signatures du platform 28
 // (gradle/api28-signatures.txt.gz, généré par scripts/generate_api28_
 // signatures.py). Les références aux constructions réécrites par D8
 // (lambdas, concaténation de chaînes) sont explicitement autorisées.
-// Exemption documentée (ADR-013) : tools-bench et tools-test sont
-// « test-only » (§5.1 du prompt), jamais exécutés sur Android — D4 ne
+// Exemption documentée : tools-bench et tools-test sont des modules
+// « test-only », jamais exécutés sur Android — le contrôle API 28 ne
 // les concerne pas ; le harnais de mesure y utilise les API de la JVM
 // de bureau (temps CPU du processus), absentes du niveau 28.
 val api28Exempt = project.name == "tools-bench" || project.name == "tools-test"

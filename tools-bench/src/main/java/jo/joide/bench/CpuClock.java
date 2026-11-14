@@ -3,11 +3,10 @@ package jo.joide.bench;
 import java.lang.management.ManagementFactory;
 
 /**
- * Temps CPU du processus (ADR-014), via l'extension de la JVM de bureau.
+ * Temps CPU du processus, via une extension de la JVM de bureau.
  *
- * <p>tools-bench est un module « test-only » (§5.1 du prompt), jamais
- * exécuté sur Android : l'exemption API 28 (ADR-013) lui permet d'utiliser
- * les API de mesure de la JVM. Le temps CPU — contrairement au temps mur —
+ * <p>tools-bench est un module de mesure, jamais exécuté sur Android :
+ * il utilise les API correspondantes de la JVM de bureau. Le temps CPU — contrairement au temps mur —
  * est insensible au bridage d'un ordonnanceur partagé : c'est la métrique
  * de régression temporelle, le temps mur restant informatif.</p>
  */

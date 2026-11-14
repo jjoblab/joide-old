@@ -6,12 +6,13 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Génération d'un fichier source Kotlin (ADR-014).
+ * Génération d'un fichier source Kotlin.
  *
  * <p>Grammaire volontairement restreinte (classes, data classes, objets
  * compagnons, const, inline, sealed) : ces fichiers ne sont pas compilés
- * en P0 (kotlinc absent du périmètre) mais servent de matière première
- * aux tests différentiels de P3. Le contenu reste déterministe à graine
+ * (kotlinc hors périmètre de ce module) : elles servent de matière
+ * première aux tests différentiels du pipeline JVM. Le contenu reste
+ * déterministe à graine
  * égale, comme tout le générateur.</p>
  */
 public final class KotlinWriter {
@@ -46,7 +47,7 @@ public final class KotlinWriter {
                 depTypes.isEmpty() ? null
                         : depTypes.get(rng.nextInt(depTypes.size()));
         StringBuilder out = new StringBuilder(1024);
-        out.append("// Fichier genere par tools-bench (ADR-014) — ne pas editer.\n");
+        out.append("// Fichier genere par tools-bench — ne pas editer.\n");
         out.append("package com.example.").append(module).append("\n\n");
         if (cross != null) {
             out.append("import ").append(cross.fqn).append("\n\n");

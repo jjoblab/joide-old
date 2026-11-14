@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Point d'entrée du bench (ADR-014) : génère N exécutions du tier,
-     * vérifie que toutes produisent la même racine Merkle (preuve de
+ * Point d'entrée du bench : génère N exécutions du tier,
+ * vérifie que toutes produisent la même racine Merkle (preuve de
  * déterminisme), mesure (temps mur, pic de tas) et optionnellement
  * écrit la baseline.
  *

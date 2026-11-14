@@ -10,7 +10,7 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ProjectDependency;
 
 /**
- * Application de la règle de dépendances à un projet Gradle (ADR-011).
+ * Application de la règle de dépendances à un projet Gradle.
  *
  * <p>Chaque configuration (main comme test) est parcourue après
  * évaluation du projet : toute dépendance de projet doit figurer dans la

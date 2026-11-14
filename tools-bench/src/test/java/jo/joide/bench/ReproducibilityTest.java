@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Preuve de reproductibilité du générateur (critère d'acceptation P0,
- * §7) : deux générations complètes à graine égale produisent la même
+ * Preuve de reproductibilité du générateur : deux générations
+ * complètes à graine égale produisent la même
  * racine Merkle, octet pour octet, sur les tiers S et M.
  */
 class ReproducibilityTest {

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Contrôle de la politique de langue (critère d'acceptation P0, §7) :
+ * Contrôle de la politique de langue :
  * le script doit échouer sur la fixture de violations — identifiant non
  * ASCII, message d'exception français, classe publique sans Javadoc,
  * typographie — et passer sur la fixture conforme.

@@ -19,15 +19,15 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
- * Validation des données du graphe de modules (ADR-011) :
+ * Validation des données du graphe de modules :
  * gradle/module-graph.txt doit décrire exactement les arêtes autorisées
- * du §5.1 du prompt, être acyclique et strictement descendant. L'exécution
+ * du graphe cible, être acyclique et strictement descendant. L'exécution
  * de la règle à la construction (plugin build-logic) est prouvée par
  * DependencyRuleKitTest ; ce test valide les DONNÉES.
  */
 class ModuleGraphFileTest {
 
-    /** Arêtes attendues, exactement celles du §5.1 du prompt. */
+    /** Arêtes attendues, exactement celles du graphe cible. */
     private static final Map<String, Set<String>> EXPECTED = buildExpected();
 
     private static Map<String, Set<String>> buildExpected() {

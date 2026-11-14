@@ -1,4 +1,4 @@
-// tools-test — fixtures et tests des contrôles P0 (ADR-011/012/013).
+// tools-test — fixtures et tests des contrôles du dépôt.
 // Module test-only : aucune dépendance vers un module JoIDE ; le kit
 // TestKit vient du Gradle en cours d'exécution (aucune version tierce).
 plugins {

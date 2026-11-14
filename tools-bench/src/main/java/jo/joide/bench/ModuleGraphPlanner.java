@@ -10,7 +10,7 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Planification déterministe du graphe de modules (ADR-014).
+ * Planification déterministe du graphe de modules.
  *
  * <p>Le graphe est en couches numérotées de 0 (base) à {@code layers-1}
  * (sommet). Toute arête va d'une couche vers une couche strictement
@@ -153,7 +153,7 @@ public final class ModuleGraphPlanner {
         return sizes;
     }
 
-    /** Hash FNV-1a 64 bits, stable sur toutes les JVM (ADR-014). */
+    /** Hash FNV-1a 64 bits, stable sur toutes les JVM. */
     public static long fnv64(String text) {
         long hash = 0xcbf2_9ce4_8422_2325L;
         for (int i = 0; i < text.length(); i++) {

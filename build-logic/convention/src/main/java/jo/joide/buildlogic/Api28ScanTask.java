@@ -22,7 +22,7 @@ import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
 /**
- * Contrôle de compatibilité API 28 (D4, ADR-013).
+ * Contrôle de compatibilité API 28.
  *
  * <p>Chaque classe compilée du source set principal est lue au pool de
  * constantes ; toute référence aux espaces java.* ou javax.* doit exister
@@ -36,7 +36,7 @@ import org.gradle.api.tasks.TaskAction;
  * <p>Limite documentée : le contrôle ne voit ni réflexion ni chargement
  * dynamique ; il ne préjuge pas du désucrage des constructions Java 17
  * récentes (records, sealed) — absentes du niveau 28, elles sont donc
- * rejetées ici jusqu'à validation sur appareil en P5 (ADR-013).</p>
+ * rejetées ici jusqu'à validation sur appareil.</p>
  */
 public abstract class Api28ScanTask extends org.gradle.api.DefaultTask {
 

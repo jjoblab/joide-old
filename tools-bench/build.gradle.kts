@@ -1,10 +1,10 @@
-// tools-bench — générateur déterministe, harnais de mesure et baselines
-// (ADR-014). Module test-only : il ne dépend d'aucun module JoIDE.
+// tools-bench — générateur déterministe, harnais de mesure et baselines.
+// Module test-only : il ne dépend d'aucun module JoIDE.
 plugins {
     id("joide.java-library-conventions")
 }
 
-// Hygiène de mesure (ADR-014) : tas fixe — la variance temporelle doit
+// Hygiène de mesure : tas fixe — la variance temporelle doit
 // venir du travail, pas du redimensionnement du tas (XL monte à
 // 512 Mo de tas observés). Même réglage pour la création de baseline
 // et pour la comparaison.
@@ -32,8 +32,7 @@ tasks.register<JavaExec>("bench") {
 }
 
 // Variants à tier fixe : la CI locale (racine : ciLocal) lance S et M —
-// la mesure inclut la porte de déterminisme (§7 P0 : génération
-// reproductible). L/XL restent à la demande (coût documenté au rapport).
+// la mesure inclut la porte de déterminisme (génération reproductible). L/XL restent à la demande (coût documenté au rapport).
 listOf("S", "M", "L", "XL").forEach { tier ->
     tasks.register<JavaExec>("bench$tier") {
         group = "bench"
@@ -56,7 +55,7 @@ listOf("S", "M", "L", "XL").forEach { tier ->
 // déterministe (hash, comptages, octets), ±10 % sur le temporel (temps
 // CPU du processus ; repli temps mur + 50 ms si indisponible), scratch
 // sur le même système de fichiers que la capture. À exécuter sur une
-// machine de performance stable (machine de référence, ADR-014) : les
+// machine de performance stable (machine de référence) : les
 // valeurs temporelles d'un ordonnanceur partagé ne sont pas comparables.
 listOf("S", "M", "L", "XL").forEach { tier ->
     tasks.register<JavaExec>("regressionTest$tier") {

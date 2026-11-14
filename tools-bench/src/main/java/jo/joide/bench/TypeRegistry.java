@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Registre des types exportés par chaque module (ADR-014).
+ * Registre des types exportés par chaque module.
  *
  * <p>Chaque fichier Java d'un module décrit exactement un type public :
  * le nombre de types exportés d'un module est donc son budget de

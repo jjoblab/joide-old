@@ -1,7 +1,7 @@
 // build-logic — build isolé qui compile les plugins de convention JoIDE.
 // Le DSL Kotlin reste confiné ici et dans les fichiers de build des
-// modules (ADR-015) : aucun Kotlin ne fuit dans les artefacts publiés —
-// le produit reste Java exclusivement (D2).
+// modules : aucun Kotlin ne fuit dans les artefacts publiés — le
+// produit reste Java exclusivement.
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
@@ -9,7 +9,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("libs") {
-            // Catalogue unique : celui du dépôt racine (§10).
+            // Catalogue unique : celui du dépôt racine.
             from(files("../gradle/libs.versions.toml"))
         }
     }

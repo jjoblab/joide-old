@@ -7,14 +7,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Comparaison aux baselines commitées (ADR-014, §8 du prompt).
+ * Comparaison aux baselines commitées.
  *
  * <p>Les valeurs déterministes (hash d'arbre, comptages, octets, graine)
  * doivent être exactement égales ; les valeurs temporelles (temps mur,
  * pic de tas) tolèrent ±10 % — plus un plancher absolu de 50 ms sur le
  * temps mur : sous le seuil de la seconde, le bruit de l'ordonnanceur
- * dépasse proportionnellement 10 % (le §8 du prompt vise des budgets de
- * 1,5 s à 30 s, où ce plancher est négligeable). L'environnement (cœurs,
+ * dépasse proportionnellement 10 % (les budgets visés vont de 1,5 s
+ * à 30 s, où ce plancher est négligeable). L'environnement (cœurs,
  * JVM) est rapporté mais ne fait pas échouer : les baselines temporelles
  * se régénèrent sur la machine de référence.</p>
  */
@@ -73,7 +73,7 @@ public final class BaselineCompare {
                     + tier.name());
             return 1;
         }
-        // Hygiène de mesure (ADR-014) : le répertoire de travail vit sur le
+        // Hygiène de mesure : le répertoire de travail vit sur le
         // même système de fichiers que la capture de baseline — la
         // comparaison temporelle ne doit pas mesurer un disque différent.
         Path scratch = scratchDir;

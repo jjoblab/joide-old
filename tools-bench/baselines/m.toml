@@ -1,4 +1,4 @@
-# Baseline tools-bench (ADR-014) — regenerable : ./gradlew :tools-bench:bench -Ptier=M
+# Baseline tools-bench — regenerable : ./gradlew :tools-bench:bench -Ptier=M
 schema = "joide.baseline/1"
 tier = "M"
 seed = 101002
@@ -7,18 +7,18 @@ runs = 3
 [deterministic]
 files = 5000
 dirs = 800
-bytes = 12709935
+bytes = 12666925
 java-files = 2550
 kotlin-files = 1700
 other-files = 750
-tree-hash = "a765434928db497f1e59a3b52429b746352664a0965a4f74c7ad20cf285ecbc7"
+tree-hash = "8ddd651f6f54a976dae2eb2ede7abe7cc41dca96faa53cef65dbb1046f44cc3b"
 
 [temporal]
-wall-ms-mean = 698.3
-wall-ms-min = 611.0
-wall-ms-max = 833.0
-cpu-ms-mean = 926.7
-heap-peak-bytes = 160994360
+wall-ms-mean = 939.7
+wall-ms-min = 743.0
+wall-ms-max = 1279.0
+cpu-ms-mean = 1146.7
+heap-peak-bytes = 160990264
 
 [environment]
 cores = 2

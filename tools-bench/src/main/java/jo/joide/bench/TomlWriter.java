@@ -4,13 +4,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Écriture des fichiers de configuration JoIDE du projet synthétique
- * (ADR-014) : joide.toml (workspace) et joide-module.toml (module).
+ * Écriture des fichiers de configuration JoIDE du projet synthétique :
+ * joide.toml (workspace) et joide-module.toml (module).
  *
- * <p>Sous-ensemble TOML figé pour P0, versionné par champ
+ * <p>Sous-ensemble TOML figé, versionné par champ
  * {@code schema} : {@code joide.workspace/1} et {@code joide.module/1}.
- * Personne ne relit ces fichiers en P0 ; core-model (P1) devra lire ce
- * sous-ensemble tel quel (risque R2 du plan, consigné).</p>
+ * Le lecteur de projets doit lire ce sous-ensemble tel quel.</p>
  */
 public final class TomlWriter {
 
@@ -26,7 +25,7 @@ public final class TomlWriter {
         Objects.requireNonNull(tier, "tier");
         Objects.requireNonNull(modules, "modules");
         StringBuilder out = new StringBuilder(64 + modules.size() * 24);
-        out.append("# Genere par tools-bench (ADR-014) — ne pas editer.\n");
+        out.append("# Genere par tools-bench — ne pas editer.\n");
         out.append("schema = \"joide.workspace/1\"\n");
         out.append("name = \"").append(tier.projectName()).append("\"\n");
         out.append("seed = ").append(tier.seed).append("\n\n");
@@ -45,7 +44,7 @@ public final class TomlWriter {
     public static String module(ModuleGraphPlanner.PlannedModule module) {
         Objects.requireNonNull(module, "module");
         StringBuilder out = new StringBuilder(256);
-        out.append("# Genere par tools-bench (ADR-014) — ne pas editer.\n");
+        out.append("# Genere par tools-bench — ne pas editer.\n");
         out.append("schema = \"joide.module/1\"\n");
         out.append("name = \"").append(module.name).append("\"\n");
         out.append("layer = ").append(module.layer).append("\n");

@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Génération des fichiers Android d'un module synthétique (ADR-014) :
+ * Génération des fichiers Android d'un module synthétique :
  * manifeste, mises en page, valeurs, drawable et assets binaires à motif
  * fixe. Tous les contenus sont déterministes à graine égale.
  */

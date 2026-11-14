@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Génération d'un fichier source Java compilable (ADR-014).
+ * Génération d'un fichier source Java compilable.
  *
  * <p>Pour rester compilable, un fichier ne référence que : les types de
  * son propre module (même paquet, sans import) et un sous-ensemble de
@@ -52,7 +52,7 @@ public final class JavaWriter {
         // importés uniquement (les types du module sont dans le paquet).
         List<TypeRegistry.ExportedType> crossPool = imported;
         StringBuilder out = new StringBuilder(targetLines * 48 + 256);
-        out.append("// Fichier genere par tools-bench (ADR-014) — ne pas editer.\n");
+        out.append("// Fichier genere par tools-bench — ne pas editer.\n");
         out.append("package com.example.").append(module).append(";\n\n");
         for (TypeRegistry.ExportedType importType : imported) {
             out.append("import ").append(importType.fqn).append(";\n");

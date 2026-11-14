@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Graphe de modules autorisé, lu depuis gradle/module-graph.txt (ADR-011).
+ * Graphe de modules autorisé, lu depuis gradle/module-graph.txt.
  *
  * <p>Le fichier définit une ligne par module, dans l'ordre descendant du
  * graphe (les modules les plus bas d'abord) : « nom -&gt; dep1 dep2 ».
@@ -37,7 +37,7 @@ public final class ModuleGraph {
 
     /**
      * Charge et valide le fichier ; toute violation lève
-     * {@link IllegalArgumentException} avec un message en anglais (D3).
+     * {@link IllegalArgumentException} avec un message en anglais.
      *
      * @param file chemin du fichier module-graph.txt
      * @return le graphe validé

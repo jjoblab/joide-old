@@ -3,15 +3,15 @@ package jo.joide.bench;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Sonde de pic de tas (ADR-014).
+ * Sonde de pic de tas.
  *
  * <p>Approximation assumée : un fil démon échantillonne
  * {@code Runtime.totalMemory() - Runtime.freeMemory()} toutes les 5 ms
  * et retient le maximum observé. {@code MemoryMXBean} n'existe pas au
- * niveau 28 (constat ADR-013) : la sonde reste compatible avec le
+ * niveau 28 : la sonde reste compatible avec le
  * contrôle API 28 tout en donnant un ordre de grandeur comparable entre
- * exécutions. La précision « pic réel » viendra de l'instrumentation
- * appareil (P5/P6).</p>
+ * exécutions. La précision « pic réel » nécessitera une
+ * instrumentation appareil dédiée.</p>
  */
 public final class HeapProbe implements AutoCloseable {
 

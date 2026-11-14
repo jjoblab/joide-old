@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Random;
 
 /**
- * Génération complète d'un projet synthétique (ADR-014).
+ * Génération complète d'un projet synthétique.
  *
  * <p>Déterminisme : le budget de fichiers par module est réparti de
  * façon exacte (totaux du tier garantis), chaque fichier reçoit un
@@ -19,8 +19,7 @@ import java.util.Random;
  * — le contenu d'un fichier ne dépend jamais de l'ordre d'itération.
  * Le nombre total de fichiers écrits est exactement
  * {@link TierSpec#totalFiles} : 85 % de sources, 15 % de ressources et
- * fichiers de structure (joide.toml, joide-module.toml, manifestes,
- * ADR-014).</p>
+ * fichiers de structure (joide.toml, joide-module.toml, manifestes).</p>
  */
 public final class ProjectGenerator {
 
