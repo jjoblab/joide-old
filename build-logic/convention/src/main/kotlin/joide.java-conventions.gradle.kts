@@ -36,6 +36,14 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    // Classpath d'exécution transmis aux machines virtuelles filles
+    // des tests de pannes : la collection est capturée (sérialisable
+    // pour le cache de configuration), la résolution en chemin est
+    // différée à l'exécution.
+    val testRuntimeClasspath = sourceSets.named("test").get().runtimeClasspath
+    doFirst {
+        systemProperty("joide.test.classpath", testRuntimeClasspath.asPath)
+    }
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
