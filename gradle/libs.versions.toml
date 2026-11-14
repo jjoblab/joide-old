@@ -4,7 +4,11 @@
 # Tests (§10 : JUnit 5, rien d'autre ; pas de seuil de couverture)
 junitJupiter = "5.14.4"
 junitPlatformLauncher = "1.14.4"
+# Store JVM : pilote SQLite JDBC (implémentation bureau de BuildStore ;
+# NOTICE : Apache-2.0 pour le pilote, SQLite du domaine public embarqué)
+sqliteJdbc = "3.49.1.0"
 
 [libraries]
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatformLauncher" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
