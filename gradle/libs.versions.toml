@@ -1,0 +1,10 @@
+# Catalogue unique des versions — toute version en dur dans un module
+# casse la règle (§10). Vérifiées en ligne le 2026-11-15.
+[versions]
+# Tests (§10 : JUnit 5, rien d'autre ; pas de seuil de couverture)
+junitJupiter = "5.14.4"
+junitPlatformLauncher = "1.14.4"
+
+[libraries]
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatformLauncher" }

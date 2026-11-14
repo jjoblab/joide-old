@@ -1,0 +1,20 @@
+# Graphe de modules JoIDE autorisé (§5.1 du prompt, ADR-011).
+# Format : un module par ligne, dépendances autorisées après « -> ».
+# Règles : dépendances uniquement descendantes (ce fichier définit l'ordre),
+# jamais remontante, jamais latérale, jamais cyclique — le plugin
+# joide.dependency-rules (build-logic) rejette toute arête hors liste,
+# et tools-test valide ce fichier (acyclicité, ordre descendant).
+core-platform ->
+core-store -> core-platform
+core-vfs -> core-platform core-store
+core-model -> core-platform core-vfs
+core-tasks -> core-model core-store core-vfs
+core-deps -> core-platform core-store
+build-jvm -> core-tasks core-deps
+build-android -> build-jvm
+build-daemon -> build-android
+import-gradle -> core-model core-deps
+tools-bench ->
+tools-test ->
+app-android -> build-daemon
+ide-integration -> core-model build-daemon
