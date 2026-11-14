@@ -1,4 +1,4 @@
-# Guide de développement (P0)
+# Guide de développement
 
 ## Prérequis
 
@@ -25,6 +25,18 @@ export JAVA_HOME=<jdk-21>
 ```
 
 `regressionTest*` compare l'exact (hash, comptages, octets) et le temporel (temps CPU, ±10 %). Le temporel n'a de sens que sur une machine de performance stable : exécuter ces tâches sur la machine de référence, pas sur un ordonnanceur partagé (ADR-014).
+
+## Notes P1
+
+- Les tests du store incluent le harnais de pannes (deux cents meurtres
+  de machines virtuelles filles) : comptez environ deux minutes sur
+  `:core-store:check` ; ils sont reproductibles (graine fixe, ADR-020).
+- Le test de parcours à froid crée cent mille fichiers dans un
+  répertoire temporaire (quelques dizaines de secondes de préparation,
+  hors mesure).
+- `core-store` sépare interface (source set principal, API 28) et
+  implémentation de bureau (source set `jvm`, pilote SQLite JDBC) ;
+  le contrôle API 28 ne voit que le principal (ADR-019).
 
 ## Régénérer les signatures API 28
 
