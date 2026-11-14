@@ -118,7 +118,8 @@ public final class ProjectGenerator {
         for (ModuleGraphPlanner.PlannedModule module : modules) {
             moduleNames.add(module.name);
         }
-        sink.text("joide.toml", TomlWriter.workspace(tier, moduleNames));
+        sink.text("joide.toml",
+                TomlWriter.workspace(tier.projectName(), moduleNames));
 
         int javaTotal = 0;
         int kotlinTotal = 0;
@@ -126,7 +127,8 @@ public final class ProjectGenerator {
             ModuleGraphPlanner.PlannedModule module = modules.get(m);
             String base = module.name;
             String pkgDir = "com/example/" + base;
-            sink.text(base + "/joide-module.toml", TomlWriter.module(module));
+            sink.text(base + "/joide-module.toml",
+                    TomlWriter.module(module.name, module.dependencies));
             sink.text(base + "/src/main/AndroidManifest.xml",
                     new ResourceWriter(base).manifest());
             // Sources Java : un fichier par type exporté du module.

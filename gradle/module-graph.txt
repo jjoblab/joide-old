@@ -4,6 +4,9 @@
 # jamais remontante, jamais latérale, jamais cyclique — le plugin
 # joide.dependency-rules (build-logic) rejette toute arête hors liste,
 # et tools-test valide ce fichier (acyclicité, ordre descendant).
+# L'arête tools-bench -> core-model est une arête de TEST : le banc
+# vérifie que ses projets synthétiques sont lisibles par le modèle ;
+# le code principal du banc ne dépend d'aucun module.
 core-platform ->
 core-store -> core-platform
 core-vfs -> core-platform core-store
@@ -14,7 +17,7 @@ build-jvm -> core-tasks core-deps
 build-android -> build-jvm
 build-daemon -> build-android
 import-gradle -> core-model core-deps
-tools-bench ->
+tools-bench -> core-model
 tools-test ->
 app-android -> build-daemon
 ide-integration -> core-model build-daemon

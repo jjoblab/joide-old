@@ -4,6 +4,12 @@ plugins {
     id("joide.java-library-conventions")
 }
 
+dependencies {
+    // Arête de test uniquement : le banc vérifie que ses projets
+    // synthétiques sont lisibles par le modèle de projet.
+    testImplementation(project(":core-model"))
+}
+
 // Hygiène de mesure : tas fixe — la variance temporelle doit
 // venir du travail, pas du redimensionnement du tas (XL monte à
 // 512 Mo de tas observés). Même réglage pour la création de baseline

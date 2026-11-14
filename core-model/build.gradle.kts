@@ -1,6 +1,11 @@
-// core-model — la nature du module et ses dépendances ; les réglages communs
-// vivent dans build-logic. Placeholder : la logique arrive avec les phases
-// de remplissage.
+// core-model — modèle de projet déclaratif (workspace, projets,
+// modules, ensembles de sources, facettes), parseur TOML tolérant,
+// topologie des modules et assemblage déterministe de classpath.
 plugins {
     id("joide.java-library-conventions")
+}
+
+dependencies {
+    api(project(":core-platform"))
+    api(project(":core-vfs"))
 }

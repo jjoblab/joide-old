@@ -43,7 +43,7 @@ class ModuleGraphFileTest {
         expected.put("build-android", Set.of("build-jvm"));
         expected.put("build-daemon", Set.of("build-android"));
         expected.put("import-gradle", Set.of("core-model", "core-deps"));
-        expected.put("tools-bench", new HashSet<>());
+        expected.put("tools-bench", Set.of("core-model"));
         expected.put("tools-test", new HashSet<>());
         expected.put("app-android", Set.of("build-daemon"));
         expected.put("ide-integration", Set.of("core-model", "build-daemon"));

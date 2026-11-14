@@ -7,18 +7,18 @@ runs = 3
 [deterministic]
 files = 5000
 dirs = 800
-bytes = 12666925
+bytes = 12669808
 java-files = 2550
 kotlin-files = 1700
 other-files = 750
-tree-hash = "8ddd651f6f54a976dae2eb2ede7abe7cc41dca96faa53cef65dbb1046f44cc3b"
+tree-hash = "3529441bf1f1f2e6170fa7ba0c62b44613edaf429644623b53c29a31c971b456"
 
 [temporal]
-wall-ms-mean = 939.7
-wall-ms-min = 743.0
-wall-ms-max = 1279.0
-cpu-ms-mean = 1146.7
-heap-peak-bytes = 160990264
+wall-ms-mean = 572.3
+wall-ms-min = 289.0
+wall-ms-max = 932.0
+cpu-ms-mean = 770.0
+heap-peak-bytes = 160506704
 
 [environment]
 cores = 2
