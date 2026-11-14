@@ -1,0 +1,142 @@
+package jo.joide.checks;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Validation des données du graphe de modules (ADR-011) :
+ * gradle/module-graph.txt doit décrire exactement les arêtes autorisées
+ * du §5.1 du prompt, être acyclique et strictement descendant. L'exécution
+ * de la règle à la construction (plugin build-logic) est prouvée par
+ * DependencyRuleKitTest ; ce test valide les DONNÉES.
+ */
+class ModuleGraphFileTest {
+
+    /** Arêtes attendues, exactement celles du §5.1 du prompt. */
+    private static final Map<String, Set<String>> EXPECTED = buildExpected();
+
+    private static Map<String, Set<String>> buildExpected() {
+        Map<String, Set<String>> expected = new LinkedHashMap<>();
+        expected.put("core-platform", new HashSet<>());
+        expected.put("core-store", Set.of("core-platform"));
+        expected.put("core-vfs", Set.of("core-platform", "core-store"));
+        expected.put("core-model", Set.of("core-platform", "core-vfs"));
+        expected.put("core-tasks",
+                Set.of("core-model", "core-store", "core-vfs"));
+        expected.put("core-deps", Set.of("core-platform", "core-store"));
+        expected.put("build-jvm", Set.of("core-tasks", "core-deps"));
+        expected.put("build-android", Set.of("build-jvm"));
+        expected.put("build-daemon", Set.of("build-android"));
+        expected.put("import-gradle", Set.of("core-model", "core-deps"));
+        expected.put("tools-bench", new HashSet<>());
+        expected.put("tools-test", new HashSet<>());
+        expected.put("app-android", Set.of("build-daemon"));
+        expected.put("ide-integration", Set.of("core-model", "build-daemon"));
+        return expected;
+    }
+
+    @Test
+    void graphFileMatchesPromptExactly() throws IOException {
+        Map<String, Set<String>> graph = read();
+        assertEquals(EXPECTED.keySet(), graph.keySet(),
+                "declared modules must match the prompt module list");
+        for (Map.Entry<String, Set<String>> entry : graph.entrySet()) {
+            assertEquals(EXPECTED.get(entry.getKey()), entry.getValue(),
+                    "dependencies of " + entry.getKey());
+        }
+    }
+
+    @Test
+    void graphIsAcyclicAndDescending() throws IOException {
+        List<String> order = new ArrayList<>();
+        Map<String, Set<String>> graph = read();
+        for (String line : Files.readAllLines(
+                Path.of("..", "gradle", "module-graph.txt"),
+                StandardCharsets.UTF_8)) {
+            String trimmed = line.trim();
+            if (!trimmed.isEmpty() && !trimmed.startsWith("#")) {
+                order.add(trimmed.substring(0, trimmed.indexOf("->")).trim());
+            }
+        }
+        // Descendant : toute dépendance est déclarée AVANT son module.
+        Map<String, Integer> index = new HashMap<>();
+        for (int i = 0; i < order.size(); i++) {
+            index.put(order.get(i), i);
+        }
+        for (Map.Entry<String, Set<String>> entry : graph.entrySet()) {
+            for (String dep : entry.getValue()) {
+                assertTrue(index.get(dep) < index.get(entry.getKey()),
+                        entry.getKey() + " -> " + dep
+                                + " must be declared in descending order");
+            }
+        }
+        // Kahn : acyclicité.
+        Map<String, Integer> remaining = new HashMap<>();
+        Map<String, List<String>> reverse = new HashMap<>();
+        for (Map.Entry<String, Set<String>> entry : graph.entrySet()) {
+            remaining.put(entry.getKey(), entry.getValue().size());
+            for (String dep : entry.getValue()) {
+                reverse.computeIfAbsent(dep, k -> new ArrayList<>())
+                        .add(entry.getKey());
+            }
+        }
+        Deque<String> ready = new ArrayDeque<>();
+        for (Map.Entry<String, Integer> entry : remaining.entrySet()) {
+            if (entry.getValue() == 0) {
+                ready.add(entry.getKey());
+            }
+        }
+        Set<String> visited = new HashSet<>();
+        while (!ready.isEmpty()) {
+            String name = ready.poll();
+            if (!visited.add(name)) {
+                continue;
+            }
+            for (String dependent : reverse.getOrDefault(
+                    name, new ArrayList<>())) {
+                if (remaining.merge(dependent, -1, Integer::sum) == 0) {
+                    ready.add(dependent);
+                }
+            }
+        }
+        assertEquals(graph.size(), visited.size(), "graph must be acyclic");
+    }
+
+    private Map<String, Set<String>> read() throws IOException {
+        Map<String, Set<String>> graph = new LinkedHashMap<>();
+        for (String line : Files.readAllLines(
+                Path.of("..", "gradle", "module-graph.txt"),
+                StandardCharsets.UTF_8)) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            int arrow = trimmed.indexOf("->");
+            String name = trimmed.substring(0, arrow).trim();
+            Set<String> deps = new HashSet<>();
+            for (String dep : trimmed.substring(arrow + 2).trim()
+                    .split("\\s+")) {
+                if (!dep.isEmpty()) {
+                    deps.add(dep);
+                }
+            }
+            graph.put(name, deps);
+        }
+        return graph;
+    }
+}
