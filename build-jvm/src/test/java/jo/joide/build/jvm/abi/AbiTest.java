@@ -104,6 +104,53 @@ class AbiTest {
     }
 
     @Test
+    void entryAbiIsDeterministicForJar() throws Exception {
+        String classpath = System.getProperty("java.class.path");
+        Path stdlib = null;
+        for (String entry : classpath.split(java.io.File.pathSeparator)) {
+            if (entry.contains("kotlin-stdlib")) {
+                stdlib = Path.of(entry);
+                break;
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertNotNull(stdlib,
+                "kotlin-stdlib must be on the test classpath");
+        AbiManifest first = EntryAbi.compute(stdlib, 200_000);
+        AbiManifest second = EntryAbi.compute(stdlib, 200_000);
+        String diverging = "none";
+        String detail = "";
+        for (String key : first.entries().keySet()) {
+            if (!java.util.Objects.equals(first.entries().get(key),
+                    second.entries().get(key))) {
+                diverging = key;
+                break;
+            }
+        }
+        assertEquals(first.digest(), second.digest(),
+                "same jar must give the same manifest");
+        assertEquals(first.text(), second.text());
+        if (!first.digest().equals(second.digest())) {
+            System.out.println("sizes " + first.size() + " vs "
+                    + second.size());
+            var keys1 = new java.util.TreeSet<>(first.entries().keySet());
+            var keys2 = new java.util.TreeSet<>(second.entries().keySet());
+            var only1 = new java.util.TreeSet<>(keys1);
+            only1.removeAll(keys2);
+            var only2 = new java.util.TreeSet<>(keys2);
+            only2.removeAll(keys1);
+            System.out.println("only1=" + only1);
+            System.out.println("only2=" + only2);
+            for (String key : keys1) {
+                if (keys2.contains(key) && !java.util.Objects.equals(
+                        first.entries().get(key),
+                        second.entries().get(key))) {
+                    System.out.println("DIVERGE " + key);
+                }
+            }
+        }
+    }
+
+    @Test
     void entryAbiComputesManifestForDirectory(@TempDir Path dir)
             throws Exception {
         Path classes = dir.resolve("classes");

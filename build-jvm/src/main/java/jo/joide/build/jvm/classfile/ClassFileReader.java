@@ -659,7 +659,14 @@ public final class ClassFileReader {
             throw new ClassFileException(
                     "invalid constant pool index " + index);
         }
-        return pool[index];
+        Object value = pool[index];
+        if (poolTags[index] == CONSTANT_STRING && value instanceof PoolRef) {
+            // valeur constante de type chaîne : résolue, jamais le
+            // PoolRef brut (dont l'identité mémoire rendrait l'ABI
+            // non déterministe)
+            return utf8(((PoolRef) value).first);
+        }
+        return value;
     }
 
     private Object poolEntry(int index, int expectedTag) {

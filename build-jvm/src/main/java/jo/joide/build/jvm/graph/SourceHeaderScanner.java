@@ -28,7 +28,12 @@ public final class SourceHeaderScanner {
         /** Paquets des imports à la demande, en forme pointée. */
         public final List<String> starImports;
 
-        Header(String packageName, List<String> singleImports,
+        /**
+         * @param packageName  paquet en forme pointée
+         * @param singleImports imports simples
+         * @param starImports   paquets importés à la demande
+         */
+        public Header(String packageName, List<String> singleImports,
                List<String> starImports) {
             this.packageName = packageName;
             this.singleImports = singleImports;
