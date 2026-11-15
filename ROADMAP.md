@@ -12,7 +12,7 @@
 | P4 | Dépendances : résolveur Maven + GMM, transport HTTPS vérifié, cache partagé adressé par contenu, lockfile `joide.lock`, extraction AAR protégée, hors-ligne strict | `core-deps` | **Validée** | `PHASE-P4-RAPPORT.md` |
 | P5 | Pipeline Android : variantes, aapt2 (compilation incrémentale par fichier, lien, R), dex par scopes avec cache partageable entre projets, fusion par buckets, package (zipalign), signature, AAB, R8 | `build-android` | **Validée** | `PHASE-P5-RAPPORT.md` |
 | P6 | Daemon : process `:build`, IPC, compilateurs chauds, admission mémoire, fork à gros tas pour D8-merge/R8, reprise après kill — preuves : OOM forcé, kill -9, tas ≤ 700 Mo au tier L, latence mesurée | `build-daemon` | **Validée** | `PHASE-P6-RAPPORT.md` |
-| P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Livrée — arrêt pour validation** | `PHASE-P7-RAPPORT.md` |
+| P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Validée** (GO du 2026-11-16) | `PHASE-P7-RAPPORT.md` |
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | À venir | — |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
 
