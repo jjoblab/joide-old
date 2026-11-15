@@ -166,3 +166,41 @@ Rien.
 ## Supprimés
 
 Rien.
+
+
+---
+
+# CHANGES — P5 (sur la base P4)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| build-android (toolchain) | `SafeZip`, `Toolchain`, `ToolchainLocator` (épinglage SHA-256, transport HTTPS du résolveur) |
+| build-android (aapt2) | `Aapt2` (pilotage processus externe, compilation par fichier et par répertoire, lien binaire et proto, diagnostics) |
+| build-android (variantes) | `AndroidVariant` |
+| build-android (dex) | `DexInfo` (lecture d'en-tête), `DexBuckets` (répartition multidex), `Dexer` (interface de service), `ForkDexer` (fork à gros tas) |
+| build-android (package) | `ApkWriter` (zip déterministe aligné, champ extra comme zipalign) |
+| build-android (bundle/sign) | `BundleAssembler`, `ApkSignerService` (interfaces) |
+| build-android (tasks) | `AndroidModuleSpec`, `Aapt2CompileTask` (incrémentale par fichier), `Aapt2LinkTask`, `RJarTask` (ecj + manifeste ABI stable), `JarWriter`, `DexScopeTask`, `MergeDexTask`, `PackageTask`, `SignTask`, `AabTask`, `R8Task`, `AndroidTaskFactory` (graphe complet par variante) |
+| build-android (source set tools) | `InProcessDexer` (D8/R8 en processus, compilateurs chauds), `ApksigSigner`, `BundletoolAssembler` + enregistrements ServiceLoader |
+| build-android (tests) | `SafeZipTest`, `DexBucketsTest`, `ApkWriterTest`, `Aapt2ToolTest`, `DexerToolTest` (dont désucrage des enregistrements), `AndroidPipelineTest` (acceptation complète : APK signé vérifié, AAB validé, incrémental proportionnel, incrémental ≡ propre), `SharedDexCacheTest`, `ToolchainFixture`, `AndroidHarness`, `MemoryBuildStore` |
+| core-tasks (tests) | cas « entrée étrangère découverte sur le disque » dans `OutputCacheTest` |
+| docs | `docs/adr/034…037-*.md`, `ROADMAP.md` |
+| Racine | `PHASE-P5-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-tasks | `OutputCache` | découverte disque des entrées étrangères à l'ouverture (répertoire partitionné) : le cache de sorties est partageable entre projets aux stores distincts |
+| build-android | `build.gradle.kts` | source set `tools` (adaptateurs d'outils, hors contrôle API 28), dépendances r8/apksig/bundletool/guava |
+| Gradle | `gradle/module-graph.txt`, `tools-test` attentes | arête build-android -> core-deps (transport, empreintes) |
+| Gradle | `gradle/libs.versions.toml` | r8 9.5.32, apksig 9.5.1, bundletool 1.18.3, guava 32.0.1-jre |
+| docs | `NOTICE`, `docs/third-party.md` | arrivages P3 consignés (ecj EPL-2.0, compilateur Kotlin) et P5 (r8, apksig, bundletool, aapt2, plateforme) |
+| docs | `docs/dev.md`, `docs/backlog.md` | notes P5 ; backlog mis à jour |
+| Racine | `build-android/README.md` | contenu réel P5 |
+
+## Supprimés
+
+Rien.

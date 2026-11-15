@@ -62,3 +62,30 @@ Entrées ouvertes à l'issue de P4 :
       harnais, à exécuter sur la machine de référence) — le harnais
       prouve la politique (clair, redirections, certificat rejeté),
       pas la latence du monde réel.
+
+
+---
+
+# Backlog (après P5)
+
+Entrées ouvertes à l'issue de P5 :
+
+- [ ] P6/P7 : fusion de manifestes des bibliothèques dans le
+      manifeste de l'application (l'application est liée telle
+      quelle en P5 ; les bibliothèques ne contribuent que leurs
+      ressources) — décision à prendre avec l'import Gradle (P7)
+      qui connaît la sémantique AGP.
+- [ ] P6 : éviction du cache de dex et de l'outillage téléchargé
+      (quota d'espace du démon, même travail que l'ADR-024).
+- [ ] P5/P8 : règles de conservation R8 lues dans le manifeste
+      (points d'entrée des activités et services) ; aujourd'hui la
+      règle porte le paquet de l'application entier.
+- [ ] P5/P8 : signature V3 avec lignée de certificats et signature
+      V4 (niveau fichier) ; rotation de clé.
+- [ ] P5/P8 : ressources spécifiques à une variante (répertoires
+      res par type de build) et identifiant de suffixe de debug —
+      le lien est unique par module en P5.
+- [ ] P5/P8 : bibliothèques natives des AAR dans l'APK et le bundle
+      (jni/*.so extraits, alignés page) — le rédacteur les aligne
+      déjà, le câblage des AAR reste à faire.
+- [ ] P7 : authentification des dépôts privés (reporté P4).

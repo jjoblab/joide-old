@@ -117,3 +117,26 @@ machine de référence après un changement de matériel, jamais pour
 - Le lockfile se lit à la main : une entrée par artefact, une arête
   indentée par dépendance ; réordonné/trié par le résolveur, jamais
   fusionné à la main.
+
+
+## Notes P5
+
+- `build-android` reste pur JVM : le source set principal est sous
+  contrôle API 28 ; les adaptateurs d'outils (D8/R8 en processus,
+  apksig, bundletool) vivent dans le source set `tools`, chargés par
+  ServiceLoader.
+- Les tests d'outillage téléchargent une seule fois, dans
+  `~/.cache/joide/toolchain` (ou `JOIDE_TOOLCHAIN_DIR`) : aapt2
+  (2,4 Mio), la plateforme android-35 (61 Mio, 11 162 entrées) et le
+  jar de D8/R8 s'il n'est pas déjà sur le classpath. Sans réseau ni
+  cache, ces tests se sautent (hypothèse), jamais en erreur.
+- Variables d'environnement pour l'outillage local :
+  `JOIDE_AAPT2`, `JOIDE_ANDROID_JAR`, `JOIDE_R8_JAR` (chemins
+  explicites prioritaires sur le cache).
+- Le test différentiel incrémental ≡ propre compare les APK non
+  signés octet par octet : l'écriture zip est déterministe (entrées
+  triées, horodatages fixes), le lien aapt2 et D8 le sont aussi.
+- La fusion et le rétrécissement passent par un fork
+  (`java -cp r8.jar com.android.tools.r8.D8`, plafond 1 Gio) : les
+  tests les exécutent réellement — comptez quelques secondes de
+  démarrage de machine virtuelle par fusion.
