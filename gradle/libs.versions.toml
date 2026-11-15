@@ -24,6 +24,11 @@ guava = "32.0.1-jre"
 # Modules Android P8 (ADR-015) : même Gradle 9.8.2 que celeris — le couple
 # AGP 9.5.0 / Gradle 9.8.2 est celui de la brique, prouvé en famille.
 agp = "9.5.0"
+# code-lsp (socle :model) publie kotlinx-coroutines en portée runtime
+# seulement ; la synchronisation JoIDE lit le StateFlow du dépôt
+# d'instantanés (Apache-2.0 — NOTICE) : dépendance de compilation
+# explicite, version alignée sur la brique (1.11.0).
+kotlinxCoroutines = "1.11.0"
 # Briques du propriétaire (§6.8, docs/integration/) : versions publiées,
 # consommées en dépendances binaires depuis le checkout épinglé (publication
 # Maven Local ; jamais de modification des briques — DEMANDES.md).
@@ -59,6 +64,7 @@ codelsp-kotlin = { module = "jo.codeide.lsp.kotlin:jo-codeide-lsp-kotlin", versi
 codelsp-xml = { module = "jo.codeide.lsp.xml:jo-codeide-lsp-xml", version.ref = "codelsp" }
 codelsp-model = { module = "jo.codeide.lsp.model:jo-codeide-lsp-model", version.ref = "codelsp" }
 codelsp-index = { module = "jo.codeide.lsp.index:jo-codeide-lsp-index", version.ref = "codelsp" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "kotlinxCoroutines" }
 # Compagnon ecj patché ART (EPL-2.0, NOTICE) : classpath RUNTIME du moteur
 # Java uniquement, jamais compilé contre — séparation de licences.
 codelsp-ecj-art = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java-ecj-art", version.ref = "codelsp" }

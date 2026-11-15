@@ -22,6 +22,9 @@ dependencies {
     implementation(libs.codelsp.model)
     implementation(libs.codelsp.index)
     runtimeOnly(libs.codelsp.ecj.art)
+    // Le socle :model publie coroutines en runtime seulement ; la
+    // synchronisation lit le StateFlow du dépôt d'instantanés.
+    implementation(libs.kotlinx.coroutines.core)
     // Aperçu de layouts (LayoutLib) : les 6 modules de rendu — l'app
     // layout-editor-app et le spike Compose sont exclus par contrat
     // (docs/integration/layoutlib.md). Livraison conditionnée à D-1.
