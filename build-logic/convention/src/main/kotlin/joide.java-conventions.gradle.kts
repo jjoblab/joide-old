@@ -44,6 +44,17 @@ tasks.withType<Test>().configureEach {
     doFirst {
         systemProperty("joide.test.classpath", testRuntimeClasspath.asPath)
     }
+    // P7 : les vérifications à vrai Gradle (export) s'arment depuis
+    // la ligne de commande (-Djoide.export.realgradle=true…) ; les
+    // propriétés joide.export.* traversent jusqu'à la JVM de test.
+    doFirst {
+        System.getProperties().forEach { (key, value) ->
+            if (key is String && key.startsWith("joide.export.")
+                    && value is String) {
+                systemProperty(key, value)
+            }
+        }
+    }
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

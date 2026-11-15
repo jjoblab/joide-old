@@ -1,0 +1,6 @@
+// Root build : configuration shared by subprojects (not mapped by JoIDE).
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}

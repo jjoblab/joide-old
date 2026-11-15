@@ -1,0 +1,3 @@
+// Applied by 'apply from' in the root build — never read by JoIDE.
+println 'other.gradle was executed'
+System.exit(44)

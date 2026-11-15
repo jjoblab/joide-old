@@ -13,10 +13,12 @@ import java.util.Map;
  * guillemets, les chaînes basiques avec échappements et les chaînes
  * littérales, les entiers (décimaux, hexadécimaux, octaux, binaires,
  * avec séparateurs soulignés), les booléens, les tableaux (y compris
- * sur plusieurs lignes), les tables {@code [a.b]} et les tables en
- * série {@code [[a.b]]}. Toute autre construction (nombres à virgule,
- * dates, tables en ligne) est signalée et sautée ; l'analyse continue
- * sur le reste du document.</p>
+ * sur plusieurs lignes), les tables {@code [a.b]}, les tables en
+ * série {@code [[a.b]]} et les tables en ligne
+ * {@code {a = 1, b.c = "x"}} (requis par les catalogues de versions
+ * Gradle, P7). Toute autre construction (nombres à virgule, dates)
+ * est signalée et sautée ; l'analyse continue sur le reste du
+ * document.</p>
  */
 public final class Toml {
 
@@ -335,7 +337,7 @@ public final class Toml {
             current.put(key, value);
         }
 
-        /** Valeur : chaîne, entier, booléen ou tableau ; sinon {@code null}. */
+        /** Valeur : chaîne, entier, booléen, tableau ou table en ligne ; sinon {@code null}. */
         private TomlValue parseValue() {
             if (position >= text.length()) {
                 return null;
@@ -350,6 +352,8 @@ public final class Toml {
                     return literal == null ? null : new TomlValue.TomlString(literal);
                 case '[':
                     return parseArray();
+                case '{':
+                    return parseInlineTable();
                 case 't':
                 case 'f':
                     return parseBoolean();
@@ -368,6 +372,76 @@ public final class Toml {
                     return parseInteger();
                 default:
                     return null;
+            }
+        }
+
+        /**
+         * Table en ligne {@code {cle = valeur, ...}} sur une seule
+         * ligne, avec clefs pointées ; tolérante : ce qui est lu avant
+         * une anomalie est conservé avec un problème.
+         */
+        private TomlValue parseInlineTable() {
+            position++; // accolade ouvrante
+            Map<String, TomlValue> entries = new LinkedHashMap<>();
+            skipInlineBlanks();
+            if (position < text.length() && text.charAt(position) == '}') {
+                position++;
+                return new TomlValue.TomlTable(entries);
+            }
+            while (position < text.length()) {
+                List<String> path = parseKeyPath();
+                skipInlineBlanks();
+                if (path.isEmpty() || path.contains("")
+                        || path.contains(null)
+                        || position >= text.length()
+                        || text.charAt(position) != '=') {
+                    problem("table en ligne : cle ou signe egale attendu");
+                    skipInlineTable();
+                    return new TomlValue.TomlTable(entries);
+                }
+                position++;
+                skipInlineBlanks();
+                TomlValue value = parseValue();
+                if (value == null) {
+                    problem("table en ligne : valeur non reconnue");
+                    skipInlineTable();
+                    return new TomlValue.TomlTable(entries);
+                }
+                assign(entries, path, value);
+                skipInlineBlanks();
+                if (position < text.length()
+                        && text.charAt(position) == ',') {
+                    position++;
+                    skipInlineBlanks();
+                    continue;
+                }
+                if (position < text.length()
+                        && text.charAt(position) == '}') {
+                    position++;
+                    return new TomlValue.TomlTable(entries);
+                }
+                problem("table en ligne : virgule ou accolade fermante attendue");
+                skipInlineTable();
+                return new TomlValue.TomlTable(entries);
+            }
+            problem("table en ligne non fermee");
+            return new TomlValue.TomlTable(entries);
+        }
+
+        /** Saute une table en ligne abîmée jusqu'à l'accolade équilibrée. */
+        private void skipInlineTable() {
+            int depth = 1;
+            while (position < text.length() && depth > 0) {
+                char c = text.charAt(position);
+                if (c == '\n') {
+                    return;
+                }
+                if (c == '{') {
+                    depth++;
+                } else if (c == '}') {
+                    depth--;
+                }
+                position++;
             }
         }
 

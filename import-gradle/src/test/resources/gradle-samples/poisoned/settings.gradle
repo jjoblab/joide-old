@@ -1,0 +1,8 @@
+// Poisoned settings : if any script engine ever ran this file, the
+// import would die or leave traces.
+rootProject.name = 'poisoned-sample'
+System.exit(42)
+new File('settings-poison-marker.txt').text = 'settings executed'
+Runtime.getRuntime().exec('touch settings-exec-marker')
+include ':app'
+throw new RuntimeException('settings script was executed')

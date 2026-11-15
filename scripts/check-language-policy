@@ -89,6 +89,12 @@ def strip_java_comments_and_strings(text: str) -> str:
                 state = "block"
                 i += 2
                 continue
+            if text[i:i + 3] == '"""':
+                # bloc de texte Java : trois guillemets ouvrants et
+                # fermants (sans quoi l'état s'inverse à chaque bloc)
+                state = "textblock"
+                i += 3
+                continue
             if c == '"':
                 state = "string"
                 i += 1
@@ -103,6 +109,13 @@ def strip_java_comments_and_strings(text: str) -> str:
                 state = "code"
                 i += 2
                 continue
+        elif state == "textblock":
+            if text[i:i + 3] == '"""':
+                state = "code"
+                i += 3
+                continue
+            if c == "\n":
+                out.append(c)
         elif state == "string":
             if c == "\\":
                 i += 2

@@ -1,3 +1,36 @@
+# CHANGES — P7 (sur la base P6)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| import-gradle (parseur) | `script/ScriptToken`, `script/ScriptLexer` (lecteur lexical tolérant, cinq styles de chaînes, commentaires), `script/ScriptExpr` (expressions en forme tolérante, scellées), `script/ScriptStmt` (appels, affectations, inconnues), `script/Script` (instructions ordonnées, problèmes), `script/ScriptParser` (blocs à accolades, dialectes Groovy et Kotlin, virgules finales, génériques, chaînes d'appels, jamais d'exception — ADR-039) |
+| import-gradle (lecteurs) | `GradleProperties` (paires, continuations de ligne comme java.util.Properties), `VersionCatalog` (catalogue libs.versions.toml : versions, bibliothèques avec références et versions riches, greffons, alias pointillés), `GradleSettings` (includes, nom racine, blocs rapportés), `GradleBuildFile` (greffons avec versions et alias, bloc android : identité, defaultConfig, buildTypes, productFlavors, buildFeatures, désucrage, ensembles de sources au premier niveau et dans android, dépendances, ext aplatie, valeurs par référence de version du catalogue), `Interpolation` (résolution $var et ${expr} contre les portées chaînées) |
+| import-gradle (import) | `GradleImporter` (orchestrateur : réglages, propriétés, catalogue, module racine ou inclus, types, sources, dépendances à portées et variantes, facettes android/kotlin/gradle, min-sdk d'espace), `SyncReport` (rapport exhaustif, rendu hiérarchisé), `ModuleConfidence` (HIGH/MEDIUM/LOW à seuils fixes — ADR-040) |
+| import-gradle (export) | `GradleExporter` (export déterministe en mémoire : réglages avec dépôts, build.gradle.kts par module, greffons avec versions, bloc android, ensembles de sources explicites, dépendances à l'ordre du modèle, EXPORT-NOTES.md — ADR-041) |
+| import-gradle (tests) | `script/ScriptParserTest` (11 cas : deux dialectes, ordures, fuzz 500 entrées), `ReadersTest` (9 cas : propriétés, catalogue avec tables en ligne, réglages, interpolation), `GradleImporterTest` (7 cas : cinq échantillons — Groovy simple, multi-modules avec catalogue, Kotlin+Compose, parfoms et variantes, projet empoisonné —, module racine unique, répertoire absent), `NoExecutionDisciplineTest` (scan des API d'exécution interdites, absence de dépendance aux runtimes Gradle et Groovy), `GradleExporterTest` (déterminisme, aller-retour ≡ modèle sur modèle riche et sur échantillon importé, EXPORT-NOTES, formes DSL), `ExportRealGradleTest` (vrais Gradle sur les exports : JVM compileJava+jar, Android assembleDebug — armé par propriétés, lancé par script) |
+| import-gradle (fixtures) | cinq projets Gradle échantillons sous `src/test/resources/gradle-samples/` : `jvm-groovy` (Groovy, interpolation), `multi-catalog` (multi-modules Kotlin DSL, catalogue, parfum des deux dialectes, AGP 9), `compose-app` (Kotlin+Compose, BOM, variantes debug), `flavors` (Groovy, parfums, désucrage, sourceSets), `poisoned` (constructions non mappées + poison d'exécution : System.exit, marqueurs, exec — jamais exécutés) |
+| Scripts | `scripts/verify-export-gradle.sh` (lance la distribution Gradle du wrapper sur les exports, JVM et Android), `scripts/export-verification-init.gradle.kts` (miroir de Central pour la machine de développement, contournement documenté) |
+| docs | `docs/adr/039-parseur-gradle-statique.md`, `docs/adr/040-syncreport-confiance.md`, `docs/adr/041-export-gradle-aller-retour.md`, `docs/adr/042-build-gradle-deporte.md` |
+| Racine | `PHASE-P7-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-model | `toml/Toml` | tables en ligne `{ cle = valeur }` lues (avec clefs pointées et tolérance) — requis par les catalogues de versions Gradle ; additif, aucun lecteur existant n'en dépendait (ADR-039, point 6) |
+| core-model | `Module` | `canonicalForm()` public — l'aller-retour de l'export compare les identifiants de contenu et diagnostique par forme canonique (additif) |
+| build-logic | `joide.java-conventions.gradle.kts` | les propriétés `joide.export.*` de la ligne de commande traversent jusqu'à la JVM de test (armement des vérifications à vrai Gradle) |
+| Scripts | `scripts/check-language-policy` | le dépouillement code/chaînes reconnaît les blocs de texte Java (`"""`) : sans quoi leur impair de guillemets inversait l'état et faisait apparaître des contenus de chaînes comme du code (défaut révélé par les sources de vérification générées en P7) |
+| import-gradle | `build.gradle.kts`, `README.md` | dépendances réelles (core-model, core-deps) ; contenu P7 |
+| docs | `ROADMAP.md` | P6 validée, P7 livrée |
+| docs | `docs/backlog.md` | dettes P7 ouvertes, entrées héritées fermées |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.
+
 # CHANGES — P1 (sur la base P0)
 
 # Historique P0

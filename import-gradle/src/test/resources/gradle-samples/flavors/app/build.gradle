@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.flavors'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.flavors'
+        minSdk 21
+        targetSdk 35
+        versionCode 7
+        versionName '2.0.1'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    flavorDimensions 'mode'
+    productFlavors {
+        free {
+            dimension 'mode'
+            applicationIdSuffix '.free'
+            versionNameSuffix '-free'
+        }
+        paid {
+            dimension 'mode'
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs 'src/main/java', 'gen/java'
+            res.srcDirs = ['src/main/res', 'src brandings/res']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    freeImplementation 'com.google.android.gms:play-services-ads:23.6.0'
+    paidImplementation 'com.android.billingclient:billing:7.1.1'
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
+    releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:2.14'
+    testImplementation 'junit:junit:4.13.2'
+    testDebugImplementation 'org.assertj:assertj-core:3.26.3'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.3'
+}

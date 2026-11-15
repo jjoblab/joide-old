@@ -104,7 +104,7 @@ public final class Module {
      * @return la forme canonique : chaque partie triée, sans espace
      *         ni chemin absolu, préfixée pour éviter les ambiguïtés
      */
-    String canonicalForm() {
+    public String canonicalForm() {
         StringBuilder out = new StringBuilder(256);
         out.append("v1|name=").append(name)
                 .append("|type=").append(type.id());

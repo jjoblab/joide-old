@@ -1,3 +1,41 @@
+# Backlog (après P7)
+
+Entrées ouvertes à l'issue de P7 :
+
+- [ ] P8 : implémenter l'échappatoire « build Gradle déporté » conçue
+      en ADR-042 — l'export existe (ADR-041), les interfaces
+      arrivent avec l'adaptateur d'IDE.
+- [ ] P7/P9 : résoudre les plateformes BOM à l'import —
+      `implementation(platform(libs.compose.bom))` et les alias gérés
+      par BOM (sans version au catalogue) sont rapportés puis ignorés
+      (ADR-040) ; la résolution demanderait le résolveur P4 en
+      lecture seule (réseau, lockfile) — décision du propriétaire.
+- [ ] P7/P9 : greffons de traitement d'annotations (kapt, ksp) et
+      tests instrumentés (androidTest*) : hors modèle, rapportés à
+      l'import ; les représenter demanderait des portées et des
+      ensembles dédiés — décision du propriétaire.
+- [ ] P7/P9 : variables locales des scripts (`val composeBom =
+      platform(...)`) : la notation n'est pas résolue statiquement,
+      rapportée ; une évaluation partielle hors-ligne est pensable,
+      à mesurer.
+- [ ] P6/P7 (question du rapport P6 reprise) : quota d'espace du
+      démon — l'import ne le porte pas non plus ; la décision
+      (avant l'IDE ou après) appartient au propriétaire.
+
+Entrées héritées fermées par P7 :
+
+- [x] P6/P7 : fusion de manifestes des bibliothèques (backlog P5) —
+      évaluée en P7 : la sémantique AGP (manifeste de l'application
+      + bibliothèques fusionnés par Merger) est un travail du
+      pipeline (build-android), pas de l'import ; l'import porte les
+      manifestes par module (facette android) ; la fusion reste au
+      backlog P5/P8.
+- [x] P7 : authentification des dépôts privés (reporté P4) — les
+      dépôts et leurs identifiants ne sont pas lus à l'import
+      (rapportés comme contexte) ; le transport JoIDE (ADR-031)
+      refuse d'envoyer des identifiants ; aucune exigence du prompt
+      ne la demande — la question reste ouverte pour l'échappatoire
+      déportée (ADR-042, P8).
 # Backlog (P0)
 
 Entrées ouvertes — aucune n'est un TODO orphelin dans le code (§10) ;
