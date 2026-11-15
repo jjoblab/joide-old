@@ -40,7 +40,7 @@ class ModuleGraphFileTest {
                 Set.of("core-model", "core-store", "core-vfs"));
         expected.put("core-deps", Set.of("core-platform", "core-store"));
         expected.put("build-jvm", Set.of("core-tasks", "core-deps"));
-        expected.put("build-android", Set.of("build-jvm"));
+        expected.put("build-android", Set.of("build-jvm", "core-deps"));
         expected.put("build-daemon", Set.of("build-android"));
         expected.put("import-gradle", Set.of("core-model", "core-deps"));
         expected.put("tools-bench", Set.of("core-model"));

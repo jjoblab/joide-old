@@ -12,6 +12,15 @@ sqliteJdbc = "3.49.1.0"
 # lecture des métadonnées Kotlin (Apache-2.0 — NOTICE)
 ecj = "3.40.0"
 kotlin = "2.3.0"
+# Pipeline Android (P5) : dexeur et rétrécisseur D8/R8, signature APK,
+# assemblage de bundles (Google, Apache-2.0 — NOTICE) ; aapt2 est un
+# binaire natif téléchargé à la demande (pas une dépendance de compilation)
+r8 = "9.5.32"
+apksig = "9.5.1"
+bundletool = "1.18.3"
+# bundletool déclare ses dépendances en portée runtime seulement :
+# guava est requise à la compilation (API ImmutableList)
+guava = "32.0.1-jre"
 
 [libraries]
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
@@ -21,3 +30,7 @@ ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
 kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
 kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+r8 = { module = "com.android.tools:r8", version.ref = "r8" }
+apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
