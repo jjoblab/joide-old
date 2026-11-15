@@ -102,3 +102,18 @@ machine de référence après un changement de matériel, jamais pour
 - TestKit (`tools-test`) peut rencontrer un 429 transitoire de
   repo.maven.apache.org lors d'une résolution de classpath de compilateur :
   réexécuter (retries configurés dans `gradle.properties`).
+
+
+## Notes P4
+
+- `core-deps` est pur JVM : `./gradlew :core-deps:test` n'exige aucun
+  SDK Android. Le transport HTTPS est prouvé dans le harnais par un
+  serveur local au certificat auto-signé (rejet = vérification
+  active) ; `keytool` du JDK est requis pour ce test.
+- Les tests du résolveur passent par un dépôt `Remote` factice
+  (`FakeTransport` sert la fixture sur disque) : le comptage
+  `stats.requests` et la concurrence mesurée sont réels, sans socket.
+- Sans `JAVA_HOME` complet, exporter vers le JDK 21 (voir notes P3).
+- Le lockfile se lit à la main : une entrée par artefact, une arête
+  indentée par dépendance ; réordonné/trié par le résolveur, jamais
+  fusionné à la main.

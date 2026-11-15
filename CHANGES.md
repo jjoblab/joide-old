@@ -131,3 +131,38 @@ Rien.
 ## Supprimés
 
 Rien.
+
+
+---
+
+# CHANGES — P4 (sur la base P3)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| core-deps (coordonnées) | `Coordinate`, `Version`, `VersionRange`, `VersionRequirement`, `Exposure`, `DependencyRequest`, `Checksums` |
+| core-deps (métadonnées) | `xml/Xml`, `xml/XmlNode`, `json/Json`, `json/JsonValue`, `pom/PomModel`, `pom/PomParser`, `gmm/GmmModule`, `gmm/GmmParser`, `repo/MavenMetadata`, `repo/MavenMetadataParser` |
+| core-deps (dépôts) | `repo/Layout`, `repo/Transport`, `repo/TransportResponse`, `repo/HttpTransport`, `repo/Repository` (`Local`, `Remote`) |
+| core-deps (cache) | `cache/DependencyCache` |
+| core-deps (lockfile) | `lock/EdgeKind`, `lock/LockfileEdge`, `lock/LockfileEntry`, `lock/Lockfile` |
+| core-deps (résolution) | `resolve/ResolvedArtifact`, `resolve/ResolutionResult`, `resolve/ResolverConfig`, `resolve/Resolver` |
+| core-deps (AAR) | `aar/AarContents`, `aar/AarExtractor` |
+| core-deps (tests) | `VersionTest`, `VersionRangeTest`, `CoordinateTest`, `xml/XmlTest`, `json/JsonTest`, `pom/PomParserTest`, `gmm/GmmParserTest`, `repo/MavenMetadataParserTest`, `repo/HttpTransportTest`, `resolve/RepoFixture`, `resolve/Artifacts`, `resolve/ResolverTest`, `resolve/LockfileDeterminismTest`, `resolve/ChecksumDivergenceTest`, `resolve/SnapshotFreezeTest`, `resolve/OfflineStrictTest`, `resolve/ParallelCapTest`, `lock/LockfileTest`, `cache/DependencyCacheTest`, `aar/AarExtractorTest`, `repo/FakeTransport` |
+| docs | `docs/adr/028-parseurs-xml-json-maison.md`, `docs/adr/029-ordre-versions.md`, `docs/adr/030-cache-adresse-par-contenu.md`, `docs/adr/031-transport-https.md`, `docs/adr/032-extraction-aar-zip-slip.md`, `docs/adr/033-lockfile-joide-lock.md` |
+| Racine | `PHASE-P4-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-deps | `build.gradle.kts` | dépendance réelle (`core-platform`) ; le module quitte l'état de squelette |
+| core-deps | `README.md`, `src/main/java/jo/joide/deps/package-info.java` | contenu réel P4 |
+| docs | `docs/toolchain.md` | ligne P4 fermée (transport HTTPS vérifié TLS) |
+| docs | `docs/backlog.md` | dettes P4 ouvertes listées |
+| docs | `docs/dev.md` | notes P4 |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.

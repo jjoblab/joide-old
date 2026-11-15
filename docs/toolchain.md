@@ -32,7 +32,7 @@ sera vérifié dans SA phase (§4.2 du prompt : jamais d'API inventée).
 | Phase | Outil | Note |
 |---|---|---|
 | P3 | ecj retenu (ADR-026, même artefact que :ecj-art), compilateur Kotlin embarqué (ADR-027) | fait : versions lues dans l'artefact chargé, diagnostics par API |
-| P4 | — (résolveur maison, transport HTTP vérifié TLS) | checksums .sha256/.sha1 |
+| P4 | fait : résolveur maison (ADR-029/033), transport `HttpsURLConnection` vérifié TLS (ADR-031) | checksums .sha256/.sha1, GMM incorporées |
 | P5 | aapt2, D8/R8, apksig, bundletool | exécution aapt2 depuis nativeLibraryDir à valider sur appareil |
 | P6 | — (daemon, Binder/AIDL) | |
 | P7 | — (lecteur statique Gradle maison) | |

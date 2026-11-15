@@ -32,3 +32,33 @@ phase.
       partagé du développement (preuves au rapport P0).
 - [ ] Bench : baselines L/XL à committer quand une machine de référence
       sera désignée (coût de génération documenté dans le rapport P0).
+
+
+---
+
+# Backlog (après P4)
+
+Entrées ouvertes à l'issue de P4 :
+
+- [ ] P5 : consommer `ResolvedArtifact.file` et `aarContents` dans le
+      pipeline Android (dex des `classes.jar` + `libs/*.jar`) — la
+      surface existe, le câblage arrive avec build-android.
+- [ ] P4/P7 : authentification des dépôts privés (jetons, en-têtes) —
+      le transport refuse le clair et n'envoie aucun identifiant ;
+      aucune exigence du prompt ne la demande à P4.
+- [ ] P4 : éviction du cache de dépendances (quota d'espace) — même
+      travail que l'éviction du cache de sorties (ADR-024), à faire
+      avec la gestion de l'espace du daemon (P6).
+- [ ] P4 : classifieurs (`sources`, `javadoc`) résolus sur demande
+      explicite — les entrées du lockfile existent (`g:a:v:c@ext`),
+      aucune demande ne les produit aujourd'hui.
+- [ ] P4 : unions de plages multiples (`[1,2),[3,4)`) — rejetées à
+      l'analyse ; aucune occurrence dans les projets synthétiques.
+- [ ] P4/P9 : benchmarker la relecture chaude (un hachage par artefact
+      sur `verifyInCache`) sur un graphe de centaines de dépendances ;
+      si le coût gêne, mémoïser par (taille, date) comme le fait le
+      VFS (ADR-023 de celeris, même esprit que les signaux de P2).
+- [ ] P4 : `HttpTransport` contre un miroir public réel (test hors
+      harnais, à exécuter sur la machine de référence) — le harnais
+      prouve la politique (clair, redirections, certificat rejeté),
+      pas la latence du monde réel.
