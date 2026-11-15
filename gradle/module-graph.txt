@@ -19,5 +19,10 @@ build-daemon -> build-android core-store
 import-gradle -> core-model core-deps
 tools-bench -> core-model
 tools-test ->
-app-android -> build-daemon
+# P8 (ADR-045) : l'arête app-android -> ide-integration est un
+# changement explicite du contrat (ADR-011) — l'application hôte monte
+# l'IDE derrière les interfaces JoIDE d'ide-integration, jamais les
+# briques directement. Ordre descendant respecté : ide-integration
+# avant app-android.
 ide-integration -> core-model build-daemon
+app-android -> build-daemon ide-integration

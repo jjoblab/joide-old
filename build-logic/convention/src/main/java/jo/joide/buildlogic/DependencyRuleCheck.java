@@ -48,6 +48,12 @@ public final class DependencyRuleCheck {
             for (Dependency dep : configuration.getDependencies()) {
                 if (dep instanceof ProjectDependency) {
                     String target = dep.getName();
+                    // P8, ADR-045 : AGP référence le module lui-même sur
+                    // ses configurations de test (debugUnitTest*, …) — une
+                    // arête réflexive n'est pas une dépendance de module.
+                    if (target.equals(module)) {
+                        continue;
+                    }
                     if (!allowed.contains(target)) {
                         violations.add(module + " -> :" + target
                                 + " (configuration '" + configuration.getName()

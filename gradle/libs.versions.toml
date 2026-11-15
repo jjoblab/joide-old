@@ -21,8 +21,20 @@ bundletool = "1.18.3"
 # bundletool déclare ses dépendances en portée runtime seulement :
 # guava est requise à la compilation (API ImmutableList)
 guava = "32.0.1-jre"
+# Modules Android P8 (ADR-015) : même Gradle 9.8.2 que celeris — le couple
+# AGP 9.5.0 / Gradle 9.8.2 est celui de la brique, prouvé en famille.
+agp = "9.5.0"
+# Briques du propriétaire (§6.8, docs/integration/) : versions publiées,
+# consommées en dépendances binaires depuis le checkout épinglé (publication
+# Maven Local ; jamais de modification des briques — DEMANDES.md).
+celeris = "1.1.0"
+layoutlib = "3.7.0"
+codelsp = "1.15.0"
 
 [libraries]
+# Alias de classpath pour build-logic (application du plugin AGP par les
+# conventions, jamais de version en dur dans les modules)
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatformLauncher" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
@@ -34,3 +46,28 @@ r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+# Éditeur (celeris) : le POM d'android-host tire android-view (et par lui
+# core-text, core-syntax, core-language, core-intelligence) ; les
+# dépendances ci-dessous ne listent que ce qu'ide-integration nomme.
+celeris-android-host = { module = "jo.celeris:android-host", version.ref = "celeris" }
+celeris-android-widgets = { module = "jo.celeris:android-widgets", version.ref = "celeris" }
+celeris-lsp-protocole = { module = "jo.celeris:lsp-protocole", version.ref = "celeris" }
+# Serveurs de langage (code-lsp) : moteurs + socle, SANS l'AAR :host
+# (ADR-044 : :host exposerait codeide-tooling, interdit §6.8 règle 2b).
+codelsp-java = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java", version.ref = "codelsp" }
+codelsp-kotlin = { module = "jo.codeide.lsp.kotlin:jo-codeide-lsp-kotlin", version.ref = "codelsp" }
+codelsp-xml = { module = "jo.codeide.lsp.xml:jo-codeide-lsp-xml", version.ref = "codelsp" }
+codelsp-model = { module = "jo.codeide.lsp.model:jo-codeide-lsp-model", version.ref = "codelsp" }
+codelsp-index = { module = "jo.codeide.lsp.index:jo-codeide-lsp-index", version.ref = "codelsp" }
+# Compagnon ecj patché ART (EPL-2.0, NOTICE) : classpath RUNTIME du moteur
+# Java uniquement, jamais compilé contre — séparation de licences.
+codelsp-ecj-art = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java-ecj-art", version.ref = "codelsp" }
+# Aperçu de layouts (LayoutLib) : les 6 modules de rendu, module-inflater
+# expose les cinq autres en api (docs/integration/layoutlib.md).
+# LIVRAISON CONDITIONNÉE à la demande D-1 (LICENSE LayoutLib, DEMANDES.md).
+layoutlib-inflater = { module = "com.github.jjoblab.LayoutLib:module-inflater", version.ref = "layoutlib" }
+layoutlib-resources = { module = "com.github.jjoblab.LayoutLib:module-resources", version.ref = "layoutlib" }
+layoutlib-drawables = { module = "com.github.jjoblab.LayoutLib:module-drawables", version.ref = "layoutlib" }
+layoutlib-themes = { module = "com.github.jjoblab.LayoutLib:module-themes", version.ref = "layoutlib" }
+layoutlib-attributes = { module = "com.github.jjoblab.LayoutLib:module-attributes", version.ref = "layoutlib" }
+layoutlib-layout = { module = "com.github.jjoblab.LayoutLib:module-layout", version.ref = "layoutlib" }

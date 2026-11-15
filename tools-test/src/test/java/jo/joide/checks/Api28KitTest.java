@@ -31,9 +31,14 @@ class Api28KitTest {
         write("settings.gradle.kts", """
                 pluginManagement {
                     includeBuild("%BUILD_LOGIC%")
+                    // La substitution de greffon résout les transitifs de
+                    // build-logic (AGP) ici — google() requis (P8).
+                    repositories { google(); mavenCentral() }
                 }
                 dependencyResolutionManagement {
-                    repositories { mavenCentral() }
+                    // build-logic dépend d'AGP (P8) : la substitution composite
+                    // résout ses dépendances ici — google() requis.
+                    repositories { mavenCentral(); google() }
                     versionCatalogs {
                         create("libs") {
                             from(files("%ROOT%/gradle/libs.versions.toml"))

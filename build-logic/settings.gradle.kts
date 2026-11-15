@@ -6,6 +6,9 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+        // P8 : AGP (le couple AGP 9.5.0 / Gradle 9.8.2 est celui de celeris,
+        // prouvé en famille — ADR-045).
+        google()
     }
     versionCatalogs {
         create("libs") {

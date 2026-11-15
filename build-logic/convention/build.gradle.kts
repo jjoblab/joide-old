@@ -9,3 +9,8 @@ group = "jo.joide.buildlogic"
 
 // Aucune dépendance externe : la chaîne de build vit du seul Gradle.
 // JUnit arrive par le catalogue, côté modules.
+// P8 (ADR-045) : AGP sur le classpath des conventions — le plugin est
+// appliqué PAR les conventions, aucune version en dur dans les modules.
+dependencies {
+    implementation(libs.android.gradlePlugin)
+}

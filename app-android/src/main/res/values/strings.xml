@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JoIDE</string>
+    <string name="aucun_projet">Aucun projet ouvert</string>
+    <string name="ouvrir_projet">Ouvrir un projet</string>
+    <string name="projet_natif">Projet JoIDE natif (joide.toml)</string>
+    <string name="projet_gradle">Projet Gradle détecté — import statique requis (mode compatibilité)</string>
+    <string name="projet_inconnu">Aucun joide.toml ni build.gradle à la racine — projet non reconnu</string>
+</resources>

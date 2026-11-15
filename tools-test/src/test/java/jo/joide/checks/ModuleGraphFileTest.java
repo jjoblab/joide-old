@@ -45,8 +45,11 @@ class ModuleGraphFileTest {
         expected.put("import-gradle", Set.of("core-model", "core-deps"));
         expected.put("tools-bench", Set.of("core-model"));
         expected.put("tools-test", new HashSet<>());
-        expected.put("app-android", Set.of("build-daemon"));
+        // P8, ADR-045 : arête nouvelle explicite app-android ->
+        // ide-integration (l'application hôte monte l'IDE derrière les
+        // interfaces JoIDE — jamais les briques directement).
         expected.put("ide-integration", Set.of("core-model", "build-daemon"));
+        expected.put("app-android", Set.of("build-daemon", "ide-integration"));
         return expected;
     }
 

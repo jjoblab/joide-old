@@ -1,6 +1,6 @@
 # ADR-010 — Intégration des briques existantes derrière des interfaces JoIDE
 
-- **Statut** : Proposed (confirmé au début de P8)
+- **Statut** : Accepted (confirmé au début de P8 — constats revérifiés sur les sources, docs/integration/ ; 2026-11-16)
 - **Date** : 2026-11-15
 
 ## Contexte
