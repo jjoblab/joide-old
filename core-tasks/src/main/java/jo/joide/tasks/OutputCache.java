@@ -78,6 +78,44 @@ public final class OutputCache {
                     totalBytes += entry.sizeBytes();
                 }
             }
+            // découverte disque : les entrées écrites par un autre
+            // projet partageant ce cache ne sont pas dans l'index de
+            // ce store — le nom du dossier est l'empreinte, la taille
+            // se recalcule en le parcourant une fois (répertoire
+            // partitionné : root/<deux premiers caractères>/<empreinte>)
+            try (Stream<Path> shards = Files.list(root)) {
+                for (Path shard : shards.filter(Files::isDirectory)
+                        .toList()) {
+                    try (Stream<Path> entries = Files.list(shard)) {
+                        for (Path entry : entries.filter(Files::isDirectory)
+                                .toList()) {
+                            String name = entry.getFileName().toString();
+                            if (name.length() != 64
+                                    || !name.matches("[0-9a-f]{64}")
+                                    || sizes.containsKey(name)) {
+                                continue;
+                            }
+                            long size = 0;
+                            try (Stream<Path> walk = Files.walk(entry)) {
+                                size = walk.filter(Files::isRegularFile)
+                                        .mapToLong(file -> {
+                                            try {
+                                                return Files.size(file);
+                                            } catch (IOException e) {
+                                                return 0;
+                                            }
+                                        }).sum();
+                            }
+                            sizes.put(name, size);
+                            totalBytes += size;
+                        }
+                    } catch (IOException unreadable) {
+                        // compartiment illisible : les autres suffisent
+                    }
+                }
+            } catch (IOException unreadable) {
+                // racine illisible : l'index du store suffit
+            }
         }
     }
 

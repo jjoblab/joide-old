@@ -48,6 +48,36 @@ class OutputCacheTest {
     }
 
     @Test
+    void foreignEntryIsDiscoveredFromDisk() throws IOException {
+        // un projet range une entrée sous une empreinte réelle ; un
+        // second projet, au store vierge, ouvre le même répertoire de
+        // cache : l'entrée est découverte par balayage disque et
+        // restaurable — le cache est partageable entre projets
+        String fingerprint = "ab".repeat(32);
+        EngineMemoryStore storeA = new EngineMemoryStore();
+        OutputCache cacheA = open(storeA, Long.MAX_VALUE);
+        Path produced = Files.createDirectories(tempDir.resolve("produced"));
+        Files.writeString(produced.resolve("shared.txt"), "partage");
+        RootedPath outFile = RootedPath.of(RootName.OUT, "shared.txt");
+        cacheA.store(fingerprint,
+                TaskOutputs.builder().file(outFile).build(),
+                Map.of(outFile, produced.resolve("shared.txt")));
+        assertTrue(cacheA.has(fingerprint));
+
+        EngineMemoryStore storeB = new EngineMemoryStore();
+        OutputCache cacheB = open(storeB, Long.MAX_VALUE);
+        assertTrue(cacheB.has(fingerprint),
+                "a fresh store must discover foreign entries on disk");
+        Path target = Files.createDirectories(tempDir.resolve("cible"));
+        cacheB.restore(fingerprint,
+                TaskOutputs.builder()
+                        .file(RootedPath.of(RootName.OUT, "shared.txt"))
+                        .build(),
+                RootSet.of(Map.of(RootName.OUT, target)));
+        assertEquals("partage", Files.readString(target.resolve("shared.txt")));
+    }
+
+    @Test
     void directoryOutputsAreCachedRecursively() throws IOException {
         EngineMemoryStore store = new EngineMemoryStore();
         OutputCache cache = open(store, Long.MAX_VALUE);
