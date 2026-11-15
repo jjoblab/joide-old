@@ -6,13 +6,13 @@ phase.
 
 - [ ] P1 : valider le sous-ensemble TOML figé (ADR-014/R2) quand
       core-model lit les projets synthétiques.
-- [ ] P3 (ouvert) : compiler les sources Kotlin générés — le SPI
+- [ ] P3 (ouvert) : compiler les sources Kotlin générés — le SPI
       `SourceGenerator` ordonne la génération avant les compilations,
       la validation sur un générateur réel reste à faire (validité
       constatée à la main en P0, R3). Le spike API Build Tools est
-      TRANCHÉ (ADR-027) : incrémental maison retenu, révisable à P9.
-- [ ] P3 (ouvert) : éditions différentielles dédiées `sealed` et
-      `@JvmInline` (la liste scellée est déjà dans l'ABI, ADR-025) ;
+      TRANCHÉ (ADR-027) : incrémental maison retenu, révisable à P9.
+- [ ] P3 (ouvert) : éditions différentielles dédiées `sealed` et
+      `@JvmInline` (la liste scellée est déjà dans l'ABI, ADR-025) ;
       `const` et `inline` sont couverts.
 - [ ] P3/P5 : vérifier le désucrage D8 de records/sealed avant tout
       usage dans le code exécuté sur Android (ADR-009/013).

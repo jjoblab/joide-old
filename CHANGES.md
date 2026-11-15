@@ -123,7 +123,7 @@ Rien.
 | build-jvm | `SourceHeaderScanner` | suivi des besoins du pipeline |
 | build-jvm | `AbiTest` | suivi du drapeau inline dans les manifestes |
 | docs | `docs/toolchain.md` | ligne P3 fermée (ADR-026) |
-| docs | `docs/backlog.md` | spike Kotlin tranché (ADR-027) ; dettes P3 ouvertes listées |
+| docs | `docs/backlog.md` | spike Kotlin tranché (ADR-027) ; dettes P3 ouvertes listées |
 | docs | `docs/dev.md` | notes P3 |
 | Racine | `.gitignore` | `/build-logic/convention/build/` ancré |
 | Racine | `CHANGES.md` | le présent fichier |

@@ -89,16 +89,16 @@ machine de référence après un changement de matériel, jamais pour
 
 ## Notes P3
 
-- `build-jvm` est pur JVM : `./gradlew :build-jvm:test` n'exige aucun SDK
-  Android ; le stdlib Kotlin est sur le classpath d'exécution des tests
+- `build-jvm` est pur JVM : `./gradlew :build-jvm:test` n'exige aucun SDK
+  Android ; le stdlib Kotlin est sur le classpath d'exécution des tests
   (le test différentiel et `InlineBodyAbiTest` le localisent depuis
   `java.class.path`).
-- Bac à sable sans JDK complet sur `/usr/lib/jvm` : exporter `JAVA_HOME`
-  vers un JDK 21 complet (javac requis par la chaîne d'outillage) ;
+- Bac à sable sans JDK complet sur `/usr/lib/jvm` : exporter `JAVA_HOME`
+  vers un JDK 21 complet (javac requis par la chaîne d'outillage) ;
   `~/.gradle/gradle.properties` pointe
   `org.gradle.java.installations.paths` vers ce JDK.
-- Le test différentiel (200 séquences, ~2 min) est déterministe : graine
-  affichée dans le message d'échec ; tout échec se reproduit à l'identique.
+- Le test différentiel (200 séquences, ~2 min) est déterministe : graine
+  affichée dans le message d'échec ; tout échec se reproduit à l'identique.
 - TestKit (`tools-test`) peut rencontrer un 429 transitoire de
-  repo.maven.apache.org lors d'une résolution de classpath de compilateur :
+  repo.maven.apache.org lors d'une résolution de classpath de compilateur :
   réexécuter (retries configurés dans `gradle.properties`).
