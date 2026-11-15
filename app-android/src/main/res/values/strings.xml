@@ -6,4 +6,27 @@
     <string name="projet_natif">Projet JoIDE natif (joide.toml)</string>
     <string name="projet_gradle">Projet Gradle détecté — import statique requis (mode compatibilité)</string>
     <string name="projet_inconnu">Aucun joide.toml ni build.gradle à la racine — projet non reconnu</string>
+    <string name="fichiers">Fichiers</string>
+    <string name="apercu">Aperçu</string>
+    <string name="masquer">Masquer</string>
+    <string name="construire">Construire</string>
+    <string name="console_build">Console de build</string>
+    <string name="fermer_console">Fermer</string>
+    <string name="build_en_processus">En processus</string>
+    <string name="canal_build">Build JoIDE</string>
+    <string name="service_build_actif">Service de build JoIDE actif</string>
+    <string name="import_en_cours">Import du projet…</string>
+    <string name="import_n_fichiers">Import : %1$d fichiers…</string>
+    <string name="projet_illisible">Projet illisible : %1$s</string>
+    <string name="projet_illisible_sans_detail">Projet illisible</string>
+    <string name="import_echoue">Import échoué : %1$s</string>
+    <string name="projet_pret">Projet prêt — %1$d module(s), %2$d problème(s) de modèle</string>
+    <string name="rendu_ok">Aperçu rendu : %1$d vue(s), %2$d×%3$d px</string>
+    <string name="rendu_echoue">Rendu échoué : %1$s</string>
+    <string name="ecriture_echouee">Écriture du fichier échouée</string>
+    <string name="lecture_echouee">Lecture échouée : %1$s</string>
+    <string name="rien_a_construire">Rien à construire (voir les écarts ci-dessus)</string>
+    <string name="service_injoignable">Service de build injoignable — relancez le build</string>
+    <string name="build_interrompu">Build interrompu : mémoire — le service est mort, l\'IDE survit ; le prochain build le relance</string>
+    <string name="build_en_processus_annonce">Build EN PROCESSUS (annoncé) — mode très petits appareils, l\'UI partage la mémoire du build</string>
 </resources>

@@ -18,6 +18,9 @@ app-android/build/
 ide-integration/build/
 build-logic/build/
 local.properties
+# Bac à sable de développement P8 (ADR-045) : SDK Android reconstruit
+# à la main (docs/dev.md, notes P8) et JDK de secours — jamais commis.
+/work/
 *.iml
 *.hprof
 .DS_Store

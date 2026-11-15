@@ -15,4 +15,11 @@ public class StoreException extends RuntimeException {
     public StoreException(String message, Throwable cause) {
         super(message, cause);
     }
+
+    /**
+     * @param message message en anglais, destiné au journal
+     */
+    public StoreException(String message) {
+        super(message);
+    }
 }

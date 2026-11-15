@@ -24,6 +24,9 @@ public final class LanguageModelSync {
     private final ProjetLspAdapter adapter;
     private final Function<Workspace, ExternalResolution> resolution;
     private final DepotModeleLsp depot = new DepotModeleLsp();
+    /** Dernière résolution des externes (lot F : le build s'en sert
+     *  pour les jars du classpath). */
+    private volatile ExternalResolution derniereResolution;
 
     /**
      * @param root       racine du projet sur le disque
@@ -45,9 +48,19 @@ public final class LanguageModelSync {
      */
     public LanguageModelSnapshot synchroniser(Workspace workspace) {
         ExternalResolution externals = resolution.apply(workspace);
+        derniereResolution = externals;
         ProjetLsp projet = adapter.adapt(root, workspace, externals);
         depot.remplacer(projet);
         return LanguageModelSnapshot.of(projet, externals.problems());
+    }
+
+    /**
+     * @return la dernière résolution des externes (vide avant la
+     *         première synchronisation) — les jars résolus du
+     *         classpath de build (lot F)
+     */
+    public Optional<ExternalResolution> derniereResolution() {
+        return Optional.ofNullable(derniereResolution);
     }
 
     /**

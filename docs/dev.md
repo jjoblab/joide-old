@@ -165,3 +165,61 @@ machine de référence après un changement de matériel, jamais pour
   rétrécissement demande une spec à `heapMb` ≥ 1 280 et un démon dont
   le tas couvre ce budget (1 500 en test) — l'usage réel du démon
   reste en dessous pendant que le fork vit dehors.
+
+## Notes P8 — modules Android et briques
+
+### Prérequis supplémentaires
+
+- **JDK 21 complet** (javac — le JRE du bac à sable ne suffit pas ;
+  par ex. Temurin 21 via l'API Adoptium) : `JAVA_HOME` pointé dessus.
+- **SDK Android** dans `work/android-sdk` (gitignoré) :
+  `platforms;android-36` et `platforms;android-37.2`,
+  `build-tools;36.0.0` et `37.0.0`, licences acceptées
+  (`licenses/android-sdk-license`). Sans SDK (ou `JOIDE_SKIP_ANDROID=1`),
+  les modules Android ne rejoignent pas le build : le `check` des
+  modules purs reste le critère P0 — pas une dégradation.
+- Le SDK se reconstruit à la main (paquets réels de
+  `dl.google.com/android/repository/`) :
+
+```bash
+mkdir -p work/android-sdk/{platforms,build-tools,licenses}
+printf '8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee\n' \
+  > work/android-sdk/licenses/android-sdk-license
+# décompresser platform-36_r02.zip → platforms/android-36, etc.
+# (build-tools_r37_linux.zip → build-tools/37.0.0 : renommer le
+#  répertoire extrait, son nom (« android-37.0 ») n'est pas la version)
+echo "sdk.dir=$(pwd)/work/android-sdk" > local.properties
+```
+
+### Publication des briques en Maven Local (ADR-044)
+
+Une fois par montée de version d'une brique — cloner les refs épinglées
+et publier :
+
+```bash
+# celeris f9001f0 → jo.celeris:*:1.1.0
+git clone github.com/jjoblab/celeris && cd celeris && git checkout f9001fc
+./gradlew --max-workers=2 -Dorg.gradle.jvmargs="-Xmx1900m" publishToMavenLocal
+# code-lsp 657d787 → jo.codeide.lsp.*:1.15.0 (SANS :host)
+# :java :kotlin :xml :model :index :ecj-art
+git clone github.com/jjoblab/code-lsp && cd code-lsp && git checkout 657d787
+./gradlew --max-workers=2 :java:publishToMavenLocal :kotlin:publishToMavenLocal \
+  :xml:publishToMavenLocal :model:publishToMavenLocal :index:publishToMavenLocal \
+  :ecj-art:publishToMavenLocal
+# LayoutLib 720e85d → com.github.jjoblab.LayoutLib:module-*:3.7.0
+git clone github.com/jjoblab/LayoutLib && cd LayoutLib && git checkout 720e85d
+./gradlew --max-workers=2 :module-inflater:publishToMavenLocal \
+  :module-resources:publishToMavenLocal :module-drawables:publishToMavenLocal \
+  :module-themes:publishToMavenLocal :module-attributes:publishToMavenLocal \
+  :module-layout:publishToMavenLocal
+```
+
+### Mémoire du bac à sable (4 Go)
+
+- Les démons Gradle des briques veulent 3 Go (`org.gradle.jvmargs` de
+  leurs `gradle.properties`) : les tuer entre les builds
+  (`pkill -f GradleDaemon`) et réduire le tas sur la ligne de commande
+  (`-Dorg.gradle.jvmargs="-Xmx1900m ..."`), 2 travailleurs maximum.
+- `:app-android:assembleDebug` (APK 88 Mo à dexer) : démon Gradle
+  RÉDUIT (`-Xmx1024m`) pour laisser le travailleur D8 vivre
+  (`--max-workers=1`) — un démon à 3 Go y est tué par le noyau.

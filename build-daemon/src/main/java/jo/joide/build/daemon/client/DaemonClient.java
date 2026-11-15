@@ -1,6 +1,8 @@
 package jo.joide.build.daemon.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -64,14 +66,21 @@ public final class DaemonClient implements AutoCloseable {
 
     private final Process process;
     private final Frames frames;
+    /** Flux du transport par socket (ADR-043) ; null au lancement
+     *  d'une machine virtuelle fille. */
+    private final InputStream entree;
+    private final OutputStream sortie;
     private final BlockingQueue<Event> events =
             new ArrayBlockingQueue<>(1024);
     private final Thread reader;
     private volatile boolean closed;
 
-    private DaemonClient(Process process, Frames frames) {
+    private DaemonClient(Process process, Frames frames,
+                         InputStream entree, OutputStream sortie) {
         this.process = process;
         this.frames = frames;
+        this.entree = entree;
+        this.sortie = sortie;
         this.reader = new Thread(this::readLoop, "joide-daemon-client");
         this.reader.setDaemon(true);
         this.reader.start();
@@ -120,7 +129,23 @@ public final class DaemonClient implements AutoCloseable {
         stderrRelay.start();
         Frames frames = new Frames(process.getInputStream(),
                 process.getOutputStream());
-        return new DaemonClient(process, frames);
+        return new DaemonClient(process, frames, null, null);
+    }
+
+    /**
+     * Connecte un démon déjà hébergé sur un canal de flux (ADR-043 :
+     * le service de build de l'application Android, socket locale).
+     * La mort du démon est la fin du canal : EOF →
+     * {@link DaemonDiedException}, le client survit.
+     *
+     * @param entree flux des cadres du démon
+     * @param sortie flux des cadres vers le démon
+     * @return le client connecté (handshake « hello » à attendre)
+     */
+    public static DaemonClient over(InputStream entree,
+                                    OutputStream sortie) {
+        Frames frames = new Frames(entree, sortie);
+        return new DaemonClient(null, frames, entree, sortie);
     }
 
     /**
@@ -258,47 +283,88 @@ public final class DaemonClient implements AutoCloseable {
     }
 
     /**
-     * Attend la disparition complète du processus (collecte du code
+     * Attend la disparition complète du démon (collecte du code
      * de sortie) — la fermeture des flux peut précéder de quelques
-     * instants la récolte du statut.
+     * instants la récolte du statut. Sur un transport par flux, la
+     * disparition est la mort du fil de lecture (EOF).
      *
      * @param timeoutSeconds délai d'attente
-     * @return le code de sortie du démon
+     * @return le code de sortie du démon (0 sur transport par flux)
      * @throws IOException si le délai expire
      */
     public int awaitExit(long timeoutSeconds) throws IOException {
         try {
-            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                throw new IOException(
-                        "daemon did not exit in time");
+            if (process != null) {
+                if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                    throw new IOException(
+                            "daemon did not exit in time");
+                }
+                return process.exitValue();
             }
+            long deadline = System.nanoTime()
+                    + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+            while (reader.isAlive()) {
+                long restant = deadline - System.nanoTime();
+                if (restant <= 0) {
+                    throw new IOException(
+                            "daemon did not exit in time");
+                }
+                reader.join(TimeUnit.NANOSECONDS.toMillis(restant) + 1L);
+            }
+            return 0;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("interrupted while waiting", e);
         }
-        return process.exitValue();
     }
 
     /**
-     * Tue le démon sans politesse (kill -9).
+     * Tue le démon sans politesse (kill -9, ou fermeture du canal sur
+     * transport par flux).
      */
     public void killNow() {
-        process.destroyForcibly();
+        if (process != null) {
+            process.destroyForcibly();
+            return;
+        }
+        fermerCanal();
     }
 
-    /** @return vrai si le processus du démon est vivant */
+    /** @return vrai si le processus du démon est vivant (sur transport
+     *         par flux : le canal est ouvert et le fil de lecture
+     *         vivant) */
     public boolean alive() {
-        return process.isAlive();
+        if (process != null) {
+            return process.isAlive();
+        }
+        return !closed && reader.isAlive();
     }
 
     @Override
     public void close() {
         closed = true;
-        process.destroyForcibly();
+        if (process != null) {
+            process.destroyForcibly();
+            try {
+                process.waitFor(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return;
+        }
+        fermerCanal();
+    }
+
+    private void fermerCanal() {
         try {
-            process.waitFor(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            entree.close();
+        } catch (IOException e) {
+            // le canal se ferme : l'erreur de fermeture est muette
+        }
+        try {
+            sortie.close();
+        } catch (IOException e) {
+            // idem côté écriture
         }
     }
 
@@ -341,9 +407,11 @@ public final class DaemonClient implements AutoCloseable {
         } catch (IOException | RuntimeException e) {
             if (!closed) {
                 String message = "daemon died";
-                if (!process.isAlive()) {
+                if (process != null && !process.isAlive()) {
                     message = "daemon died (exit "
                             + process.exitValue() + ")";
+                } else if (process == null) {
+                    message = "daemon died (channel closed)";
                 }
                 events.offer(new Event("daemon-dead", -1,
                         jo.joide.deps.json.Json.parse(

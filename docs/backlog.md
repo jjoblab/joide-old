@@ -1,4 +1,24 @@
-# Backlog (après P7)
+# Backlog (après P8)
+
+Entrées ouvertes à l'issue de P8 :
+
+- [ ] P8/P9 : builds Android sur appareil — D8/R8/aapt2 ne sont pas
+      embarqués dans l'APK (ADR-046, décision de taille reportée au
+      propriétaire) ; les embarquer exigerait aussi les règles de
+      conservation des ServiceLoader des moteurs (déjà identifiées
+      au lot A pour le rétrécissement release).
+- [ ] P8/P9 : accès direct SAF sans copie (provider de système de
+      fichiers au-dessus de DocumentsContract) — l'import par copie
+      duplique le stockage ; un VFS par fournisseur exigerait une
+      mesure avant décision.
+- [ ] P8/P9 : gestion du stockage des projets importés (purge,
+      plusieurs projets) et lockfile joide.lock sur appareil (le
+      résolveur y tourne sans lockfile — la reproductibilité des
+      builds sur appareil s'en remet au cache).
+- [ ] P8/P9 : couverture protocole non servie par les moteurs
+      (symboles, plis, formatage, surlignages, plages de sélection,
+      renommage, correctifs, indices, jetons sémantiques, références —
+      vides honnêtes du lot D).
 
 Entrées ouvertes à l'issue de P7 :
 

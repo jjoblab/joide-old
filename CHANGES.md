@@ -1,3 +1,39 @@
+# CHANGES — P8 (sur la base P7)
+
+L'IDE arrive en six lots : A (conditionnel Android et squelette
+d'application), B (adaptateur ProjetLsp v11), C (moteurs de langage
+code-lsp), D (éditeur celeris), E (aperçu LayoutLib), F (application
+complète : service de build de premier plan, UI IDE, APK).
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| ide-integration (lots B–E) | `sync` (LanguageModelSync, ProjetLspAdapter, LanguageModelSnapshot, ExternalResolution, Resolutions, ModuleDirectories, AndroidPlatform), `langages` (MoteursLangage, DiagnosticIde, SurvolIde, PropositionCompletion, CibleNavigation, AideSignatureIde, EtatIndex, SessionsKotlin, UnionIndexable, AdaptateurIndexNoms), `editeur` (SceneEditeur, SessionLangageCeleris, CoachJoide, Langages), `apercu` (ApercuLayouts, ConfigurationApercu, ConfigurationsApercu) |
+| build-daemon (serveur, lot F) | `BoucleDemon` (boucle de protocole extraite du démon de bureau — un seul protocole), `HoteDemonSocket` (hôte socket locale sur le rebouclage, un BuildRunner pour toutes les connexions — compilateurs chauds à travers les reconnexions, la mort de l'hôte ferme la connexion courante : fin de canal, jamais un zombie) |
+| app-android (lot A) | `MainActivity` (état vide fonctionnel, sélecteur système), `ProjectDetector`, `RootNames` |
+| app-android (lot F) | `MainActivity` réécrite (écran IDE : import, montage des moteurs, éditeur, aperçu, console de build), `BuildService` (service de premier plan du processus `:build`, port éphémère publié par fichier atomique), `StoreAndroid` (contrat BuildStore sur la base système, schéma du store de bureau, éviction LRU pure testée), `SpecsBuild` (modèle → description de build P6, écarts honnêtes), `ConsoleBuild` (formatage pur des événements), `FichiersProjet` (parcours, filtre, mises en page), `ImporteurProjet` (copie SAF → stockage privé) |
+| build-logic | conventions `joide.android-library-conventions`, `joide.android-application-conventions` (AGP 9.5.0, javac strict, lint bloquant, JUnit 5, règle de dépendances) |
+| outillage | `.githooks/pre-push` (vérification d'identité exigée par le propriétaire : user.name=jjoblab, user.email=olson12jb@gmail.com, auteur ET compositeur de chaque commit poussé ; activation par `git config core.hooksPath .githooks`) |
+| docs | `docs/integration/` (contrats réels des briques celeris/code-lsp/LayoutLib, DEMANDES.md), ADR-043 à ADR-046, `PHASE-P8-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-daemon | `DaemonClient` | factory `over(InputStream, OutputStream)` (transport par flux, ADR-043) ; `DaemonMain` délègue à `BoucleDemon` — aucun protocole dupliqué |
+| ide-integration | `LanguageModelSync` | `derniereResolution()` : le build réutilise les jars de la synchronisation (additif, lot F) |
+| core-store | `StoreException` | constructeur à un argument (additif, lot F) |
+| Gradle | `settings.gradle.kts`, `gradle/module-graph.txt`, catalogue | conditionnel SDK (ADR-045), arêtes ide-integration et app-android, briques en Maven Local |
+| app-android | `AndroidManifest.xml`, `res/values/strings.xml` | service `:build` de premier plan, permissions INTERNET/FOREGROUND_SERVICE, chaînes réelles |
+| docs | `docs/dev.md` | notes P8 : SDK, publication des briques (procédure promise par ADR-044), mémoire du bac à sable |
+| docs | `docs/backlog.md`, `ROADMAP.md`, `NOTICE`, `docs/third-party.md` | P8 : dettes listées, P8 livrée, briques redistribuées consignées |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.
+
 # CHANGES — P7 (sur la base P6)
 
 ## Ajoutés
