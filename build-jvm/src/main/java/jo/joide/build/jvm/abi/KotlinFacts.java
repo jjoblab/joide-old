@@ -52,6 +52,13 @@ public final class KotlinFacts {
         String rawHash = rawMetadataHash(metadata);
         Structural structural = structuralFacts(metadata);
         if (structural != null && !structural.inlinePresent) {
+            if (structural.rendering.isEmpty()) {
+                // genre lu mais sans faits exploitables (façade de
+                // multi-fichiers, classe synthétique) : le condensé brut
+                // garantit qu’aucun changement de métadonnées (visibilité,
+                // scellage, valeurs par défaut) n’échappe à l’ABI
+                return new KotlinFacts("rawmetadata=" + rawHash, false);
+            }
             return new KotlinFacts(structural.rendering, false);
         }
         if (structural != null) {
@@ -131,6 +138,12 @@ public final class KotlinFacts {
         if (!kmClass.getNestedClasses().isEmpty()) {
             out.append(" nested=")
                     .append(String.join(",", kmClass.getNestedClasses()));
+        }
+        if (!kmClass.getSealedSubclasses().isEmpty()) {
+            // la liste des sous-classes scellées dirige l’exhaustivité
+            // des when des modules aval : fait d’ABI à part entière
+            out.append(" sealed=")
+                    .append(String.join(",", kmClass.getSealedSubclasses()));
         }
         boolean inline = false;
         for (kotlin.metadata.KmFunction function : kmClass.getFunctions()) {

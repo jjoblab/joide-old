@@ -57,6 +57,11 @@ public final class ClassModel {
     public final String genericSignature;
     /** Nom du fichier source (attribut SourceFile), ou {@code null}. */
     public final String sourceFile;
+    /** Condensé 128 bits du fichier de classe complet, jamais
+     *  {@code null}. Capturé pour les classes à membres inline : les
+     *  métadonnées Kotlin ne portent pas les corps (mesuré sur les
+     *  métadonnées 2.1.0) et le rendu ABI les exclut par principe. */
+    public final String fileDigest;
     /** Champs, dans l'ordre du fichier, non modifiable. */
     public final List<Member> fields;
     /** Méthodes, dans l'ordre du fichier, non modifiable. */
@@ -73,6 +78,7 @@ public final class ClassModel {
     private ClassModel(String binaryName, String superName,
                        List<String> interfaces, int accessFlags,
                        String genericSignature, String sourceFile,
+                       String fileDigest,
                        List<Member> fields, List<Member> methods,
                        List<RawAttribute> annotationAttributes,
                        java.util.Set<String> referencedClasses,
@@ -83,6 +89,7 @@ public final class ClassModel {
         this.accessFlags = accessFlags;
         this.genericSignature = genericSignature;
         this.sourceFile = sourceFile;
+        this.fileDigest = fileDigest;
         this.fields = fields;
         this.methods = methods;
         this.annotationAttributes = annotationAttributes;
@@ -225,13 +232,14 @@ public final class ClassModel {
     static ClassModel of(String binaryName, String superName,
                          List<String> interfaces, int accessFlags,
                          String genericSignature, String sourceFile,
+                         String fileDigest,
                          List<Member> fields, List<Member> methods,
                          List<RawAttribute> annotationAttributes,
                          java.util.Set<String> referencedClasses,
                          KotlinMetadata kotlinMetadata) {
         return new ClassModel(binaryName, superName,
                 Collections.unmodifiableList(interfaces), accessFlags,
-                genericSignature, sourceFile,
+                genericSignature, sourceFile, fileDigest,
                 Collections.unmodifiableList(fields),
                 Collections.unmodifiableList(methods),
                 Collections.unmodifiableList(annotationAttributes),

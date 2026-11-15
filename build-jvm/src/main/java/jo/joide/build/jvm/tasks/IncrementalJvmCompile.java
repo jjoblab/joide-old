@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -38,8 +39,11 @@ import jo.joide.tasks.TaskExecution;
  * recompilation complète), comparaison de la spécification, calcul
  * des changements d'ABI du classpath par manifestes, lots successifs
  * au point fixe (compiler, rescanner les classes produites, propager
- * aux sources dépendantes), repli complet au seuil ou sur suppression
- * de source. L'état et le manifeste sont réécrits après un build
+ * aux sources dépendantes), repli complet au seuil, sur suppression
+ * de source, ou sur changement d'ABI d'une classe à membres
+ * inline : les corps copiés chez les appelants ne laissent pas de
+ * référence exploitable, seule la recompilation complète du module
+ * consommateur est sûre. L'état et le manifeste sont réécrits après un build
  * réussi seulement : un échec laisse l'état précédent intact.</p>
  */
 final class IncrementalJvmCompile {
@@ -187,8 +191,24 @@ final class IncrementalJvmCompile {
         List<Problem> warnings = new ArrayList<>();
         Map<String, ImpactAnalysis.ChangeKind> classpathChanges =
                 new TreeMap<>();
+        String cause = "threshold or removal";
         if (!full) {
-            classpathChanges.putAll(classpathChanges(context, state));
+            ClasspathDiff diff = classpathChanges(context, state);
+            classpathChanges.putAll(diff.changes());
+            if (diff.unverifiable()) {
+                // ABI d'une entrée non comparable à ce qui a été consommé :
+                // sur-invalider, jamais supposer inchangé
+                full = true;
+                cause = "unverifiable classpath ABI";
+                classpathChanges.clear();
+            } else if (diff.inlineEscape()) {
+                // une classe à membres inline a changé d'ABI : les appelants
+                // ne portent aucune référence — recompilation complète du
+                // module, la seule forme sûre
+                full = true;
+                cause = "inline member ABI change";
+                classpathChanges.clear();
+            }
         }
         if (!full && "kotlin".equals(language)) {
             applyJavaDirtyApproximation(context, delta, classpathChanges);
@@ -216,7 +236,7 @@ final class IncrementalJvmCompile {
         if (batch == null) {
             warnings.add(Problem.info("full-recompile",
                     "module " + moduleName + " (" + language
-                            + "): full recompile (threshold or removal)"));
+                            + "): full recompile (" + cause + ")"));
             return fullCompile(context, sources, spec);
         }
         return incrementalLoop(context, sources, state, analysis, batch,
@@ -248,9 +268,19 @@ final class IncrementalJvmCompile {
             if (!result.success) {
                 return TaskExecution.failed(result.diagnostics);
             }
-            Map<String, ImpactAnalysis.ChangeKind> produced =
-                    recordBatch(outDir, state, batch, sources);
-            java.util.Set<String> next = analysis.nextBatch(batch, produced);
+            BatchOutcome outcome = recordBatch(outDir, state, batch, sources);
+            if (outcome.inlineEscape()) {
+                // un membre inline du module vient de changer d'ABI :
+                // recompiler tout le module depuis un répertoire vide,
+                // comme un build propre
+                warnings.add(Problem.info("full-recompile",
+                        "module " + moduleName + " (" + language
+                                + "): full recompile (inline member ABI"
+                                + " change)"));
+                return fullCompile(context, sources, spec);
+            }
+            java.util.Set<String> next = analysis.nextBatch(batch,
+                    outcome.changes());
             batch = next == null ? null : new TreeSet<>(next);
             if (batch == null) {
                 warnings.add(Problem.info("full-recompile",
@@ -313,7 +343,7 @@ final class IncrementalJvmCompile {
      * (et super-types), références, ABI ; puis calcule les changements
      * d'ABI des classes produites pour la propagation.
      */
-    private Map<String, ImpactAnalysis.ChangeKind> recordBatch(
+    private BatchOutcome recordBatch(
             Path outDir, CompileState state, TreeSet<String> batch,
             Map<String, Path> sources) throws IOException {
         Map<String, ClassModel> written = scanClasses(outDir);
@@ -337,37 +367,66 @@ final class IncrementalJvmCompile {
             productsOfSource.put(source,
                     new ArrayList<>(deps.produced.keySet()));
             // l'ABI de chaque classe produite alimente le manifeste du
-            // module : c'est la surface consommée par l'aval
+            // module : c'est la surface consommée par l'aval ; le
+            // drapeau inline accompagne le hachage (les corps inline
+            // sont copiés chez les appelants)
             for (String produced : deps.produced.keySet()) {
                 ClassModel model = written.get(produced);
                 if (model != null) {
                     state.classAbis.put(produced,
-                            ClassAbi.of(model).hash());
+                            ClassAbi.of(model).manifestValue());
                 }
             }
         }
-        // classes non attribuées (rare) : suivies avec une source
-        // synthétique pour rester dans le graphe d'impact
+        // Attribution élargie : une classe lue qui n'est pas produite
+        // par ce lot peut appartenir à un AUTRE source du module (non
+        // compilé ici) — son ABI est rafraîchie pour tenir le manifeste
+        // à jour, mais elle n'entre jamais dans la source synthétique :
+        // ses références (sa propre classe, présente dans son pool)
+        // tireraient le pseudo-source dans un lot sans fichier sous-jacent.
+        // Seules les classes sans source connue restent des orphelines.
         TreeSet<String> attributed = new TreeSet<>();
         for (List<String> products : productsOfSource.values()) {
             attributed.addAll(products);
+        }
+        Set<String> ownedByOtherSources = new TreeSet<>();
+        for (Map.Entry<String, CompileState.SourceDeps> known
+                : state.sources.entrySet()) {
+            if (productsOfSource.containsKey(known.getKey())) {
+                continue; // source du lot : déjà attribué
+            }
+            for (String className : known.getValue().produced.keySet()) {
+                if (!attributed.contains(className)) {
+                    ownedByOtherSources.add(className);
+                }
+            }
         }
         CompileState.SourceDeps orphans = new CompileState.SourceDeps(
                 "__orphan__", "");
         boolean hasOrphans = false;
         for (Map.Entry<String, ClassModel> entry : written.entrySet()) {
-            if (!attributed.contains(entry.getKey())) {
-                hasOrphans = true;
-                orphans.produced.put(entry.getKey(),
-                        supersOf(entry.getValue()));
-                orphans.references.addAll(
-                        entry.getValue().referencedClasses);
-                state.classAbis.put(entry.getKey(),
-                        ClassAbi.of(entry.getValue()).hash());
+            if (attributed.contains(entry.getKey())) {
+                continue; // produit du lot : ABI déjà enregistrée
             }
+            if (ownedByOtherSources.contains(entry.getKey())) {
+                // classe d'un autre source du module : ABI rafraîchie,
+                // jamais comptée orpheline
+                state.classAbis.put(entry.getKey(),
+                        ClassAbi.of(entry.getValue()).manifestValue());
+                continue;
+            }
+            hasOrphans = true;
+            orphans.produced.put(entry.getKey(),
+                    supersOf(entry.getValue()));
+            orphans.references.addAll(
+                    entry.getValue().referencedClasses);
+            state.classAbis.put(entry.getKey(),
+                    ClassAbi.of(entry.getValue()).manifestValue());
         }
         if (hasOrphans) {
             state.sources.put(orphans.relativePath, orphans);
+        } else {
+            state.sources.remove(orphans.relativePath);
         }
         // différences d'ABI des classes du lot pour la propagation
         Map<String, ImpactAnalysis.ChangeKind> changes = new TreeMap<>();
@@ -385,14 +444,78 @@ final class IncrementalJvmCompile {
                 }
             }
         }
+        boolean inlineEscape = false;
+        for (Map.Entry<String, List<String>> products
+                : productsOfSource.entrySet()) {
+            for (String produced : products.getValue()) {
+                String newAbi = state.classAbis.get(produced);
+                String oldAbi = previousAbisSnapshot.get(produced);
+                if (oldAbi == null || newAbi == null) {
+                    continue; // ajoutée : notifiée ADDED plus haut
+                }
+                if (!oldAbi.equals(newAbi)
+                        && ClassAbi.isInlineFlagged(newAbi)) {
+                    inlineEscape = true;
+                }
+            }
+        }
         for (Map.Entry<String, String> old : previousAbisSnapshot
                 .entrySet()) {
             if (!state.classAbis.containsKey(old.getKey())) {
                 changes.put(old.getKey(),
                         ImpactAnalysis.ChangeKind.REMOVED);
+                if (ClassAbi.isInlineFlagged(old.getValue())) {
+                    inlineEscape = true;
+                }
             }
         }
-        return changes;
+        return new BatchOutcome(changes, inlineEscape);
+    }
+
+    /** Résultat du diff de classpath : changements + garanties. */
+    private static final class ClasspathDiff {
+        private final Map<String, ImpactAnalysis.ChangeKind> changes;
+        private final boolean unverifiable;
+        private final boolean inlineEscape;
+
+        ClasspathDiff(Map<String, ImpactAnalysis.ChangeKind> changes,
+                      boolean unverifiable, boolean inlineEscape) {
+            this.changes = changes;
+            this.unverifiable = unverifiable;
+            this.inlineEscape = inlineEscape;
+        }
+
+        Map<String, ImpactAnalysis.ChangeKind> changes() {
+            return changes;
+        }
+
+        boolean unverifiable() {
+            return unverifiable;
+        }
+
+        boolean inlineEscape() {
+            return inlineEscape;
+        }
+    }
+
+    /** Résultat d'un lot compilé : changements + garantie inline. */
+    private static final class BatchOutcome {
+        private final Map<String, ImpactAnalysis.ChangeKind> changes;
+        private final boolean inlineEscape;
+
+        BatchOutcome(Map<String, ImpactAnalysis.ChangeKind> changes,
+                     boolean inlineEscape) {
+            this.changes = changes;
+            this.inlineEscape = inlineEscape;
+        }
+
+        Map<String, ImpactAnalysis.ChangeKind> changes() {
+            return changes;
+        }
+
+        boolean inlineEscape() {
+            return inlineEscape;
+        }
     }
 
     private CompileState loadState(Path outDir) {
@@ -445,18 +568,31 @@ final class IncrementalJvmCompile {
      * Changements d'ABI par entrée de classpath : manifeste courant
      * contre manifeste consommé (adresses immuables, rejouables).
      */
-    private Map<String, ImpactAnalysis.ChangeKind> classpathChanges(
+    private ClasspathDiff classpathChanges(
             TaskContext context, CompileState state) {
         Map<String, ImpactAnalysis.ChangeKind> changes = new TreeMap<>();
+        boolean unverifiable = false;
+        boolean inlineEscape = false;
         for (ClasspathEntry entry : classpath) {
             AbiManifest current = readEntryManifest(context, entry);
             String consumedDigest = state.consumedManifests.get(
                     entry.label);
-            if (current == null || current.digest().equals(consumedDigest)) {
+            if (current == null) {
+                // manifeste illisible : ABI de l'entrée inconnue,
+                // jamais supposer « inchangée »
+                unverifiable = true;
+                continue;
+            }
+            if (current.digest().equals(consumedDigest)) {
+                continue;
+            }
+            if (consumedDigest == null) {
+                // jamais consommé par cet état : diff impossible
+                unverifiable = true;
                 continue;
             }
             AbiManifest previous = null;
-            if (consumedDigest != null && entry.manifestDir != null) {
+            if (entry.manifestDir != null) {
                 Path old = context.resolve(entry.manifestDir)
                         .resolve(consumedDigest + ".manifest");
                 if (Files.isRegularFile(old)) {
@@ -467,36 +603,37 @@ final class IncrementalJvmCompile {
                     }
                 }
             }
-            if (previous == null && consumedDigest != null) {
-                // manifeste consommé introuvable : sur-invalider tout
-                for (String className : current.entries().keySet()) {
-                    changes.put(className,
-                            ImpactAnalysis.ChangeKind.CHANGED);
-                }
+            if (previous == null) {
+                // manifeste consommé introuvable : diff impossible
+                unverifiable = true;
                 continue;
             }
             for (Map.Entry<String, String> now
                     : current.entries().entrySet()) {
-                String oldAbi = previous == null ? null
-                        : previous.entries().get(now.getKey());
+                String oldAbi = previous.entries().get(now.getKey());
                 if (oldAbi == null) {
                     changes.put(now.getKey(),
                             ImpactAnalysis.ChangeKind.ADDED);
                 } else if (!oldAbi.equals(now.getValue())) {
                     changes.put(now.getKey(),
                             ImpactAnalysis.ChangeKind.CHANGED);
+                    if (ClassAbi.isInlineFlagged(now.getValue())) {
+                        inlineEscape = true;
+                    }
                 }
             }
-            if (previous != null) {
-                for (String className : previous.entries().keySet()) {
-                    if (!current.entries().containsKey(className)) {
-                        changes.put(className,
-                                ImpactAnalysis.ChangeKind.REMOVED);
+            for (String className : previous.entries().keySet()) {
+                if (!current.entries().containsKey(className)) {
+                    changes.put(className,
+                            ImpactAnalysis.ChangeKind.REMOVED);
+                    if (ClassAbi.isInlineFlagged(
+                            previous.entries().get(className))) {
+                        inlineEscape = true;
                     }
                 }
             }
         }
-        return changes;
+        return new ClasspathDiff(changes, unverifiable, inlineEscape);
     }
 
     private AbiManifest readEntryManifest(TaskContext context,

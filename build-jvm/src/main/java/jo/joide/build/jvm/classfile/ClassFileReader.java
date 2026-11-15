@@ -9,6 +9,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import jo.joide.platform.Hashing;
+
 /**
  * Lecteur de fichiers de classe, sans dépendance : pool de constantes
  * complet, membres, attributs utiles à l'ABI et à la navigation
@@ -49,6 +51,7 @@ public final class ClassFileReader {
     private final Object[] pool;
     private final int[] poolTags;
     private final Set<String> refs = new LinkedHashSet<>();
+    private String fileDigest = "";
 
     private ClassFileReader(DataInputStream in, int count) {
         this.in = in;
@@ -75,6 +78,11 @@ public final class ClassFileReader {
             in.readUnsignedShort(); // version majeure
             ClassFileReader reader = new ClassFileReader(
                     in, in.readUnsignedShort());
+            // condensé du fichier entier : sert d'ABI aux classes à
+            // membres inline, dont les corps copiés chez les appelants
+            // ne figurent ni dans les métadonnées ni dans le rendu
+            reader.fileDigest = Hashing.toHex(Hashing.sha256(bytes))
+                    .substring(0, 32);
             reader.readPool();
             return reader.readBody();
         } catch (ClassFileException e) {
@@ -216,8 +224,8 @@ public final class ClassFileReader {
             }
         }
         return ClassModel.of(thisClass, superName, interfaces, accessFlags,
-                genericSignature, sourceFile, fields, methods, classAnnots,
-                refs, kotlinMetadata);
+                genericSignature, sourceFile, fileDigest, fields, methods,
+                classAnnots, refs, kotlinMetadata);
     }
 
     private List<ClassModel.Member> readMembers() throws IOException {

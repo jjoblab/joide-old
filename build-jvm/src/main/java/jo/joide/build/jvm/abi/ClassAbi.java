@@ -20,7 +20,13 @@ import jo.joide.platform.Hashing;
  * valeur constante inlinable, clause throws, noms de paramètres) et
  * faits Kotlin (visibilité interne, inline, const, scellage, noms de
  * paramètres, corps des membres inline par hachage des métadonnées).
- * Sont exclus : corps de méthode et membres privés.</p>
+ * Sont exclus : corps de méthode et membres privés — sauf pour les
+ * classes à membres inline : leurs corps sont copiés dans les
+ * appelants sans laisser de référence, et les métadonnées Kotlin ne
+ * les portent pas (mesuré sur les métadonnées 2.1.0, voir
+ * ADR-025) : le condensé du fichier de classe entier est alors
+ * ajouté au rendu, toute variation du fichier devient un changement
+ * d'ABI — sur-invalidation sûre, jamais de sous-invalidation.</p>
  */
 public final class ClassAbi {
 
@@ -30,10 +36,12 @@ public final class ClassAbi {
 
     private final String canonical;
     private final String hash;
+    private final boolean inlineMembers;
 
-    private ClassAbi(String canonical, String hash) {
+    private ClassAbi(String canonical, String hash, boolean inlineMembers) {
         this.canonical = canonical;
         this.hash = hash;
+        this.inlineMembers = inlineMembers;
     }
 
     /**
@@ -42,10 +50,12 @@ public final class ClassAbi {
      */
     public static ClassAbi of(ClassModel model) {
         String canonical = render(model);
+        KotlinFacts facts = KotlinFacts.of(model);
         return new ClassAbi(canonical,
                 Hashing.toHex(Hashing.sha256(
                         canonical.getBytes(StandardCharsets.UTF_8)))
-                        .substring(0, 32));
+                        .substring(0, 32),
+                facts != null && facts.inlineMemberPresent());
     }
 
     /** @return le rendu canonique, jamais {@code null} */
@@ -56,6 +66,34 @@ public final class ClassAbi {
     /** @return le hachage 128 bits en hexadécimal (32 caractères) */
     public String hash() {
         return hash;
+    }
+
+    /**
+     * @return vrai si la classe (ou sa façade) déclare des membres
+     *         inline : leurs corps sont copiés dans les appelants,
+     *         un changement d'ABI doit donc invalider tout le paquet
+     */
+    public boolean hasInlineMembers() {
+        return inlineMembers;
+    }
+
+    /**
+     * @return la valeur de manifeste : hachage + drapeau inline.
+     *         Le drapeau se lit avec {@link #isInlineFlagged}.
+     */
+    public String manifestValue() {
+        return hash + (inlineMembers ? " I" : " -");
+    }
+
+    /**
+     * @param manifestValue valeur de manifeste (jamais {@code null})
+     * @return vrai si la valeur porte le drapeau inline : un changement
+     *         d'ABI de cette classe impose la recompilation complète du
+     *         module consommateur (les corps inline sont copiés chez
+     *         les appelants sans laisser de référence)
+     */
+    public static boolean isInlineFlagged(String manifestValue) {
+        return manifestValue != null && manifestValue.endsWith(" I");
     }
 
     private static String render(ClassModel model) {
@@ -108,6 +146,13 @@ public final class ClassAbi {
         }
         out.append("kotlin=").append(facts == null ? "-" : facts.canonical())
                 .append('\n');
+        if (facts != null && facts.inlineMemberPresent()) {
+            // corps inline absents des métadonnées : le condensé du
+            // fichier entier capture tout changement visible d'un
+            // appelant (constantes du pool comprises)
+            out.append("filedigest=").append(model.fileDigest)
+                    .append('\n');
+        }
         return out.toString();
     }
 

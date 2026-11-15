@@ -126,6 +126,6 @@ public final class EntryAbi {
         if ("module-info".equals(model.binaryName)) {
             return;
         }
-        entries.put(model.binaryName, ClassAbi.of(model).hash());
+        entries.put(model.binaryName, ClassAbi.of(model).manifestValue());
     }
 }
