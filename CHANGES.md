@@ -95,3 +95,39 @@ Rien.
 ## Supprimés
 
 Rien.
+
+
+---
+
+# CHANGES — P3 (sur la base P2)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| build-jvm (classfile) | `ClassFileException`, `ClassFileReader`, `ClassModel` (pool complet, attributs d'ABI, `@kotlin.Metadata`, condensé `fileDigest`) |
+| build-jvm (abi) | `AbiCache`, `AbiManifest`, `ClassAbi` (drapeau inline, `isInlineFlagged`), `EntryAbi`, `KotlinFacts` |
+| build-jvm (graph) | `CompileState`, `ImpactAnalysis`, `SourceHeaderScanner` |
+| build-jvm (compile) | `CompileRequest`, `CompileResult`, `CompilerDriver`, `EcjCompilerDriver`, `KotlinCompilerDriver` |
+| build-jvm (tasks) | `ClasspathEntry`, `GenerateSourcesTask`, `IncrementalJvmCompile` (ClasspathDiff, BatchOutcome), `JarTask`, `JvmCompileTask`, `JvmRunTask`, `JvmTaskFactory`, `ProcessResourcesTask`, `SourceGenerator` |
+| build-jvm (tests) | `ClassFileReaderTest`, `AbiTest`, `GraphTest`, `CompilerDriverTest`, `PipelineHarness`, `MemoryBuildStore`, `PipelineAcceptanceTest`, `DifferentialTest` (200 séquences à graine fixe), `InlineBodyAbiTest` (régression corps inline) |
+| core-tasks (tests) | `NestedDirInputTest`, `IntraBuildChainTest` (régressions du correctif `bc1670b`, omises au commit d'origine) |
+| docs | `docs/adr/025-abi-membres-inline.md`, `docs/adr/026-choix-ecj.md`, `docs/adr/027-spike-kotlin-buildtools.md` |
+| Racine | `PHASE-P3-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-tasks | `BuildEngine`, `TaskFingerprinter` | trois défauts de correction révélés par le pipeline JVM (entrées de dossier imbriquées, empreintes des propriétés scalaires et hash symétrique des entrées couvrant des sorties, delta d'entrées développant les dossiers) |
+| build-jvm | `SourceHeaderScanner` | suivi des besoins du pipeline |
+| build-jvm | `AbiTest` | suivi du drapeau inline dans les manifestes |
+| docs | `docs/toolchain.md` | ligne P3 fermée (ADR-026) |
+| docs | `docs/backlog.md` | spike Kotlin tranché (ADR-027) ; dettes P3 ouvertes listées |
+| docs | `docs/dev.md` | notes P3 |
+| Racine | `.gitignore` | `/build-logic/convention/build/` ancré |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.

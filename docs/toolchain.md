@@ -31,7 +31,7 @@ sera vérifié dans SA phase (§4.2 du prompt : jamais d'API inventée).
 
 | Phase | Outil | Note |
 |---|---|---|
-| P3 | ecj ou javac (ADR à documenter ; étudier ecj-art de code-lsp), kotlinc | vérifier version et signature réelles des API avant tout appel (§4.2) |
+| P3 | ecj retenu (ADR-026, même artefact que :ecj-art), compilateur Kotlin embarqué (ADR-027) | fait : versions lues dans l'artefact chargé, diagnostics par API |
 | P4 | — (résolveur maison, transport HTTP vérifié TLS) | checksums .sha256/.sha1 |
 | P5 | aapt2, D8/R8, apksig, bundletool | exécution aapt2 depuis nativeLibraryDir à valider sur appareil |
 | P6 | — (daemon, Binder/AIDL) | |
