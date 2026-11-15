@@ -25,3 +25,20 @@ dependencies {
 tasks.named("check") {
     dependsOn(tasks.named("jvmClasses"))
 }
+
+// L'implémentation de bureau (pilote SQLite) est exposée aux modules
+// aval qui exécutent le moteur en machine virtuelle séparée : le
+// démon (P6) ouvre le même contrat que les tests du store.
+val jvmJar = tasks.register<Jar>("jvmJar") {
+    archiveBaseName.set("core-store-jvm")
+    from(sourceSets.named("jvm").get().output)
+}
+
+val jvmApi by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+artifacts {
+    add("jvmApi", jvmJar)
+}

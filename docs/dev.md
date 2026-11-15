@@ -140,3 +140,28 @@ machine de référence après un changement de matériel, jamais pour
   (`java -cp r8.jar com.android.tools.r8.D8`, plafond 1 Gio) : les
   tests les exécutent réellement — comptez quelques secondes de
   démarrage de machine virtuelle par fusion.
+
+
+## Notes P6
+
+- Le démon de bureau : `jo.joide.build.daemon.desktop.DaemonMain`
+  (source set `desktop`, hors contrôle API 28 comme le pilote
+  SQLite) — cadres JSON sur les flux standard, store SQLite persistant
+  à la racine des sorties (`build.db`). Le client et le protocole
+  (source set principal) restent sous contrôle API 28 : l'application
+  Android embarquera le client.
+- L'injection de pannes (preuve OOM forcé) est armée par
+  `-Djoide.daemon.faults=1` : le démon de production répond
+  `crash-refused`.
+- Les fils de construction du démon : `-Djoide.daemon.threads=N`
+  (4 par défaut ; les preuves à cœur unique le posent pour ne pas
+  affamer la machine de test).
+- Le banc du démon : `./gradlew :build-daemon:daemonBench -Ptier=S|M|L|XL`
+  (tas plafond réglable : `-PdaemonHeapMb=700`). Tier L sur la
+  machine de bac à sable : génération 0,9 s, build à froid 19 s
+  (400 tâches, pic de tas 95 Mo), build sans changement 1,6 s.
+- Les revendications des tâches de fork (fusion/R8 : 1 024 Mo)
+  comptent au budget d'admission : un build Android avec
+  rétrécissement demande une spec à `heapMb` ≥ 1 280 et un démon dont
+  le tas couvre ce budget (1 500 en test) — l'usage réel du démon
+  reste en dessous pendant que le fork vit dehors.

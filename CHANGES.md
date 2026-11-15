@@ -204,3 +204,42 @@ Rien.
 ## Supprimés
 
 Rien.
+
+
+---
+
+# CHANGES — P6 (sur la base P5)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| build-daemon (protocol) | `Frames` (cadres de longueur plafonnés), `Json` (écriture compacte), `BuildSpec` (description de build : espaces, modules JVM/Android, variantes) |
+| build-daemon (client) | `DaemonClient` (lancement de la machine virtuelle fille, file d'événements, mort du démon en exception, récolte du code de sortie) |
+| build-daemon (runner) | `BuildRunner` (exécuteur équivalent en processus : graphe JVM ou Android, événements en direct, fabriques et dexeurs détenus — compilateurs chauds, diff disque de l'ensemble sale contre l'instantané persisté, fils démons) |
+| build-daemon (racine) | `package-info.java` (invariants du paquet) |
+| build-daemon (source set desktop) | `DaemonMain` (boucle de protocole, store SQLite persistant, préchauffage, injection de pannes armée par `-Djoide.daemon.faults=1`, fils de construction réglables) |
+| build-daemon (source set bench) | `DaemonTier`, `BenchProjectGenerator` (générateur déterministe aux gabarits de tools-bench), `DaemonBench` (preuves de tas et de latence par tier) |
+| build-daemon (tests) | `ProtocolTest` (cadres, échappements, aller-retour de description, module sans nom refusé), `DaemonLifecycleTest` (build complet par IPC, compilateurs chauds au second build, mode en processus, budget mémoire refusé explicitement), `DaemonDeathResumeTest` (kill -9 en plein build et au repos puis reprise depuis le disque, OOM forcé avec client survivant et reprise, injection refusée non armée), `DaemonAndroidPipelineTest` (pipeline Android complet par IPC : R8 en fork d'un gigaoctet, démon sous 700 Mo, APK signé v1+v2 vérifié, AAB validé, second build sans travail) |
+| core-store | exposition du pilote SQLite par la configuration `jvmApi` (le démon ouvre le même contrat que les tests du store) |
+| build-android | exposition des adaptateurs d'outils par la configuration `toolsApi` (D8/R8, apksig, bundletool en processus par ServiceLoader dans la machine virtuelle du démon) |
+| docs | `docs/adr/038-demon-process-build.md` |
+| Racine | `PHASE-P6-RAPPORT.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-daemon | `build.gradle.kts` | source sets `desktop` (déjà), `bench` (nouveau) ; tâche `daemonBench` (preuves à la demande par tier) ; le contrôle « check » compile desktop et bench |
+| build-daemon | `README.md` | contenu réel P6 |
+| build-android | `AndroidTaskFactory` | défaut latent P5 corrigé : le rétrécissement R8 recevait des répertoires de classes (refusés par R8) — il reçoit le jar du module, même contenu, entrée de fichier ; dépendance au jar ajoutée |
+| build-android | `ToolchainLocator` | `defaultCacheDir()` public (le démon et ses filles partagent le même répertoire d'outillage) |
+| Gradle | `gradle/module-graph.txt`, `tools-test` attentes | arête build-daemon -> core-store (le démon de bureau ouvre le store persistant) |
+| docs | `ROADMAP.md` | P5 validée, P6 livrée |
+| docs | `docs/backlog.md` | dettes P6 ouvertes listées (évaluation du quota d'espace reportée) |
+| docs | `docs/dev.md` | notes P6 |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.

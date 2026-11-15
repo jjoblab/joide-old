@@ -41,3 +41,22 @@ dependencies {
 tasks.named("check") {
     dependsOn(tasks.named("toolsClasses"))
 }
+
+// Les adaptateurs d'outils sont exposés aux modules aval qui
+// exécutent le pipeline en machine virtuelle séparée : le démon (P6)
+// charge D8/R8, apksig et bundletool en processus par ServiceLoader.
+// Les jars des outils sont déclarés par le consommateur (même
+// catalogue de versions).
+val toolsJar = tasks.register<Jar>("toolsJar") {
+    archiveBaseName.set("build-android-tools")
+    from(sourceSets.named("tools").get().output)
+}
+
+val toolsApi by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+}
+
+artifacts {
+    add("toolsApi", toolsJar)
+}

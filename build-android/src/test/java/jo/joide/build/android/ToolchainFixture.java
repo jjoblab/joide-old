@@ -49,12 +49,7 @@ public final class ToolchainFixture {
 
     /** @return le répertoire de cache de l'outillage */
     public static Path cacheDir() {
-        String override = System.getenv("JOIDE_TOOLCHAIN_DIR");
-        if (override != null && !override.isBlank()) {
-            return Path.of(override.trim());
-        }
-        return Path.of(System.getProperty("user.home"), ".cache",
-                "joide", "toolchain");
+        return ToolchainLocator.defaultCacheDir();
     }
 
     /** @return le dexeur en processus (ServiceLoader du classpath) */

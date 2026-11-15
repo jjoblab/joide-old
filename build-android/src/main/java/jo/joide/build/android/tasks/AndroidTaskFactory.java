@@ -449,12 +449,11 @@ public final class AndroidTaskFactory {
 
         if (variant.minifyEnabled) {
             List<RootedPath> program = new ArrayList<>();
+            // R8 n'accepte pas les répertoires comme entrées de
+            // programme : le jar du module (même contenu que les
+            // répertoires de classes) est l'entrée de fichier
             program.add(RootedPath.of(RootName.OUT,
-                    "jvm/" + app.name + "/classes-java"));
-            if (Boolean.TRUE.equals(kotlinPresence.get(app.name))) {
-                program.add(RootedPath.of(RootName.OUT,
-                        "jvm/" + app.name + "/classes-kotlin"));
-            }
+                    "jvm/" + app.name + "/libs/" + app.name + ".jar"));
             for (String dependency : allTransitiveModules(app)) {
                 AndroidModuleSpec dep = modules.get(dependency);
                 if (dep == null) {
@@ -471,6 +470,8 @@ public final class AndroidTaskFactory {
                     shrunkDir, mapping,
                     toolchain.platformJar.toAbsolutePath().normalize(),
                     mergeDexer));
+            graph.dependsOn(app.name + ":minify[" + suffix + "]",
+                    app.name + ":jar");
             graph.register(new PackageTask(app.name, suffix,
                     RootedPath.of(RootName.OUT,
                             "android/" + app.name + "/linked.apk"),

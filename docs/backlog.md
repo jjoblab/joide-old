@@ -66,6 +66,28 @@ Entrées ouvertes à l'issue de P4 :
 
 ---
 
+# Backlog (après P6)
+
+Entrées ouvertes à l'issue de P6 :
+
+- [ ] P8 : câbler l'observateur de l'arbre (core-vfs) au protocole du
+      démon — les ensembles sales explicites priment déjà sur le diff
+      disque (ADR-038) ; jusqu'au câblage, une réécriture de même
+      taille dans le même grain d'horodatage est invisible au diff
+      par signaux (détection à l'édition d'IDE réelle : la taille
+      change) — la comparaison par condensé de contenu de l'ensemble
+      de la racine est l'alternative, à mesurer avant adoption.
+- [ ] P6/P7 : quota d'espace du démon — éviction du cache de dex et de
+      l'outillage téléchargé (même travail que l'ADR-024). Évalué en
+      P6 : le périmètre fermé de la phase (feuille de route) ne le
+      portait pas ; les points d'ancrage existent désormais
+      (ToolchainLocator.defaultCacheDir() unique, répertoire de cache
+      de dex par espace) — la décision d'ajouter le quota au démon
+      avant l'IDE (P8) ou à l'import (P7) appartient au propriétaire.
+
+
+---
+
 # Backlog (après P5)
 
 Entrées ouvertes à l'issue de P5 :
@@ -75,8 +97,10 @@ Entrées ouvertes à l'issue de P5 :
       quelle en P5 ; les bibliothèques ne contribuent que leurs
       ressources) — décision à prendre avec l'import Gradle (P7)
       qui connaît la sémantique AGP.
-- [ ] P6 : éviction du cache de dex et de l'outillage téléchargé
-      (quota d'espace du démon, même travail que l'ADR-024).
+- [x] P6 : éviction du cache de dex et de l'outillage téléchargé
+      (quota d'espace du démon, même travail que l'ADR-024) — évalué
+      en P6, repris dans le bloc P6 ci-dessus (question au
+      propriétaire : avant l'IDE ou à l'import ?).
 - [ ] P5/P8 : règles de conservation R8 lues dans le manifeste
       (points d'entrée des activités et services) ; aujourd'hui la
       règle porte le paquet de l'application entier.

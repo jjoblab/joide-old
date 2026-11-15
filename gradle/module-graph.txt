@@ -15,7 +15,7 @@ core-tasks -> core-model core-store core-vfs
 core-deps -> core-platform core-store
 build-jvm -> core-tasks core-deps
 build-android -> build-jvm core-deps
-build-daemon -> build-android
+build-daemon -> build-android core-store
 import-gradle -> core-model core-deps
 tools-bench -> core-model
 tools-test ->

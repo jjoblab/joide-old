@@ -56,6 +56,20 @@ public final class ToolchainLocator {
     private final Transport transport;
 
     /**
+     * @return le répertoire de cache de l'outillage : la variable
+     *         d'environnement {@code JOIDE_TOOLCHAIN_DIR} si posée,
+     *         sinon {@code ~/.cache/joide/toolchain}
+     */
+    public static Path defaultCacheDir() {
+        String override = System.getenv("JOIDE_TOOLCHAIN_DIR");
+        if (override != null && !override.isBlank()) {
+            return Path.of(override.trim());
+        }
+        return Path.of(System.getProperty("user.home"), ".cache",
+                "joide", "toolchain");
+    }
+
+    /**
      * @param cacheDir répertoire de cache de l'outillage (partagé
      *                 entre projets)
      */
