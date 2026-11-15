@@ -1,5 +1,22 @@
 .gradle/
-build/
+# Répertoires de sortie Gradle, ancrés à la racine : le paquet source
+# jo/joide/build/jvm (module build-jvm) ne doit jamais être ignoré.
+/build/
+core-platform/build/
+core-store/build/
+core-vfs/build/
+core-model/build/
+core-tasks/build/
+core-deps/build/
+build-jvm/build/
+build-android/build/
+build-daemon/build/
+import-gradle/build/
+tools-bench/build/
+tools-test/build/
+app-android/build/
+ide-integration/build/
+build-logic/build/
 local.properties
 *.iml
 *.hprof

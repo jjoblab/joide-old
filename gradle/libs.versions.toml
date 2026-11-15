@@ -7,8 +7,17 @@ junitPlatformLauncher = "1.14.4"
 # Store JVM : pilote SQLite JDBC (implémentation bureau de BuildStore ;
 # NOTICE : Apache-2.0 pour le pilote, SQLite du domaine public embarqué)
 sqliteJdbc = "3.49.1.0"
+# Pipeline JVM (P3) : compilateur Java ecj (même artefact que le patcheur
+# :ecj-art de code-lsp, EPL-2.0 — NOTICE), compilateur Kotlin embarqué et
+# lecture des métadonnées Kotlin (Apache-2.0 — NOTICE)
+ecj = "3.40.0"
+kotlin = "2.3.0"
 
 [libraries]
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junitPlatformLauncher" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
+ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
+kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
