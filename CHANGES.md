@@ -75,6 +75,7 @@ Rien.
 | core-store (jvm) | `JournalBuildStore` (prototype alternatif, ADR-021) |
 | core-store (tests) | `JournalBuildStoreTest`, `StoreBenchmarkTest` |
 | docs | `docs/adr/021-store-alternatif-journal.md`, `docs/adr/022-ordonnanceur-file-de-pretes.md`, `docs/adr/023-decision-a-jour-et-passe-a-chaud.md`, `docs/adr/024-cache-de-sorties-adresse-par-contenu.md` |
+| Racine | `PHASE-P2-RAPPORT.md` |
 
 ## Modifiés
 
