@@ -30,13 +30,30 @@ export JAVA_HOME=<jdk-21>
 
 - Les tests du store incluent le harnais de pannes (deux cents meurtres
   de machines virtuelles filles) : comptez environ deux minutes sur
-  `:core-store:check` ; ils sont reproductibles (graine fixe, ADR-020).
+  `:core-store:check` ; ils sont reproductibles (graine fixe, ADR-020).
 - Le test de parcours à froid crée cent mille fichiers dans un
   répertoire temporaire (quelques dizaines de secondes de préparation,
   hors mesure).
 - `core-store` sépare interface (source set principal, API 28) et
   implémentation de bureau (source set `jvm`, pilote SQLite JDBC) ;
   le contrôle API 28 ne voit que le principal (ADR-019).
+
+## Notes P2
+
+- Les tests de l'ordonnanceur exécutent plus de mille builds de
+  graphes aléatoires sous perturbation des délais (exécuteur
+  turbulent à graine fixe) : comptez environ une minute sur
+  `:core-tasks:check`.
+- Le test de build à chaud au tier L crée 3 600 fichiers
+  d'entrée et 1 200 sorties dans un dossier temporaire (quelques
+  secondes de préparation, hors mesure).
+- `core-store` porte deux implémentations de `BuildStore` : SQLite
+  (défaut) et le journal à ajouts (prototype de référence,
+  ADR-021) ; `StoreBenchmarkTest` affiche les mesures comparatives
+  sans les vérifier.
+- L'interface `BuildStore` a évolué en P2 (`listCacheEntries`,
+  éviction retournant les entrées) : toute nouvelle implémentation
+  doit suivre le contrat mis à jour.
 
 ## Régénérer les signatures API 28
 
@@ -48,7 +65,7 @@ python3 scripts/generate_api28_signatures.py \
 ```
 
 Le sha256 du android.jar et les comptages attendus sont consignés dans
-`docs/toolchain.md` ; une divergence est une alerte, pas un échec
+`docs/toolchain.md` ; une divergence est une alerte, pas un échec
 silencieux.
 
 ## Régénérer les baselines

@@ -57,3 +57,40 @@ modifié, rien de supprimé.
 ## Supprimés
 
 Rien.
+
+---
+
+# CHANGES — P2 (sur la base P1)
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| core-tasks (API de tâche) | `TaskInput`, `TaskOutput`, `TaskInputs`, `TaskOutputs`, `InputDelta`, `ResourceClaim`, `TaskExecution`, `TaskDefinition`, `TaskContext`, `TaskStatus`, `TaskTimings`, `TaskResult`, `BuildEvents` |
+| core-tasks (graphe) | `TaskGraph`, `TaskGraphException`, `PathTrie` |
+| core-tasks (ordonnanceur) | `TaskScheduler`, `TaskSchedulingException`, `ResourceBudget`, `SchedulingMode`, `CriticalPaths` |
+| core-tasks (moteur) | `BuildEngine`, `ExecutionRecord`, `LastBuildState`, `TaskFingerprinter`, `OutputHasher`, `OutputCache`, `HeapSampler` |
+| core-tasks (observabilité) | `BuildReport`, `BuildScanWriter` |
+| core-tasks (tests) | `TestingTasks`, `TurbulentExecutor`, `EngineMemoryStore` (avec `Guard` de traçage), `TaskGraphTest`, `CriticalPathsTest`, `SchedulerPropertyTest`, `NoBarrierTest`, `MemoryAdmissionTest`, `BuildEngineTest`, `HotNoChangeTest`, `OutputCacheTest`, `ExecutionRecordTest` |
+| core-store (jvm) | `JournalBuildStore` (prototype alternatif, ADR-021) |
+| core-store (tests) | `JournalBuildStoreTest`, `StoreBenchmarkTest` |
+| docs | `docs/adr/021-store-alternatif-journal.md`, `docs/adr/022-ordonnanceur-file-de-pretes.md`, `docs/adr/023-decision-a-jour-et-passe-a-chaud.md`, `docs/adr/024-cache-de-sorties-adresse-par-contenu.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-store | `BuildStore` | interface étendue : `listCacheEntries()` ; `evictCacheBeyond` retourne les entrées évincées (et non plus une somme) pour permettre la suppression des fichiers (ADR-024) |
+| core-store | `SqliteBuildStore` | implémentation des deux méthodes étendues |
+| core-store | `CacheEntry` (nouveau, main) | entrée d'index du cache de sorties |
+| core-store | `SqliteBuildStoreTest` | suivi de l'interface ; suppression de sommeils superflus |
+| core-vfs | `MemoryStore` (fixture) | suivi de l'interface étendue |
+| core-tasks | `build.gradle.kts` | dépendances réelles (core-store, core-vfs, core-model) ; le module quitte l'état de squelette |
+| core-tasks | `README.md`, `package-info.java` | contenu réel P2 |
+| docs | `docs/backlog.md` | fermeture des entrées P2 (empreinte 128 bits tranchée par ADR-017 en P1 ; store alternatif tranché par ADR-021) |
+| docs | `docs/dev.md` | notes P2 |
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.
