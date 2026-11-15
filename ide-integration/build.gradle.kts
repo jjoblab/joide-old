@@ -13,6 +13,10 @@ dependencies {
     implementation(libs.celeris.android.host)
     implementation(libs.celeris.android.widgets)
     implementation(libs.celeris.lsp.protocole)
+    // Grammaires TextMate du registre de langages (lot D) : les
+    // paquets intégrés exigent la fabrique pour les langages sans
+    // analyseur écrit.
+    implementation(libs.celeris.core.syntax.grammars)
     // Serveurs de langage (code-lsp) : moteurs + socle, SANS :host
     // (ADR-044). Le compagnon ecj-art (EPL-2.0) reste au classpath
     // runtime du moteur Java — jamais compilé contre.

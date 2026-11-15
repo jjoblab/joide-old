@@ -43,10 +43,23 @@ aperçu) derrière des interfaces JoIDE — P8.
   les tampons et passe le texte complet à chaque appel. Types publics :
   `DiagnosticIde`, `SurvolIde`, `PropositionCompletion`,
   `CibleNavigation`, `EtatIndex`.
+- **`editeur`** (lot D)${NBSP}— l'éditeur celeris derrière la scène JoIDE :
+  `SceneEditeur` monte la vue d'éditeur et la couche de popups
+  (exposées comme `android.view.View` — aucun type de brique ne
+  quitte le module), détecte le langage du nom de fichier (registre
+  de la brique${NBSP}: analyseurs écrits Java/Kotlin/KTS/Groovy/XML/JSON +
+  grammaires TextMate compilées pour les autres, fabrique
+  core-syntax-grammars)${NBSP}; `SessionLangageCeleris` (interne) implémente
+  le contrat de session de l'éditeur AU-DESSUS des moteurs du lot C —
+  complétion/survol/signature par futurs, diagnostics POUSSÉS après
+  chaque édition (fusion des frappes, le dernier texte gagne), analyse
+  hors fil UI${NBSP}; `CoachJoide` (interne)${NBSP}: repli mots réservés + badges.
+  La couverture protocole non servie en P8 (symboles, plis,
+  formatage, renommage, correctifs, indices, jetons, références) rend
+  ses vides honnêtes — backlog.
 
 ## Ce qui n'y est pas (encore)
 
-- Lot D : l'éditeur celeris (SPI hôte, scène, pont vers les moteurs).
 - Lot E : l'aperçu de layouts LayoutLib (façade de rendu).
 - Lot F : rien — le module sera complet.
 

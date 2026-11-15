@@ -334,6 +334,55 @@ public final class MoteursLangage implements AutoCloseable {
     }
 
     /**
+     * Aide aux paramètres au décalage (lot D : popups de signature).
+     *
+     * @param uri    URI du document
+     * @param texte  contenu complet
+     * @param offset décalage (UTF-16) du curseur
+     * @return l'aide aux paramètres, ou vide si le moteur n'en sert pas
+     */
+    public Optional<AideSignatureIde> signature(String uri, String texte,
+            int offset) {
+        exigeOuvert();
+        Langage langage = Langage.de(uri);
+        if (langage == Langage.JAVA) {
+            String chemin = cheminLogique(uri);
+            var aide = environnement.calculerFraiche(chemin,
+                    moteur -> moteur.signatureHelp(chemin, texte, offset));
+            return aide == null ? Optional.empty()
+                    : Optional.of(new AideSignatureIde(
+                            entreesJava(aide), aide.getSignatureActive(),
+                            aide.getParametreActif()));
+        }
+        if (langage == Langage.KOTLIN) {
+            var aide = sessionKotlin(uri).signature(uri, offset);
+            if (aide == null) {
+                return Optional.empty();
+            }
+            List<AideSignatureIde.Entree> entrees = new ArrayList<>();
+            for (var signature : aide.getSignatures()) {
+                entrees.add(new AideSignatureIde.Entree(
+                        signature.getEtiquette(),
+                        List.copyOf(signature.getParametres())));
+            }
+            return Optional.of(new AideSignatureIde(entrees,
+                    aide.getSignatureActive(), aide.getParametreActif()));
+        }
+        return Optional.empty();
+    }
+
+    /** Entrées de l'aide Java (candidats du moteur). */
+    private static List<AideSignatureIde.Entree> entreesJava(
+            jo.codeide.lsp.java.interne.AideSignature aide) {
+        List<AideSignatureIde.Entree> entrees = new ArrayList<>();
+        for (var candidat : aide.getSignatures()) {
+            entrees.add(new AideSignatureIde.Entree(candidat.getLibelle(),
+                    List.copyOf(candidat.getParametres())));
+        }
+        return entrees;
+    }
+
+    /**
      * Définitions du symbole au décalage.
      *
      * @param uri    URI du document

@@ -57,6 +57,10 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 celeris-android-host = { module = "jo.celeris:android-host", version.ref = "celeris" }
 celeris-android-widgets = { module = "jo.celeris:android-widgets", version.ref = "celeris" }
 celeris-lsp-protocole = { module = "jo.celeris:lsp-protocole", version.ref = "celeris" }
+# Grammaires TextMate compilées (celeris) : les paquets intégrés du
+# registre de langages exigent la fabrique pour les langages sans
+# analyseur écrit (MIT joni/jcodings consignés dans le NOTICE).
+celeris-core-syntax-grammars = { module = "jo.celeris:core-syntax-grammars", version.ref = "celeris" }
 # Serveurs de langage (code-lsp) : moteurs + socle, SANS l'AAR :host
 # (ADR-044 : :host exposerait codeide-tooling, interdit §6.8 règle 2b).
 codelsp-java = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java", version.ref = "codelsp" }
