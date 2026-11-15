@@ -40,7 +40,11 @@ prompt revérifiés — où ils étaient faux, le dépôt a raison).
    NOTICICE à la racine — DEMANDES.md) : l'intégration est préparée et
    testable sur le checkout local ; la redistribution des artefacts
    (APK/AAB embarquant les AAR) reste bloquée tant que D-1 n'est pas
-   satisfaite.
+   satisfaite. **Amendé le 2026-11-16 (lots B-F)** : D-1 close pour
+   JoIDE — le propriétaire déclare détenir le dépôt et autorise
+   explicitement usage et redistribution par JoIDE (DEMANDES.md,
+   Historique) ; l'ajout du `LICENSE` côté brique reste une demande
+   ouverte pour l'extérieur, sans effet sur JoIDE.
 5. **Aucun type tiers ne fuit** : les briques vivent en
    `implementation` d'ide-integration ; l'API publique est
    `jo.joide.ide.*` exclusivement (ADR-010).

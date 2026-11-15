@@ -8,8 +8,10 @@
   mention (README § Licence) est « Projet interne — aucun droit accordé
   sans autorisation explicite ». Le §6.8 règle 2a exige l'ajout de
   `LICENSE` (Apache-2.0) + `NOTICE` **avant l'intégration** : voir
-  [DEMANDES.md](DEMANDES.md) D-1 (bloquante pour la redistribution des
-  artefacts).
+  [DEMANDES.md](DEMANDES.md) D-1 — **close pour JoIDE** depuis la
+  déclaration du propriétaire du 2026-11-16 (il détient le dépôt et
+  autorise explicitement usage et redistribution par JoIDE ; le fichier
+  `LICENSE` reste à ajouter côté brique pour l'extérieur).
 - **Plateforme** : bytecode Java 17 construit sur JDK 21 ; minSdk 24,
   compileSdk 37.2 ; 9 modules.
 
@@ -83,8 +85,8 @@ dépend de `code-editor`), `module-compose` (spike), `validation`
 
 Les 6 modules de rendu `com.github.jjoblab.LayoutLib:module-*:3.7.0`
 (AAR), construits depuis le checkout épinglé `720e85d`, publiés en
-Maven Local. **Condition suspensive** : la demande D-1 (LICENSE +
-NOTICE) doit être satisfaite avant toute redistribution des artefacts
-par JoIDE ; l'intégration est préparée, la livraison conditionnée.
+Maven Local. La redistribution des artefacts par JoIDE (APK/AAB) est
+autorisée par la déclaration du propriétaire du 2026-11-16 (D-1 close
+pour JoIDE — il détient le dépôt ; voir [DEMANDES.md](DEMANDES.md)).
 Aucune modification de la brique ; tout écart passe par
 [DEMANDES.md](DEMANDES.md).
