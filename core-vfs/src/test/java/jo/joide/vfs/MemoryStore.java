@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jo.joide.store.BuildStore;
+import jo.joide.store.CacheEntry;
 import jo.joide.store.FileStamp;
 import jo.joide.store.StoreException;
 import jo.joide.store.StoreWork;
@@ -20,6 +21,7 @@ final class MemoryStore implements BuildStore {
     private final Map<String, byte[]> states = new HashMap<>();
     private final Map<String, Long> durations = new HashMap<>();
     private final Map<String, Long> cacheSizes = new HashMap<>();
+    private final Map<String, Long> cacheCreated = new HashMap<>();
     private final Map<String, Long> cacheLastUsed = new HashMap<>();
     private boolean closed;
     private boolean failNextTransaction;
@@ -123,7 +125,9 @@ final class MemoryStore implements BuildStore {
     public void recordCacheEntry(String fingerprint, long sizeBytes) {
         requireOpen();
         cacheSizes.put(fingerprint, sizeBytes);
-        cacheLastUsed.put(fingerprint, System.nanoTime());
+        long now = System.nanoTime();
+        cacheCreated.put(fingerprint, now);
+        cacheLastUsed.put(fingerprint, now);
     }
 
     @Override
@@ -139,27 +143,37 @@ final class MemoryStore implements BuildStore {
     }
 
     @Override
-    public long evictCacheBeyond(long maxTotalBytes) {
+    public List<CacheEntry> listCacheEntries() {
         requireOpen();
-        List<String> byAge = new ArrayList<>(cacheSizes.keySet());
-        byAge.sort((a, b) -> Long.compare(cacheLastUsed.get(b), cacheLastUsed.get(a)));
+        List<CacheEntry> entries = new ArrayList<>();
+        for (Map.Entry<String, Long> size : cacheSizes.entrySet()) {
+            String fingerprint = size.getKey();
+            entries.add(new CacheEntry(fingerprint, size.getValue(),
+                    cacheCreated.get(fingerprint), cacheLastUsed.get(fingerprint)));
+        }
+        entries.sort((a, b) -> Long.compare(b.lastUsedNanos(), a.lastUsedNanos()));
+        return entries;
+    }
+
+    @Override
+    public List<CacheEntry> evictCacheBeyond(long maxTotalBytes) {
+        requireOpen();
+        List<CacheEntry> byAge = listCacheEntries();
         long kept = 0;
-        long freed = 0;
-        List<String> victims = new ArrayList<>();
-        for (String fingerprint : byAge) {
-            long size = cacheSizes.get(fingerprint);
-            if (kept + size <= maxTotalBytes) {
-                kept += size;
+        List<CacheEntry> victims = new ArrayList<>();
+        for (CacheEntry entry : byAge) {
+            if (kept + entry.sizeBytes() <= maxTotalBytes) {
+                kept += entry.sizeBytes();
             } else {
-                victims.add(fingerprint);
-                freed += size;
+                victims.add(entry);
             }
         }
-        for (String victim : victims) {
-            cacheSizes.remove(victim);
-            cacheLastUsed.remove(victim);
+        for (CacheEntry victim : victims) {
+            cacheSizes.remove(victim.fingerprint());
+            cacheCreated.remove(victim.fingerprint());
+            cacheLastUsed.remove(victim.fingerprint());
         }
-        return freed;
+        return victims;
     }
 
     private void requireOpen() {

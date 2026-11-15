@@ -357,39 +357,52 @@ final class SqliteBuildStore implements BuildStore {
     }
 
     @Override
-    public long evictCacheBeyond(long maxTotalBytes) {
+    public List<CacheEntry> listCacheEntries() {
+        requireOpen();
+        List<CacheEntry> entries = new ArrayList<>();
+        try (PreparedStatement select = connection.prepareStatement(
+                "SELECT fingerprint, size_bytes, created_ns, last_used_ns"
+                        + " FROM cache_index ORDER BY last_used_ns DESC");
+             ResultSet result = select.executeQuery()) {
+            while (result.next()) {
+                entries.add(new CacheEntry(result.getString(1), result.getLong(2),
+                        result.getLong(3), result.getLong(4)));
+            }
+            return entries;
+        } catch (SQLException e) {
+            throw new StoreException("cannot list cache entries", e);
+        }
+    }
+
+    @Override
+    public List<CacheEntry> evictCacheBeyond(long maxTotalBytes) {
         requireOpen();
         return runAtomically(store -> {
             try (PreparedStatement select = connection.prepareStatement(
-                    "SELECT fingerprint, size_bytes FROM cache_index"
-                            + " ORDER BY last_used_ns DESC");
+                    "SELECT fingerprint, size_bytes, created_ns, last_used_ns"
+                            + " FROM cache_index ORDER BY last_used_ns DESC");
                  PreparedStatement drop = connection.prepareStatement(
                          "DELETE FROM cache_index WHERE fingerprint = ?")) {
-                List<String> victims = new ArrayList<>();
-                List<Long> victimSizes = new ArrayList<>();
+                List<CacheEntry> victims = new ArrayList<>();
                 long kept = 0;
                 try (ResultSet result = select.executeQuery()) {
                     while (result.next()) {
-                        String fingerprint = result.getString(1);
-                        long size = result.getLong(2);
-                        if (kept + size <= maxTotalBytes) {
-                            kept += size;
+                        CacheEntry entry = new CacheEntry(result.getString(1),
+                                result.getLong(2), result.getLong(3),
+                                result.getLong(4));
+                        if (kept + entry.sizeBytes() <= maxTotalBytes) {
+                            kept += entry.sizeBytes();
                         } else {
-                            victims.add(fingerprint);
-                            victimSizes.add(size);
+                            victims.add(entry);
                         }
                     }
                 }
-                for (String victim : victims) {
-                    drop.setString(1, victim);
+                for (CacheEntry victim : victims) {
+                    drop.setString(1, victim.fingerprint());
                     drop.addBatch();
                 }
                 drop.executeBatch();
-                long freed = 0;
-                for (long size : victimSizes) {
-                    freed += size;
-                }
-                return freed;
+                return victims;
             } catch (SQLException e) {
                 throw new StoreException("cannot evict cache entries", e);
             }

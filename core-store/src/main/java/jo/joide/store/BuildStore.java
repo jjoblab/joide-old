@@ -126,11 +126,20 @@ public interface BuildStore extends AutoCloseable {
     Long cacheEntrySize(String fingerprint);
 
     /**
+     * @return toutes les entrées de l'index du cache de sorties,
+     *         ordonnées de l'utilisation la plus récente à la plus
+     *         ancienne
+     */
+    List<CacheEntry> listCacheEntries();
+
+    /**
      * Évince les entrées du cache les moins récemment utilisées
-     * jusqu'à passer sous le plafond.
+     * jusqu'à passer sous le plafond, puis les retourne pour que
+     * l'appelant supprime leurs fichiers.
      *
      * @param maxTotalBytes plafond de la taille totale des entrées
-     * @return la somme des tailles évincées
+     * @return les entrées évincées, de la moins récemment utilisée
+     *         à la plus récente
      */
-    long evictCacheBeyond(long maxTotalBytes);
+    List<CacheEntry> evictCacheBeyond(long maxTotalBytes);
 }

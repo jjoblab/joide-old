@@ -129,19 +129,22 @@ class SqliteBuildStoreTest {
     }
 
     @Test
-    void cacheIndexEvictsLeastRecentlyUsed(@TempDir Path dir) throws InterruptedException {
+    void cacheIndexEvictsLeastRecentlyUsed(@TempDir Path dir) {
         try (BuildStore store = openStore(dir)) {
             store.recordCacheEntry("f-a", 100);
-            Thread.sleep(2L);
             store.recordCacheEntry("f-b", 300);
-            Thread.sleep(2L);
             store.recordCacheEntry("f-c", 200);
             store.touchCacheEntry("f-a");
-            Thread.sleep(2L);
             // plafond 400 : les plus récemment utilisés sont a (touché)
             // puis c ; b, le plus ancien, est évincé (100 + 200 <= 400)
-            long freed = store.evictCacheBeyond(400);
-            assertEquals(300, freed);
+            List<CacheEntry> entries = store.listCacheEntries();
+            assertEquals(List.of("f-a", "f-c", "f-b"),
+                    entries.stream().map(CacheEntry::fingerprint).toList());
+            List<CacheEntry> evicted = store.evictCacheBeyond(400);
+            assertEquals(List.of("f-b"),
+                    evicted.stream().map(CacheEntry::fingerprint).toList());
+            assertEquals(300L,
+                    evicted.stream().mapToLong(CacheEntry::sizeBytes).sum());
             assertEquals(100L, store.cacheEntrySize("f-a"));
             assertEquals(200L, store.cacheEntrySize("f-c"));
             assertNull(store.cacheEntrySize("f-b"));
