@@ -1,19 +1,59 @@
 # ide-integration
 
-Adaptateurs vers les briques existantes (éditeur, serveurs de langage, aperçu) derrière des interfaces JoIDE — P8.
+Adaptateurs vers les briques existantes (éditeur, serveurs de langage,
+aperçu) derrière des interfaces JoIDE — P8.
 
 | | |
 |---|---|
 | Paquet | `jo.joide.ide` |
-| Nature | JVM pure |
+| Nature | Bibliothèque Android (ADR-045) |
 | Dépendances JoIDE | core-model, build-daemon |
 | Phase de remplissage | P8 |
 
 ## Invariants
 
-Placeholder en P0 : aucun type tiers ne fuit dans l'API des modules core.
+- **Aucun type tiers ne fuit dans l'API publique** (ADR-044) : les
+  briques vivent en `implementation`, l'API publique est
+  `jo.joide.ide.*` exclusivement. La vue brute des instantanés
+  (`LanguageModelSnapshot.raw()`) n'est pas compilable hors du module.
+- **Jamais de mutation sous les pieds d'un lecteur** (§6.8 règle 3) :
+  les instantanés sont immuables, remplacés par publication.
+- **CIDX réutilisé, jamais réécrit** (§6.8.5) : l'index disque de
+  code-lsp indexe l'union des classpaths du projet.
+- Aucune modification des briques : tout écart passe par
+  `docs/integration/DEMANDES.md`.
 
-## Ce qui n'y est pas (P0)
+## Contenu (état du lot C)
 
-Squelette : pas de logique. Le contenu arrive à sa phase (ADR-011) ; la règle
-de dépendances et les contrôles (langue, API 28) s'appliquent dès maintenant.
+- **`sync`** (lot B) — synchronisation du modèle de langage : le
+  workspace JoIDE (core-model) et la résolution des externes (résolveur
+  P4) deviennent un instantané « ProjetLsp » v11 immuable par le
+  convertisseur de la brique ; empreintes, ordre canonique, avertissements
+  — jamais rien en silence. `LanguageModelSync`, `ProjetLspAdapter`,
+  `LanguageModelSnapshot` (vue JoIDE), `ExternalResolution`,
+  `AndroidPlatform`, `ModuleDirectories`.
+- **`langages`** (lot C) — les moteurs de langage derrière une façade
+  JoIDE : `MoteursLangage` monte le moteur Java (contextes par module
+  nourris à chaque sync, routeur fichier→module par racine la plus
+  profonde, rejeu d'époque « zéro réponse périmée »), les sessions
+  Kotlin (une session étanche PAR module) et la session XML (espace),
+  plus l'index disque CIDX (union indexable des jars + plateformes,
+  budget auto max(30 Mo, 512 Kio/entrée)). Requêtes en tirage :
+  `diagnostiquer`, `survol`, `completer`, `definition` — l'hôte détient
+  les tampons et passe le texte complet à chaque appel. Types publics :
+  `DiagnosticIde`, `SurvolIde`, `PropositionCompletion`,
+  `CibleNavigation`, `EtatIndex`.
+
+## Ce qui n'y est pas (encore)
+
+- Lot D : l'éditeur celeris (SPI hôte, scène, pont vers les moteurs).
+- Lot E : l'aperçu de layouts LayoutLib (façade de rendu).
+- Lot F : rien — le module sera complet.
+
+## Mode de consommation des briques
+
+Binaire, depuis le Maven Local des checkouts épinglés (ADR-044) :
+celeris 1.1.0@f9001fc, code-lsp 1.15.0@657d787 (SANS l'AAR `:host`,
+ADR-044), LayoutLib 3.7.0@720e85d. Le compagnon ecj patché ART
+(EPL-2.0) reste au classpath runtime uniquement — jamais compilé
+contre.
