@@ -29,6 +29,7 @@ agp = "9.5.0"
 # d'instantanés (Apache-2.0 — NOTICE) : dépendance de compilation
 # explicite, version alignée sur la brique (1.11.0).
 kotlinxCoroutines = "1.11.0"
+kxml2 = "2.3.0"
 # Briques du propriétaire (§6.8, docs/integration/) : versions publiées,
 # consommées en dépendances binaires depuis le checkout épinglé (publication
 # Maven Local ; jamais de modification des briques — DEMANDES.md).
@@ -69,6 +70,9 @@ codelsp-xml = { module = "jo.codeide.lsp.xml:jo-codeide-lsp-xml", version.ref = 
 codelsp-model = { module = "jo.codeide.lsp.model:jo-codeide-lsp-model", version.ref = "codelsp" }
 codelsp-index = { module = "jo.codeide.lsp.index:jo-codeide-lsp-index", version.ref = "codelsp" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "kotlinxCoroutines" }
+# kxml2 : implémentation XmlPull pour les TESTS JVM des résolveurs
+# LayoutLib (le framework Android la fournit sur appareil) — MIT.
+kxml2 = { module = "net.sf.kxml:kxml2", version.ref = "kxml2" }
 # Compagnon ecj patché ART (EPL-2.0, NOTICE) : classpath RUNTIME du moteur
 # Java uniquement, jamais compilé contre — séparation de licences.
 codelsp-ecj-art = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java-ecj-art", version.ref = "codelsp" }

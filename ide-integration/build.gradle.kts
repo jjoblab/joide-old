@@ -29,6 +29,10 @@ dependencies {
     // Lot C : le moteur Java tourne réellement dans les tests (ecj
     // patché ART au classpath de test — EPL-2.0, jamais compilé contre).
     testImplementation(libs.codelsp.ecj.art)
+    // Parseur XmlPull des tests JVM des résolveurs de la
+    // brique LayoutLib (lot E) ; sur appareil le framework
+    // fournit l'implémentation.
+    testImplementation(libs.kxml2)
     // Le socle :model publie coroutines en runtime seulement ; la
     // synchronisation lit le StateFlow du dépôt d'instantanés.
     implementation(libs.kotlinx.coroutines.core)
