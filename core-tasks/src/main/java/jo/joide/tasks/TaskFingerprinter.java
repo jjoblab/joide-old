@@ -1,6 +1,7 @@
 package jo.joide.tasks;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -101,6 +102,17 @@ public final class TaskFingerprinter {
                 canonical.append("property\n").append(escape(property.name()))
                         .append('\n').append(escape(property.value())).append('\n');
             }
+        }
+        // propriétés scalaires : triées par nom, l'ordre d'écriture ne
+        // doit pas changer l'empreinte
+        List<String> propertyNames = new ArrayList<>(
+                task.inputs().properties().keySet());
+        java.util.Collections.sort(propertyNames);
+        for (String name : propertyNames) {
+            canonical.append("property\n").append(escape(name))
+                    .append('\n')
+                    .append(escape(task.inputs().properties().get(name)))
+                    .append('\n');
         }
         List<TaskOutput> outputs = task.outputs().asList();
         for (int i = 0; i < outputs.size(); i++) {

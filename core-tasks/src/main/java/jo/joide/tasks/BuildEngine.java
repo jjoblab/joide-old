@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import jo.joide.platform.CancelToken;
+import jo.joide.platform.Hashing;
 import jo.joide.platform.Clock;
 import jo.joide.platform.Problem;
 import jo.joide.platform.RootName;
@@ -313,6 +314,17 @@ public final class BuildEngine {
                 new ConcurrentHashMap<>();
         private final Map<String, Map<String, String>> freshSignals =
                 new ConcurrentHashMap<>();
+        /** Hachages de contenu des sorties écrites par les tâches de
+         *  CE build (fichiers et arbres de dossiers) : une entrée qui
+         *  recouvre une sortie écrite doit être évaluée par contenu,
+         *  jamais par signaux — un fichier réécrit de même taille
+         *  pendant la passe est indistinguable par signaux. */
+        private final java.util.Map<RootedPath, String> writtenOutputHashes =
+                new java.util.concurrent.ConcurrentHashMap<>();
+        /** Dossiers de sortie écrits pendant ce build. */
+        private final java.util.Set<RootedPath> writtenOutputDirs =
+                java.util.concurrent.ConcurrentHashMap.newKeySet();
+
         private final Map<String, Map<String, String>> freshDirHashes =
                 new ConcurrentHashMap<>();
 
@@ -321,7 +333,23 @@ public final class BuildEngine {
             this.graph = graph;
             this.dirty = dirty;
             this.currentSnapshots = currentSnapshots;
+            for (String name : graph.names()) {
+                for (TaskOutput output : graph.task(name).outputs().asList()) {
+                    if (output instanceof TaskOutput.FileOutput file) {
+                        graphFileOutputs.add(file.path());
+                    } else if (output instanceof TaskOutput.DirOutput dir) {
+                        graphDirOutputs.add(dir.path());
+                    }
+                }
+            }
         }
+
+        /** Sorties fichier déclarées par le graphe (règle symétrique). */
+        private final java.util.Set<RootedPath> graphFileOutputs =
+                java.util.concurrent.ConcurrentHashMap.newKeySet();
+        /** Sorties dossier déclarées par le graphe (règle symétrique). */
+        private final java.util.Set<RootedPath> graphDirOutputs =
+                java.util.concurrent.ConcurrentHashMap.newKeySet();
 
         TaskResult step(TaskDefinition task, CancelToken cancellation) {
             long start = clock.nanoTime();
@@ -379,6 +407,7 @@ public final class BuildEngine {
                                 record == null ? 0 : record.durationMs());
                         lastState.put(restored);
                         changedRecords.add(restored);
+                        recordWrittenOutputs(task, hashed);
                         outputCache.touch(fingerprint);
                         long afterRestore = clock.nanoTime();
                         TaskTimings timings = new TaskTimings(
@@ -447,6 +476,7 @@ public final class BuildEngine {
                     durationMs);
             lastState.put(executed);
             changedRecords.add(executed);
+            recordWrittenOutputs(task, hashed);
             List<Problem> warnings = new ArrayList<>(context.reports);
             warnings.addAll(ok.warnings());
             try {
@@ -570,7 +600,8 @@ public final class BuildEngine {
                               List<FileStamp> stamps, CancelToken cancellation)
                 throws IOException {
             cancellation.checkCancelled();
-            List<String> subdirs = new ArrayList<>();
+            List<Path> subdirPaths = new ArrayList<>();
+            List<String> subdirRelatives = new ArrayList<>();
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
                 for (Path child : stream) {
                     cancellation.checkCancelled();
@@ -581,7 +612,12 @@ public final class BuildEngine {
                     String relative = relativeDir.isEmpty()
                             ? name : relativeDir + "/" + name;
                     if (attributes.isDirectory()) {
-                        subdirs.add(relative);
+                        // le chemin absolu du sous-dossier, jamais son
+                        // chemin relatif : à profondeur 2, résoudre le
+                        // relatif contre le dossier courant créerait
+                        // des segments dupliqués (a/a/b)
+                        subdirPaths.add(child);
+                        subdirRelatives.add(relative);
                         continue;
                     }
                     stamps.add(new FileStamp(relative, attributes.size(),
@@ -589,8 +625,9 @@ public final class BuildEngine {
                             fileKeyOf(attributes), null));
                 }
             }
-            for (String subdir : subdirs) {
-                scanInto(directory.resolve(subdir), subdir, stamps, cancellation);
+            for (int i = 0; i < subdirPaths.size(); i++) {
+                scanInto(subdirPaths.get(i), subdirRelatives.get(i),
+                        stamps, cancellation);
             }
         }
 
@@ -645,6 +682,87 @@ public final class BuildEngine {
             return true;
         }
 
+        /** Chevauchement dossier ↔ sorties du graphe. */
+        private boolean dirOverlapsGraphOutput(RootedPath dir) {
+            for (RootedPath output : graphDirOutputs) {
+                if (!output.root().equals(dir.root())) {
+                    continue;
+                }
+                String outputRelative = output.relative();
+                String dirRelative = dir.relative();
+                if (outputRelative.equals(dirRelative)
+                        || outputRelative.startsWith(dirRelative + "/")
+                        || dirRelative.startsWith(outputRelative + "/")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Le chemin est-il à l'intérieur d'une sortie dossier du graphe ? */
+        private boolean coveredByGraphDirOutput(RootedPath path) {
+            for (RootedPath dir : graphDirOutputs) {
+                if (dir.root().equals(path.root())
+                        && path.relative().startsWith(dir.relative() + "/")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /** Consigne les hachages de contenu des sorties d'une tâche. */
+        private void recordWrittenOutputs(TaskDefinition task,
+                                          OutputHasher.Result hashed) {
+            for (TaskOutput output : task.outputs().asList()) {
+                RootedPath path;
+                if (output instanceof TaskOutput.FileOutput file) {
+                    path = file.path();
+                } else if (output instanceof TaskOutput.DirOutput dir) {
+                    path = dir.path();
+                    writtenOutputDirs.add(path);
+                } else {
+                    continue;
+                }
+                String hash = hashed.hashes().get(path.toString());
+                if (hash != null) {
+                    writtenOutputHashes.put(path, hash);
+                }
+            }
+        }
+
+        /**
+         * Hachage d'arbre par contenu (mêmes règles que le hachage de
+         * sorties) : utilisé pour les entrées de dossier qui recouvrent
+         * des sorties écrites pendant la passe.
+         */
+        private String contentTreeHash(RootedPath dir) {
+            Path root = roots.resolve(dir);
+            if (!Files.isDirectory(root)) {
+                return null;
+            }
+            java.util.TreeMap<String, String> fileHashes =
+                    new java.util.TreeMap<>();
+            try (var walk = Files.walk(root)) {
+                for (Path file : walk.filter(Files::isRegularFile)
+                        .sorted().toList()) {
+                    String relative = root.relativize(file).toString()
+                            .replace('\\', '/');
+                    fileHashes.put(relative,
+                            hasher.hashStable(file).toHex());
+                }
+            } catch (IOException unreadable) {
+                return null;
+            }
+            StringBuilder combined = new StringBuilder();
+            for (java.util.Map.Entry<String, String> entry
+                    : fileHashes.entrySet()) {
+                combined.append(entry.getKey()).append('\n')
+                        .append(entry.getValue()).append('\n');
+            }
+            return Hashing.toHex(Hashing.sha256(combined.toString()
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        }
+
         private boolean isDirty(RootedPath path) {
             DirtySet dirtySet = dirty.get(path.root());
             if (dirtySet == null) {
@@ -689,6 +807,32 @@ public final class BuildEngine {
                     removed.add(path);
                 }
             }
+            // entrées de dossier : tout fichier sale SITUÉ SOUS le
+            // dossier fait partie du delta de la tâche — c'est le
+            // contrat annoncé du delta par fichier, les compilateurs
+            // s'appuient dessus sans maintenir d'état parallèle
+            for (RootedPath dir : task.inputs().dirPaths()) {
+                DirtySet dirtySet = dirty.get(dir.root());
+                if (dirtySet == null) {
+                    continue;
+                }
+                String prefix = dir.relative() + "/";
+                for (String file : dirtySet.added()) {
+                    if (file.startsWith(prefix)) {
+                        added.add(RootedPath.of(dir.root(), file));
+                    }
+                }
+                for (String file : dirtySet.modified()) {
+                    if (file.startsWith(prefix)) {
+                        modified.add(RootedPath.of(dir.root(), file));
+                    }
+                }
+                for (String file : dirtySet.removed()) {
+                    if (file.startsWith(prefix)) {
+                        removed.add(RootedPath.of(dir.root(), file));
+                    }
+                }
+            }
             return InputDelta.of(added, modified, removed);
         }
 
@@ -707,6 +851,15 @@ public final class BuildEngine {
                         if (hash != null) {
                             return hash;
                         }
+                    }
+                    String written = writtenOutputHashes.get(path);
+                    if (written != null) {
+                        return written;
+                    }
+                    if (coveredByGraphDirOutput(path)) {
+                        // sous une sortie du graphe : écrit potentiel
+                        // pendant la passe, jamais lu dans un instantané
+                        return null;
                     }
                     boolean stale = isDirty(path);
                     if (!stale) {
@@ -754,6 +907,12 @@ public final class BuildEngine {
                             return signals;
                         }
                     }
+                    if (writtenOutputHashes.containsKey(path)
+                            || coveredByGraphDirOutput(path)) {
+                        // sous une sortie du graphe : relecture fraîche
+                        // imposée, jamais les signaux d'un instantané
+                        return null;
+                    }
                     Map<String, String> computed = isDirty(path) ? null
                             : signalsByRoot.get(path.root().id());
                     if (computed != null) {
@@ -783,6 +942,26 @@ public final class BuildEngine {
                         if (hash != null) {
                             return hash;
                         }
+                    }
+                    String written = writtenOutputHashes.get(path);
+                    if (written != null && writtenOutputDirs.contains(path)) {
+                        // sortie de dossier de ce build : son hachage
+                        // d'arbre par contenu fait foi
+                        return written;
+                    }
+                    if (dirOverlapsGraphOutput(path)) {
+                        // le dossier recouvre (ou est recouvert par) une
+                        // sortie du graphe : hachage par contenu — règle
+                        // identique à chaque build, qu'une tâche ait ou
+                        // non réécrit la sortie pendant la passe
+                        String contentTree = contentTreeHash(path);
+                        if (contentTree != null) {
+                            freshDirHashes
+                                    .computeIfAbsent(path.root().id(),
+                                            key -> new ConcurrentHashMap<>())
+                                    .put(path.relative(), contentTree);
+                        }
+                        return contentTree;
                     }
                     VfsSnapshot current = currentSnapshots.get(path.root());
                     if (current != null) {
