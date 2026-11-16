@@ -712,13 +712,7 @@ public final class VueAgent extends LinearLayout {
 
     /** Les jetons compacts (« 940 », « 8.4k », « 1.2M ») du pied. */
     private static String jetonsCompacts(long n) {
-        if (n < 1_000) {
-            return String.valueOf(n);
-        }
-        if (n < 1_000_000) {
-            return (n / 1_000) + "." + (n % 1_000) / 100 + "k";
-        }
-        return (n / 1_000_000) + "." + (n % 1_000_000) / 100_000 + "M";
+        return EtatAgentChat.jetonsCompacts(n);
     }
 
     private View carteErreur(Carte carte) {

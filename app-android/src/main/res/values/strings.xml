@@ -101,6 +101,8 @@
     <string name="agent_usages_minute_requetes">Requests / min</string>
     <string name="agent_usages_minute_jetons">Tokens / min</string>
     <string name="agent_usages_sans_plafond">No learned ceiling yet — the regulator learns from the limits the providers state.</string>
+    <string name="agent_usages_occupation">%1$d%%</string>
+    <string name="agent_usages_conversation_compacte">This conversation — %1$s in · %2$s out · %3$s cached</string>
     <string name="agent_usages_rafraichir">Refresh</string>
     <string name="agent_modeles_recherche">Search a model…</string>
     <string name="agent_modeles_favoris">Favorites</string>

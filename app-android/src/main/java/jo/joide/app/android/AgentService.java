@@ -291,6 +291,27 @@ public final class AgentService extends Service {
             return banc == null ? 0 : banc.taille();
         }
 
+        /**
+         * L'occupation des fenêtres du modèle courant (lot T, ADR-065
+         * fermant l'écart consigné par l'ADR-064) : {requêtes,
+         * jetons}, 0..1, 0 sans plafond connu — l'écran Usages en
+         * tire ses bandes colorées, l'alerte précède le 429.
+         *
+         * @return {occupationRpm, occupationTpm}
+         */
+        public double[] occupationsModele() {
+            FournisseurBascule bascule;
+            String modeleCourant;
+            synchronized (AgentService.this) {
+                bascule = fournisseurBascule;
+                modeleCourant = modele;
+            }
+            if (bascule == null) {
+                return new double[]{0, 0};
+            }
+            return bascule.occupationModele(modeleCourant);
+        }
+
         // ---- les connexions MCP (lot S, ADR-064 câblant l'ADR-063) ----
 
         /**

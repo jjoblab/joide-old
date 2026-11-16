@@ -143,6 +143,33 @@ public final class FournisseurBascule implements FournisseurLlm {
     }
 
     /**
+     * L'occupation la plus HAUTE des fenêtres du modèle courant
+     * (l'écran Usages la dessine, lot T — ADR-064 avait consigné
+     * l'écart) : {occupation requêtes, occupation jetons}, 0..1, 0
+     * sans plafond connu — une alerte sans référence mesurée serait
+     * une invention, la bande reste normale.
+     *
+     * @param modele le modèle courant (le filtre des régulateurs)
+     * @return {rpm, tpm} en fractions
+     */
+    public synchronized double[] occupationModele(String modele) {
+        double rpm = 0;
+        double tpm = 0;
+        String suffixe = modele == null ? "" : "|" + modele;
+        for (Map.Entry<String, RegulateurDebit> entree
+                : regulateurs.entrySet()) {
+            if (!suffixe.isEmpty()
+                    && !entree.getKey().endsWith(suffixe)) {
+                continue;
+            }
+            RegulateurDebit regulateur = entree.getValue();
+            rpm = Math.max(rpm, regulateur.occupationRpm());
+            tpm = Math.max(tpm, regulateur.occupationTpm(0));
+        }
+        return new double[]{rpm, tpm};
+    }
+
+    /**
      * L'échec quand toutes les clés sont au banc : attendable si la
      * première clé qui revient n'attend qu'une minute de débit
      * courte, agrégé et conseillé sinon.

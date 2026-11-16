@@ -101,6 +101,8 @@
     <string name="agent_usages_minute_requetes">Requêtes / min</string>
     <string name="agent_usages_minute_jetons">Jetons / min</string>
     <string name="agent_usages_sans_plafond">Aucun plafond appris — le régulateur apprend des limites que les fournisseurs énoncent.</string>
+    <string name="agent_usages_occupation">%1$d\u00a0%%</string>
+    <string name="agent_usages_conversation_compacte">Cette conversation — %1$s entrées · %2$s sorties · %3$s cache</string>
     <string name="agent_usages_rafraichir">Actualiser</string>
     <string name="agent_modeles_recherche">Rechercher un modèle…</string>
     <string name="agent_modeles_favoris">Favoris</string>

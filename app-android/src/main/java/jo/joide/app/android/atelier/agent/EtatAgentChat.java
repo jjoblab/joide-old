@@ -536,6 +536,25 @@ public final class EtatAgentChat {
         return lignes;
     }
 
+    /**
+     * Les jetons compacts du pied d'usage (lot T, la manière
+     * CodeAssist) : « 940 », « 8.4k », « 1.2M » — assez pour lire une
+     * tendance, court pour une légende d'une ligne.
+     *
+     * @param n le nombre de jetons
+     * @return la forme compacte
+     */
+    public static String jetonsCompacts(long n) {
+        if (n < 1_000) {
+            return String.valueOf(n);
+        }
+        if (n < 1_000_000) {
+            return (n / 1_000) + "." + (n % 1_000) / 100 + "k";
+        }
+        return (n / 1_000_000) + "." + (n % 1_000_000) / 100_000
+                + "M";
+    }
+
     private static boolean questionsOuvertes(Carte carte) {
         for (Question q : carte.questions) {
             if (q.choix == -2) {

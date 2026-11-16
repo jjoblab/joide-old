@@ -2003,27 +2003,111 @@ public final class EcranAtelier extends Activity {
     }
 
     /**
-     * L'écran Usages (lot S, ADR-064) : l'usage cumulé de la
-     * conversation et l'état du banc de clés — ce qui est facturé
-     * est facturé, ce qui est au banc est montré.
+     * L'écran Usages (lot T, ADR-065 — la manière CodeAssist) : un
+     * COMPTEUR par fenêtre plafonnée (requêtes, jetons), sa bande
+     * colorée et son pourcentage, puis les trois pieds de la
+     * conversation et l'état du banc de clés. Le popup ancré porte
+     * son bouton d'actualisation — l'occupation se relit sans rouvrir.
      */
     private void ouvrirUsagesAgent() {
-        if (agent == null) {
+        if (agent == null || vueAgent == null) {
             return;
         }
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        int marge = GraphiteVue.dp(this, 6);
+        colonne.setPadding(marge, marge, marge, marge);
+
+        // ---- l'en-tête : titre, actualiser, fermer (la manière
+        // CodeAssist — le dialogue se suffit, jamais un seul OK) ----
+        LinearLayout tete = new LinearLayout(this);
+        tete.setOrientation(LinearLayout.HORIZONTAL);
+        tete.setGravity(Gravity.CENTER_VERTICAL);
+        TextView titre = new TextView(this);
+        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
+        titre.setTextColor(palette.texte);
+        titre.setText(R.string.agent_usages_titre);
+        tete.addView(titre, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        Icone rafraichir = new Icone(this);
+        rafraichir.setGlyphe(Icone.Glyphe.RAFRAICHIR);
+        rafraichir.setCouleur(palette.texteSecondaire);
+        rafraichir.setClickable(true);
+        rafraichir.setContentDescription(
+                getString(R.string.agent_usages_rafraichir));
         LinearLayout corps = new LinearLayout(this);
         corps.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(this, 4);
-        corps.setPadding(marge, marge, marge, marge);
+        rafraichir.setOnClickListener(vue -> {
+            corps.removeAllViews();
+            construireUsages(corps);
+        });
+        tete.addView(rafraichir, new LinearLayout.LayoutParams(
+                GraphiteVue.dp(this, 30),
+                GraphiteVue.dp(this, 30)));
+        Icone fermer = new Icone(this);
+        fermer.setGlyphe(Icone.Glyphe.CROIX);
+        fermer.setCouleur(palette.texteSecondaire);
+        fermer.setClickable(true);
+        fermer.setContentDescription(getString(R.string.action_annuler));
+        tete.addView(fermer, new LinearLayout.LayoutParams(
+                GraphiteVue.dp(this, 30),
+                GraphiteVue.dp(this, 30)));
+        colonne.addView(tete);
+        colonne.addView(corps);
+        construireUsages(corps);
 
+        android.widget.PopupWindow[] fenetre =
+                new android.widget.PopupWindow[1];
+        fermer.setOnClickListener(vue -> {
+            if (fenetre[0] != null) {
+                fenetre[0].dismiss();
+            }
+        });
+        fenetre[0] = PopupAncre.montrer(vueAgent.ancreMenu(), palette,
+                colonne, 300);
+    }
+
+    /** Le corps de l'écran Usages : compteurs, pieds, banc. */
+    private void construireUsages(LinearLayout corps) {
+        // ---- les compteurs du régulateur (l'occupation des fenêtres
+        // du modèle courant — la bande prévient AVANT le 429) ----
+        double[] occupations = agent.occupationsModele();
+        double requetes = occupations[0];
+        double jetons = occupations[1];
+        boolean plafondConnu = requetes > 0 || jetons > 0;
+        if (plafondConnu) {
+            ligneCompteur(corps,
+                    getString(R.string.agent_usages_minute_requetes),
+                    requetes);
+            ligneCompteur(corps,
+                    getString(R.string.agent_usages_minute_jetons),
+                    jetons);
+        } else {
+            TextView sansPlafond = new TextView(this);
+            GraphiteVue.typographie(sansPlafond, Graphite.LEGENDE);
+            sansPlafond.setTextColor(palette.texteEstompe);
+            sansPlafond.setText(R.string.agent_usages_sans_plafond);
+            sansPlafond.setPadding(0, GraphiteVue.dp(this, 6), 0,
+                    GraphiteVue.dp(this, 4));
+            corps.addView(sansPlafond);
+        }
+
+        // ---- les trois pieds de la conversation (ce qui est facturé
+        // est facturé — la légende compacte du précédent CodeAssist)
         jo.joide.agent.UsageLlm usage = agent.usageConversation();
         TextView conversation = new TextView(this);
         GraphiteVue.typographie(conversation, Graphite.CORPS);
         conversation.setTextColor(palette.texte);
-        conversation.setText(getString(R.string.agent_usages_conversation,
-                usage.entrees, usage.sorties, usage.lecturesCache));
+        conversation.setText(getString(
+                R.string.agent_usages_conversation_compacte,
+                EtatAgentChat.jetonsCompacts(usage.entrees),
+                EtatAgentChat.jetonsCompacts(usage.sorties),
+                EtatAgentChat.jetonsCompacts(usage.lecturesCache)));
+        conversation.setPadding(0, GraphiteVue.dp(this, 10), 0,
+                GraphiteVue.dp(this, 4));
         corps.addView(conversation);
 
+        // ---- l'état du banc de clés ----
         int taille = agent.tailleBanc();
         TextView banc = new TextView(this);
         GraphiteVue.typographie(banc, Graphite.CORPS);
@@ -2031,7 +2115,8 @@ public final class EcranAtelier extends Activity {
         banc.setText(taille == 0
                 ? getString(R.string.agent_usages_banc_vide)
                 : getString(R.string.agent_usages_banc, taille));
-        banc.setPadding(0, GraphiteVue.dp(this, 12), 0, 0);
+        banc.setPadding(0, GraphiteVue.dp(this, 8), 0,
+                GraphiteVue.dp(this, 2));
         corps.addView(banc);
 
         for (var assise : agent.bancParRaison().entrySet()) {
@@ -2044,14 +2129,73 @@ public final class EcranAtelier extends Activity {
             ligne.setPadding(0, GraphiteVue.dp(this, 3), 0, 0);
             corps.addView(ligne);
         }
+    }
 
-        ScrollView defilement = new ScrollView(this);
-        defilement.addView(corps, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT));
-        Dialogue.saisieTexte(this, palette,
-                getString(R.string.agent_usages_titre), defilement,
-                R.string.action_ok, null);
+    /** Un compteur d'occupation : nom, pourcentage, sa bande colorée. */
+    private void ligneCompteur(LinearLayout corps, String nom,
+                               double fraction) {
+        LinearLayout rangee = new LinearLayout(this);
+        rangee.setOrientation(LinearLayout.HORIZONTAL);
+        rangee.setGravity(Gravity.CENTER_VERTICAL);
+        rangee.setPadding(0, GraphiteVue.dp(this, 6), 0, 0);
+        TextView nomVue = new TextView(this);
+        GraphiteVue.typographie(nomVue, Graphite.CORPS);
+        nomVue.setTextColor(palette.texte);
+        nomVue.setText(nom);
+        rangee.addView(nomVue, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView pourcentage = new TextView(this);
+        GraphiteVue.typographie(pourcentage, Graphite.LEGENDE);
+        pourcentage.setTextColor(palette.texteEstompe);
+        pourcentage.setText(getString(
+                R.string.agent_usages_occupation,
+                (int) Math.round(fraction * 100)));
+        rangee.addView(pourcentage);
+        corps.addView(rangee);
+        corps.addView(barreUsage(fraction));
+    }
+
+    /**
+     * La bande d'usage : une piste pilule, un remplissage qui suit la
+     * fraction — la couleur dit la bande (accent, alerte, erreur),
+     * l'alerte précède l'erreur (BandesUsage, ADR-062).
+     */
+    private View barreUsage(double fraction) {
+        float rempli = (float) Math.max(0.02,
+                Math.min(1, fraction));
+        LinearLayout barre = new LinearLayout(this);
+        barre.setOrientation(LinearLayout.HORIZONTAL);
+        android.graphics.drawable.GradientDrawable piste =
+                new android.graphics.drawable.GradientDrawable();
+        piste.setColor(palette.surfaceHaute);
+        piste.setCornerRadius(GraphiteVue.dp(this, 3));
+        barre.setBackground(piste);
+        barre.setClipToOutline(true);
+        View remplissage = new View(this);
+        jo.joide.agent.BandesUsage.Bande bande =
+                jo.joide.agent.BandesUsage.bandeDe(fraction);
+        int couleur = switch (bande) {
+            case CRITIQUE -> palette.erreur;
+            case ATTENTION -> palette.alerte;
+            default -> palette.accent;
+        };
+        android.graphics.drawable.GradientDrawable jauge =
+                new android.graphics.drawable.GradientDrawable();
+        jauge.setColor(couleur);
+        jauge.setCornerRadius(GraphiteVue.dp(this, 3));
+        remplissage.setBackground(jauge);
+        barre.addView(remplissage, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.MATCH_PARENT, rempli));
+        View reste = new View(this);
+        barre.addView(reste, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                1f - rempli));
+        LinearLayout.LayoutParams params = new LinearLayout
+                .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                GraphiteVue.dp(this, 6));
+        params.setMargins(0, GraphiteVue.dp(this, 4), 0, 0);
+        barre.setLayoutParams(params);
+        return barre;
     }
 
     /** Le libellé localisé d'un genre d'assise du banc. */
