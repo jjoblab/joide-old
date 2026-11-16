@@ -67,6 +67,16 @@
     <string name="agent_fournisseur_openai">OpenAI-compatible</string>
     <string name="agent_fournisseur_gemini">Google Gemini</string>
     <string name="agent_fournisseur_openrouter">OpenRouter</string>
+    <string name="agent_connexions_se_connecter">Se connecter par le navigateur</string>
+    <string name="agent_connexions_signe">Connecté — reconnexion en cours…</string>
+    <string name="agent_connexions_oauth_echec">Connexion échouée</string>
+    <string name="mcp_rappel_titre">Connexion au serveur MCP</string>
+    <string name="mcp_rappel_en_cours">Les services de l\'app se réveillent…</string>
+    <string name="mcp_rappel_echange">Échange du code d\'autorisation…</string>
+    <string name="mcp_rappel_signe">Connecté à « %1$s ». Le serveur se reconnecte en arrière-plan.</string>
+    <string name="mcp_rappel_echec">Connexion échouée : %1$s</string>
+    <string name="mcp_rappel_illusion">Le navigateur est revenu sans code. Relancez la connexion.</string>
+    <string name="mcp_rappel_service">Le service de l\'agent n\'a pas répondu. Ouvrez l\'atelier et réessayez.</string>
     <string name="agent_cle_posee">clé posée</string>
     <string name="agent_cle_absente">clé absente</string>
     <string name="agent_cles_gerer">Gérer les clés…</string>

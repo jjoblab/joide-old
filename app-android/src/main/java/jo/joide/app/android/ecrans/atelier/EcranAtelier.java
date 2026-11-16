@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -1857,6 +1858,44 @@ public final class EcranAtelier extends Activity {
                         .Statut.ECHEC
                 || etat.statut == jo.joide.agent.mcp.GestionnaireMcp
                         .Statut.AUTH_REQUISE)) {
+            // lot U : la signature OAuth — le parcours MCP se
+            // complète : découverte, enregistrement du client,
+            // navigateur, rappel joide://mcp/oauth, jetons, connexion
+            TextView connecter = new TextView(this);
+            GraphiteVue.typographie(connecter, Graphite.CORPS);
+            connecter.setTextColor(palette.accent);
+            connecter.setText(R.string.agent_connexions_se_connecter);
+            connecter.setPadding(0, GraphiteVue.dp(this, 6), 0, 0);
+            connecter.setOnClickListener(vue -> {
+                if (agent == null) {
+                    return;
+                }
+                agent.demanderOAuthMcp(config.nom,
+                        url -> runOnUiThread(() -> {
+                            try {
+                                startActivity(new Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse(url)));
+                            } catch (Exception e) {
+                                Dialogue.information(
+                                        EcranAtelier.this, palette,
+                                        getString(R.string
+                                                .agent_connexions_titre),
+                                        getString(R.string
+                                                .agent_connexions_oauth_echec),
+                                        R.string.action_ok);
+                            }
+                        }),
+                        erreur -> runOnUiThread(() -> Dialogue
+                                .information(EcranAtelier.this,
+                                        palette,
+                                        getString(R.string
+                                                .agent_connexions_titre),
+                                        erreur,
+                                        R.string.action_ok)));
+            });
+            ligne.addView(connecter);
+
             TextView reconnecter = new TextView(this);
             GraphiteVue.typographie(reconnecter, Graphite.CORPS);
             reconnecter.setTextColor(palette.accent);

@@ -67,6 +67,16 @@
     <string name="agent_fournisseur_openai">OpenAI-compatible</string>
     <string name="agent_fournisseur_gemini">Google Gemini</string>
     <string name="agent_fournisseur_openrouter">OpenRouter</string>
+    <string name="agent_connexions_se_connecter">Sign in with the browser</string>
+    <string name="agent_connexions_signe">Signed in — reconnecting…</string>
+    <string name="agent_connexions_oauth_echec">Sign-in failed</string>
+    <string name="mcp_rappel_titre">MCP server sign-in</string>
+    <string name="mcp_rappel_en_cours">Waiting for the app services…</string>
+    <string name="mcp_rappel_echange">Exchanging the authorization code…</string>
+    <string name="mcp_rappel_signe">Signed in to “%1$s”. The server reconnects in the background.</string>
+    <string name="mcp_rappel_echec">Sign-in failed: %1$s</string>
+    <string name="mcp_rappel_illusion">The browser came back empty — no code. Start the sign-in again.</string>
+    <string name="mcp_rappel_service">The agent service did not come up. Open the workshop and try again.</string>
     <string name="agent_cle_posee">key set</string>
     <string name="agent_cle_absente">no key</string>
     <string name="agent_cles_gerer">Manage keys…</string>

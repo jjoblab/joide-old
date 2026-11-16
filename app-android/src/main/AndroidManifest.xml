@@ -35,6 +35,28 @@
             android:name=".ecrans.atelier.EcranAtelier"
             android:exported="false" />
 
+        <!-- Lot U (ADR-066) : le rappel OAuth du parcours MCP —
+             le navigateur revient à joide://mcp/oauth ; l'écran
+             exporté SEULEMENT pour ce filtre, le rappel porte le
+             code et l'état au service de l'agent. -->
+        <activity
+            android:name=".ecrans.mcp.EcranCallbackMcp"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="joide" />
+                <data android:host="mcp" />
+                <data android:pathPrefix="/oauth" />
+            </intent-filter>
+        </activity>
+
         <!-- Lot I (ADR-É4/ADR-050) : l’assistant de création en trois
              étapes, non exporté, rien n’est créé avant « Créer le
              projet ». -->

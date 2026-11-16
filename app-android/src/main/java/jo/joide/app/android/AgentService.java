@@ -45,6 +45,7 @@ import jo.joide.agent.espace.EspaceCheckpoint;
 import jo.joide.agent.espace.EspaceTravailAgent;
 import jo.joide.agent.espace.QuestionUtilisateur;
 import jo.joide.agent.mcp.ConfigServeurMcp;
+import jo.joide.agent.mcp.FluxOAuthMcp;
 import jo.joide.agent.mcp.GestionnaireMcp;
 import jo.joide.agent.mcp.JetonsMcp;
 import jo.joide.agent.mcp.StoreJetonsMcp;
@@ -381,6 +382,75 @@ public final class AgentService extends Service {
             gestionnaireMcp.reconnecter(nom);
         }
 
+        /**
+         * Ouvre la signature OAuth d'un serveur (lot U, ADR-066) :
+         * la découverte et l'enregistrement du client tournent sur
+         * l'exécuteur du service (secondes), l'URL de navigateur
+         * revient à l'UI par [surUrl] ; un échec honnête part à
+         * [surErreur]. L'UI ouvre le navigateur, le rappel vient à
+         * l'écran de rappel qui appelle {@link #completerOAuthMcp}.
+         *
+         * @param nom       le nom du serveur du .mcp.json
+         * @param surUrl    l'URL à ouvrir (fil du service — l'UI
+         *                  repasse sur le fil principal)
+         * @param surErreur le message d'échec, déjà lisible
+         */
+        public void demanderOAuthMcp(String nom,
+                java.util.function.Consumer<String> surUrl,
+                java.util.function.Consumer<String> surErreur) {
+            executeur.submit(() -> {
+                try {
+                    ConfigServeurMcp config = configMcpParNom(nom);
+                    if (config == null || config.url == null) {
+                        surErreur.accept("Server " + nom
+                                + " has no remote URL — OAuth sign-in "
+                                + "only applies to http/sse servers.");
+                        return;
+                    }
+                    String url = fluxOAuthMcp.demander(nom, config.url,
+                            gestionnaireMcp.defiAuth(nom));
+                    surUrl.accept(url);
+                } catch (Exception e) {
+                    surErreur.accept(e.getMessage() == null
+                            ? e.toString() : e.getMessage());
+                }
+            });
+        }
+
+        /**
+         * Complète la signature depuis l'URI de retour (lot U) : le
+         * code s'échange contre des jetons, les jetons se posent sous
+         * l'identité du serveur et la connexion repart en fond. Le
+         * résultat — serveur connecté ou motif d'échec — part à
+         * [surResultat] (fil du service).
+         *
+         * @param urlRedirection l'URI de retour complète du navigateur
+         * @param surResultat    le message final, déjà lisible
+         */
+        public void completerOAuthMcp(String urlRedirection,
+                java.util.function.Consumer<String> surResultat) {
+            executeur.submit(() -> {
+                try {
+                    Object[] resultat = fluxOAuthMcp
+                            .completer(urlRedirection);
+                    String nom = (String) resultat[0];
+                    JetonsMcp jetons = (JetonsMcp) resultat[1];
+                    String identite = gestionnaireMcp.identite(nom);
+                    if (identite == null) {
+                        surResultat.accept("Server " + nom
+                                + " is no longer configured.");
+                        return;
+                    }
+                    gestionnaireMcp.poserJetons(identite, jetons);
+                    gestionnaireMcp.reconnecter(nom);
+                    surResultat.accept("signed-in:" + nom);
+                } catch (Exception e) {
+                    surResultat.accept("failed:" + (e.getMessage()
+                            == null ? e.toString() : e.getMessage()));
+                }
+            });
+        }
+
         /** @return le nombre d'outils MCP en ligne */
         public int outilsMcp() {
             return gestionnaireMcp.outils().size();
@@ -463,6 +533,10 @@ public final class AgentService extends Service {
     private GestionnaireMcp gestionnaireMcp;
     private List<ConfigServeurMcp> configsMcp = List.of();
     private volatile boolean approuveMcp;
+    /** Le transport MCP partagé (gestionnaire et flux OAuth). */
+    private jo.joide.agent.TransportHttp transportMcp;
+    /** Le flux de signature OAuth (lot U) : une tentative par serveur. */
+    private FluxOAuthMcp fluxOAuthMcp;
 
     /** Le store des signatures MCP en mémoire (v1 : par session). */
     private final StoreJetonsMcp jetonsMcpMemoire =
@@ -513,9 +587,15 @@ public final class AgentService extends Service {
         relireSession();
         // le gestionnaire MCP (lot R) : stdio non autorisé sur
         // Android (NON_SUPPORTE honnête), les jetons en mémoire v1
+        transportMcp = new TransportOkHttp();
         gestionnaireMcp = new GestionnaireMcp(jetonsMcpMemoire,
-                new TransportOkHttp(), CancelToken.NEVER, false,
+                transportMcp, CancelToken.NEVER, false,
                 null);
+        // lot U : le flux de signature OAuth vit à côté — le même
+        // transport, une tentative par serveur, l'URI de retour
+        // maison (l'intent-filter du manifeste l'écoute)
+        fluxOAuthMcp = new FluxOAuthMcp(transportMcp,
+                CancelToken.NEVER);
     }
 
     @Override
@@ -953,6 +1033,16 @@ public final class AgentService extends Service {
             }
         }
         return cles;
+    }
+
+    /** Le serveur configuré d'un nom (null : inconnu du .mcp.json). */
+    private ConfigServeurMcp configMcpParNom(String nom) {
+        for (ConfigServeurMcp config : configsMcp) {
+            if (config.nom.equals(nom)) {
+                return config;
+            }
+        }
+        return null;
     }
 
     /** Le fournisseur d'une clé du banc. */
