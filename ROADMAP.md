@@ -15,7 +15,7 @@
 | P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Validée** (GO du 2026-11-16) | `PHASE-P7-RAPPORT.md` |
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | **Livrée** — arrêt pour validation | `PHASE-P8-RAPPORT.md` |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
-| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lots G-M : `ui/`, `accueil/`, `creation/`, `atelier/`, `console/`, `parametres/`, `atelier/agent/` au lot P), `agent` (lots N/O/P : noyau, outils, diff), `ide-integration` (port agent sur les briques) | **Groupe 4 livré** — groupes 1 à 4 complets (G+H+I, J+K+L, M, N+O puis P « agent v1 »), reste Q puis R (MCP, D-4) — jalon agent v1 atteint | `docs/ecrans/010-plan-lots.md`, ADR-048 à 060 |
+| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lots G-M : `ui/`, `accueil/`, `creation/`, `atelier/`, `console/`, `parametres/`, `atelier/agent/` au lot P), `agent` (lots N/O/P : noyau, outils, diff), `ide-integration` (port agent sur les briques) | **V2 livrée** — les cinq groupes complets (G+H+I, J+K+L, M, N+O+P « agent v1 », Q+R « agent v1.1 ») : trois fournisseurs, la robustesse transverse (banc de clés, bascule, régulateur apprenant, images), le MCP dans ses deux sens (client, serveur local) — l'arrêt pour validation du groupe 5 attend le propriétaire | `docs/ecrans/010-plan-lots.md`, ADR-048 à 063 |
 
 ## Règles de passage
 
@@ -26,10 +26,11 @@
    `PHASE-Pn-RAPPORT.md` (critères un par un, preuves, écarts,
    mesures, dette, questions), push, **arrêt pour validation**.
 3. Le journal clean-room (`docs/clean-room/JOURNAL.md`) consigne toute
-   consultation de CodeAssist ; les deux consultations à ce jour
-   (2026-11-16, écrans puis agent IA) sont mandatées par le
-   propriétaire et produites en notes fonctionnelles sans code
-   (ADR-É1, ADR-É9) ; l'implémentation reste clean-room.
+   consultation de CodeAssist ; les trois consultations à ce jour
+   (2026-11-16, écrans puis agent IA puis robustesse/MCP) sont
+   mandatées par le propriétaire et produites en notes fonctionnelles
+   sans code (ADR-É1, ADR-É9, note clean-room n° 3) ; l'implémentation
+   reste clean-room.
 
 ## Où regarder
 
