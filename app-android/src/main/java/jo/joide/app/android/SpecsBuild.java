@@ -251,6 +251,19 @@ public final class SpecsBuild {
                 manifeste = dossierModule + "/" + declare;
             }
         }
+        if (manifeste == null
+                && !"jvm-library".equals(module.type().id())) {
+            // lot U/6 : la facette peut manquer (projets créés par
+            // l'assistant avant l'entrée manifest, anciens gabarits) —
+            // le chemin CONVENTIONNEL du gabarit est sondé avant de
+            // renoncer : un module Android sans manifeste faisait
+            // NPE la fabrique de tâches (anchored(null) sur
+            // Path.isAbsolute(), rapporté le 2026-11-17)
+            String sonde = dossierModule + "/src/main/AndroidManifest.xml";
+            if (Files.isRegularFile(projet.resolve(sonde))) {
+                manifeste = sonde;
+            }
+        }
         List<String> freres = new ArrayList<>();
         List<String> jars = new ArrayList<>();
         List<String> aars = new ArrayList<>();

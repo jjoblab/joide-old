@@ -208,6 +208,70 @@ class AndroidPipelineTest {
         }
     }
 
+    /**
+     * Lot U/6 (rapport du 2026-11-17) : un frère JVM du graphe
+     * Android n'a NI manifeste NI ressources — l'ancienne fabrique
+     * NPEtait à la construction du graphe
+     * ({@code Path.isAbsolute()} sur le manifeste null passé à
+     * aapt2 link) ; le graphe se construit, le frère compile sans
+     * R.jar et l'APK de l'application se construit.
+     */
+    @Test
+    void jvmSiblingWithoutManifestBuilds(@TempDir Path temp)
+            throws Exception {
+        Path project = temp.resolve("project");
+        Path out = temp.resolve("out");
+        writeProject(project);
+        // le frère JVM : sources pures, ni manifeste ni ressources
+        write(project, "pure/src/main/java/com/example/pure/Pure.java",
+                """
+                package com.example.pure;
+
+                public class Pure {
+                    public static String plain(String value) {
+                        return value + "!";
+                    }
+                }
+                """);
+        // l'application consomme le frère et son propre R
+        write(project, "app/src/main/java/com/example/app/App.java", """
+                package com.example.app;
+
+                import com.example.pure.Pure;
+
+                public class App {
+                    public static String greet() {
+                        return Pure.plain(String.valueOf(
+                                com.example.app.R.string.greeting));
+                    }
+                }
+                """);
+        AndroidModuleSpec app = new AndroidModuleSpec("app", true);
+        app.manifest = Path.of("app/src/main/AndroidManifest.xml");
+        app.resourceDirs.add(Path.of("app/src/main/res"));
+        app.sourceRoots.add(Path.of("app/src/main/java"));
+        app.moduleDependencies.add("pure");
+        AndroidModuleSpec pure = new AndroidModuleSpec("pure", false);
+        pure.sourceRoots.add(Path.of("pure/src/main/java"));
+        try (AndroidHarness harness = new AndroidHarness(project, out,
+                List.of(pure, app), variants(), keystore)) {
+            TaskGraph graph = harness.graph();
+            BuildReport report = harness.build(graph, DirtySet.empty());
+            assertTrue(report.successful(),
+                    () -> AndroidHarness.allTasks(report).toString());
+            assertTrue(Files.isRegularFile(out.resolve(
+                    "android/app/variants/debug/app-debug.apk")),
+                    "signed apk must exist");
+            // le frère JVM : aucune tâche Android (ni aapt2, ni R.jar)
+            for (String task : AndroidHarness.allTasks(report)) {
+                assertFalse(task.startsWith("pure:processAndroidResources"),
+                        "manifest-less sibling must not run aapt2: " + task);
+                assertFalse(task.startsWith("pure:generateRJar"),
+                        "manifest-less sibling must not generate R: " + task);
+            }
+        }
+    }
+
     @Test
     void incrementalBuildIsProportionalToChange(@TempDir Path temp)
             throws Exception {

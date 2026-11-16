@@ -61,6 +61,12 @@ public final class AndroidTaskFactory {
             new LinkedHashMap<>();
     private RootSet sourceAnchors;
     private final Map<String, Boolean> forcedKotlin = new LinkedHashMap<>();
+    /** Les modules DOTÉS d'un manifeste (donc d'un R.jar) — les
+     *  frères JVM du graphe n'ont ni aapt2 ni R : leurs dépendances
+     *  « generateRJar » n'existent pas et ne doivent pas être
+     *  déclarées (lot U/6, rapport du 2026-11-17). */
+    private final java.util.Set<String> modulesAvecR =
+            new java.util.LinkedHashSet<>();
     private char[] signingPassword = "joidepass".toCharArray();
 
     /**
@@ -180,6 +186,20 @@ public final class AndroidTaskFactory {
 
     private void registerResourceTasks(TaskGraph.Builder graph,
                                        AndroidModuleSpec spec) {
+        if (spec.manifest == null) {
+            // lot U/6 : un module SANS manifeste (frère JVM du graphe
+            // Android, bibliothèque sans facette) ne porte ni aapt2 ni
+            // R.jar — l'ancien code NPEtait sur anchored(null)
+            // (Path.isAbsolute(), rapporté le 2026-11-17) ; des
+            // ressources SANS manifeste restent une erreur NOMINALE
+            if (!spec.resourceDirs.isEmpty()) {
+                throw new IllegalArgumentException(spec.name
+                        + " : ressources Android sans manifeste — "
+                        + "la liaison aapt2 exige un manifeste");
+            }
+            return;
+        }
+        modulesAvecR.add(spec.name);
         RootedPath androidDir = RootedPath.of(RootName.OUT,
                 "android/" + spec.name);
         List<RootedPath> resourceRoots = new ArrayList<>();
@@ -253,17 +273,20 @@ public final class AndroidTaskFactory {
                 "platform:android.jar");
         // R.jar du module : son manifeste ABI est écrit par la tâche
         // de génération (le jar n'existe pas encore à la construction
-        // du graphe) — chemin stable, contenu haché par le moteur
-        Path rJar = buildDir.resolve("android").resolve(spec.name)
-                .resolve("r.jar");
-        ClasspathEntry rEntry = new ClasspathEntry(
-                ClasspathEntry.Kind.EXTERNAL, spec.name + ":R.jar",
-                anchored(rJar),
-                RootedPath.of(RootName.OUT,
-                        "android/" + spec.name + "/r.abi.manifest"),
-                null);
-        upstreamJava.add(rEntry);
-        upstreamKotlin.add(rEntry);
+        // du graphe) — chemin stable, contenu haché par le moteur ;
+        // les modules SANS manifeste n'ont pas de R.jar (lot U/6)
+        if (modulesAvecR.contains(spec.name)) {
+            Path rJar = buildDir.resolve("android").resolve(spec.name)
+                    .resolve("r.jar");
+            ClasspathEntry rEntry = new ClasspathEntry(
+                    ClasspathEntry.Kind.EXTERNAL, spec.name + ":R.jar",
+                    anchored(rJar),
+                    RootedPath.of(RootName.OUT,
+                            "android/" + spec.name + "/r.abi.manifest"),
+                    null);
+            upstreamJava.add(rEntry);
+            upstreamKotlin.add(rEntry);
+        }
         // modules amont
         for (String dependency : spec.moduleDependencies) {
             AndroidModuleSpec dep = modules.get(dependency);
@@ -302,10 +325,14 @@ public final class AndroidTaskFactory {
                 }
             }
             // les ressources du module amont doivent être liées avant
-            // la compilation aval (le R du module amont existe déjà)
-            graph.dependsOn(compileJava, dependency + ":generateRJar");
-            if (hasKotlin) {
-                graph.dependsOn(compileKotlin, dependency + ":generateRJar");
+            // la compilation aval (le R du module amont existe déjà) —
+            // un amont SANS manifeste n'a pas de generateRJar (lot U/6)
+            if (modulesAvecR.contains(dependency)) {
+                graph.dependsOn(compileJava, dependency + ":generateRJar");
+                if (hasKotlin) {
+                    graph.dependsOn(compileKotlin,
+                            dependency + ":generateRJar");
+                }
             }
         }
         // jars externes et AAR
@@ -335,7 +362,9 @@ public final class AndroidTaskFactory {
                 }
             }
         }
-        graph.dependsOn(compileJava, spec.name + ":generateRJar");
+        if (modulesAvecR.contains(spec.name)) {
+            graph.dependsOn(compileJava, spec.name + ":generateRJar");
+        }
         RootedPath javaStateFile = RootedPath.of(RootName.OUT, "jvm")
                 .resolve(spec.name).resolve("classes-java")
                 .resolve("compile-state.bin");
@@ -354,7 +383,6 @@ public final class AndroidTaskFactory {
                     sourceRoots(spec), javaWithOwnKotlin, javaDriver,
                     List.of(), classesJava, abiJava, null, sourceLevel));
             graph.dependsOn(compileJava, compileKotlin);
-            graph.dependsOn(compileJava, spec.name + ":generateRJar");
         } else {
             graph.register(JvmCompileTask.create(spec.name, "java",
                     sourceRoots(spec), upstreamJava, javaDriver,

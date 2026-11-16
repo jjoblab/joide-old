@@ -168,4 +168,53 @@ class SpecsBuildTest {
         assertTrue(constitution.ecarts.get(0).contains(":appli"),
                 constitution.ecarts.get(0));
     }
+
+    /**
+     * Lot U/6 (rapport du 2026-11-17) : un module Android SANS
+     * facette « android » (l'assistant d'anciens gabarits) mais avec
+     * le manifeste conventionnel SUR DISQUE — la sonde
+     * {@code src/main/AndroidManifest.xml} le fournit à la spec :
+     * sans elle, la fabrique de tâches NPEtait sur
+     * {@code Path.isAbsolute()} d'un manifeste null.
+     */
+    @Test
+    void manifesteConventionnelSondeSansFacette() throws Exception {
+        Path racine = Files.createDirectories(temp.resolve("sonde"));
+        Files.writeString(racine.resolve("joide.toml"), """
+                schema = "joide.workspace/1"
+
+                name = "essai"
+
+                [modules]
+                include = ["appli"]
+                """);
+        Files.createDirectories(
+                racine.resolve("appli/src/main/java"));
+        Files.writeString(
+                racine.resolve("appli/src/main/AndroidManifest.xml"),
+                """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <manifest package="demo.appli" />
+                        """);
+        Files.writeString(
+                racine.resolve("appli/joide-module.toml"), """
+                        schema = "joide.module/1"
+                        name = "appli"
+                        type = "android-application"
+
+                        [[sources]]
+                        name = "main"
+                        source = ["src/main/java"]
+                        """);
+
+        Workspace workspace = WorkspaceLoader.load(racine)
+                .workspace().orElseThrow();
+        SpecsBuild.Constitution constitution = SpecsBuild.android(
+                workspace, ExternalResolution.empty(), racine,
+                temp.resolve("out"), temp.resolve("m2"));
+        assertTrue(constitution.constructible(),
+                () -> constitution.ecarts.toString());
+        assertEquals("appli/src/main/AndroidManifest.xml",
+                constitution.spec.modules.get(0).manifest);
+    }
 }
