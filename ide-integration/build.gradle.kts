@@ -9,6 +9,9 @@ plugins {
 dependencies {
     api(project(":core-model"))
     api(project(":build-daemon"))
+    // Lot O (ADR-059) : l'implémentation du port EspaceTravailAgent
+    // vit ICI — au-dessus des briques, sous l'application.
+    api(project(":agent"))
     // Éditeur (celeris) — implementation : jamais dans l'API publique.
     implementation(libs.celeris.android.host)
     implementation(libs.celeris.android.widgets)
@@ -29,6 +32,12 @@ dependencies {
     // Lot C : le moteur Java tourne réellement dans les tests (ecj
     // patché ART au classpath de test — EPL-2.0, jamais compilé contre).
     testImplementation(libs.codelsp.ecj.art)
+    // Lot O : l'espace de travail de l'agent exécute le VRAI moteur
+    // de build dans les tests — le store journal de bureau de
+    // core-store (configuration jvmApi, comme les tests du démon).
+    testImplementation(
+        project(mapOf("path" to ":core-store",
+            "configuration" to "jvmApi")))
     // Parseur XmlPull des tests JVM des résolveurs de la
     // brique LayoutLib (lot E) ; sur appareil le framework
     // fournit l'implémentation.

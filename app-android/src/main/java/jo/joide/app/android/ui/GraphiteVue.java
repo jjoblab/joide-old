@@ -8,12 +8,22 @@ import android.graphics.Typeface;
 import android.util.TypedValue;
 import android.widget.TextView;
 
+import jo.joide.app.android.parametres.PreferencesAndroid;
+import jo.joide.app.android.parametres.Reglages;
+
 /**
  * Colle mince entre le cadre Android et les jetons Graphite :
  * conversions dp/sp, typographie posée sur un TextView, police
  * pondérée, mode nuit du système, couleurs de fenêtre. Aucune
  * décision de design ici — tout vit dans {@link Graphite} et les
  * classes de choix ; cette classe ne fait que traduire (ADR-048).
+ *
+ * <p>Depuis le lot M (ADR-É8/054), la palette tient compte des
+ * réglages : le thème posé (sombre par défaut, système ou clair) et
+ * l'accent du nuancier, lus dans les préférences privées à chaque
+ * appel — un changement de réglage se voit à la recréation de
+ * l'écran, jamais dans une vue déjà posée. L'échelle du texte
+ * d'interface s'applique au passage de la typographie.</p>
  */
 public final class GraphiteVue {
 
@@ -32,9 +42,24 @@ public final class GraphiteVue {
                 ? Graphite.Mode.CLAIR : Graphite.Mode.SOMBRE;
     }
 
-    /** La palette du mode courant du système. */
+    /**
+     * La palette des réglages posés (lot M) : le thème décide du
+     * mode — SOMBRE et CLAIR sont explicites, SYSTEME suit la nuit du
+     * cadre — puis l'accent du nuancier remplace le jeton (le seul
+     * réellement appliqué, ADR-É8).
+     */
     public static Graphite.Palette palette(Context contexte) {
-        return Graphite.pour(modeNuit(contexte));
+        Reglages reglages = Reglages.lire(
+                PreferencesAndroid.source(contexte));
+        Graphite.Mode mode = switch (reglages.theme) {
+            case SOMBRE -> Graphite.Mode.SOMBRE;
+            case CLAIR -> Graphite.Mode.CLAIR;
+            case SYSTEME -> modeNuit(contexte);
+        };
+        Graphite.Palette base = Graphite.pour(mode);
+        int index = Math.max(0,
+                Math.min(Graphite.ACCENTS.length - 1, reglages.accent));
+        return Graphite.avecAccent(base, Graphite.ACCENTS[index]);
     }
 
     /** Conversion dp vers pixels. */
@@ -51,12 +76,27 @@ public final class GraphiteVue {
                 contexte.getResources().getDisplayMetrics()));
     }
 
-    /** Pose un style de texte : taille sp, interligne, famille, graisse. */
+    /**
+     * Pose un style de texte : taille sp, interligne, famille, graisse
+     * — l'échelle du texte d'interface des réglages (lot M) s'applique
+     * à la taille ET à l'interligne, le rapport du style reste.
+     */
     public static void typographie(TextView vue, Graphite.StyleTexte style) {
-        vue.setTextSize(TypedValue.COMPLEX_UNIT_SP, style.taille);
+        float echelle = echelleTexteUi(vue.getContext());
+        vue.setTextSize(TypedValue.COMPLEX_UNIT_SP,
+                style.taille * echelle);
         vue.setLineSpacing(0, style.interligne / style.taille);
         vue.setTypeface(police(vue.getContext(), style.graisse,
                 style.mono));
+    }
+
+    /**
+     * @param contexte le contexte
+     * @return le facteur d'échelle du texte d'interface (1 par défaut)
+     */
+    public static float echelleTexteUi(Context contexte) {
+        return Reglages.lire(PreferencesAndroid.source(contexte))
+                .echelleUi / 100f;
     }
 
     /**

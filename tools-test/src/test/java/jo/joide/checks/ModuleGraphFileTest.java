@@ -39,6 +39,9 @@ class ModuleGraphFileTest {
         expected.put("core-tasks",
                 Set.of("core-model", "core-store", "core-vfs"));
         expected.put("core-deps", Set.of("core-platform", "core-store"));
+        // V2 lot N (ADR-055) : le noyau agent, module pur —
+        // core-platform et core-deps, jamais Android ni les briques.
+        expected.put("agent", Set.of("core-platform", "core-deps"));
         expected.put("build-jvm", Set.of("core-tasks", "core-deps"));
         expected.put("build-android", Set.of("build-jvm", "core-deps"));
         expected.put("build-daemon", Set.of("build-android", "core-store"));
@@ -48,7 +51,13 @@ class ModuleGraphFileTest {
         // P8, ADR-045 : arête nouvelle explicite app-android ->
         // ide-integration (l'application hôte monte l'IDE derrière les
         // interfaces JoIDE — jamais les briques directement).
-        expected.put("ide-integration", Set.of("core-model", "build-daemon"));
+        // V2 lot O (ADR-059) : l'implémentation du port agent vit
+        // dans ide-integration, au-dessus des briques ; core-store
+        // est une arête de TEST (store journal, configuration jvmApi
+        // — le vrai moteur de build tourne dans les tests).
+        expected.put("ide-integration",
+                Set.of("core-model", "build-daemon", "agent",
+                        "core-store"));
         expected.put("app-android", Set.of("build-daemon", "ide-integration"));
         return expected;
     }

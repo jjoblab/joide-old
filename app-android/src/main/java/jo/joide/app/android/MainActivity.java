@@ -447,12 +447,22 @@ public final class MainActivity extends Activity {
     }
 
     private void menuApplication() {
-        // ADR-É3 prévoit à propos, paramètres et journal ; seuls « À
-        // propos » existe aujourd'hui — jamais d'entrée morte (les
-        // paramètres arrivent au lot M, le journal au backlog).
+        // ADR-É3 : à propos, paramètres et journal ; le journal vit
+        // désormais DANS les paramètres (lot M, ADR-É8) — aucune
+        // entrée morte.
         Dialogue.menu(this, palette, getString(R.string.app_name),
-                new CharSequence[]{getString(R.string.accueil_menu_a_propos)},
-                (dialog, lequel) -> aPropos());
+                new CharSequence[]{
+                        getString(R.string.parametres_titre),
+                        getString(R.string.accueil_menu_a_propos)},
+                (dialog, lequel) -> {
+                    if (lequel == 0) {
+                        startActivity(new Intent(this,
+                                jo.joide.app.android.ecrans.parametres
+                                        .EcranParametres.class));
+                    } else {
+                        aPropos();
+                    }
+                });
     }
 
     private void aPropos() {

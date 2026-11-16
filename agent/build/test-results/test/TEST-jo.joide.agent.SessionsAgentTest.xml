@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="jo.joide.agent.SessionsAgentTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.732Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.08">
+  <properties/>
+  <testcase name="lecritureEstAtomiqueUnFichierTemporaireVoisin()" classname="jo.joide.agent.SessionsAgentTest" time="0.052"/>
+  <testcase name="unSchemaInconnuEstRefuse()" classname="jo.joide.agent.SessionsAgentTest" time="0.006"/>
+  <testcase name="allerRetourCompletAvecSignaturesEtCompaction()" classname="jo.joide.agent.SessionsAgentTest" time="0.006"/>
+  <testcase name="unJsonCasseEstSignaleJamaisRepare()" classname="jo.joide.agent.SessionsAgentTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

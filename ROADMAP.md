@@ -15,7 +15,7 @@
 | P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Validée** (GO du 2026-11-16) | `PHASE-P7-RAPPORT.md` |
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | **Livrée** — arrêt pour validation | `PHASE-P8-RAPPORT.md` |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
-| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lots G-L : `ui/`, `accueil/`, `creation/`, `atelier/`, `console/`, `ecrans/`), `ide-integration` (façade aperçu) | **En cours** — groupes 1 et 2 livrés (G+H+I puis J+K+L, arrêts pour validation du propriétaire), suite M puis N-R | `docs/ecrans/010-plan-lots.md`, ADR-048 à 053 |
+| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lots G-M : `ui/`, `accueil/`, `creation/`, `atelier/`, `console/`, `parametres/`), `agent` (lots N/O : noyau + outils), `ide-integration` (port agent sur les briques) | **En cours** — groupes 1, 2 et 3 livrés (G+H+I, J+K+L, M) et lots N+O livrés (amorce du groupe 4, GO combiné du propriétaire), reste P puis Q/R | `docs/ecrans/010-plan-lots.md`, ADR-048 à 059 |
 
 ## Règles de passage
 

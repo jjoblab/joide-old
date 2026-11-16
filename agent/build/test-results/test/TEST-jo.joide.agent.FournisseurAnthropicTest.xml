@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="jo.joide.agent.FournisseurAnthropicTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.550Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.066">
+  <properties/>
+  <testcase name="leResultatOutilVoyageEnMessageUtilisateurAnthropic()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.005"/>
+  <testcase name="unFluxSansMessageStopEstInterrompuPasIllisible()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.007"/>
+  <testcase name="unAppelSansCleLeveLErreurActionnable()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.0"/>
+  <testcase name="laRequetePorteLePrefixeAvecRuptureDeCacheEtLaNoteApres()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.002"/>
+  <testcase name="unTourCompletSeTraduitSansPerdreUnOctet()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.004"/>
+  <testcase name="uneErreur429EstClasseeAvecSonDelai()" classname="jo.joide.agent.FournisseurAnthropicTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

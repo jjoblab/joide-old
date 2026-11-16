@@ -181,6 +181,36 @@ public final class Graphite {
         return mode == Mode.CLAIR ? CLAIR : SOMBRE;
     }
 
+    // ---- Nuancier d'accent (lot M, ADR-É8 : restreint, un seul jeton) ----
+    /**
+     * Les accents proposés : les cinq rôles de couleur de la palette
+     * (accent, réussite, alerte, erreur, violet — maquette
+     * parametres.html). Un seul jeton est réellement appliqué :
+     * {@link #avecAccent(Palette, int)}.
+     */
+    public static final int[] ACCENTS = {
+            0xFF82AAFF, 0xFF3DDC84, 0xFFE5C07B, 0xFFE06C75, 0xFFC678DD
+    };
+
+    /**
+     * La palette avec le rôle accent remplacé (lot M) : le seul
+     * jeton réellement appliqué — le reste de la palette ne bouge
+     * pas, le texte sur accent reste celui du mode (assez contrasté
+     * pour les cinq accents du nuancier).
+     *
+     * @param base    la palette du mode
+     * @param couleur le nouvel accent
+     * @return la palette dérivée
+     */
+    public static Palette avecAccent(Palette base, int couleur) {
+        return new Palette(base.fond, base.surface, base.surfaceHaute,
+                base.puits, base.bord, base.bordFin, base.texte,
+                base.texteSecondaire, base.texteEstompe, couleur,
+                base.reussite, base.alerte, base.erreur, base.violet,
+                base.texteSurAccent, base.texteSurReussite, base.rideau,
+                base.syntaxe);
+    }
+
     /** Cette palette est-elle la sombre ? (luminance du fond.) */
     public static boolean estSombre(Palette palette) {
         return luminance(palette.fond) < 0.5f;

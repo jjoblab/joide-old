@@ -4,6 +4,9 @@
 # jamais remontante, jamais latérale, jamais cyclique — le plugin
 # joide.dependency-rules (build-logic) rejette toute arête hors liste,
 # et tools-test valide ce fichier (acyclicité, ordre descendant).
+# V2 lot O (ADR-059) : ide-integration implémente le port de l'agent
+# sur les vraies briques (moteurs, VFS, build) — l'arête descendante
+# agent -> core-platform core-deps précède, l'ordre reste descendant.
 # L'arête tools-bench -> core-model est une arête de TEST : le banc
 # vérifie que ses projets synthétiques sont lisibles par le modèle ;
 # le code principal du banc ne dépend d'aucun module.
@@ -13,6 +16,11 @@ core-vfs -> core-platform core-store
 core-model -> core-platform core-vfs
 core-tasks -> core-model core-store core-vfs
 core-deps -> core-platform core-store
+# V2 lot N (ADR-055) : le noyau agent, module pur pair de
+# core-tasks — core-platform (exécuteurs, CancelToken, AtomicFiles)
+# et core-deps (parseur JSON maison) ; jamais Android, jamais
+# les briques (le port EspaceTravailAgent vit côté ide-integration).
+agent -> core-platform core-deps
 build-jvm -> core-tasks core-deps
 build-android -> build-jvm core-deps
 build-daemon -> build-android core-store
@@ -24,5 +32,8 @@ tools-test ->
 # l'IDE derrière les interfaces JoIDE d'ide-integration, jamais les
 # briques directement. Ordre descendant respecté : ide-integration
 # avant app-android.
-ide-integration -> core-model build-daemon
+# L'arête core-store est une arête de TEST (store journal de bureau,
+# configuration jvmApi — le VRAI moteur de build tourne dans les
+# tests de l'espace de travail agent, comme les tests du démon).
+ide-integration -> core-model build-daemon agent core-store
 app-android -> build-daemon ide-integration

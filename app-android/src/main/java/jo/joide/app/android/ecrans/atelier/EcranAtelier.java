@@ -30,6 +30,8 @@ import jo.joide.app.android.FichiersProjet;
 import jo.joide.app.android.R;
 import jo.joide.app.android.SpecsBuild;
 import jo.joide.app.android.StoreAndroid;
+import jo.joide.app.android.parametres.PreferencesAndroid;
+import jo.joide.app.android.parametres.Reglages;
 import jo.joide.app.android.atelier.Arborescence;
 import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatApercu;
@@ -170,13 +172,14 @@ public final class EcranAtelier extends Activity {
     private List<String> fichiersArbre = List.of();
     private boolean sortiesPresentes;
     private volatile boolean buildEnCours;
-    private boolean enProcessus;
+    private Reglages.Source sourceReglages;
 
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         palette = GraphiteVue.palette(this);
         GraphiteVue.fondEcran(this, palette);
+        sourceReglages = PreferencesAndroid.source(this);
         boolean grandEcran = EtatAtelier.estGrandEcran(
                 getResources().getConfiguration().screenWidthDp);
         etat = new EtatAtelier(grandEcran);
@@ -693,6 +696,13 @@ public final class EcranAtelier extends Activity {
         });
 
         scene = new SceneEditeur(this, moteurs);
+        // lot M (ADR-É8) : les réglages d'éditeur s'appliquent à
+        // l'OUVERTURE suivante — la session se monte avec eux
+        Reglages reglagesEditeur = Reglages.lire(sourceReglages);
+        scene.taillePolice((float) reglagesEditeur.tailleCode);
+        scene.numerosLignes(reglagesEditeur.numerosLignes);
+        scene.retourLigne(reglagesEditeur.retourLigne);
+        scene.theme(Graphite.estSombre(palette));
         scene.poserAuditeurEdition(texte -> {
             if (fichierCourant == null) {
                 return;
@@ -1020,18 +1030,20 @@ public final class EcranAtelier extends Activity {
     }
 
     private void ouvrirMenu() {
+        // lot M (ADR-É8) : la case « en processus » du lot F vit
+        // désormais dans Paramètres — ici il reste fermer le projet
+        // et le chemin vers les réglages
         String fermer = getString(R.string.atelier_fermer_projet);
-        String enProcessusLibelle = getString(
-                R.string.atelier_menu_en_processus,
-                getString(enProcessus ? R.string.atelier_oui
-                        : R.string.atelier_non));
         Dialogue.menu(this, palette,
                 racineProjet == null ? ""
                         : String.valueOf(racineProjet.getFileName()),
-                new CharSequence[]{enProcessusLibelle, fermer},
+                new CharSequence[]{
+                        getString(R.string.parametres_titre), fermer},
                 (dialog, lequel) -> {
                     if (lequel == 0) {
-                        enProcessus = !enProcessus;
+                        startActivity(new Intent(this,
+                                jo.joide.app.android.ecrans.parametres
+                                        .EcranParametres.class));
                     } else if (lequel == 1) {
                         demanderFermeture();
                     }
@@ -1101,6 +1113,9 @@ public final class EcranAtelier extends Activity {
         long numero = numerosBuild.incrementAndGet();
         etat.commencerBuild(numero);
         etatConsole.surDemarrage(numero, System.currentTimeMillis());
+        // lot M : le moteur par défaut vit dans Paramètres (ADR-É8)
+        boolean enProcessus = Reglages.lire(sourceReglages).moteur
+                == Reglages.Moteur.PROCESSUS;
         if (enProcessus) {
             etatConsole.surAnnonceEnProcessus();
         }
@@ -1213,9 +1228,9 @@ public final class EcranAtelier extends Activity {
     }
 
     private void construireEnProcessus(BuildSpec spec, long numero) {
+        int fils = Reglages.lire(sourceReglages).filsParBuild;
         try (BuildRunner runner = new BuildRunner(
-                outDir -> StoreAndroid.open(outDir),
-                SpecsBuild.FILS_PAR_DEFAUT)) {
+                outDir -> StoreAndroid.open(outDir), fils)) {
             BuildRunner.Outcome resultat = runner.run(spec, null,
                     (nom, statut) -> runOnUiThread(() -> {
                         etatConsole.surTache(nom, statut,

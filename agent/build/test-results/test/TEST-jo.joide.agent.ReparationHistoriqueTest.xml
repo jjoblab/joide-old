@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="jo.joide.agent.ReparationHistoriqueTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.711Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.016">
+  <properties/>
+  <testcase name="unResultatOrphelinEstRetire()" classname="jo.joide.agent.ReparationHistoriqueTest" time="0.001"/>
+  <testcase name="unHistoriqueSainNeChangePas()" classname="jo.joide.agent.ReparationHistoriqueTest" time="0.007"/>
+  <testcase name="unAppelSansReponseRecoitSonResultatInterrompu()" classname="jo.joide.agent.ReparationHistoriqueTest" time="0.002"/>
+  <testcase name="uneConversationCasseeParUneAncienneVersionSeRepare()" classname="jo.joide.agent.ReparationHistoriqueTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

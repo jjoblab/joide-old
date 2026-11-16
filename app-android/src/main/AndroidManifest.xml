@@ -41,6 +41,16 @@
             android:label="@string/accueil_nouveau_projet"
             android:exported="false" />
 
+
+        <!-- Lot M (ADR-É8/054) : l'écran de paramètres, non exporté —
+             réglages réels seulement, mesures au disque, actions
+             destructrices à conséquence nominée. Atteint depuis
+             l'accueil (⋮) et l'atelier (⋮). -->
+        <activity
+            android:name=".ecrans.parametres.EcranParametres"
+            android:label="@string/parametres_titre"
+            android:exported="false" />
+
         <!-- Démon de build en processus séparé (§6.7, ADR-043) :
              service de premier plan, socket locale sur le rebouclage,
              store persistant sur la base système. La mort du service

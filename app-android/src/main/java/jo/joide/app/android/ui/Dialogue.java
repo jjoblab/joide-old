@@ -119,6 +119,23 @@ public final class Dialogue {
     }
 
     /**
+     * Un écran texte en dialogue (lot M, ADR-É8 « licences et NOTICE,
+     * écran texte ») : titre libre, vue défilante du texte, une seule
+     * action fermante — le texte long reste lisible, jamais coupé.
+     */
+    public static void saisieTexte(Context contexte,
+                                   Graphite.Palette palette,
+                                   CharSequence titre,
+                                   android.view.View corps, int idFermer,
+                                   DialogInterface.OnClickListener valideur) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre).setView(corps)
+                .setPositiveButton(idFermer, valideur);
+        habiller(constructeur.create(), palette);
+    }
+
+    /**
      * Une confirmation destructive à deux actions distinctes (lot H,
      * ADR-É3) : « Supprimer "x" de la liste ? » — retirer de la
      * liste (les fichiers restent) et effacer du stockage (les

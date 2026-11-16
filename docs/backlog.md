@@ -1,3 +1,32 @@
+# Backlog (après les lots M, N et O de la V2)
+
+Entrées ouvertes à l'issue des lots M (ADR-054), N (ADR-055 à 058)
+et O (ADR-059) :
+
+- [ ] Lot O : `find_symbol` passe par la recherche textuelle du port
+      (`chercherTexte` sur les déclarations probables) — la vraie
+      interrogation de l'index CIDX (lot A) attend que l'index
+      expose une recherche par nom de symbole ; l'outil est déjà
+      branché, seul le service change.
+- [ ] Lot O : références, renommage de symbole et formatage restent
+      au défaut dégradé honnête (EspaceNonSupporte — « non
+      disponible ici ») tant que les moteurs code-lsp ne les servent
+      pas (la couverture non servie du protocole, entrée P8/P9
+      ci-dessous) ; l'implémentation EspaceTravailIde branche les
+      moteurs dès qu'ils répondent.
+- [ ] Lot N : la compaction par RÉSUMÉ (un modèle résume les tours
+      anciens au lieu de tronquer les résultats d'outils) — l'ADR-057
+      pose la troncature permanente comme v1 honnête ; le résumé
+      demanderait un appel fournisseur dédié et son coût propre.
+- [ ] Lot M : les rangées « police de code » et « thème de syntaxe »
+      de l'ADR-É8 n'existent pas (aucun consommateur sur l'appareil
+      — la seule police mono fiable du cadre est `monospace`, la
+      seule syntaxe est Graphite) ; elles naîtront avec leurs
+      consommateurs (polices embarquées, thèmes de coloration).
+- [ ] Lot N : le port PortCles (ADR-058) attend son implémentation
+      Android Keystore au lot P (composant Android : AES-GCM +
+      AtomicFiles, jamais de clés de secours en clair).
+
 
 # Backlog (après le groupe 2 de la V2 — lots J, K, L)
 
@@ -65,10 +94,10 @@ Entrées ouvertes à l’issue du groupe 1 de la V2 (lots G-I,
       utilisateur ne la branche ; la carte du modèle Application
       Android le nomme (« câblage à venir », ADR-050, écart n° 3) ;
       l’échappatoire existant est l’export Gradle P7.
-- [ ] V2/lot M : le journal (logcat filtré) dans l’accueil et les
-      paramètres — le menu ⋮ de l’accueil n’affiche que « À
-      propos » tant que le journal n’existe pas (ADR-049, aucune
-      entrée morte).
+- [x] V2/lot M : le journal (logcat filtré) — clos par le lot M
+      (ADR-054) : JournalDiagnostic vit DANS les Paramètres, borné et
+      annoncé ; le menu de l’application porte Paramètres et À
+      propos, aucune entrée morte.
 - [ ] V2/lots H+ : importer un projet inconnu (ni joide.toml ni
       script Gradle) comme un départ Vide — le lot H refuse avec un
       dialogue nommé ; la création couvre déjà ce besoin par le

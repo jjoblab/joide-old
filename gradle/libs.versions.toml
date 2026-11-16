@@ -30,6 +30,10 @@ agp = "9.5.0"
 # explicite, version alignée sur la brique (1.11.0).
 kotlinxCoroutines = "1.11.0"
 kxml2 = "2.3.0"
+# Transport HTTP/SSE du module agent (D-5 : décision du
+# propriétaire — OkHttp plutôt qu'une implémentation maison ;
+# le transport du résolveur P4 reste maison, ADR-031/056).
+okhttp = "5.5.1"
 # Briques du propriétaire (§6.8, docs/integration/) : versions publiées,
 # consommées en dépendances binaires depuis le checkout épinglé (publication
 # Maven Local ; jamais de modification des briques — DEMANDES.md).
@@ -70,6 +74,8 @@ codelsp-xml = { module = "jo.codeide.lsp.xml:jo-codeide-lsp-xml", version.ref = 
 codelsp-model = { module = "jo.codeide.lsp.model:jo-codeide-lsp-model", version.ref = "codelsp" }
 codelsp-index = { module = "jo.codeide.lsp.index:jo-codeide-lsp-index", version.ref = "codelsp" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "kotlinxCoroutines" }
+# OkHttp (Apache-2.0, NOTICE) : transport du module agent (D-5).
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 # kxml2 : implémentation XmlPull pour les TESTS JVM des résolveurs
 # LayoutLib (le framework Android la fournit sur appareil) — MIT.
 kxml2 = { module = "net.sf.kxml:kxml2", version.ref = "kxml2" }

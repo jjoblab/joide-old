@@ -18,11 +18,37 @@ val motDePasseCi = providers.environmentVariable("JOIDE_CI_KEYSTORE_PASSWORD").o
 val aliasCi = providers.environmentVariable("JOIDE_CI_KEY_ALIAS").orNull
 val signatureCi = cleCi != null && motDePasseCi != null && aliasCi != null
 
+// SHA court du commit courant (lot M) : la rangée Version des
+// Paramètres l'affiche ; « dev » hors dépôt git — jamais un SHA deviné.
+val shaCourt = runCatching {
+    providers.exec {
+        commandLine("git", "rev-parse", "--short=7", "HEAD")
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("dev")
+
+// Licences et NOTICE empaquetées (lot M, ADR-É8 « écran texte ») :
+// les fichiers de la racine sont copiés dans les assets par une tâche
+// — jamais de copie à la main qui vieillirait mal.
+val copierLicences = tasks.register<Copy>("copierLicences") {
+    from(rootProject.rootDir) {
+        include("LICENSE", "NOTICE")
+    }
+    into(layout.buildDirectory.dir("generated/assets/licences"))
+}
+
 android {
     defaultConfig {
         applicationId = "jo.joide.app"
         versionCode = 1
         versionName = "0.1.0"
+        // Lot M (ADR-É8/054) : la rangée « Version » porte le nom et
+        // le SHA COURT du build — injecté à la construction, « dev »
+        // hors dépôt git. Jamais de version inventée.
+        buildConfigField("String", "JOIDE_SHA", "\"$shaCourt\"")
+    }
+    buildFeatures {
+        // lot M : la classe BuildConfig porte le SHA du build
+        buildConfig = true
     }
     if (signatureCi) {
         signingConfigs {
@@ -54,6 +80,22 @@ android {
         // première suffit, jamais de perte (même version 2.3.0).
         resources.pickFirsts += "**/*.kotlin_builtins"
     }
+
+    sourceSets.getByName("main") {
+        // lot M : LICENSE et NOTICE de la racine dans les assets.
+        // AGP 9 refuse un Provider ici (généré contre statique
+        // indécidable) : le dossier est posé en statique et la tâche
+        // de copie est câblée aux fusions d'assets ci-dessous.
+        assets.srcDir(layout.buildDirectory
+                .dir("generated/assets/licences").get().asFile)
+    }
+}
+
+// Le vidage/merge des assets dépend de la copie des licences (lot M)
+tasks.matching {
+    it.name.startsWith("merge") && it.name.endsWith("Assets")
+}.configureEach {
+    dependsOn(copierLicences)
 }
 
 dependencies {

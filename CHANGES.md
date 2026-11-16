@@ -1,3 +1,182 @@
+# CHANGES — Lots M, N et O : les Paramètres, le noyau agent, les outils (groupes 3 et 4-amorce de la V2)
+
+Le propriétaire a fusionné deux jalons en un GO (« Go pour M et
+N/O ») : le groupe 3 (lot M — la v2 est complète) et l'amorce du
+groupe 4 (lots N et O — le noyau de l'agent et sa surface d'outils ;
+le lot P reste pour clore le jalon « agent v1 »). Lot M (ADR-É8,
+ADR-054) : EcranParametres — cinq sections, quinze rangées, RÉGLAGES
+RÉELS SEULEMENT (un réglage = une rangée + un consommateur : la
+« police de code » et le « thème de syntaxe » de l'ADR-É8 n'ont ni
+alternative modifiable ni consommateur sur l'appareil, les rangées
+N'EXISTENT PAS — écart consigné, elles naîtront avec leurs
+consommateurs) ; Reglages (pur) porte le schéma joide.reglages/1 en
+préférences privées avec TOLÉRANCE TOTALE (une valeur absente,
+illisible ou hors bornes retombe sur son défaut, jamais une
+exception — des préférences d'une version future ne doivent pas
+empêcher le démarrage), bornes publiques partagées par les steppers
+et les tests (échelle UI 85-130 % au pas de 5, taille du code 10-20
+sp au pas de 0,5, fils 1-8) ; le thème (SOMBRE le défaut, CLAIR,
+SYSTEME) et l'accent (Nuancier, cinq rôles, Graphite.avecAccent — un
+seul jeton réellement appliqué) sont lus par GraphiteVue.palette à
+chaque appel, un changement recrée l'écran (jamais une vue
+re-stylée à moitié), l'échelle du texte porte la taille ET
+l'interligne ; MesuresStockage mesure AU DISQUE les trois valeurs
+réelles (projets importés, cache CIDX reconstruit à la prochaine
+synchronisation, dépendances m2 re-téléchargées à la demande ;
+plafond 100 000 entrées), le vidage supprime le CONTENU jamais le
+répertoire (les moteurs le recréent), les deux vidages sont les
+seules actions destructrices, chacune avec SA phrase de conséquence
+exacte dans les deux langues ; le journal de diagnostic (logcat -d
+-t 1000 — depuis Android 4.1 un processus sans READ_LOGS ne voit que
+ses propres lignes, le service « :build » partage l'UID) est borné
+aux 400 dernières lignes NON VIDES de 2 000 caractères, ellipse
+annoncée, un journal vide s'affiche vide, une commande qui échoue
+est une erreur nommée ; la rangée Version porte versionName et le
+SHA court du commit injecté à la construction (« dev » hors dépôt),
+LICENSE et NOTICE sont empaquetés en assets par la tâche
+copierLicences (jamais une copie à la main), le lien dépôt dit son
+URL en dialogue de repli si aucun navigateur ; le moteur par défaut
+et les fils par build DÉMÉNAGENT du menu ⋮ de l'atelier (la case «
+en processus » du lot K disparaît, ses chaînes mortes aussi) :
+l'atelier relit le moteur à CHAQUE build, le BuildRunner en
+processus prend les fils des réglages, le service « :build » les lit
+à son prochain démarrage (sa légende le dit — jamais une promesse
+cachée) ; les réglages d'éditeur s'appliquent au montage de la
+session celeris. Trois composants entrent au kit : Stepper (bornes
+posées, bouton hors borne désactivé), Interrupteur (piste 46×27,
+pouce animé 180 ms), Nuancier (pastilles 26 dp, la choisie liserée).
+Lot N (ADR-É9, ADR-055/056/057/058) : le module agent, PUR, pair de
+core-tasks (agent -> core-platform core-deps), testable sans SDK —
+le contrôle API 28 s'y applique (ni java.net.http, ni records ni
+sealed, ni Files.readString) ; le MODÈLE NEUTRE à signatures
+opaques (PartieContenu quatre genres, MessageAgent, RequeteLlm,
+EvenementFlux — chaque partie RAISONNEMENT porte la signature de son
+fournisseur que le noyau ne fait que transporter, jamais
+interpréter : l'aller-retour conversation-fournisseur ne perd rien) ;
+la BOUCLE : prompt COUPÉ PAR VOLATILITÉ (l'ancrage stable en préfixe
+système écrit une fois, l'état volatile en note de FIN rafraîchie à
+chaque itération sans toucher un octet en amont — chez Anthropic la
+note vit en second bloc système APRÈS le point de rupture
+cache_control, chez OpenAI-compatible en dernier message système),
+historique APPEND-ONLY, lecture parallèle / mutation séquentielle,
+réparation d'historique, attentes visibles, plafond d'itérations en
+passation ; le GARDE-FOU « préfixe stable » (empreinteStable : la
+requête N+1 doit contenir la requête N octet pour octet en préfixe —
+une dérive silencieuse ne se voit que sur la facture, le test échoue
+à sa place) ; la COMPACTION à hystérésis (rien n'est élagué sous
+120 000 caractères ; au déclenchement une passe tronque à 4 000
+caractères les résultats d'outils plus vieux que les quatre plus
+récents, les textes utilisateur et assistant jamais touchés, la
+troncature S'ANNONCE, les décisions sont PERMANENTES — un résultat
+réélargi casserait le préfixe caché) ; la TAXONOMIE d'erreurs
+actionnables (quatorze genres, chacun sait s'il se retente ; les
+429 sont désambiguïsés) ; les PERMISSIONS (gate, trois modes) ; les
+SESSIONS en double moitié (transcript + historique modèle, écriture
+atomique) ; DEUX FOURNISSEURS : Anthropic (Messages API) et
+OpenAI-compatible (Chat Completions, URL de base libre — couvre les
+passerelles et les serveurs locaux), testés hors ligne par trames
+SSE rejouées sur un faux transport ; le TRANSPORT est OkHttp 5.5.1
+(décision D-5 du propriétaire, ADR-056 — la seule dépendance tierce
+du module, NOTICE et docs/third-party.md à jour ; le transport du
+résolveur P4 reste maison), derrière le port TransportHttp
+(postSse/post/get), le parseur SSE est MAISON (deltas, usages,
+EchecHttp qui porte statut + en-têtes + corps jusqu'à la taxonomie,
+jamais jeté) ; le JSON est le parseur maison (ADR-028) complété par
+JsonEcrire (écriture compacte, aller-retour garanti par
+construction) ; AUCUNE CLÉ dans le dépôt ni dans les tests (les
+clés de test sont des constantes visiblement factices), une clé
+absente produit CLE_MANQUANTE qui dit où la poser, le port PortCles
+est verrouillé par l'ADR-058 (clé dans Android Keystore, fichier
+AES-GCM par AtomicFiles, jamais de clés de secours en clair —
+l'implémentation est un composant Android, lot P). Lot O (ADR-É9,
+ADR-059) : le port EspaceTravailAgent est le SEUL contact entre
+l'agent et le projet (lectures overlay-preferred — le texte de
+l'éditeur ouvert prime sur le disque, recherche, diagnostics,
+écritures, exécution bornée, mémoire, questions), les méthodes que
+l'hôte ne sert pas ont un DÉFAUT DÉGRADÉ EspaceNonSupporte que
+l'exécuteur rend HONNÊTEMENT au modèle (« non disponible ici ») —
+jamais une liste vide qui se lirait « rien trouvé » ;
+l'implémentation EspaceTravailIde (ide-integration) sert ce que les
+briques servent VRAIMENT : diagnostics et définitions par
+MoteursLangage (moteur Java réel), fichiers par java.nio sous la
+racine, l'overlay de l'éditeur, l'exécution bornée, la résolution P4
+et l'édition du modèle injectées (l'atelier du lot P y branchera ses
+propres dépôts) — références, renommage et formatage restent au
+défaut dégradé (les vides honnêtes du lot D) ; le CONFINEMENT PAR
+CONSTRUCTION (la leçon du risque n° 2 de l'ADR-É9) : tout chemin
+d'outil passe par CheminsConfines (relatif, sans .., sans racine ni
+~ ni lettre de lecteur, sans séparateur retour, 300 caractères au
+plus, segments de contrôle refusés) AVANT d'atteindre le port, un
+chemin refusé ne touche JAMAIS le disque (éprouvé par test :
+l'arborescence du faux projet reste vide), et l'implémentation
+REVÉRIFIE (resolve + normalize + startsWith) — la défense en
+profondeur ; la SURFACE V1 : vingt-cinq outils assumés des 42 de
+CodeAssist (lecture 6, écriture 6, sémantique 4, exécution 3, plan
+1, mémoire 2, web 2, questions 1), neuf mutants, chaque outil porte
+son marqueur mutating et ses bornes CÔTÉ OUTIL (read_file fenêtre de
+400 lignes / 50 000 caractères, search_text plafonné à 50
+occurrences avec annonce, edit_file à occurrence EXACTE unique,
+run_program 120 s / run_task 300 s / run_tests 600 s — la QUEUE de
+la sortie conservée, l'amputation annoncée), la surface ENTIÈRE
+part à chaque requête sous le budget de 16 000 caractères (le
+garde-fou du test échoue à la place de la facture) ; les
+CHECKPOINTS au premier toucher (EspaceCheckpoint enveloppe l'espace :
+instantané du fichier AU PREMIER TOUCHER du tour, plafond 200
+fichiers, annulation du plus récent au plus vieux — un fichier créé
+disparaît, un modifié revient — et rapport HONNÊTE de ce qui ne se
+restaure pas : la dépendance ajoutée n'est pas annulée, le rapport
+le dit) ; le contenu web revient TOUJOURS enveloppé
+<contenu-non-fiable source=…> (plafond 200 000 caractères, délai
+20 s, http(s) seulement), ask_user passe par le port (1 à 4
+questions de 2 à 4 options — les cartes arrivent au lot P).
+Acceptation : check vert sans SDK (politique de langue 0 problème),
+85 tests agent 0 échec (module neuf : boucle 12, compaction 6,
+erreurs 12, Anthropic 6, OpenAI-compatible 7, SSE 10, réparation 4,
+sessions 4, checkpoints 6, outils 18), 72 tests ide-integration 0
+échec (9 nouveaux : l'espace de travail sur les VRAIES briques —
+moteur Java réel pour diagnostics et définition, BuildRunner réel
+pour la compilation bornée, résolveur P4 réel sur un dépôt local :
+lockfile écrit, joide-module.toml réécrit, seconde demande sans
+effet), 227 tests app-android 0 échec (39 nouveaux : Reglages 9,
+EtatParametres 10, MesuresStockage 7, JournalDiagnostic 6,
+MaquetteParametres 7) ; ADR-054 à 059, NOTICE et docs/third-party.md
+(OkHttp), graphe et test du graphe (arêtes ide-integration -> agent
+et TEST ide-integration -> core-store en jvmApi) ; arrêt pour
+validation du propriétaire.
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| agent (module neuf) | `BoucleAgent`, `HistoriqueAgent`, `CompacteurHistorique`, `ReparationHistorique`, `MessageAgent`/`PartieContenu`/`RequeteLlm`/`EvenementFlux`/`EvenementAgent`/`UsageLlm` (modèle neutre), `ErreursLlm` (quatorze genres), `Permissions`, `SessionsAgent` (double moitié), `FournisseurLlm`, `FournisseurAnthropic`, `FournisseurOpenAiCompatible`, `TransportHttp` (port), `TransportOkHttp`, `ParseurSse`, `SurfaceOutils`, `DescOutil`/`OutilAgent`/`ExecuteurOutils`, espace : `EspaceTravailAgent` (port), `EspaceNonSupporte`, `CheminsConfines`, `EspaceCheckpoint`, `QuestionUtilisateur`, `PositionEspace`/`OccurrenceEspace`/`DiagnosticEspace`/`ResultatExecution`, outils : `OutilsV1`, `OutilsLecture`, `OutilsEcriture`, `OutilsSemantiques`, `OutilsBuild`, `OutilsWeb`, `OutilsDivers`, `OutilSimple`, `Schemas`, `PlanAgent` |
+| agent `src/test` | `BoucleAgentTest` (12), `CompacteurHistoriqueTest` (6), `ErreursLlmTest` (12), `FournisseurAnthropicTest` (6), `FournisseurOpenAiCompatibleTest` (7), `ParseurSseTest` (10), `ReparationHistoriqueTest` (4), `SessionsAgentTest` (4), `EspaceCheckpointTest` (6), `OutilsV1Test` (18) ; faux : `FauxTransport`, `FournisseurScripte`, `OutilMemoire`, `EspaceFaux` |
+| core-deps `json` | `JsonEcrire` (écriture compacte, aller-retour garanti) |
+| ide-integration `agent/` | `EspaceTravailIde` (le port sur les vraies briques : moteurs, overlay, exécution bornée, résolution P4, éditeur de modèle injectés) |
+| ide-integration `src/test` | `EspaceTravailIdeTest` (9 — moteur Java réel, BuildRunner réel, résolveur P4 réel) |
+| app-android `parametres/` | `Reglages` (schéma, bornes, tolérance), `EtatParametres` (cinq sections, quinze rangées, recherche), `MesuresStockage`, `JournalDiagnostic`, `PreferencesAndroid` (pont), `EcranParametres` |
+| app-android `ui/` | `Stepper`, `Interrupteur`, `Nuancier` |
+| app-android | entrée Paramètres au menu de l'application (le journal vit dedans — aucune entrée morte), tâche `copierLicences` (LICENSE + NOTICE en assets), SHA du commit en buildConfigField, réglages consommés (palette, session celeris au montage, BuildRunner, service « :build ») |
+| docs/adr | `054-lot-m-parametres.md`, `055-lot-n-module-agent.md`, `056-lot-n-transport-okhttp.md`, `057-lot-n-politique-de-couts.md`, `058-lot-n-stockage-chiffre-des-cles.md`, `059-lot-o-outils-et-confinement.md` |
+
+## Modifiés
+
+- `gradle/module-graph.txt` + `settings.gradle.kts` + test du graphe :
+  le module `agent` entre entre core-deps et build-jvm ; l'arête
+  `ide-integration -> agent` (implémentation du port) et l'arête de
+  TEST `ide-integration -> core-store` (le vrai moteur de build
+  tourne dans les tests de l'espace de travail) sont autorisées.
+- `gradle/libs.versions.toml` : OkHttp 5.5.1 au catalogue (transport
+  du module agent, décision D-5).
+- `NOTICE` et `docs/third-party.md` : OkHttp + kotlin-stdlib
+  (Apache-2.0).
+- `Graphite`/`GraphiteVue` : accents et thème lus des réglages à
+  chaque appel de palette.
+- `EcranAtelier`/`MainActivity` : la case « en processus » du menu ⋮
+  déménage dans Paramètres (chaînes mortes retirées), le menu de
+  l'application gagne Paramètres.
+- Chaînes `values`/`values-fr` : 46 clés nouvelles du lot M en
+  parité.
+
 # CHANGES — Lots J, K et L : l'atelier adaptatif, la console, l'aperçu (groupe 2 de la V2)
 
 Le groupe 2 du plan ADR-É10 se complète : éditer dans l'atelier

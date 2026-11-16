@@ -27,6 +27,13 @@ Ce produit inclut du logiciel développé par le projet JoIDE
 | java-syntax (org.jetbrains, dépôt intellij-dependencies) | 0.3.381 | « JetBrains Open-Source Build Terms » — redistribution dans l'APK à confirmer (DEMANDES D-3, en attente du propriétaire) | analyse syntaxique Java du moteur code-lsp (transitive) | `docs/integration/DEMANDES.md` D-3 |
 | LayoutLib (com.github.jjoblab.LayoutLib : module-inflater et ses 5 modules api) | 3.7.0 (720e85d) | redistribution autorisée par déclaration écrite du titulaire des droits du 2026-11-16 (D-1 close pour JoIDE — le dépôt n'a pas de fichier LICENSE ; « aucun droit accordé sans autorisation explicite », autorisation explicite donnée) | aperçu de layouts XML de l'IDE (P8, ide-integration) — redistribué dans l'APK | `docs/integration/layoutlib.md` ; `docs/integration/DEMANDES.md` D-1 |
 
+## Dépendances et apports tiers (V2, lot N)
+
+- OkHttp 5.5.1 (com.squareup.okhttp3, Apache-2.0) et son transitif
+  kotlin-stdlib (Apache-2.0) : transport HTTP/SSE du module agent
+  (décision D-5 du propriétaire, ADR-056). Le transport HTTPS du
+  résolveur de dépendances (ADR-031) reste l'implémentation maison.
+
 ## Obligations EPL-2.0 (JUnit)
 
 JUnit n'est utilisé qu'en dépendance de test, jamais lié aux artefacts

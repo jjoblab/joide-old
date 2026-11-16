@@ -31,6 +31,15 @@ est autorisée par la déclaration du titulaire des droits du 2026-11-16
 | java-syntax (org.jetbrains, intellij-dependencies) | 0.3.381 | « JetBrains Open-Source Build Terms » — **redistribution à confirmer (D-3, en attente)** | analyse syntaxique du moteur Java (transitive de code-lsp) | `docs/integration/DEMANDES.md` D-3 |
 | LayoutLib (com.github.jjoblab.LayoutLib : module-inflater + 5 modules api) | 3.7.0@720e85d | dépôt sans fichier LICENSE (« projet interne — aucun droit sans autorisation explicite ») ; autorisation explicite du titulaire du 2026-11-16 (D-1 close pour JoIDE) | aperçu de layouts XML (ide-integration, lot E) | `docs/integration/layoutlib.md` |
 
+## Dépendances et apports tiers (V2, lot N)
+
+- OkHttp 5.5.1 (`com.squareup.okhttp3:okhttp`, Apache-2.0 ; transitif
+  kotlin-stdlib, Apache-2.0) : transport HTTP/SSE du module agent —
+  décision D-5 du propriétaire (ADR-056), la SEULE dépendance tierce
+  du module. Le transport HTTPS du résolveur de dépendances (ADR-031)
+  reste l'implémentation maison de `core-deps`. Vérification :
+  `gradle/libs.versions.toml` ; consigné dans `NOTICE`.
+
 ## Dépendances runtime de JoIDE
 
 - P1 : sqlite-jdbc (source set `jvm` de core-store).
@@ -39,3 +48,4 @@ est autorisée par la déclaration du titulaire des droits du 2026-11-16
   de build, consigné dans `NOTICE`.
 - P8 : les trois briques ci-dessus et leurs transitifs — embarquées
   dans l'APK de l'application Android, consignées dans `NOTICE`.
+- V2 lot N : OkHttp (module agent, ci-dessus).

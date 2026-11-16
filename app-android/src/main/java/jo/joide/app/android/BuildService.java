@@ -69,9 +69,14 @@ public final class BuildService extends Service {
 
     private void demarrer() {
         Path stockage = Paths.get(getFilesDir().getAbsolutePath());
+        // lot M (ADR-É8) : les fils par build viennent des réglages,
+        // lus au démarrage du service — jamais codés deux fois
+        int fils = jo.joide.app.android.parametres.Reglages.lire(
+                jo.joide.app.android.parametres.PreferencesAndroid
+                        .source(this)).filsParBuild;
         try {
             hote = new HoteDemonSocket(
-                    outDir -> StoreAndroid.open(outDir), 2);
+                    outDir -> StoreAndroid.open(outDir), fils);
             int port = hote.demarrer();
             publierPort(stockage, port);
         } catch (IOException | RuntimeException e) {
