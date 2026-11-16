@@ -23,12 +23,21 @@
             </intent-filter>
         </activity>
 
-        <!-- Lot G (ADR-048) : écran d'exercice du kit Graphite, non
-             exporté, aucune navigation câblée au lot G — l'entrée
-             « Kit Graphite » de l'écran P8 y mène. -->
+        <!-- Lot H (ADR-É3/ADR-049) : MainActivity est l’accueil « Mes
+             projets » ; l’écran IDE de P8 (lots A-F) vit ici, ouvert
+             sur un projet déjà importé — la racine et la bannière de
+             compatibilité Gradle arrivent par extras. Le lot J
+             (atelier adaptatif) remplacera cet empilement. -->
         <activity
-            android:name=".ecrans.exercice.EcranExercice"
-            android:label="@string/kit_graphique"
+            android:name=".ecrans.ide.EcranIde"
+            android:exported="false" />
+
+        <!-- Lot I (ADR-É4/ADR-050) : l’assistant de création en trois
+             étapes, non exporté, rien n’est créé avant « Créer le
+             projet ». -->
+        <activity
+            android:name=".ecrans.creation.EcranCreation"
+            android:label="@string/accueil_nouveau_projet"
             android:exported="false" />
 
         <!-- Démon de build en processus séparé (§6.7, ADR-043) :

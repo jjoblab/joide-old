@@ -33,8 +33,11 @@ public final class SpecsBuild {
     /** Budget d'admission par défaut (Mio) — appareils modestes. */
     static final int TAS_PAR_DEFAUT_MIO = 448;
 
-    /** Fils de construction par défaut du démon sur appareil. */
-    static final int FILS_PAR_DEFAUT = 2;
+    /**
+     * Fils de construction par défaut du démon sur appareil (public
+     * depuis le lot H : l'écran IDE vit dans son propre paquet).
+     */
+    public static final int FILS_PAR_DEFAUT = 2;
 
     private SpecsBuild() {
     }

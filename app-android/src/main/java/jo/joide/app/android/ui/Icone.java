@@ -1,0 +1,168 @@
+package jo.joide.app.android.ui;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.util.TypedValue;
+import android.view.MotionEvent;
+import android.view.View;
+
+/**
+ * Icône du kit : un glyphe dessiné au canvas (chemins en unités 24,
+ * trait 1,8 dp, bouts et jointures arrondis), à la couleur demandée.
+ * Aucune ressource externe (ADR-É2 : maquettes autonomes, kit aussi).
+ * Le glyphe et la couleur se posent après construction — la vue ne
+ * décide rien.
+ */
+public final class Icone extends View {
+
+    /** Les glyphes du kit (barre d'application, cartes, assistant). */
+    public enum Glyphe {
+        /** Loupe (recherche). */
+        RECHERCHE,
+        /** Trois points verticaux (menu ⋮). */
+        POINTS,
+        /** Chevron vers la droite (ouvrir). */
+        CHEVRON,
+        /** Chevron vers la gauche (retour). */
+        RETOUR,
+        /** Croix plus (créer, ajouter). */
+        PLUS,
+        /** Croix (fermer). */
+        CROIX,
+        /** Coche (sélection). */
+        COCHE,
+        /** Triangle alerte (franchise). */
+        TRIANGLE,
+        /** Glyphe dossier (états vides, tuiles). */
+        DOSSIER
+    }
+
+    private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private Glyphe glyphe = Glyphe.CROIX;
+    private int couleur;
+    private float traitDp = 1.8f;
+
+    public Icone(Context contexte) {
+        this(contexte, null);
+    }
+
+    public Icone(Context contexte, AttributeSet attributs) {
+        super(contexte, attributs);
+        setClickable(false);
+    }
+
+    /** Pose le glyphe. */
+    public void setGlyphe(Glyphe nouveau) {
+        glyphe = nouveau == null ? Glyphe.CROIX : nouveau;
+        invalidate();
+    }
+
+    /** Pose la couleur du trait. */
+    public void setCouleur(int nouvelle) {
+        couleur = nouvelle;
+        invalidate();
+    }
+
+    /** Pose l'épaisseur du trait (dp). */
+    public void setTraitDp(float dp) {
+        traitDp = dp;
+        invalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        float unite = Math.min(getWidth(), getHeight()) / 24f;
+        if (unite <= 0f) {
+            return;
+        }
+        float dx = (getWidth() - 24f * unite) / 2f;
+        float dy = (getHeight() - 24f * unite) / 2f;
+        pinceau.setStyle(Paint.Style.STROKE);
+        pinceau.setColor(couleur);
+        pinceau.setStrokeWidth(
+                TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                        traitDp, getResources().getDisplayMetrics()));
+        pinceau.setStrokeCap(Paint.Cap.ROUND);
+        pinceau.setStrokeJoin(Paint.Join.ROUND);
+        canvas.save();
+        canvas.translate(dx, dy);
+        dessiner(canvas, pinceau, unite);
+        canvas.restore();
+    }
+
+    private void dessiner(Canvas canvas, Paint pinceau, float u) {
+        Path chemin = new Path();
+        switch (glyphe) {
+            case RECHERCHE -> {
+                canvas.drawCircle(9f * u, 9f * u, 6f * u, pinceau);
+                chemin.moveTo(13.5f * u, 13.5f * u);
+                chemin.lineTo(17f * u, 17f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case POINTS -> {
+                pinceau.setStyle(Paint.Style.FILL);
+                for (float y : new float[]{4.5f, 10f, 15.5f}) {
+                    canvas.drawCircle(10f * u, y * u, 1.7f * u, pinceau);
+                }
+            }
+            case CHEVRON -> {
+                chemin.moveTo(7.5f * u, 4.5f * u);
+                chemin.lineTo(13f * u, 10f * u);
+                chemin.lineTo(7.5f * u, 15.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case RETOUR -> {
+                chemin.moveTo(16.5f * u, 4.5f * u);
+                chemin.lineTo(11f * u, 10f * u);
+                chemin.lineTo(16.5f * u, 15.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case PLUS -> {
+                chemin.moveTo(10f * u, 3.5f * u);
+                chemin.lineTo(10f * u, 16.5f * u);
+                chemin.moveTo(3.5f * u, 10f * u);
+                chemin.lineTo(16.5f * u, 10f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case CROIX -> {
+                chemin.moveTo(5f * u, 5f * u);
+                chemin.lineTo(15f * u, 15f * u);
+                chemin.moveTo(15f * u, 5f * u);
+                chemin.lineTo(5f * u, 15f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case COCHE -> {
+                chemin.moveTo(3.5f * u, 10.5f * u);
+                chemin.lineTo(8f * u, 15f * u);
+                chemin.lineTo(16.5f * u, 6f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case TRIANGLE -> {
+                chemin.moveTo(10f * u, 3f * u);
+                chemin.lineTo(18f * u, 18f * u);
+                chemin.lineTo(2f * u, 18f * u);
+                chemin.close();
+                canvas.drawPath(chemin, pinceau);
+                // le point d'exclamation du panneau
+                chemin.reset();
+                chemin.moveTo(10f * u, 8f * u);
+                chemin.lineTo(10f * u, 13f * u);
+                canvas.drawPath(chemin, pinceau);
+                canvas.drawPoint(10f * u, 15.8f * u, pinceau);
+            }
+            case DOSSIER -> Carte.dessinerDossier(canvas, pinceau, u, 0f, 0f);
+            default -> {
+            }
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent evenement) {
+        return isClickable() && super.onTouchEvent(evenement);
+    }
+}

@@ -63,6 +63,14 @@ public final class Champ extends LinearLayout {
         etiquette.setText(idRes);
     }
 
+    /**
+     * Champ sans étiquette (recherche de l'accueil, saisie de
+     * renommage) : la ligne de légende disparaît, la boîte reste.
+     */
+    public void sansEtiquette() {
+        etiquette.setVisibility(GONE);
+    }
+
     /** L'indice (hint) du champ, depuis les ressources. */
     public void setIndice(int idRes) {
         edition.setHint(idRes);

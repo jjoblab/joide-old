@@ -108,8 +108,12 @@ public final class BuildService extends Service {
         }
     }
 
-    /** @return le port publié par le service, ou -1 s'il n'a pas écrit */
-    static int lirePort(File fichiers) {
+    /**
+     * @return le port publié par le service, ou -1 s'il n'a pas écrit
+     *         (public depuis le lot H : l'écran IDE vit dans son propre
+     *         paquet et attend le démarrage du service)
+     */
+    public static int lirePort(File fichiers) {
         try {
             byte[] contenu = Files.readAllBytes(Paths.get(
                     fichiers.getAbsolutePath(), FICHIER_PORT));

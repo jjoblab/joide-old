@@ -20,6 +20,30 @@ Entrées ouvertes à l'issue de P8 :
       renommage, correctifs, indices, jetons sémantiques, références —
       vides honnêtes du lot D).
 
+Entrées ouvertes à l’issue du groupe 1 de la V2 (lots G-I,
+2026-11-16) :
+
+- [ ] V2/lots H-J : exécution des mains et des tests sur l’appareil —
+      la tâche `JvmRunTask` existe dans le pipeline (P3), le
+      protocole du démon ne la sert pas ; il manque le bouton
+      Exécuter de l’atelier et l’usage du journal `run.log` (la
+      carte du modèle Console JVM ne promet que la construction,
+      ADR-050, écart n° 1).
+- [ ] V2/lot H+ : outil bureau qui constitue une spec Android
+      (BuildSpec.Kind.ANDROID) depuis un workspace natif joide.toml —
+      la chaîne P5 est prouvée sur specs forgées, aucun outil
+      utilisateur ne la branche ; la carte du modèle Application
+      Android le nomme (« câblage à venir », ADR-050, écart n° 3) ;
+      l’échappatoire existant est l’export Gradle P7.
+- [ ] V2/lot M : le journal (logcat filtré) dans l’accueil et les
+      paramètres — le menu ⋮ de l’accueil n’affiche que « À
+      propos » tant que le journal n’existe pas (ADR-049, aucune
+      entrée morte).
+- [ ] V2/lots H+ : importer un projet inconnu (ni joide.toml ni
+      script Gradle) comme un départ Vide — le lot H refuse avec un
+      dialogue nommé ; la création couvre déjà ce besoin par le
+      modèle Vide.
+
 Entrées ouvertes à l'issue de P7 :
 
 - [ ] P8 : implémenter l'échappatoire « build Gradle déporté » conçue

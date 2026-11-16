@@ -38,13 +38,40 @@ public final class Carte extends LinearLayout {
         setOrientation(HORIZONTAL);
         int marge = GraphiteVue.dp(contexte, 14);
         setPadding(marge, marge, marge, marge);
+        poserFond(false);
+        setElevation(GraphiteVue.dp(contexte, 3));
+    }
+
+    /**
+     * La carte tonale (lot H) : bord accent 35 %, dégradé accent 8 %
+     * vers la surface — la reprise de l'accueil et le modèle choisi
+     * de l'assistant (maquette accueil-projets.html).
+     *
+     * @param tonale vrai pour l'accentuation, faux pour la carte
+     *        standard du kit
+     */
+    public void setTonale(boolean tonale) {
+        poserFond(tonale);
+        invalidate();
+    }
+
+    private void poserFond(boolean tonale) {
         GradientDrawable fond = new GradientDrawable();
-        fond.setColor(palette.surface);
-        fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
-        fond.setCornerRadius(GraphiteVue.dp(contexte,
+        if (tonale) {
+            fond = new GradientDrawable(
+                    android.graphics.drawable.GradientDrawable
+                            .Orientation.TOP_BOTTOM,
+                    new int[]{ChoixCarte.tonaleHaut(palette),
+                            palette.surface});
+            fond.setStroke(GraphiteVue.dp(getContext(), 1),
+                    ChoixCarte.tonaleBord(palette));
+        } else {
+            fond.setColor(palette.surface);
+            fond.setStroke(GraphiteVue.dp(getContext(), 1), palette.bordFin);
+        }
+        fond.setCornerRadius(GraphiteVue.dp(getContext(),
                 Graphite.RAYON_CARTE));
         setBackground(fond);
-        setElevation(GraphiteVue.dp(contexte, 3));
     }
 
     @Override

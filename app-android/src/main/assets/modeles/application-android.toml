@@ -1,0 +1,109 @@
+# Application Android — modèle JoIDE (joide.template/1, ADR-050).
+# Franchise portee par la carte : l'edition, les diagnostics et
+# l'aperçu tournent sur l'appareil ; le module JVM s'y construit ;
+# l'APK exige la chaine de bureau (non cablee en outil en P8).
+schema = "joide.template/1"
+id = "application-android"
+nom = "Application Android"
+description = ":app Android + :core JVM, aperçu inclus"
+categorie = "applications"
+tuile = "android"
+franchise = "JVM sur l'appareil ; l'APK exige la chaîne de bureau (câblage à venir)"
+fichier-entree = "app/src/main/java/{paquet-chemin}/MainActivity.kt"
+
+[[modules]]
+id = "app"
+type = "android-application"
+defaut = true
+source = ["src/main/java", "src/main/kotlin"]
+android-res = ["src/main/res"]
+manifeste = "src/main/AndroidManifest.xml"
+requiert = ["core"]
+
+[[modules]]
+id = "core"
+type = "jvm-library"
+defaut = true
+source = ["src/main/java", "src/main/kotlin"]
+
+[[fichiers]]
+module = "app"
+chemin = "app/src/main/AndroidManifest.xml"
+lignes = [
+  '<?xml version="1.0" encoding="utf-8"?>',
+  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+  '    <application',
+  '        android:label="@string/app_name"',
+  '        android:theme="@android:style/Theme.Material.NoActionBar">',
+  '        <activity android:name=".MainActivity" android:exported="true">',
+  '            <intent-filter>',
+  '                <action android:name="android.intent.action.MAIN" />',
+  '                <category android:name="android.intent.category.LAUNCHER" />',
+  '            </intent-filter>',
+  '        </activity>',
+  '    </application>',
+  '</manifest>',
+]
+
+[[fichiers]]
+module = "app"
+chemin = "app/src/main/res/values/strings.xml"
+lignes = [
+  '<?xml version="1.0" encoding="utf-8"?>',
+  '<resources>',
+  '    <string name="app_name">{nom}</string>',
+  '</resources>',
+]
+
+[[fichiers]]
+module = "app"
+chemin = "app/src/main/res/layout/activity_main.xml"
+lignes = [
+  '<?xml version="1.0" encoding="utf-8"?>',
+  '<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"',
+  '    android:layout_width="match_parent"',
+  '    android:layout_height="match_parent"',
+  '    android:orientation="vertical"',
+  '    android:gravity="center"',
+  '    android:padding="24dp">',
+  '    <TextView',
+  '        android:layout_width="wrap_content"',
+  '        android:layout_height="wrap_content"',
+  '        android:text="@string/app_name"',
+  '        android:textSize="28sp" />',
+  '    <TextView',
+  '        android:layout_width="wrap_content"',
+  '        android:layout_height="wrap_content"',
+  '        android:layout_marginTop="8dp"',
+  '        android:text="{nom}" />',
+  '</LinearLayout>',
+]
+
+[[fichiers]]
+module = "app"
+chemin = "app/src/main/java/{paquet-chemin}/MainActivity.kt"
+lignes = [
+  'package {paquet}',
+  '',
+  'import android.app.Activity',
+  'import android.os.Bundle',
+  '',
+  'class MainActivity : Activity() {',
+  '    override fun onCreate(savedInstanceState: Bundle?) {',
+  '        super.onCreate(savedInstanceState)',
+  '        setContentView(R.layout.activity_main)',
+  '    }',
+  '}',
+]
+
+[[fichiers]]
+module = "core"
+chemin = "core/src/main/java/jo/exemple/core/Outil.kt"
+lignes = [
+  'package jo.exemple.core',
+  '',
+  "/** Le socle JVM du projet : il se construit sur l'appareil. */",
+  'object Outil {',
+  '    fun saluer(nom: String): String = "Bonjour, $nom !"',
+  '}',
+]

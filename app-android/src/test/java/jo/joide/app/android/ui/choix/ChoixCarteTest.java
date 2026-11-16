@@ -57,4 +57,21 @@ class ChoixCarteTest {
                 "clair : transparent, la distinction passe par les bords");
         assertNotEquals(0, ChoixCarte.lisere(S), "le lisere se voit en sombre");
     }
+
+    @Test
+    void carteTonaleBordEtHautDuDegrade() {
+        // maquette accueil-projets.html : bord rgba(130,170,255,.35),
+        // haut du dégradé rgba(130,170,255,.08) — accent sur surface
+        assertEquals(Graphite.melange(S.accent, 0.35f, S.surface),
+                ChoixCarte.tonaleBord(S), "bord accent a 35 % (sombre)");
+        assertEquals(Graphite.melange(S.accent, 0.08f, S.surface),
+                ChoixCarte.tonaleHaut(S), "haut accent a 8 % (sombre)");
+        assertEquals(Graphite.melange(C.accent, 0.35f, C.surface),
+                ChoixCarte.tonaleBord(C), "bord accent a 35 % (clair)");
+        assertEquals(Graphite.melange(C.accent, 0.08f, C.surface),
+                ChoixCarte.tonaleHaut(C), "haut accent a 8 % (clair)");
+        // valeurs concrètes de la maquette sombre (jetons ADR-É2)
+        assertEquals(0xFF3B4C6E, ChoixCarte.tonaleBord(S));
+        assertEquals(0xFF1E2532, ChoixCarte.tonaleHaut(S));
+    }
 }

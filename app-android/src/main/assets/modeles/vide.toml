@@ -1,0 +1,14 @@
+# Vide — modèle JoIDE (joide.template/1, ADR-050).
+# Un joide.toml minimal, sans module : les modules viennent ensuite,
+# ajoutés à la main (ou par les modèles v3).
+schema = "joide.template/1"
+id = "vide"
+nom = "Vide"
+description = "Un joide.toml minimal, sans module"
+categorie = "vide"
+tuile = "vide"
+note = "point de départ libre"
+
+# Pas de module, pas de fichier : le générateur écrit le seul
+# joide.toml (le lecteur signalera « aucun module declare », un
+# avertissement honnête pour un départ vide).

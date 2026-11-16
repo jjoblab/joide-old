@@ -1,3 +1,83 @@
+# CHANGES — Lots H et I : l'accueil « Mes projets » et la création de projet (groupe 1 de la V2)
+
+Le groupe 1 du plan ADR-É10 se complète : l'application s'ouvre
+désormais sur un accueil moderne, crée un projet, l'importe en
+second — exactement ce que le propriétaire peut tester au jalon
+« v2 alpha ». Lot H (ADR-É3, ADR-049) : le hub de projets remplace
+l'ouverture SAF de P8 comme écran de lancement — carte « Reprendre »
+fusionnée avec la première carte (jamais doublée), « Nouveau projet »
+primaire et « Importer » tonal côte à côte (l'import reste visible
+sans creuser de feuille), section « Projets (n) » au compteur exact,
+une seule ligne de méta par carte, ⋮ (renommer l'affichage,
+supprimer avec ses deux conséquences NOMMÉES — retirer de la liste /
+effacer du stockage), recherche filtrante, état vide de première
+classe ; la persistance des projets récents vit dans
+un JSON atomique versionné (projets-recents.json, AtomicFiles,
+parseur maison ADR-028, tolérance signalée — jamais de réparation
+silencieuse), la classification des cartes se lit sur le modèle
+déclaratif (Android / console par facette application /
+bibliothèque / vide / Gradle en compatibilité avec sa franchise).
+Lot I (ADR-É4, ADR-050) : l'assistant en trois étapes — galerie de
+quatre modèles déclaratifs TOML (joide.template/1) dans
+assets/modeles (un modèle v3 s'ajoute sans toucher l'assistant),
+franchise SUR la carte (la limite Android est nommée : JVM sur
+l'appareil, APK au bureau « câblage à venir » — jamais une
+promesse), formulaire piloté par le modèle (paquet et minSdk
+seulement pour Android, segment 28/30 — 24 écarté, ADR-009),
+récapitulatif EXACT (l'arborescence affichée est la liste des
+fichiers que la génération produira), création atomique tout ou
+rien (temporaire voisin puis renommage, chemins hors projet
+refusés — zip-slip ADR-032), inscription dans les projets récents
+et ouverture de l'atelier sur le fichier d'entrée du modèle.
+L'écran IDE de P8 déménage dans EcranIde (extras : racine,
+bannière Gradle, fichier d'entrée) ; l'écran d'exercice du kit est
+retiré comme le lot G l'annonçait. La « capture » contre les
+maquettes suit la méthode ADR-048 : conformité prouvée par tests
+lisant les maquettes (MaquetteAccueilTest, MaquetteCreationTest),
+validation visuelle par le propriétaire via l'APK du CI (pas
+d'émulateur au bac à sable, écart P8 n° 4). Acceptation : check
+vert sans SDK et avec SDK (lint NewApi bloquant — quatre appels
+hors niveau 28 refusés puis remplacés : readAllBytes de flux,
+readString, writeString, Stream.toList), 118 tests app-android
+0 échec (71 nouveaux : persistance, état d'accueil, classification,
+âges, salutation, analyse des modèles, génération — aller-retour
+disque—→ lecteur de workspace sans erreur —, écriture atomique,
+machine à états de l'assistant), :app-android:assembleDebug
+produit l'APK du groupe 1 (92 Mo, 30 dex, les quatre modèles dans
+assets, toutes les classes vérifiées dans les dex), politique de
+langue 0 problème (parité values/values-fr, identifiants ASCII,
+messages d'exception anglais) ; arrêt pour validation du
+propriétaire (D-8 : rythme par groupe).
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| app-android `accueil/` | `ProjetsRecents` (JSON atomique joide.recents/1), `EtatAccueil` (tri, fusion reprise, compteur, filtre), `ClassifieurProjet`, `TypeProjet`, `AgeRelatif`, `Salutation` — purs, testés JVM |
+| app-android `creation/` | `ModeleProjet` (analyse joide.template/1), `GenerateurProjet` (config dérivée par les écrivains canoniques), `EcrireProjet` (atomique tout ou rien), `EtatCreation` (machine à états) — purs, testés JVM |
+| app-android `ecrans/` | `ide/EcranIde` (l'écran IDE de P8, déplacé), `creation/EcranCreation` (l'assistant) |
+| app-android `ui/` | `Icone` (glyphes au canvas), `Segment` + `ui/choix/ChoixSegment` |
+| app-android `res` | chaînes des lots H et I dans `values/` (anglais) et `values-fr/` (français) |
+| app-android `assets/modeles/` | `application-android.toml`, `console-jvm.toml`, `bibliotheque-jvm.toml`, `vide.toml` (les quatre modèles v2, ADR-050) |
+| app-android `src/test` | `ProjetsRecentsTest` (14), `EtatAccueilTest` (11), `ClassifieurProjetTest` (6), `MaquetteAccueilTest` (5), `ModeleProjetTest` (7), `GenerateurProjetTest` (8), `EcrireProjetTest` (5), `EtatCreationTest` (9), `MaquetteCreationTest` (5) |
+| docs/adr | `049-lot-h-projets-recents.md`, `050-lot-i-modeles-de-projet.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| app-android | `MainActivity` | réécrit : l'accueil « Mes projets » (lanceur), l'import et les ouvertures vivent ici |
+| app-android `ui/` | `Carte` | `setTonale` (bord accent 35 %, dégradé 8 % — reprise, modèle choisi) |
+| app-android `ui/` | `Champ` | `sansEtiquette` (recherche, renommage) |
+| app-android `ui/` | `Dialogue` | `menu`, `saisie`, `destructive` (deux conséquences distinctes), `information` à message libre |
+| app-android | `BuildService`, `SpecsBuild` | `lirePort` et `FILS_PAR_DEFAUT` publics (EcranIde vit dans son paquet) |
+| app-android | `AndroidManifest.xml` | EcranIde + EcranCreation déclarées, EcranExercice retirée |
+| app-android `res` | `values/`, `values-fr/` | chaînes de l'écran d'exercice retirées (écran supprimé au lot H, mandat du lot G) ; chaînes P8 conservées |
+| Racine | `docs/backlog.md` | entrées du groupe 1 : exécution sur appareil, outil bureau spec Android, journal, import inconnu |
+| Racine | `ROADMAP.md` | ligne V2 : groupe 1 livré (G+H+I), arrêt pour validation |
+| docs/ecrans | `README.md` | statut : groupe 1 complet, arrêt pour validation (D-8) |
+| app-android | `README.md` | état des lots H/I ; la note pendante « État du lot G » réparée |
+
 # CHANGES — Lot G : le système de design « Graphite » en code
 
 Le GO du propriétaire sur le plan ADR-É10 (2026-11-16 : « je te dis

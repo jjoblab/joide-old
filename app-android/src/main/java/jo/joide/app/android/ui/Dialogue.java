@@ -49,6 +49,78 @@ public final class Dialogue {
         habiller(constructeur.create(), palette);
     }
 
+    /**
+     * Un dialogue d'information à message libre (lot H) : le message
+     * porte un détail nommé — version de l'application, cause d'un
+     * échec d'import — jamais un texte générique qui cache.
+     */
+    public static void information(Context contexte,
+                                   Graphite.Palette palette,
+                                   CharSequence titre, CharSequence message,
+                                   int idOk) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre)
+                .setMessage(message)
+                .setPositiveButton(idOk, null);
+        habiller(constructeur.create(), palette);
+    }
+
+    /**
+     * Un menu (lot H) : titre libre (le nom du projet), éléments
+     * nommés, choix unique — les actions ⋮ des cartes et de la barre
+     * d'application.
+     */
+    public static void menu(Context contexte,
+                            Graphite.Palette palette,
+                            CharSequence titre, CharSequence[] elements,
+                            DialogInterface.OnClickListener auditeur) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre).setItems(elements, auditeur);
+        habiller(constructeur.create(), palette);
+    }
+
+    /**
+     * Une saisie (lot H) : titre libre (le nom du projet), un corps
+     * de vue (le champ du kit), annuler / valider.
+     */
+    public static void saisie(Context contexte,
+                              Graphite.Palette palette,
+                              CharSequence titre, android.view.View corps,
+                              int idAnnuler, int idValider,
+                              DialogInterface.OnClickListener valideur) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre).setView(corps)
+                .setNegativeButton(idAnnuler, null)
+                .setPositiveButton(idValider, valideur);
+        habiller(constructeur.create(), palette);
+    }
+
+    /**
+     * Une confirmation destructive à deux actions distinctes (lot H,
+     * ADR-É3) : « Supprimer "x" de la liste ? » — retirer de la
+     * liste (les fichiers restent) et effacer du stockage (les
+     * fichiers disparaissent) sont DEUX actions, deux libellés, deux
+     * auditeurs ; l'annulation reste toujours disponible.
+     */
+    public static void destructive(Context contexte,
+                                   Graphite.Palette palette,
+                                   CharSequence titre, CharSequence message,
+                                   int idAnnuler, int idRetirer,
+                                   int idEffacer,
+                                   DialogInterface.OnClickListener retirer,
+                                   DialogInterface.OnClickListener effacer) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre).setMessage(message)
+                .setNegativeButton(idAnnuler, null)
+                .setNeutralButton(idRetirer, retirer)
+                .setPositiveButton(idEffacer, effacer);
+        habiller(constructeur.create(), palette);
+    }
+
     private static void habiller(android.app.AlertDialog dialogue,
                                  Graphite.Palette palette) {
         Context contexte = dialogue.getContext();

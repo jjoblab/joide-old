@@ -40,6 +40,20 @@ public final class ChoixCarte {
         return Graphite.melange(0xFFFFFFFF, 0.05f, palette.surface);
     }
 
+    /**
+     * Le bord de la carte tonale (reprise de l'accueil, modèle choisi
+     * de l'assistant — maquette accueil-projets.html) : accent à
+     * 35 % sur la surface.
+     */
+    public static int tonaleBord(Graphite.Palette palette) {
+        return Graphite.melange(palette.accent, 0.35f, palette.surface);
+    }
+
+    /** Le haut du dégradé de la carte tonale : accent à 8 % sur la surface. */
+    public static int tonaleHaut(Graphite.Palette palette) {
+        return Graphite.melange(palette.accent, 0.08f, palette.surface);
+    }
+
     private static int role(Graphite.Palette palette, TypeTuile type) {
         return switch (type) {
             case ANDROID -> palette.reussite;
