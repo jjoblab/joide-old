@@ -171,7 +171,8 @@ class MaquetteParametresTest {
         assertFalse(cles.contains("syntaxe"));
         // 15 au lot M, +4 au lot P (la section IA : deux clés, le
         // modèle, l'URL — ADR-É11 point 9)
-        assertEquals(19, cles.size());
+        assertEquals(20, cles.size(),
+                "le lot Q ajoute la rangée de clé Gemini");
     }
 
     private static Rangee rangee(String cle) {

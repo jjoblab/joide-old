@@ -30,7 +30,10 @@ import jo.joide.agent.ErreursLlm;
 import jo.joide.agent.espace.EspaceTravailInjecteur;
 import jo.joide.agent.EvenementAgent;
 import jo.joide.agent.ExecuteurOutils;
+import jo.joide.agent.BancCles;
 import jo.joide.agent.FournisseurAnthropic;
+import jo.joide.agent.FournisseurBascule;
+import jo.joide.agent.FournisseurGemini;
 import jo.joide.agent.FournisseurLlm;
 import jo.joide.agent.FournisseurOpenAiCompatible;
 import jo.joide.agent.HistoriqueAgent;
@@ -332,8 +335,10 @@ public final class AgentService extends Service {
                                 .source(this));
         String nomFournisseur =
                 jo.joide.app.android.parametres.Reglages.FournisseurIa
-                        .ANTHROPIC == fournisseur
-                        ? "anthropic" : "openai";
+                        .ANTHROPIC == fournisseur ? "anthropic"
+                        : jo.joide.app.android.parametres.Reglages
+                        .FournisseurIa.GEMINI == fournisseur
+                        ? "gemini" : "openai";
         String cle = lireCle(nomFournisseur);
         if (cle == null) {
             consigner(new Entree(EvenementAgent.erreur(
@@ -347,14 +352,11 @@ public final class AgentService extends Service {
         }
         String modeleChoisi = modele == null || modele.isEmpty()
                 ? reglages.modeleIa : modele;
-        FournisseurLlm fournisseurLlm;
-        if (fournisseur == jo.joide.app.android.parametres.Reglages
-                .FournisseurIa.ANTHROPIC) {
-            fournisseurLlm = new FournisseurAnthropic("", cle);
-        } else {
-            fournisseurLlm = new FournisseurOpenAiCompatible(
-                    reglages.urlIa, cle);
-        }
+        // le lot Q : la clé du stockage chiffré porte PLUSIEURS clés
+        // séparées par saut de ligne ou virgule — le banc et la
+        // bascule survivent à la conversation (les limites apprises
+        // aussi), ils ne se reconstruisent que si les clés changent
+        FournisseurLlm fournisseurLlm = bascule(nomFournisseur, cle);
         EspaceTravailAgent espacePonte = espace;
         EspaceCheckpoint checkpoints = espacePonte instanceof
                 EspaceCheckpoint verrou ? verrou : null;
@@ -555,6 +557,70 @@ public final class AgentService extends Service {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Le banc de clés et la bascule (lot Q, ADR-062) : une clé ou
+    // plusieurs — l'ordre utilisateur, les bancs différenciés, la
+    // régulation préventive qui apprend. Détenu PAR SERVICE : les
+    // limites apprises survivent à la conversation.
+    // ------------------------------------------------------------------
+
+    private BancCles bancCles;
+    private FournisseurBascule fournisseurBascule;
+    private String bancSignature;
+
+    /**
+     * La bascule du fournisseur pour ce tour : reconstruite seulement
+     * quand le fournisseur ou l'ensemble des clés a changé.
+     *
+     * @param nomFournisseur l'identifiant du stockage chiffré
+     * @param cle            la valeur stockée (plusieurs clés
+     *                       séparées par saut de ligne ou virgule)
+     * @return le fournisseur enveloppé
+     */
+    private FournisseurLlm bascule(String nomFournisseur,
+                                   String cle) {
+        List<String> cles = separerCles(cle);
+        String signature = nomFournisseur + "|" + cles;
+        if (fournisseurBascule == null
+                || !signature.equals(bancSignature)) {
+            bancCles = new BancCles(cles, null);
+            fournisseurBascule = new FournisseurBascule(bancCles,
+                    cleDeLaFabrique -> fournisseurParCle(
+                            nomFournisseur, cleDeLaFabrique), null);
+            bancSignature = signature;
+        }
+        return fournisseurBascule;
+    }
+
+    /** Les clés séparées, dans l'ordre de l'utilisateur. */
+    private static List<String> separerCles(String cle) {
+        List<String> cles = new ArrayList<>();
+        for (String morceau : cle.split("[\n,]")) {
+            String n = morceau.trim();
+            if (!n.isEmpty()) {
+                cles.add(n);
+            }
+        }
+        return cles;
+    }
+
+    /** Le fournisseur d'une clé du banc. */
+    private FournisseurLlm fournisseurParCle(String nomFournisseur,
+                                             String cleDuBanc) {
+        if ("anthropic".equals(nomFournisseur)) {
+            return new FournisseurAnthropic("", cleDuBanc);
+        }
+        if ("gemini".equals(nomFournisseur)) {
+            return new FournisseurGemini(cleDuBanc);
+        }
+        jo.joide.app.android.parametres.Reglages reglages =
+                jo.joide.app.android.parametres.Reglages.lire(
+                        jo.joide.app.android.parametres
+                                .PreferencesAndroid.source(this));
+        return new FournisseurOpenAiCompatible(reglages.urlIa,
+                cleDuBanc);
     }
 
     private String dernierMessage() {

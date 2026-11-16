@@ -96,10 +96,11 @@ class EtatParametresTest {
     }
 
     @Test
-    void dixNeufRangeesEtDeuxActionsDestructricesExactement() {
+    void vingtRangeesEtDeuxActionsDestructricesExactement() {
         int rangees = EtatParametres.sections().stream()
                 .mapToInt(s -> s.rangees().size()).sum();
-        assertEquals(19, rangees);
+        assertEquals(20, rangees,
+                "le lot Q ajoute la rangée de clé Gemini");
         assertEquals(List.of(EtatParametres.R_CIDX, EtatParametres.R_M2),
                 EtatParametres.actionsDestructrices(),
                 "seules les deux vidanges sont destructrices, "
@@ -168,6 +169,7 @@ class EtatParametresTest {
                 vues.add(rangee.cle());
             }
         }
-        assertEquals(19, vues.size());
+        assertEquals(20, vues.size(),
+                "le lot Q ajoute la rangée de clé Gemini");
     }
 }

@@ -38,12 +38,14 @@ public final class Reglages {
         PROCESSUS
     }
 
-    /** Le fournisseur LLM par défaut de l'agent (lot P, D-2 : BYOK pur, deux fournisseurs en v1). */
+    /** Le fournisseur LLM par défaut de l'agent (lot P, D-2 ; lot Q : Gemini rejoint la v1). */
     public enum FournisseurIa {
         /** Anthropic (Messages API). */
         ANTHROPIC,
         /** OpenAI-compatible (Chat Completions, URL de base libre). */
-        OPENAI
+        OPENAI,
+        /** Google Gemini (streamGenerateContent, cache de contexte serveur, lot Q). */
+        GEMINI
     }
 
     /** Lecture/écriture des valeurs persistées (préférences privées). */
