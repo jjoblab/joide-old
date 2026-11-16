@@ -6,18 +6,45 @@ plugins {
     id("joide.android-application-conventions")
 }
 
+// Signature CI stable (ADR-047) : la clé vit dans les secrets du dépôt,
+// jamais dans le dépôt (convention docs/dev.md) ; le workflow la dépose
+// en fichier et la désigne par l'environnement. Sans ces variables, le
+// comportement est inchangé : debug sur le keystore de débogage local,
+// release non signée. La MÊME clé signe debug et release — installer
+// l'un sur l'autre conserve les données de l'application, jamais de
+// désinstallation forcée (exigence du propriétaire du 2026-11-16).
+val cleCi = providers.environmentVariable("JOIDE_CI_KEYSTORE").orNull
+val motDePasseCi = providers.environmentVariable("JOIDE_CI_KEYSTORE_PASSWORD").orNull
+val aliasCi = providers.environmentVariable("JOIDE_CI_KEY_ALIAS").orNull
+val signatureCi = cleCi != null && motDePasseCi != null && aliasCi != null
+
 android {
     defaultConfig {
         applicationId = "jo.joide.app"
         versionCode = 1
         versionName = "0.1.0"
     }
+    if (signatureCi) {
+        signingConfigs {
+            create("ci") {
+                storeFile = file(requireNotNull(cleCi))
+                storePassword = requireNotNull(motDePasseCi)
+                keyAlias = requireNotNull(aliasCi)
+                // PKCS12 : un seul mot de passe pour le magasin et la clé.
+                keyPassword = requireNotNull(motDePasseCi)
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (signatureCi) signingConfig = signingConfigs.getByName("ci")
+        }
         release {
             // P8 : rétrécissement reporté (backlog) — les règles de
             // conservation des ServiceLoader des moteurs exigent une
             // passe dédiée ; jamais de règle approximative.
             isMinifyEnabled = false
+            if (signatureCi) signingConfig = signingConfigs.getByName("ci")
         }
     }
     packaging {
