@@ -37,6 +37,15 @@ public final class BuildService extends Service {
     /** Fichier du port du démon, dans les fichiers internes. */
     static final String FICHIER_PORT = "demon-build.port";
 
+    /**
+     * Fichier de l'échec du démon, dans les fichiers internes (lot
+     * U/7) : quand le démon ne part pas, la TRACE part ici — le
+     * client qui attend le port lit la cause RÉELLE et la montre à
+     * la console, au lieu d'un « port non publié » muet qui ne dit
+     * rien du « pourquoi ».
+     */
+    static final String FICHIER_ERREUR = "demon-build.err";
+
     private HoteDemonSocket hote;
 
     @Override
@@ -104,6 +113,7 @@ public final class BuildService extends Service {
                     outDir -> StoreAndroid.open(outDir), fils);
             int port = hote.demarrer();
             publierPort(stockage, port);
+            effacerErreur(stockage.toFile());
             android.util.Log.i("joide-build",
                     "démon prêt, port " + port);
         } catch (Throwable t) {
@@ -115,6 +125,11 @@ public final class BuildService extends Service {
             // s'arrête propre : le build suivant repartira en repli
             // en processus (lot U/6).
             android.util.Log.e("joide-build", "démon ne part pas", t);
+            // lot U/7 : la trace part AUSSI dans le canal d'erreur que
+            // le client lit pendant son attente — la console montre la
+            // cause RÉELLE (« démon : ClassNotFoundException ... ») au
+            // lieu d'un « port non publié » muet
+            publierErreur(stockage, t);
             stopSelf();
             return;
         }
@@ -143,6 +158,17 @@ public final class BuildService extends Service {
         } catch (IOException e) {
             Files.move(temporaire, cible,
                     StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /** Publie l'échec du démon (lot U/7) : une ligne courte, la cause
+     *  réelle — le client l'affiche à la console pendant son attente. */
+    private static void publierErreur(Path stockage, Throwable t) {
+        try {
+            Files.write(stockage.resolve(FICHIER_ERREUR),
+                    ("démon de build : " + t).getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            // au mieux : le journal système garde la trace complète
         }
     }
 
@@ -176,6 +202,34 @@ public final class BuildService extends Service {
                     fichiers.getAbsolutePath(), FICHIER_PORT));
         } catch (IOException e) {
             // au mieux : la boucle du client réessaie dans son budget
+        }
+    }
+
+    /**
+     * @return la cause RÉELLE de l'échec du démon (lot U/7), ou null
+     *         s'il n'y a pas d'échec connu — le client la montre à la
+     *         console au lieu d'un « port non publié » muet
+     */
+    public static String lireErreur(File fichiers) {
+        try {
+            byte[] contenu = Files.readAllBytes(Paths.get(
+                    fichiers.getAbsolutePath(), FICHIER_ERREUR));
+            String texte = new String(contenu, StandardCharsets.UTF_8)
+                    .trim();
+            return texte.isEmpty() ? null : texte;
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    /** Efface le canal d'erreur (le client, avant de redemander le
+     *  service : un échec d'hier ne doit pas censurer un essai neuf). */
+    public static void effacerErreur(File fichiers) {
+        try {
+            Files.deleteIfExists(Paths.get(
+                    fichiers.getAbsolutePath(), FICHIER_ERREUR));
+        } catch (IOException e) {
+            // au mieux : le canal est indicatif
         }
     }
 

@@ -126,7 +126,22 @@ public final class EcranAtelier extends Activity {
      */
     public static final String EXTRA_FICHIER = "joide.fichier";
 
-    private static final long ATTENTE_PORT_MS = 10_000L;
+    /**
+     * L'attente de la publication du port (lot U/7 : 30 s — le
+     * démarrage À FROID du processus :build paie le fork du zygote
+     * et le chargement ART de tout le moteur de build ; sur un
+     * appareil occupé, 10 s sortaient avant la publication et
+     * chaque premier build répétait « injoignable », rapport du
+     * 2026-11-17).
+     */
+    private static final long ATTENTE_PORT_MS = 30_000L;
+
+    /**
+     * Le pas de re-demande du service pendant l'attente (lot U/7) :
+     * un service tué entre-temps repart avec cette demande — jamais
+     * une attente muette jusqu'au délai complet.
+     */
+    private static final long REDEMANDE_SERVICE_MS = 5_000L;
     private static final int HAUTEUR_CONSOLE_DP = 300;
 
     private final ExecutorService fond = Executors.newSingleThreadExecutor(
@@ -2949,10 +2964,15 @@ public final class EcranAtelier extends Activity {
     }
 
     private void construireParService(BuildSpec spec, long numero) {
+        // lot U/7 : le canal d'erreur part AVANT de demander le service
+        // — un échec d'hier ne doit jamais censurer un essai neuf
+        BuildService.effacerErreur(getFilesDir());
         startForegroundService(new Intent(this, BuildService.class));
         Socket socket = null;
         DaemonClient client = null;
         long limite = System.currentTimeMillis() + ATTENTE_PORT_MS;
+        long prochaineRedemande =
+                System.currentTimeMillis() + REDEMANDE_SERVICE_MS;
         // un port lu n'est pas un port servi : le fichier peut être
         // PÉRIMÉ (un service mort sans onDestroy l'a laissé — force
         // stop, crash du processus :build) — chaque tentative refusée
@@ -2960,7 +2980,17 @@ public final class EcranAtelier extends Activity {
         // service reparti, jamais une boucle d'échec sur un vieux
         // port (« service de build injoignable » rapporté le
         // 2026-11-17)
+        String causeDemon = null;
         while (System.currentTimeMillis() < limite) {
+            // lot U/7 : le démon a-t-il écrit SA cause d'échec ? la
+            // boucle sort tôt avec la cause RÉELLE au lieu de courir
+            // jusqu'au délai (« démon de build : ClassNotFoundException
+            // ... » vaut mieux que « port non publié »)
+            String cause = BuildService.lireErreur(getFilesDir());
+            if (cause != null) {
+                causeDemon = cause;
+                break;
+            }
             int port = BuildService.lirePort(getFilesDir());
             if (port >= 0) {
                 try {
@@ -2982,6 +3012,16 @@ public final class EcranAtelier extends Activity {
                     }
                 }
             }
+            // lot U/7 : sans nouvelle du service, on le REDEMANDE —
+            // un service tué entre-temps (pression système, crash
+            // avant publication) repart avec cette demande, jamais
+            // une attente muette jusqu'au délai
+            if (System.currentTimeMillis() >= prochaineRedemande) {
+                startForegroundService(new Intent(this,
+                        BuildService.class));
+                prochaineRedemande =
+                        System.currentTimeMillis() + REDEMANDE_SERVICE_MS;
+            }
             try {
                 Thread.sleep(150L);
             } catch (InterruptedException e) {
@@ -2995,10 +3035,14 @@ public final class EcranAtelier extends Activity {
             // ne meurt plus : il continue EN PROCESSUS, annoncé dans la
             // console (jamais un échec muet — rapport « injoignable »
             // du 2026-11-17 ; le mode en processus est le même moteur,
-            // le service n'apporte que l'isolation du tas)
+            // le service n'apporte que l'isolation du tas). La cause
+            // RÉELLE du démon (lot U/7) sort en premier s'il l'a
+            // écrite : « injoignable » seul n'apprend rien.
+            String detail = causeDemon != null ? causeDemon
+                    : "port non publié en "
+                            + (ATTENTE_PORT_MS / 1000) + " s";
             runOnUiThread(() -> {
-                etatConsole.surInjoignable("port non publié en "
-                        + (ATTENTE_PORT_MS / 1000) + " s");
+                etatConsole.surInjoignable(detail);
                 etatConsole.surRepliEnProcessus();
                 majConsole();
             });
