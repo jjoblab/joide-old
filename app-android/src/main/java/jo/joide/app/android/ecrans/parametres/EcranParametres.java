@@ -787,6 +787,13 @@ public final class EcranParametres extends Activity {
                         try {
                             Reglages.ecrireModeleIa(source,
                                     saisie.getText().toString());
+                            // lot U/7 : le modèle se retient aussi POUR
+                            // le fournisseur courant — le modèle partagé
+                            // ne traverse jamais les fournisseurs
+                            // (manière CodeAssist)
+                            Reglages.ecrireModelePour(source,
+                                    reglages.fournisseurIa,
+                                    saisie.getText().toString());
                         } catch (IllegalArgumentException e) {
                             Dialogue.information(this, palette,
                                     getString(R.string.parametres_modele_ia),

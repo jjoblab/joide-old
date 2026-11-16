@@ -2284,6 +2284,10 @@ public final class EcranAtelier extends Activity {
                 .values()[fournisseurIndex];
         Reglages.ecrireFournisseurIa(sourceReglages, choisi);
         Reglages.ecrireModeleIa(sourceReglages, modele);
+        // lot U/7 : le modèle se retient POUR CE fournisseur aussi —
+        // le modèle partagé ne traverse jamais les fournisseurs
+        // (manière CodeAssist)
+        Reglages.ecrireModelePour(sourceReglages, choisi, modele);
         if (agent != null) {
             agent.poserModele(choisi, modele);
         }
@@ -2446,6 +2450,10 @@ public final class EcranAtelier extends Activity {
                     // tout le dialogue sur Anthropic par défaut)
                     Reglages.ecrireFournisseurIa(sourceReglages, choisi);
                     Reglages.ecrireModeleIa(sourceReglages, modele);
+                    // lot U/7 : le modèle se retient POUR CE
+                    // fournisseur aussi (manière CodeAssist)
+                    Reglages.ecrireModelePour(sourceReglages, choisi,
+                            modele);
                     String url = saisieUrl.getText().toString().trim();
                     try {
                         Reglages.ecrireUrlIa(sourceReglages, url);

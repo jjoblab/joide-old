@@ -750,8 +750,7 @@ public final class AgentService extends Service {
             tourFini();
             return;
         }
-        String modeleChoisi = modele == null || modele.isEmpty()
-                ? reglages.modeleIa : modele;
+        String modeleChoisi = modeleDuFournisseur(fournisseur, reglages);
         // le lot Q : la clé du stockage chiffré porte PLUSIEURS clés
         // séparées par saut de ligne ou virgule — le banc et la
         // bascule survivent à la conversation (les limites apprises
@@ -1088,6 +1087,49 @@ public final class AgentService extends Service {
                                 .PreferencesAndroid.source(this));
         return new FournisseurOpenAiCompatible(reglages.urlIa,
                 cleDuBanc);
+    }
+
+    /**
+     * Le modèle du tour, résolu à la manière CodeAssist (lot U/7) :
+     * le choix de session d'abord — s'il APPARTIENT au fournisseur ;
+     * sinon le modèle persisté POUR CE fournisseur ; sinon le
+     * modèle partagé hérité — s'il appartient ; sinon le choix de
+     * session tel quel (dernier recours honnête : la requête part
+     * avec ce que l'utilisateur a posé, jamais un modèle vide).
+     *
+     * <p>Le garde d'appartenance ({@code modelBelongsTo} chez
+     * CodeAssist) est la moitié manquante du routage : un modèle
+     * partagé entre fournisseurs envoyait « claude-sonnet-4-5 » à
+     * OpenRouter — la première requête échouait sur un modèle que
+     * le fournisseur n'a pas (rapport du 2026-11-17).</p>
+     *
+     * @param fournisseur le fournisseur du tour (relus des réglages)
+     * @param reglages    les réglages relus à l'instant
+     * @return le nom de modèle à envoyer, jamais vide
+     */
+    private String modeleDuFournisseur(
+            jo.joide.app.android.parametres.Reglages.FournisseurIa
+                    fournisseur,
+            jo.joide.app.android.parametres.Reglages reglages) {
+        String session = modele == null ? "" : modele.trim();
+        if (!session.isEmpty()
+                && jo.joide.app.android.parametres.Reglages
+                        .modeleAppartient(session, fournisseur)) {
+            return session;
+        }
+        String pose = jo.joide.app.android.parametres.Reglages
+                .lireModelePour(jo.joide.app.android.parametres
+                        .PreferencesAndroid.source(this), fournisseur);
+        if (!pose.isEmpty()) {
+            return pose;
+        }
+        String herite = reglages.modeleIa;
+        if (herite != null && !herite.isEmpty()
+                && jo.joide.app.android.parametres.Reglages
+                        .modeleAppartient(herite, fournisseur)) {
+            return herite;
+        }
+        return session.isEmpty() ? herite : session;
     }
 
     private String dernierMessage() {

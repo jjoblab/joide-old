@@ -195,6 +195,66 @@ class ReglagesTest {
     }
 
     @Test
+    void leModeleParFournisseurSePoseEtSeRelitIsolement() {
+        SourceMemoire source = new SourceMemoire();
+        Reglages.ecrireModelePour(source,
+                Reglages.FournisseurIa.OPENROUTER,
+                "anthropic/claude-sonnet-4.5");
+        Reglages.ecrireModelePour(source,
+                Reglages.FournisseurIa.ANTHROPIC, "claude-opus-4-1");
+        assertEquals("anthropic/claude-sonnet-4.5", Reglages
+                .lireModelePour(source, Reglages.FournisseurIa.OPENROUTER));
+        assertEquals("claude-opus-4-1", Reglages.lireModelePour(source,
+                Reglages.FournisseurIa.ANTHROPIC));
+        assertEquals("", Reglages.lireModelePour(source,
+                Reglages.FournisseurIa.GEMINI), "absent : vide, pas "
+                + "de retombée silencieuse sur le modèle partagé");
+        assertThrows(IllegalArgumentException.class,
+                () -> Reglages.ecrireModelePour(source,
+                        Reglages.FournisseurIa.OPENROUTER, ""));
+    }
+
+    @Test
+    void leGardeDAppartenanceReconnaitLesFamilles() {
+        Reglages.FournisseurIa[] tous = Reglages.FournisseurIa.values();
+        // anthropic : les claude
+        assertTrue(Reglages.modeleAppartient("claude-sonnet-4-5",
+                Reglages.FournisseurIa.ANTHROPIC));
+        // gemini : gemini, gemma, models/
+        assertTrue(Reglages.modeleAppartient("gemini-2.5-flash",
+                Reglages.FournisseurIa.GEMINI));
+        assertTrue(Reglages.modeleAppartient("models/gemini-pro",
+                Reglages.FournisseurIa.GEMINI));
+        // openrouter : un id porteur de barre
+        assertTrue(Reglages.modeleAppartient("openai/gpt-5.1",
+                Reglages.FournisseurIa.OPENROUTER));
+        assertTrue(Reglages.modeleAppartient("z-ai/glm-4.6",
+                Reglages.FournisseurIa.OPENROUTER));
+        // openai : ni claude, ni gemini, ni barre
+        assertTrue(Reglages.modeleAppartient("gpt-5.1",
+                Reglages.FournisseurIa.OPENAI));
+        // les travers interdits — un modèle hors famille ne part
+        // jamais chez le fournisseur qui ne l'a pas (le rapport du
+        // 2026-11-17 : « claude-sonnet-4-5 » envoyé à OpenRouter)
+        for (Reglages.FournisseurIa f : tous) {
+            assertTrue(Reglages.modeleAppartient("claude-sonnet-4-5", f)
+                    == (f == Reglages.FournisseurIa.ANTHROPIC),
+                    () -> "claude chez " + f);
+            assertTrue(Reglages.modeleAppartient("gemini-2.5-pro", f)
+                    == (f == Reglages.FournisseurIa.GEMINI),
+                    () -> "gemini chez " + f);
+            assertTrue(Reglages.modeleAppartient("z-ai/glm-4.6", f)
+                    == (f == Reglages.FournisseurIa.OPENROUTER),
+                    () -> "barre chez " + f);
+        }
+        // vide ou blanc : rien n'appartient
+        assertTrue(!Reglages.modeleAppartient("",
+                Reglages.FournisseurIa.ANTHROPIC));
+        assertTrue(!Reglages.modeleAppartient("   ",
+                Reglages.FournisseurIa.ANTHROPIC));
+    }
+
+    @Test
     void lUrlHttpSePoseEtLaVideResteAutorisee() {
         SourceMemoire source = new SourceMemoire();
         Reglages.ecrireUrlIa(source, "https://passerelle.example/v1");

@@ -84,6 +84,7 @@ public final class Reglages {
     static final String CLE_FILS = "build.fils";
     static final String CLE_FOURNISSEUR_IA = "ia.fournisseur";
     static final String CLE_MODELE_IA = "ia.modele";
+    static final String CLE_MODELE_IA_PREFIXE = "ia.modele.";
     static final String CLE_URL_IA = "ia.url";
 
     // ---- Bornes (les steppers de l'écran et les tests les partagent) ----
@@ -312,6 +313,77 @@ public final class Reglages {
                     "model name out of range");
         }
         source.ecrire(CLE_MODELE_IA, borne);
+    }
+
+    /** La clé du modèle par fournisseur (lot U/7 — la manière
+     *  CodeAssist : un modèle partagé entre fournisseurs envoyait
+     *  « claude-sonnet-4-5 » à OpenRouter qui n'a pas ce modèle). */
+    public static String cleModelePour(FournisseurIa fournisseur) {
+        return CLE_MODELE_IA_PREFIXE + fournisseur.name().toLowerCase(
+                java.util.Locale.ROOT);
+    }
+
+    /**
+     * Pose le modèle d'UN fournisseur (borné, jamais vide) — le
+     * modèle hérité (partagé) reste posé à côté pour les versions
+     * antérieures.
+     *
+     * @param source      les valeurs persistées
+     * @param fournisseur le fournisseur visé
+     * @param valeur      le nom du modèle
+     */
+    public static void ecrireModelePour(Source source,
+                                        FournisseurIa fournisseur,
+                                        String valeur) {
+        String borne = valeur == null ? "" : valeur.trim();
+        if (borne.isEmpty() || borne.length() > MODELE_IA_MAX) {
+            throw new IllegalArgumentException(
+                    "model name out of range");
+        }
+        source.ecrire(cleModelePour(fournisseur), borne);
+    }
+
+    /**
+     * Lit le modèle posé pour UN fournisseur (vide si absent) — la
+     * lecture NE retombe PAS sur le modèle partagé : l'appartenance
+     * se vérifie chez l'appelant ({@link #modeleAppartient}).
+     */
+    public static String lireModelePour(Source source,
+                                        FournisseurIa fournisseur) {
+        String brut = source.lire(cleModelePour(fournisseur));
+        if (brut == null || brut.length() > MODELE_IA_MAX) {
+            return "";
+        }
+        return brut.trim();
+    }
+
+    /**
+     * Le modèle APPARTIENT-IL à ce fournisseur ? (lot U/7 — le garde
+     * « modelBelongsTo » de CodeAssist) : un id de modèle a une
+     * famille reconnaissable ; un modèle hérité d'un autre
+     * fournisseur ne doit jamais partir chez le nouveau, la première
+     * requête échouait sur un modèle que le fournisseur n'a pas.
+     *
+     * @param modele      le nom de modèle (non nul)
+     * @param fournisseur le fournisseur visé
+     * @return vrai si le modèle est plausible chez ce fournisseur
+     */
+    public static boolean modeleAppartient(String modele,
+                                           FournisseurIa fournisseur) {
+        if (modele == null || modele.isEmpty()) {
+            return false;
+        }
+        String m = modele.trim().toLowerCase(java.util.Locale.ROOT);
+        return switch (fournisseur) {
+            case ANTHROPIC -> m.startsWith("claude");
+            case GEMINI -> m.startsWith("gemini")
+                    || m.startsWith("gemma")
+                    || m.startsWith("models/");
+            case OPENROUTER -> m.contains("/");
+            case OPENAI -> !m.startsWith("claude")
+                    && !m.startsWith("gemini")
+                    && !m.contains("/");
+        };
     }
 
     /** Pose l'URL de base OpenAI-compatible (vide ou http(s), bornée). */
