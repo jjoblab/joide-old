@@ -84,9 +84,10 @@ public final class AgentService extends Service {
      * L'URL de base d'OpenRouter (lot U) : la passerelle multi-modèles
      * parle OpenAI-compatible (Chat Completions) — son URL de base est
      * propre à elle, l'URL libre du fournisseur OPENAI ne s'applique
-     * pas.
+     * pas. PUBlique : le dialogue du modèle la montre préremplie —
+     * jamais une URL codée deux fois.
      */
-    private static final String URL_OPENROUTER =
+    public static final String URL_OPENROUTER =
             "https://openrouter.ai/api/v1";
 
     /** Le délai des blocages sans UI (permission, questions). */
@@ -596,6 +597,18 @@ public final class AgentService extends Service {
         // maison (l'intent-filter du manifeste l'écoute)
         fluxOAuthMcp = new FluxOAuthMcp(transportMcp,
                 CancelToken.NEVER);
+        // le fournisseur et le modèle PARTENT DES RÉGLAGES PERSISTÉS
+        // — jamais du défaut codé ANTHROPIC : un service relancé
+        // (mort du processus, changement d'écran) doit retrouver le
+        // choix d'OpenRouter de l'utilisateur, pas revenir en
+        // arrière (rapport du 2026-11-17). poserModele du binder
+        // reste maître pendant la session.
+        jo.joide.app.android.parametres.Reglages reglages =
+                jo.joide.app.android.parametres.Reglages.lire(
+                        jo.joide.app.android.parametres
+                                .PreferencesAndroid.source(this));
+        fournisseur = reglages.fournisseurIa;
+        modele = reglages.modeleIa;
     }
 
     @Override

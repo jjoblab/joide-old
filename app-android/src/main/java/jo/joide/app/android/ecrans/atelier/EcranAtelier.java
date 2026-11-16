@@ -2380,7 +2380,15 @@ public final class EcranAtelier extends Activity {
         corps.addView(etiquetteUrl);
         android.widget.EditText saisieUrl =
                 new android.widget.EditText(this);
-        saisieUrl.setText(reglages.urlIa);
+        // lot U : l'URL d'OpenRouter est propre à la passerelle —
+        // préremplie pour la voir, jamais devinée de l'utilisateur
+        int indexCourant = Math.max(0, Math.min(fournisseurIndex,
+                fournisseurs.length - 1));
+        saisieUrl.setText(reglages.urlIa.isEmpty()
+                && Reglages.FournisseurIa.OPENROUTER
+                        == fournisseurs[indexCourant]
+                ? AgentService.URL_OPENROUTER
+                : reglages.urlIa);
         saisieUrl.setHint(R.string.parametres_url_indice);
         saisieUrl.setSingleLine(true);
         corps.addView(saisieUrl);
@@ -2417,18 +2425,23 @@ public final class EcranAtelier extends Activity {
                     if (modele.isEmpty()) {
                         modele = reglages.modeleIa;
                     }
+                    // le choix PERSISTE D'ABORD : une URL refusée ne
+                    // doit JAMAIS annuler le fournisseur et le modèle
+                    // (rapport du 2026-11-17 — l'URL écartée laissait
+                    // tout le dialogue sur Anthropic par défaut)
+                    Reglages.ecrireFournisseurIa(sourceReglages, choisi);
+                    Reglages.ecrireModeleIa(sourceReglages, modele);
                     String url = saisieUrl.getText().toString().trim();
                     try {
                         Reglages.ecrireUrlIa(sourceReglages, url);
                     } catch (IllegalArgumentException e) {
                         Dialogue.information(this, palette,
                                 getString(R.string.agent_modele_titre),
-                                getString(R.string.parametres_url_indice),
+                                getString(
+                                        R.string.parametres_valeur_invalide),
                                 R.string.action_ok);
-                        return;
+                        // pas de return : le choix est déjà persisté
                     }
-                    Reglages.ecrireFournisseurIa(sourceReglages, choisi);
-                    Reglages.ecrireModeleIa(sourceReglages, modele);
                     if (agent != null) {
                         agent.poserModele(choisi, modele);
                     }
