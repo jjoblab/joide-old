@@ -137,6 +137,8 @@ public final class EtatAgentChat {
         public ActionErreur action;
         /** Questions : la liste. */
         public List<Question> questions;
+        /** Pièces jointes du message utilisateur (noms d'affichage). */
+        public List<String> pieces = java.util.List.of();
         /** Déplié (outils, raisonnement). */
         public boolean deplie;
 
@@ -251,12 +253,41 @@ public final class EtatAgentChat {
      * @param message ce que dit l'utilisateur
      */
     public void envoyer(String message) {
+        envoyer(message, List.of());
+    }
+
+    /**
+     * Le message de l'utilisateur ouvre un tour, avec ses pièces
+     * jointes nommées (lot S) : la carte les montre en puces, le
+     * service porte le contenu jusqu'au modèle.
+     *
+     * @param message ce que dit l'utilisateur
+     * @param pieces  les noms des pièces jointes (affichage seul)
+     */
+    public void envoyer(String message, List<String> pieces) {
         Carte carte = new Carte(Genre.MESSAGE_UTILISATEUR);
         carte.texte = message;
+        carte.pieces = List.copyOf(pieces);
         ajouter(carte);
         etat = TourEtat.EN_COURS;
         reponseCourante = null;
         raisonnementCourant = null;
+    }
+
+    /**
+     * Une réponse RESTAURÉE (lot S) : la conversation reprise ou le
+     * service qui revient rejouent le transcript persisté — la
+     * réponse redevient une carte et le tour restauré est TERMINÉ
+     * (le rejouage n'arrive jamais au milieu d'un tour vivant : la
+     * reprise et le relancement sont gardés par le service).
+     *
+     * @param texte la réponse complète telle que persistée
+     */
+    public void restaurerReponse(String texte) {
+        Carte carte = new Carte(Genre.REPONSE);
+        carte.reponse = texte == null ? "" : texte;
+        ajouter(carte);
+        etat = TourEtat.TERMINE;
     }
 
     /**

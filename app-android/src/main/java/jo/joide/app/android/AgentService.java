@@ -26,6 +26,7 @@ import android.os.IBinder;
 import android.os.Looper;
 
 import jo.joide.agent.BoucleAgent;
+import jo.joide.app.android.atelier.agent.ConversationsAgent;
 import jo.joide.agent.ErreursLlm;
 import jo.joide.agent.espace.EspaceTravailInjecteur;
 import jo.joide.agent.EvenementAgent;
@@ -78,21 +79,49 @@ public final class AgentService extends Service {
     /** Le délai des blocages sans UI (permission, questions). */
     private static final long DELAI_SANS_UI_MS = 120_000;
 
-    /** Une entrée du journal rejouable : un événement OU un message utilisateur. */
+    /**
+     * Une entrée du journal rejouable : un événement, un message
+     * utilisateur ou une réponse restaurée (lot S — la reprise de
+     * conversation rejoue le transcript persisté SANS inventer les
+     * événements de flux d'un tour que personne n'a revu).
+     */
     public static final class Entree {
-        /** L'événement (null si message utilisateur). */
+        /** L'événement (null si message ou réponse). */
         public final EvenementAgent evenement;
-        /** Le message utilisateur (null si événement). */
+        /** Le message utilisateur (null sinon). */
         public final String message;
+        /** La réponse restaurée (null sinon). */
+        public final String reponse;
 
         Entree(EvenementAgent evenement, String message) {
+            this(evenement, message, null);
+        }
+
+        Entree(EvenementAgent evenement, String message,
+               String reponse) {
             this.evenement = evenement;
             this.message = message;
+            this.reponse = reponse;
+        }
+
+        /** @return l'entrée message utilisateur */
+        public static Entree message(String texte) {
+            return new Entree(null, texte, null);
+        }
+
+        /** @return l'entrée réponse restaurée */
+        public static Entree reponse(String texte) {
+            return new Entree(null, null, texte);
         }
 
         /** @return vrai si c'est un message utilisateur */
         public boolean estMessage() {
             return message != null;
+        }
+
+        /** @return vrai si c'est une réponse restaurée */
+        public boolean estReponse() {
+            return reponse != null;
         }
     }
 
@@ -151,6 +180,64 @@ public final class AgentService extends Service {
         public List<Entree> journal() {
             synchronized (AgentService.this) {
                 return new ArrayList<>(journal);
+            }
+        }
+
+        // ---- les conversations (lot S, ADR-064) ----
+
+        /**
+         * Ouvre une conversation neuve : la courante est persistée
+         * (si elle a vécu), l'état repart du vide.
+         *
+         * @return vrai si la conversation a changé (faux : un tour
+         *         est en cours — le service n'abandonne jamais un
+         *         tour vivant)
+         */
+        public boolean nouvelleConversation() {
+            return AgentService.this.nouvelleConversation();
+        }
+
+        /** @return les résumés, du plus récent au plus ancien */
+        public List<jo.joide.app.android.atelier.agent
+                .ConversationsAgent.Resume> conversations() {
+            return conversations.lister();
+        }
+
+        /** @return l'identité de la conversation courante */
+        public String conversationActive() {
+            synchronized (AgentService.this) {
+                return idConversation;
+            }
+        }
+
+        /**
+         * Reprend une conversation persistée.
+         *
+         * @param id l'identité (nom de fichier sans suffixe)
+         * @return vrai si reprise (faux : tour en cours, ou
+         *         conversation introuvable — l'état ne change pas)
+         */
+        public boolean reprendreConversation(String id) {
+            return AgentService.this.reprendreConversation(id);
+        }
+
+        /**
+         * Supprime une conversation persistée.
+         *
+         * @param id l'identité
+         * @return vrai si le fichier est parti
+         */
+        public boolean supprimerConversation(String id) {
+            return conversations.supprimer(id);
+        }
+
+        /**
+         * @return l'usage cumulé de la conversation courante
+         *         (l'écran Usages le montre, lot S)
+         */
+        public UsageLlm usageConversation() {
+            synchronized (AgentService.this) {
+                return usageConversation;
             }
         }
 
@@ -225,6 +312,8 @@ public final class AgentService extends Service {
     private CompletableFuture<List<String>> attenteQuestions;
     private PlanAgent plan;
     private int requetesDuTour;
+    private ConversationsAgent conversations;
+    private String idConversation = "";
 
     @Override
     public void onCreate() {
@@ -240,6 +329,16 @@ public final class AgentService extends Service {
         }
         executeur = WorkerPools.newFixed("joide-agent", 1);
         plan = new PlanAgent();
+        conversations = new ConversationsAgent(
+                Paths.get(getFilesDir().getAbsolutePath(),
+                        "agent", "conversations"),
+                java.time.Clock.systemUTC());
+        // la migration du lot P : l'unique session devient la plus
+        // ancienne conversation — rien n'est perdu, rien n'est dupliqué
+        conversations.migrerSessionUnique(Paths.get(
+                getFilesDir().getAbsolutePath(),
+                "agent", "session.json"));
+        idConversation = conversations.activeOuNeuve();
         relireSession();
     }
 
@@ -301,7 +400,7 @@ public final class AgentService extends Service {
                     EvenementAgent.RaisonFin.ERREUR), null));
             return;
         }
-        consigner(new Entree(null, message));
+        consigner(Entree.message(message));
         demarrerAvantPlan(1);
         annulation = CancelToken.create();
         jeton = annulation.token();
@@ -505,45 +604,95 @@ public final class AgentService extends Service {
     }
 
     // ------------------------------------------------------------------
-    // Session persistée
+    // Les conversations persistées (lot S, ADR-064) : une
+    // conversation = un fichier du répertoire, l'identité est le nom
+    // de fichier. Le transcript alterne message/réponse — la
+    // restauration rend à chacun son RÔLE (le lot P rejouait tout en
+    // messages : une réponse redevenait une carte utilisateur).
     // ------------------------------------------------------------------
 
-    private Path fichierSession() {
-        return Paths.get(getFilesDir().getAbsolutePath(),
-                "agent", "session.json");
-    }
-
     private void relireSession() {
-        Path cible = fichierSession();
-        if (!Files.isRegularFile(cible)) {
+        SessionsAgent.Session session =
+                conversations.lire(idConversation);
+        if (session == null) {
             historique = HistoriqueAgent.vide();
             return;
         }
-        try {
-            SessionsAgent.Session session = SessionsAgent.lire(cible);
-            historique = new HistoriqueAgent(session.historique,
-                    session.compactes);
-            transcript = new ArrayList<>(session.transcript);
-            usageConversation = session.usage;
-            for (int i = 0; i < transcript.size(); i++) {
-                journal.add(new Entree(null, transcript.get(i)));
-            }
-        } catch (IOException | RuntimeException e) {
-            // session illisible : conversation neuve, jamais un crash
-            historique = HistoriqueAgent.vide();
+        historique = new HistoriqueAgent(session.historique,
+                session.compactes);
+        transcript = new ArrayList<>(session.transcript);
+        usageConversation = session.usage;
+        rejouerTranscript();
+    }
+
+    /** Le transcript persisté redevient un journal rejouable. */
+    private void rejouerTranscript() {
+        for (int i = 0; i < transcript.size(); i++) {
+            journal.add(i % 2 == 0
+                    ? Entree.message(transcript.get(i))
+                    : Entree.reponse(transcript.get(i)));
         }
     }
 
     private void persiste() {
-        try {
-            SessionsAgent.ecrire(fichierSession(),
-                    new SessionsAgent.Session(
-                            fournisseur.name(), modele, transcript,
-                            historique.messages(),
-                            historique.compactes(), usageConversation));
-        } catch (IOException e) {
-            // la session part au mieux : le tour vit en mémoire
+        conversations.ecrire(idConversation,
+                new SessionsAgent.Session(
+                        fournisseur.name(), modele, transcript,
+                        historique.messages(),
+                        historique.compactes(), usageConversation));
+    }
+
+    /**
+     * Ouvre une conversation neuve : la courante est persistée, le
+     * journal, l'historique et l'usage repartent du vide.
+     *
+     * @return vrai si la conversation a changé (faux : un tour vit)
+     */
+    private boolean nouvelleConversation() {
+        if (tour != null && !tour.isDone()) {
+            return false;
         }
+        if (!transcript.isEmpty()) {
+            persiste();
+        }
+        synchronized (this) {
+            journal.clear();
+            idConversation = conversations.nouvelleIdentite();
+        }
+        historique = HistoriqueAgent.vide();
+        transcript = new ArrayList<>();
+        usageConversation = UsageLlm.zero();
+        return true;
+    }
+
+    /**
+     * Reprend une conversation persistée : son journal redevient
+     * l'état du service, l'usage et l'historique suivent.
+     *
+     * @param id l'identité
+     * @return vrai si reprise (faux : tour vivant ou introuvable)
+     */
+    private boolean reprendreConversation(String id) {
+        if (tour != null && !tour.isDone() || id == null) {
+            return false;
+        }
+        SessionsAgent.Session session = conversations.lire(id);
+        if (session == null) {
+            return false;
+        }
+        if (!transcript.isEmpty()) {
+            persiste();
+        }
+        synchronized (this) {
+            journal.clear();
+            idConversation = id;
+            historique = new HistoriqueAgent(session.historique,
+                    session.compactes);
+            transcript = new ArrayList<>(session.transcript);
+            usageConversation = session.usage;
+            rejouerTranscript();
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------

@@ -39,6 +39,7 @@ import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatApercu;
 import jo.joide.app.android.AgentService;
 import jo.joide.app.android.atelier.EtatAtelier;
+import jo.joide.app.android.atelier.agent.ConversationsAgent;
 import jo.joide.app.android.atelier.agent.EtatAgentChat;
 import jo.joide.app.android.atelier.agent.VueAgent;
 import jo.joide.app.android.atelier.NouveauNom;
@@ -453,6 +454,11 @@ public final class EcranAtelier extends Activity {
                     agent.poserMode(mode);
                 }
                 vueAgent.rafraichir();
+            }
+
+            @Override
+            public void ouvrirMenuAgent() {
+                ouvrirMenuAgentOptions();
             }
         });
         tiroirAgent = new TiroirPousse(this);
@@ -1261,6 +1267,8 @@ public final class EcranAtelier extends Activity {
         for (AgentService.Entree entree : agent.journal()) {
             if (entree.estMessage()) {
                 etatAgent.envoyer(entree.message);
+            } else if (entree.estReponse()) {
+                etatAgent.restaurerReponse(entree.reponse);
             } else {
                 etatAgent.surEvenement(entree.evenement);
             }
@@ -1341,6 +1349,192 @@ public final class EcranAtelier extends Activity {
         if (agent != null) {
             agent.envoyer(message);
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Le menu de l'agent (lot S, ADR-064) : nouvelle conversation,
+    // historique — le contenu du menu ne vit QUE ici, la vue
+    // n'annonce que les actions câblées.
+    // ------------------------------------------------------------------
+
+    /** Le menu ⋯ du tiroir : chaque entrée est câblée, jamais morte. */
+    private void ouvrirMenuAgentOptions() {
+        Dialogue.menu(this, palette,
+                getString(R.string.agent_menu_titre),
+                new CharSequence[]{
+                        getString(R.string.agent_menu_nouvelle),
+                        getString(R.string.agent_menu_historique)},
+                (dialog, lequel) -> {
+                    if (lequel == 0) {
+                        nouvelleConversationAgent();
+                    } else if (lequel == 1) {
+                        ouvrirHistoriqueAgent();
+                    }
+                });
+    }
+
+    /** Nouvelle conversation : le service garde la vérité, l'état suit. */
+    private void nouvelleConversationAgent() {
+        if (agent == null) {
+            return;
+        }
+        if (!agent.nouvelleConversation()) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_menu_titre),
+                    getString(R.string.agent_tour_en_cours),
+                    R.string.action_ok);
+            return;
+        }
+        rejouerJournalAgent();
+    }
+
+    /**
+     * L'historique des conversations : titre dérivé du premier
+     * message, nombre d'échanges, la courante marquée, la
+     * suppression demandée nommément.
+     */
+    private void ouvrirHistoriqueAgent() {
+        if (agent == null) {
+            return;
+        }
+        java.util.List<ConversationsAgent.Resume> resumes =
+                agent.conversations();
+        ScrollView defilement = new ScrollView(this);
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        int marge = GraphiteVue.dp(this, 4);
+        colonne.setPadding(marge, marge, marge, marge);
+        defilement.addView(colonne, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        String active = agent.conversationActive();
+        if (resumes.isEmpty()) {
+            TextView vide = new TextView(this);
+            GraphiteVue.typographie(vide, Graphite.CORPS);
+            vide.setTextColor(palette.texteEstompe);
+            vide.setText(getString(R.string.agent_historique_vide,
+                    ConversationsAgent.CONVERSATIONS_MAX));
+            vide.setPadding(0, GraphiteVue.dp(this, 12), 0,
+                    GraphiteVue.dp(this, 12));
+            colonne.addView(vide);
+        }
+        java.text.DateFormat formatDate =
+                    java.text.DateFormat.getDateInstance(
+                            java.text.DateFormat.SHORT);
+        java.text.DateFormat formatHeure =
+                    java.text.DateFormat.getTimeInstance(
+                            java.text.DateFormat.SHORT);
+        for (ConversationsAgent.Resume resume : resumes) {
+            colonne.addView(ligneConversation(resume,
+                    resume.id.equals(active), formatDate, formatHeure));
+        }
+        Dialogue.saisieTexte(this, palette,
+                getString(R.string.agent_historique_titre), defilement,
+                R.string.action_ok, null);
+    }
+
+    /** Une ligne de l'historique : titre, méta, la courante marquée. */
+    private View ligneConversation(ConversationsAgent.Resume resume,
+                                   boolean active,
+                                   java.text.DateFormat formatDate,
+                                   java.text.DateFormat formatHeure) {
+        Context contexte = this;
+        LinearLayout ligne = new LinearLayout(contexte);
+        ligne.setOrientation(LinearLayout.VERTICAL);
+        int padding = GraphiteVue.dp(contexte, 10);
+        ligne.setPadding(padding, padding, padding, padding);
+        android.graphics.drawable.GradientDrawable fond =
+                new android.graphics.drawable.GradientDrawable();
+        fond.setColor(active ? palette.surfaceHaute : palette.surface);
+        fond.setCornerRadius(GraphiteVue.dp(contexte,
+                Graphite.RAYON_COMPOSANT));
+        fond.setStroke(GraphiteVue.dp(contexte, 1), active
+                ? palette.accent : palette.bordFin);
+        ligne.setBackground(fond);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        int marge = GraphiteVue.dp(contexte, 4);
+        params.setMargins(0, marge, 0, marge);
+        ligne.setLayoutParams(params);
+
+        TextView titre = new TextView(contexte);
+        GraphiteVue.typographie(titre, Graphite.CORPS);
+        titre.setTextColor(palette.texte);
+        titre.setMaxLines(2);
+        titre.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        titre.setText(resume.titre.isEmpty()
+                ? getString(R.string.agent_historique_sans_titre)
+                : resume.titre);
+        ligne.addView(titre);
+
+        TextView meta = new TextView(contexte);
+        GraphiteVue.typographie(meta, Graphite.LEGENDE);
+        meta.setTextColor(active ? palette.accent
+                : palette.texteEstompe);
+        meta.setText((active
+                ? getString(R.string.agent_historique_active) + " · "
+                : "")
+                + getString(R.string.agent_historique_echanges,
+                        resume.echanges)
+                + " · " + formatDate.format(new java.util.Date(
+                        resume.modifiee))
+                + " " + formatHeure.format(new java.util.Date(
+                        resume.modifiee)));
+        meta.setPadding(0, GraphiteVue.dp(contexte, 3), 0, 0);
+        ligne.addView(meta);
+
+        if (!active) {
+            TextView reprendre = new TextView(contexte);
+            GraphiteVue.typographie(reprendre, Graphite.CORPS);
+            reprendre.setTextColor(palette.accent);
+            reprendre.setText(R.string.agent_menu_historique);
+            reprendre.setPadding(0, GraphiteVue.dp(contexte, 6), 0, 0);
+            ligne.setOnClickListener(vue ->
+                    reprendreConversationAgent(resume.id));
+            ligne.addView(reprendre);
+            TextView supprimer = new TextView(contexte);
+            GraphiteVue.typographie(supprimer, Graphite.CORPS);
+            supprimer.setTextColor(palette.erreur);
+            supprimer.setText(R.string.agent_supprimer_conversation);
+            supprimer.setPadding(0, GraphiteVue.dp(contexte, 2), 0, 0);
+            supprimer.setOnClickListener(vue ->
+                    supprimerConversationAgent(resume.id));
+            ligne.addView(supprimer);
+        }
+        return ligne;
+    }
+
+    /** Reprend une conversation : l'état du tiroir suit le service. */
+    private void reprendreConversationAgent(String id) {
+        if (agent == null) {
+            return;
+        }
+        if (!agent.reprendreConversation(id)) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_menu_titre),
+                    getString(R.string.agent_tour_en_cours),
+                    R.string.action_ok);
+            return;
+        }
+        rejouerJournalAgent();
+    }
+
+    /** Supprime une conversation : la demande est nommée et confirmée. */
+    private void supprimerConversationAgent(String id) {
+        if (agent == null) {
+            return;
+        }
+        Dialogue.confirmation(this, palette,
+                getString(R.string.agent_supprimer_conversation),
+                getString(R.string.agent_supprimer_detail),
+                R.string.action_annuler, R.string.agent_menu_historique,
+                (dialog, lequel) -> {
+                    if (agent != null) {
+                        agent.supprimerConversation(id);
+                    }
+                    ouvrirHistoriqueAgent();
+                });
     }
 
     private void repondrePermissionAgent(boolean accordee) {

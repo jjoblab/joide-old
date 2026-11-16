@@ -56,6 +56,14 @@ public final class VueAgent extends LinearLayout {
 
         /** @param mode le mode de permission posé */
         void poserMode(Permissions.Mode mode);
+
+        /**
+         * Le menu de l'agent (lot S, ADR-064) : nouvelle
+         * conversation, historique, fournisseur, connexions, usages
+         * — la vue ne décide RIEN du contenu du menu, l'atelier le
+         * compose et le service garde la vérité.
+         */
+        void ouvrirMenuAgent();
     }
 
     private final Graphite.Palette palette;
@@ -100,6 +108,20 @@ public final class VueAgent extends LinearLayout {
         puceMode = new Puce(contexte);
         puceMode.setOnClickListener(vue -> auditeurMode());
         tete.addView(puceMode, margeParams(contexte));
+        Icone menu = new Icone(contexte);
+        menu.setGlyphe(Icone.Glyphe.POINTS);
+        menu.setCouleur(palette.texte);
+        menu.setClickable(true);
+        menu.setContentDescription(
+                getContext().getString(R.string.agent_menu));
+        menu.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.ouvrirMenuAgent();
+            }
+        });
+        tete.addView(menu, new LinearLayout.LayoutParams(
+                GraphiteVue.dp(contexte, 38),
+                GraphiteVue.dp(contexte, 38)));
         Icone fermer = new Icone(contexte);
         fermer.setGlyphe(Icone.Glyphe.CROIX);
         fermer.setCouleur(palette.texte);

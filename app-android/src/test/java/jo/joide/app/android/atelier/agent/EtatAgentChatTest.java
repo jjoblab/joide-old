@@ -246,4 +246,24 @@ class EtatAgentChatTest {
         assertNotNull(etat.prendrePreRemplissage());
         assertNull(etat.prendrePreRemplissage());
     }
+
+    @Test
+    void laReponseRestaureeResteUneReponsePasUnMessage() {
+        EtatAgentChat etat = new EtatAgentChat();
+        // le transcript persisté alterne message/réponse (lot S) —
+        // la reprise de conversation rejoue les DEUX rôles
+        etat.envoyer("corrige le build");
+        etat.restaurerReponse("C'est corrigé.");
+        etat.envoyer("merci, lance le build");
+        etat.restaurerReponse("Build vert.");
+
+        List<Carte> cartes = etat.cartes();
+        assertEquals(4, cartes.size());
+        assertEquals(Genre.MESSAGE_UTILISATEUR, cartes.get(0).genre);
+        assertEquals(Genre.REPONSE, cartes.get(1).genre);
+        assertEquals("C'est corrigé.", cartes.get(1).reponse);
+        assertEquals(Genre.MESSAGE_UTILISATEUR, cartes.get(2).genre);
+        assertEquals(Genre.REPONSE, cartes.get(3).genre);
+        assertEquals(TourEtat.TERMINE, etat.etat());
+    }
 }
