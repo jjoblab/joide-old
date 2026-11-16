@@ -63,8 +63,29 @@ public final class BuildService extends Service {
         startForeground(startId, notification);
         if (hote == null) {
             demarrer();
+        } else {
+            // lot U/6 : le démon VIT déjà — le port se republie quand
+            // même : le client qui a effacé un fichier périmé (refus
+            // de connexion pendant un build) sinon ne reverrait JAMAIS
+            // le port, et chaque build bouclerait sur « injoignable »
+            // tant que le service resterait debout (rapporté le
+            // 2026-11-17)
+            republierPort();
         }
         return START_NOT_STICKY;
+    }
+
+    /** Republie le port du démon vivant (au mieux : la boucle du
+     *  client ressonde, le service suivant repartira). */
+    private void republierPort() {
+        try {
+            publierPort(
+                    Paths.get(getFilesDir().getAbsolutePath()),
+                    hote.port());
+        } catch (IOException e) {
+            android.util.Log.w("joide-build",
+                    "port non republie : " + e.getMessage());
+        }
     }
 
     private void demarrer() {
@@ -85,12 +106,15 @@ public final class BuildService extends Service {
             publierPort(stockage, port);
             android.util.Log.i("joide-build",
                     "démon prêt, port " + port);
-        } catch (IOException | RuntimeException e) {
-            // le démon ne part pas : le service s'arrête, l'UI le
-            // relancera au build suivant — jamais un service muet, la
-            // trace part au journal (Paramètres → Journal la lit)
-            android.util.Log.e("joide-build",
-                    "démon ne part pas", e);
+        } catch (Throwable t) {
+            // lot U/6 : IOException|RuntimeException ne voyait pas les
+            // ERREURS (classe manquante, initialisation avortée) — le
+            // processus :build mourait en SILENCE, le port ne paraissait
+            // jamais et chaque build répétait « injoignable ». La trace
+            // part au journal (Paramètres → Journal), le service
+            // s'arrête propre : le build suivant repartira en repli
+            // en processus (lot U/6).
+            android.util.Log.e("joide-build", "démon ne part pas", t);
             stopSelf();
             return;
         }

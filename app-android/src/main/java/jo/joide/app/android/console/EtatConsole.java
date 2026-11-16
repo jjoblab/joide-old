@@ -257,10 +257,35 @@ public final class EtatConsole {
 
     /** Le service de build est injoignable (avant tout lancement). */
     public void surInjoignable() {
+        surInjoignable(null);
+    }
+
+    /**
+     * Le service de build est injoignable, avec la raison précise
+     * (lot U/6 : « injoignable » seul n'apprend rien — le dernier
+     * refus de connexion ou le délai d'attente font partie du
+     * diagnostic, rapporté le 2026-11-17).
+     *
+     * @param detail la cause transport (refus, délai), ou null
+     */
+    public void surInjoignable(String detail) {
         etat = Etat.INTERROMPU;
+        boolean raison = detail != null && !detail.isBlank();
         ajouter(ConsoleBuild.Ligne.erreur(
-                "service de build injoignable — relancez le build",
+                "service de build injoignable"
+                        + (raison ? " (" + detail + ")" : "")
+                        + " — relancez le build",
                 null, null));
+    }
+
+    /**
+     * Le repli annoncé (lot U/6) : le service étant injoignable, le
+     * build CONTINUE en processus — jamais un échec muet, la
+     * bascule se lit dans la console.
+     */
+    public void surRepliEnProcessus() {
+        ajouter(ConsoleBuild.Ligne.systeme("service injoignable — le "
+                + "build continue en processus"));
     }
 
     /**

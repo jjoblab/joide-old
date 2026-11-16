@@ -2991,12 +2991,18 @@ public final class EcranAtelier extends Activity {
             }
         }
         if (client == null) {
+            // lot U/6 : le budget est écoulé SANS connexion — le build
+            // ne meurt plus : il continue EN PROCESSUS, annoncé dans la
+            // console (jamais un échec muet — rapport « injoignable »
+            // du 2026-11-17 ; le mode en processus est le même moteur,
+            // le service n'apporte que l'isolation du tas)
             runOnUiThread(() -> {
-                etatConsole.surInjoignable();
-                etat.interrompreBuild();
+                etatConsole.surInjoignable("port non publié en "
+                        + (ATTENTE_PORT_MS / 1000) + " s");
+                etatConsole.surRepliEnProcessus();
                 majConsole();
-                finirBuild();
             });
+            construireEnProcessus(spec, numero);
             return;
         }
         try (DaemonClient branche = client) {
@@ -3017,7 +3023,7 @@ public final class EcranAtelier extends Activity {
             });
         } catch (IOException e) {
             runOnUiThread(() -> {
-                etatConsole.surInjoignable();
+                etatConsole.surInjoignable(String.valueOf(e.getMessage()));
                 etat.interrompreBuild();
                 majConsole();
                 majFab();
