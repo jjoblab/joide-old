@@ -66,6 +66,7 @@
     <string name="agent_fournisseur_anthropic">Anthropic</string>
     <string name="agent_fournisseur_openai">OpenAI-compatible</string>
     <string name="agent_fournisseur_gemini">Google Gemini</string>
+    <string name="agent_fournisseur_openrouter">OpenRouter</string>
     <string name="agent_cle_posee">clé posée</string>
     <string name="agent_cle_absente">clé absente</string>
     <string name="agent_cles_gerer">Gérer les clés…</string>
@@ -312,6 +313,7 @@
     <string name="parametres_cle_anthropic">Clé API Anthropic</string>
     <string name="parametres_cle_openai">Clé API OpenAI-compatible</string>
     <string name="parametres_cle_gemini">Clé API Google Gemini</string>
+    <string name="parametres_cle_openrouter">Clé API OpenRouter</string>
     <string name="parametres_cle_posee">posée</string>
     <string name="parametres_cle_absente">absente</string>
     <string name="parametres_cle_remplacer">Remplacer la clé</string>

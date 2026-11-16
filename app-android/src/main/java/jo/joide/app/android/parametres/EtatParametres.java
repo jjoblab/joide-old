@@ -78,6 +78,8 @@ public final class EtatParametres {
     public static final String R_CLE_ANTHROPIC = "cle-anthropic";
     public static final String R_CLE_OPENAI = "cle-openai";
     public static final String R_CLE_GEMINI = "cle-gemini";
+    /** La clé OpenRouter (lot U) : la passerelle multi-modèles. */
+    public static final String R_CLE_OPENROUTER = "cle-openrouter";
     public static final String R_MODELE_IA = "modele-ia";
     public static final String R_URL_IA = "url-ia";
 
@@ -107,6 +109,7 @@ public final class EtatParametres {
                         new Rangee(R_CLE_ANTHROPIC, Genre.ACTION, true),
                         new Rangee(R_CLE_OPENAI, Genre.ACTION, true),
                         new Rangee(R_CLE_GEMINI, Genre.ACTION, true),
+                        new Rangee(R_CLE_OPENROUTER, Genre.ACTION, true),
                         new Rangee(R_MODELE_IA, Genre.ACTION, true),
                         new Rangee(R_URL_IA, Genre.ACTION, true))),
                 new Section(SECT_STOCKAGE, List.of(

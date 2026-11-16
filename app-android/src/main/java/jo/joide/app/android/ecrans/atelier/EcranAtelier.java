@@ -1929,6 +1929,12 @@ public final class EcranAtelier extends Activity {
         // choix, l'état de clé reste lu du stockage chiffré ----
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
+        // lot U : quatre fournisseurs dépassent la largeur posée — la
+        // rangée DÉFILE horizontalement, jamais une puce coupée
+        android.widget.HorizontalScrollView defileFournisseurs =
+                new android.widget.HorizontalScrollView(this);
+        defileFournisseurs.setHorizontalScrollBarEnabled(false);
+        defileFournisseurs.setClipToPadding(false);
         LinearLayout rangeeFournisseurs = new LinearLayout(this);
         rangeeFournisseurs.setOrientation(LinearLayout.HORIZONTAL);
         Puce[] puces = new Puce[fournisseurs.length];
@@ -1953,7 +1959,16 @@ public final class EcranAtelier extends Activity {
             paramsPuce.topMargin = GraphiteVue.dp(this, 8);
             rangeeFournisseurs.addView(puce, paramsPuce);
         }
-        colonne.addView(rangeeFournisseurs);
+        defileFournisseurs.addView(rangeeFournisseurs,
+                new android.widget.HorizontalScrollView.LayoutParams(
+                        android.widget.HorizontalScrollView.LayoutParams
+                                .WRAP_CONTENT,
+                        android.widget.HorizontalScrollView.LayoutParams
+                                .WRAP_CONTENT));
+        colonne.addView(defileFournisseurs,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
 
         // ---- la recherche : le filtre des listes longues ----
         android.widget.EditText recherche =
@@ -2178,6 +2193,11 @@ public final class EcranAtelier extends Activity {
             case GEMINI -> new String[]{
                     "gemini-2.5-pro", "gemini-2.5-flash",
                     "gemini-2.5-flash-lite", "gemini-2.0-flash"};
+            case OPENROUTER -> new String[]{
+                    "anthropic/claude-sonnet-4.5",
+                    "openai/gpt-5.1", "google/gemini-2.5-pro",
+                    "deepseek/deepseek-chat-v3.1",
+                    "z-ai/glm-4.6", "qwen/qwen3-max"};
             default -> new String[]{
                     "gpt-5.1", "gpt-5", "gpt-4.1",
                     "gpt-4.1-mini", "gpt-4o", "o4-mini"};
@@ -2364,6 +2384,7 @@ public final class EcranAtelier extends Activity {
         return getString(switch (fournisseur) {
             case ANTHROPIC -> R.string.agent_fournisseur_anthropic;
             case GEMINI -> R.string.agent_fournisseur_gemini;
+            case OPENROUTER -> R.string.agent_fournisseur_openrouter;
             default -> R.string.agent_fournisseur_openai;
         });
     }

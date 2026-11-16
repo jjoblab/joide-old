@@ -38,14 +38,22 @@ public final class Reglages {
         PROCESSUS
     }
 
-    /** Le fournisseur LLM par défaut de l'agent (lot P, D-2 ; lot Q : Gemini rejoint la v1). */
+    /**
+     * Le fournisseur LLM par défaut de l'agent (lot P, D-2 ; lot Q :
+     * Gemini rejoint la v1 ; lot U : OpenRouter rejoint la rangée —
+     * la PASSERELLE tient à l'ordre : l'ordinal est le numéraire des
+     * favoris et des récents du sélecteur, une insertion au milieu
+     * déplacerait les choix de l'utilisateur).
+     */
     public enum FournisseurIa {
         /** Anthropic (Messages API). */
         ANTHROPIC,
         /** OpenAI-compatible (Chat Completions, URL de base libre). */
         OPENAI,
         /** Google Gemini (streamGenerateContent, cache de contexte serveur, lot Q). */
-        GEMINI
+        GEMINI,
+        /** OpenRouter (passerelle multi-modèles, OpenAI-compatible, lot U). */
+        OPENROUTER
     }
 
     /** Lecture/écriture des valeurs persistées (préférences privées). */

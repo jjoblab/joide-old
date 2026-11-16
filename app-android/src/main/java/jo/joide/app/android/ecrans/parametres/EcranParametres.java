@@ -596,6 +596,8 @@ public final class EcranParametres extends Activity {
                 return R.string.parametres_cle_openai;
             case EtatParametres.R_CLE_GEMINI:
                 return R.string.parametres_cle_gemini;
+            case EtatParametres.R_CLE_OPENROUTER:
+                return R.string.parametres_cle_openrouter;
             case EtatParametres.R_MODELE_IA:
                 return R.string.parametres_modele_ia;
             case EtatParametres.R_URL_IA:
@@ -638,6 +640,11 @@ public final class EcranParametres extends Activity {
                     ? R.string.parametres_cle_posee
                     : R.string.parametres_cle_absente);
         }
+        if (EtatParametres.R_CLE_OPENROUTER.equals(cle)) {
+            return getString(cles.estPosee(FOURNISSEUR_OPENROUTER)
+                    ? R.string.parametres_cle_posee
+                    : R.string.parametres_cle_absente);
+        }
         if (EtatParametres.R_MODELE_IA.equals(cle)) {
             return reglages.modeleIa;
         }
@@ -666,6 +673,8 @@ public final class EcranParametres extends Activity {
             gererCle(FOURNISSEUR_OPENAI);
         } else if (EtatParametres.R_CLE_GEMINI.equals(cle)) {
             gererCle(FOURNISSEUR_GEMINI);
+        } else if (EtatParametres.R_CLE_OPENROUTER.equals(cle)) {
+            gererCle(FOURNISSEUR_OPENROUTER);
         } else if (EtatParametres.R_MODELE_IA.equals(cle)) {
             gererModeleIa();
         } else if (EtatParametres.R_URL_IA.equals(cle)) {
@@ -677,6 +686,7 @@ public final class EcranParametres extends Activity {
     private static final String FOURNISSEUR_ANTHROPIC = "anthropic";
     private static final String FOURNISSEUR_OPENAI = "openai";
     private static final String FOURNISSEUR_GEMINI = "gemini";
+    private static final String FOURNISSEUR_OPENROUTER = "openrouter";
 
     /**
      * La clé d'un fournisseur (lot P, ADR-É11 point 9) : menu
@@ -690,7 +700,9 @@ public final class EcranParametres extends Activity {
                         ? R.string.parametres_cle_anthropic
                         : FOURNISSEUR_GEMINI.equals(fournisseur)
                                 ? R.string.parametres_cle_gemini
-                                : R.string.parametres_cle_openai);
+                                : FOURNISSEUR_OPENROUTER.equals(fournisseur)
+                                        ? R.string.parametres_cle_openrouter
+                                        : R.string.parametres_cle_openai);
         if (posee) {
             Dialogue.menu(this, palette, titre,
                     new CharSequence[]{
@@ -717,7 +729,9 @@ public final class EcranParametres extends Activity {
                 getString(
                         FOURNISSEUR_ANTHROPIC.equals(fournisseur)
                                 ? R.string.parametres_cle_anthropic
-                                : R.string.parametres_cle_openai),
+                                : FOURNISSEUR_OPENROUTER.equals(fournisseur)
+                                        ? R.string.parametres_cle_openrouter
+                                        : R.string.parametres_cle_openai),
                 saisie, R.string.action_annuler, R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel == DialogInterface.BUTTON_POSITIVE) {

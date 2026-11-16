@@ -79,6 +79,15 @@ public final class AgentService extends Service {
     /** L'action Arrêter de la notification. */
     private static final String ACTION_ARRETER = "joide.agent.ARRETER";
 
+    /**
+     * L'URL de base d'OpenRouter (lot U) : la passerelle multi-modèles
+     * parle OpenAI-compatible (Chat Completions) — son URL de base est
+     * propre à elle, l'URL libre du fournisseur OPENAI ne s'applique
+     * pas.
+     */
+    private static final String URL_OPENROUTER =
+            "https://openrouter.ai/api/v1";
+
     /** Le délai des blocages sans UI (permission, questions). */
     private static final long DELAI_SANS_UI_MS = 120_000;
 
@@ -625,7 +634,9 @@ public final class AgentService extends Service {
                         .ANTHROPIC == fournisseur ? "anthropic"
                         : jo.joide.app.android.parametres.Reglages
                         .FournisseurIa.GEMINI == fournisseur
-                        ? "gemini" : "openai";
+                        ? "gemini" : jo.joide.app.android.parametres
+                        .Reglages.FournisseurIa.OPENROUTER == fournisseur
+                        ? "openrouter" : "openai";
         String cle = lireCle(nomFournisseur);
         if (cle == null) {
             consigner(new Entree(EvenementAgent.erreur(
@@ -952,6 +963,12 @@ public final class AgentService extends Service {
         }
         if ("gemini".equals(nomFournisseur)) {
             return new FournisseurGemini(cleDuBanc);
+        }
+        if ("openrouter".equals(nomFournisseur)) {
+            // lot U : la passerelle porte SON URL de base — l'URL
+            // libre du fournisseur OpenAI ne s'applique pas ici
+            return new FournisseurOpenAiCompatible(
+                    URL_OPENROUTER, cleDuBanc);
         }
         jo.joide.app.android.parametres.Reglages reglages =
                 jo.joide.app.android.parametres.Reglages.lire(
