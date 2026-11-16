@@ -46,7 +46,9 @@ public final class Icone extends View {
         /** Flèches d'agrandissement (plein écran — lot L). */
         AGRANDIR,
         /** Bulle de chat (l'agent — lot P). */
-        BULLE
+        BULLE,
+        /** Étoile pleine (favori — lot T). */
+        ETOILE
     }
 
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -199,6 +201,23 @@ public final class Icone extends View {
                 chemin.moveTo(6.5f * u, 14.2f * u);
                 chemin.lineTo(5.5f * u, 17.5f * u);
                 chemin.lineTo(9.5f * u, 14.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case ETOILE -> {
+                // l'étoile du favori se dessine PLEINE : cinq branches,
+                // centre (10, 10), rayon extérieur 7.2, intérieur 3
+                pinceau.setStyle(Paint.Style.FILL);
+                float[][] sommets = {
+                        {10f, 2.8f}, {11.76f, 7.57f},
+                        {16.85f, 7.77f}, {12.85f, 10.93f},
+                        {14.23f, 15.83f}, {10f, 13f},
+                        {5.77f, 15.83f}, {7.15f, 10.93f},
+                        {3.15f, 7.77f}, {8.24f, 7.57f}};
+                chemin.moveTo(sommets[0][0] * u, sommets[0][1] * u);
+                for (float[] sommet : sommets) {
+                    chemin.lineTo(sommet[0] * u, sommet[1] * u);
+                }
+                chemin.close();
                 canvas.drawPath(chemin, pinceau);
             }
             case AGRANDIR -> {

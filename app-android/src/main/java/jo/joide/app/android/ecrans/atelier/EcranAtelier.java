@@ -1837,19 +1837,388 @@ public final class EcranAtelier extends Activity {
     }
 
     /**
-     * Le sélecteur IN-SITU de fournisseur et de modèle (lot S,
-     * ADR-064) : ferme l'écart du lot P — la puce n'ouvre plus les
-     * réglages, le choix se fait sans quitter la conversation. Les
-     * clés restent gérées dans les Paramètres (le lien y mène).
+     * Le sélecteur de modèle de la manière CodeAssist (lot T,
+     * ADR-065) : une popup ANCRÉE à la puce du tiroir — la rangée de
+     * fournisseurs, la recherche qui filtre, les favoris (étoile)
+     * et les récents devant les suggestions, la coche sur le modèle
+     * courant. Un modèle se choisit D'UN TAP : le couple part au
+     * service, la puce se rafraîchit, la conversation continue. Le
+     * modèle personnalisé (et l'URL de base) gardent leur dialogue.
      */
     private void ouvrirModeleAgent() {
+        if (vueAgent == null) {
+            return;
+        }
         Reglages reglages = Reglages.lire(sourceReglages);
-        jo.joide.app.android.parametres.ClesChiffrees cles =
-                jo.joide.app.android.parametres.KeystoreCles.sur(this);
+        int marge = GraphiteVue.dp(this, 8);
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        colonne.setPadding(marge, marge, marge, marge);
+        android.widget.PopupWindow[] fenetre =
+                new android.widget.PopupWindow[1];
+        Runnable fermer = () -> {
+            if (fenetre[0] != null) {
+                fenetre[0].dismiss();
+            }
+        };
+        Runnable[] rafraichir = new Runnable[1];
+        int[] fournisseurIndex = {reglages.fournisseurIa.ordinal()};
+
+        // ---- l'en-tête : titre et fermer ----
+        LinearLayout tete = new LinearLayout(this);
+        tete.setOrientation(LinearLayout.HORIZONTAL);
+        tete.setGravity(Gravity.CENTER_VERTICAL);
+        TextView titre = new TextView(this);
+        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
+        titre.setTextColor(palette.texte);
+        titre.setText(R.string.agent_modele_titre);
+        tete.addView(titre, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        Icone fermerIcone = new Icone(this);
+        fermerIcone.setGlyphe(Icone.Glyphe.CROIX);
+        fermerIcone.setCouleur(palette.texteSecondaire);
+        fermerIcone.setClickable(true);
+        fermerIcone.setContentDescription(
+                getString(R.string.action_annuler));
+        fermerIcone.setOnClickListener(vue -> fermer.run());
+        tete.addView(fermerIcone, new LinearLayout.LayoutParams(
+                GraphiteVue.dp(this, 30),
+                GraphiteVue.dp(this, 30)));
+        colonne.addView(tete);
+
+        // ---- la rangée des fournisseurs : une puce pointée dit le
+        // choix, l'état de clé reste lu du stockage chiffré ----
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
-        int[] selection = {reglages.fournisseurIa.ordinal()};
+        LinearLayout rangeeFournisseurs = new LinearLayout(this);
+        rangeeFournisseurs.setOrientation(LinearLayout.HORIZONTAL);
+        Puce[] puces = new Puce[fournisseurs.length];
+        for (int i = 0; i < fournisseurs.length; i++) {
+            final int index = i;
+            Puce puce = new Puce(this);
+            puce.setText(nomFournisseur(fournisseurs[i]));
+            puce.setPointee(i == fournisseurIndex[0]);
+            puce.setOnClickListener(vue -> {
+                fournisseurIndex[0] = index;
+                for (int j = 0; j < puces.length; j++) {
+                    puces[j].setPointee(j == index);
+                }
+                rafraichir[0].run();
+            });
+            puces[i] = puce;
+            LinearLayout.LayoutParams paramsPuce =
+                    new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            paramsPuce.rightMargin = GraphiteVue.dp(this, 6);
+            paramsPuce.topMargin = GraphiteVue.dp(this, 8);
+            rangeeFournisseurs.addView(puce, paramsPuce);
+        }
+        colonne.addView(rangeeFournisseurs);
 
+        // ---- la recherche : le filtre des listes longues ----
+        android.widget.EditText recherche =
+                new android.widget.EditText(this);
+        recherche.setHint(R.string.agent_modeles_recherche);
+        recherche.setSingleLine(true);
+        recherche.setTextSize(14f);
+        recherche.setTextColor(palette.texte);
+        recherche.setHintTextColor(palette.texteEstompe);
+        recherche.setTypeface(GraphiteVue.police(this, 400, false));
+        android.graphics.drawable.GradientDrawable pilule =
+                new android.graphics.drawable.GradientDrawable();
+        pilule.setColor(palette.fond);
+        pilule.setCornerRadius(GraphiteVue.dp(this, 18));
+        pilule.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
+        recherche.setBackground(pilule);
+        recherche.setPadding(GraphiteVue.dp(this, 12),
+                GraphiteVue.dp(this, 8), GraphiteVue.dp(this, 12),
+                GraphiteVue.dp(this, 8));
+        LinearLayout.LayoutParams paramsRecherche =
+                new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        paramsRecherche.topMargin = GraphiteVue.dp(this, 8);
+        colonne.addView(recherche, paramsRecherche);
+
+        // ---- la liste : Favoris, Récents, Suggestions ----
+        LinearLayout liste = new LinearLayout(this);
+        liste.setOrientation(LinearLayout.VERTICAL);
+        colonne.addView(liste);
+
+        rafraichir[0] = () -> {
+            liste.removeAllViews();
+            remplirListeModeles(liste, fournisseurIndex[0],
+                    recherche.getText().toString(), fermer,
+                    rafraichir[0]);
+        };
+        recherche.addTextChangedListener(
+                new android.text.TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s,
+                            int start, int count, int after) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s,
+                            int start, int before, int count) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(
+                            android.text.Editable s) {
+                        rafraichir[0].run();
+                    }
+                });
+        rafraichir[0].run();
+
+        fenetre[0] = PopupAncre.montrer(vueAgent.ancreModele(),
+                palette, colonne, 320);
+    }
+
+    /** Les sections du sélecteur : favoris, récents, suggestions. */
+    private void remplirListeModeles(LinearLayout liste,
+                                     int fournisseurIndex,
+                                     String requete, Runnable fermer,
+                                     Runnable rafraichir) {
+        Reglages reglages = Reglages.lire(sourceReglages);
+        String[] catalogue = catalogueModele(fournisseurIndex);
+        List<String> favoris = lireListeModeles(
+                cleFavorisModeles(fournisseurIndex));
+        List<String> recents = lireListeModeles(
+                cleRecentsModeles(fournisseurIndex));
+        String filtre = requete == null ? ""
+                : requete.trim().toLowerCase(java.util.Locale.ROOT);
+        List<String> sectionFavoris = new ArrayList<>();
+        List<String> sectionRecents = new ArrayList<>();
+        List<String> sectionSuggestions = new ArrayList<>();
+        for (String modele : catalogue) {
+            if (!filtre.isEmpty() && !modele.toLowerCase(
+                    java.util.Locale.ROOT).contains(filtre)) {
+                continue;
+            }
+            if (favoris.contains(modele)) {
+                sectionFavoris.add(modele);
+            } else if (recents.contains(modele)) {
+                sectionRecents.add(modele);
+            } else {
+                sectionSuggestions.add(modele);
+            }
+        }
+        boolean vide = sectionFavoris.isEmpty()
+                && sectionRecents.isEmpty()
+                && sectionSuggestions.isEmpty();
+        if (!sectionFavoris.isEmpty()) {
+            liste.addView(enteteSection(getString(
+                    R.string.agent_modeles_favoris)));
+        }
+        for (String modele : sectionFavoris) {
+            liste.addView(ligneModele(modele,
+                    modele.equals(reglages.modeleIa), true,
+                    fournisseurIndex, fermer, rafraichir));
+        }
+        if (!sectionRecents.isEmpty()) {
+            liste.addView(enteteSection(getString(
+                    R.string.agent_modeles_recents)));
+        }
+        for (String modele : sectionRecents) {
+            liste.addView(ligneModele(modele,
+                    modele.equals(reglages.modeleIa), false,
+                    fournisseurIndex, fermer, rafraichir));
+        }
+        if (!sectionSuggestions.isEmpty()) {
+            liste.addView(enteteSection(getString(
+                    R.string.agent_modeles_suggestions)));
+        }
+        for (String modele : sectionSuggestions) {
+            liste.addView(ligneModele(modele,
+                    modele.equals(reglages.modeleIa), false,
+                    fournisseurIndex, fermer, rafraichir));
+        }
+        if (vide && filtre.isEmpty()) {
+            TextView videVue = new TextView(this);
+            GraphiteVue.typographie(videVue, Graphite.LEGENDE);
+            videVue.setTextColor(palette.texteEstompe);
+            videVue.setText(R.string.agent_modeles_recherche);
+            videVue.setPadding(GraphiteVue.dp(this, 14),
+                    GraphiteVue.dp(this, 12), 0, 0);
+            liste.addView(videVue);
+        }
+        // le modèle hors catalogue reste atteignable : le geste
+        // personnalisé garde son dialogue (nom, URL de base)
+        TextView personnalise = new TextView(this);
+        GraphiteVue.typographie(personnalise, Graphite.CORPS);
+        personnalise.setTextColor(palette.accent);
+        personnalise.setText(R.string.agent_modeles_personnalise);
+        int vertical = GraphiteVue.dp(this, 11);
+        personnalise.setPadding(GraphiteVue.dp(this, 14), vertical,
+                GraphiteVue.dp(this, 14), vertical);
+        personnalise.setOnClickListener(vue -> {
+            fermer.run();
+            dialogueModelePersonnalise(fournisseurIndex);
+        });
+        liste.addView(personnalise);
+    }
+
+    /** L'en-tête discret d'une section du sélecteur. */
+    private TextView enteteSection(CharSequence titre) {
+        TextView vue = new TextView(this);
+        GraphiteVue.typographie(vue, Graphite.LEGENDE);
+        vue.setTextColor(palette.texteEstompe);
+        vue.setText(titre);
+        vue.setPadding(GraphiteVue.dp(this, 14),
+                GraphiteVue.dp(this, 10),
+                GraphiteVue.dp(this, 14),
+                GraphiteVue.dp(this, 2));
+        return vue;
+    }
+
+    /** Une ligne de modèle : la coche du courant, l'étoile du favori. */
+    private View ligneModele(String modele, boolean courant,
+                             boolean favori, int fournisseurIndex,
+                             Runnable fermer, Runnable rafraichir) {
+        LinearLayout ligne = new LinearLayout(this);
+        ligne.setOrientation(LinearLayout.HORIZONTAL);
+        ligne.setGravity(Gravity.CENTER_VERTICAL);
+        ligne.setBackground(PopupAncre.fondAppuye(palette));
+        ligne.setOnClickListener(vue -> {
+            fermer.run();
+            choisirModele(fournisseurIndex, modele);
+        });
+        TextView nom = new TextView(this);
+        GraphiteVue.typographie(nom, Graphite.CORPS);
+        nom.setTextColor(palette.texte);
+        nom.setText(modele);
+        nom.setSingleLine(true);
+        nom.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        ligne.addView(nom, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        if (courant) {
+            Icone coche = new Icone(this);
+            coche.setGlyphe(Icone.Glyphe.COCHE);
+            coche.setCouleur(palette.accent);
+            coche.setTraitDp(1.8f);
+            LinearLayout.LayoutParams paramsCoche =
+                    new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(this, 16),
+                    GraphiteVue.dp(this, 16));
+            paramsCoche.rightMargin = GraphiteVue.dp(this, 8);
+            ligne.addView(coche, paramsCoche);
+        }
+        Icone etoile = new Icone(this);
+        etoile.setGlyphe(Icone.Glyphe.ETOILE);
+        etoile.setCouleur(favori ? palette.alerte : palette.bord);
+        etoile.setContentDescription(
+                getString(R.string.agent_modeles_favori));
+        etoile.setClickable(true);
+        etoile.setOnClickListener(vue -> {
+            basculeFavori(fournisseurIndex, modele, !favori);
+            rafraichir.run();
+        });
+        LinearLayout.LayoutParams paramsEtoile =
+                new LinearLayout.LayoutParams(
+                GraphiteVue.dp(this, 30),
+                GraphiteVue.dp(this, 30));
+        paramsEtoile.leftMargin = GraphiteVue.dp(this, 2);
+        ligne.addView(etoile, paramsEtoile);
+        int vertical = GraphiteVue.dp(this, 9);
+        ligne.setPadding(GraphiteVue.dp(this, 14), vertical,
+                GraphiteVue.dp(this, 10), vertical);
+        return ligne;
+    }
+
+    /** Le catalogue suggéré d'un fournisseur (l'honnêteté : des
+     * suggestions nommées, jamais une liste prétendue vivante). */
+    private static String[] catalogueModele(int fournisseurIndex) {
+        return switch (Reglages.FournisseurIa
+                .values()[fournisseurIndex]) {
+            case ANTHROPIC -> new String[]{
+                    "claude-opus-4-1", "claude-sonnet-4-5",
+                    "claude-haiku-4-5", "claude-3-7-sonnet",
+                    "claude-3-5-haiku"};
+            case GEMINI -> new String[]{
+                    "gemini-2.5-pro", "gemini-2.5-flash",
+                    "gemini-2.5-flash-lite", "gemini-2.0-flash"};
+            default -> new String[]{
+                    "gpt-5.1", "gpt-5", "gpt-4.1",
+                    "gpt-4.1-mini", "gpt-4o", "o4-mini"};
+        };
+    }
+
+    /** Le choix d'un modèle : écrit, pousse au service, retient. */
+    private void choisirModele(int fournisseurIndex, String modele) {
+        Reglages.FournisseurIa choisi = Reglages.FournisseurIa
+                .values()[fournisseurIndex];
+        Reglages.ecrireFournisseurIa(sourceReglages, choisi);
+        Reglages.ecrireModeleIa(sourceReglages, modele);
+        if (agent != null) {
+            agent.poserModele(choisi, modele);
+        }
+        etatAgent.poserModele(modele);
+        vueAgent.rafraichir();
+        pousserRecent(fournisseurIndex, modele);
+    }
+
+    /** L'étoile : basculer un favori (devant les suggestions). */
+    private void basculeFavori(int fournisseurIndex, String modele,
+                               boolean favori) {
+        String cle = cleFavorisModeles(fournisseurIndex);
+        List<String> favoris = lireListeModeles(cle);
+        favoris.remove(modele);
+        if (favori) {
+            favoris.add(0, modele);
+        }
+        ecrireListeModeles(cle, favoris);
+    }
+
+    /** Un modèle choisi rejoint les récents (devant, borné à cinq). */
+    private void pousserRecent(int fournisseurIndex, String modele) {
+        String cle = cleRecentsModeles(fournisseurIndex);
+        List<String> recents = lireListeModeles(cle);
+        recents.remove(modele);
+        recents.add(0, modele);
+        while (recents.size() > 5) {
+            recents.remove(recents.size() - 1);
+        }
+        ecrireListeModeles(cle, recents);
+    }
+
+    /** La liste persistée d'une clé (séparateur |, jamais vide). */
+    private List<String> lireListeModeles(String cle) {
+        String brut = sourceReglages.lire(cle);
+        List<String> valeurs = new ArrayList<>();
+        if (brut != null && !brut.isEmpty()) {
+            for (String morceau : brut.split("\\|")) {
+                if (!morceau.isEmpty()) {
+                    valeurs.add(morceau);
+                }
+            }
+        }
+        return valeurs;
+    }
+
+    /** La liste persistée s'écrit d'un trait (séparateur |). */
+    private void ecrireListeModeles(String cle, List<String> valeurs) {
+        sourceReglages.ecrire(cle, String.join("|", valeurs));
+    }
+
+    private static String cleFavorisModeles(int fournisseurIndex) {
+        return "agent.modeles.favoris." + fournisseurIndex;
+    }
+
+    private static String cleRecentsModeles(int fournisseurIndex) {
+        return "agent.modeles.recents." + fournisseurIndex;
+    }
+
+    /**
+     * Le dialogue du modèle personnalisé (lot S conservé) : le nom
+     * libre et l'URL OpenAI-compatible s'écrivent au tap sur OK —
+     * le couple part au service sans quitter la conversation.
+     */
+    private void dialogueModelePersonnalise(int fournisseurIndex) {
+        Reglages reglages = Reglages.lire(sourceReglages);
+        Reglages.FournisseurIa[] fournisseurs =
+                Reglages.FournisseurIa.values();
         LinearLayout corps = new LinearLayout(this);
         corps.setOrientation(LinearLayout.VERTICAL);
         int marge = GraphiteVue.dp(this, 4);
@@ -1862,55 +2231,13 @@ public final class EcranAtelier extends Activity {
         etiquetteFournisseur.setText(R.string.agent_fournisseur_section);
         etiquetteFournisseur.setPadding(0, marge, 0, marge);
         corps.addView(etiquetteFournisseur);
-
-        View[] points = new View[fournisseurs.length];
-        String[] idsStockage = {"anthropic", "openai", "gemini"};
-        for (int i = 0; i < fournisseurs.length; i++) {
-            final int index = i;
-            LinearLayout ligne = new LinearLayout(this);
-            ligne.setOrientation(LinearLayout.HORIZONTAL);
-            ligne.setGravity(Gravity.CENTER_VERTICAL);
-            ligne.setPadding(0, GraphiteVue.dp(this, 7), 0,
-                    GraphiteVue.dp(this, 7));
-            View point = new View(this);
-            point.setBackground(cercle(
-                    i == selection[0] ? palette.accent
-                            : palette.bord));
-            ligne.addView(point, new LinearLayout.LayoutParams(
-                    GraphiteVue.dp(this, 9),
-                    GraphiteVue.dp(this, 9)));
-            points[i] = point;
-            TextView nom = new TextView(this);
-            GraphiteVue.typographie(nom, Graphite.CORPS);
-            nom.setTextColor(palette.texte);
-            nom.setText(nomFournisseur(fournisseurs[i]));
-            LinearLayout.LayoutParams paramsNom =
-                    new LinearLayout.LayoutParams(0,
-                            LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            paramsNom.leftMargin = GraphiteVue.dp(this, 11);
-            ligne.addView(nom, paramsNom);
-            boolean posee = false;
-            try {
-                posee = cles.estPosee(idsStockage[i]);
-            } catch (RuntimeException e) {
-                // l'état de clé se lit au mieux : « absente » honnête
-            }
-            Puce etat = new Puce(this);
-            etat.setText(posee
-                    ? R.string.agent_cle_posee
-                    : R.string.agent_cle_absente);
-            etat.setPointee(posee);
-            ligne.addView(etat);
-            ligne.setOnClickListener(vue -> {
-                selection[0] = index;
-                for (int j = 0; j < points.length; j++) {
-                    points[j].setBackground(cercle(
-                            j == index ? palette.accent
-                                    : palette.bord));
-                }
-            });
-            corps.addView(ligne);
-        }
+        TextView valeurFournisseur = new TextView(this);
+        GraphiteVue.typographie(valeurFournisseur, Graphite.CORPS);
+        valeurFournisseur.setTextColor(palette.texte);
+        valeurFournisseur.setText(nomFournisseur(
+                fournisseurs[Math.max(0, Math.min(fournisseurIndex,
+                        fournisseurs.length - 1))]));
+        corps.addView(valeurFournisseur);
 
         TextView etiquetteModele = new TextView(this);
         GraphiteVue.typographie(etiquetteModele, Graphite.LEGENDE);
@@ -1965,7 +2292,7 @@ public final class EcranAtelier extends Activity {
                     }
                     Reglages.FournisseurIa choisi =
                             fournisseurs[Math.max(0,
-                                    Math.min(selection[0],
+                                    Math.min(fournisseurIndex,
                                             fournisseurs.length - 1))];
                     String modele = saisieModele.getText()
                             .toString().trim();
