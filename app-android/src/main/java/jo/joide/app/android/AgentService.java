@@ -43,6 +43,10 @@ import jo.joide.agent.UsageLlm;
 import jo.joide.agent.espace.EspaceCheckpoint;
 import jo.joide.agent.espace.EspaceTravailAgent;
 import jo.joide.agent.espace.QuestionUtilisateur;
+import jo.joide.agent.mcp.ConfigServeurMcp;
+import jo.joide.agent.mcp.GestionnaireMcp;
+import jo.joide.agent.mcp.JetonsMcp;
+import jo.joide.agent.mcp.StoreJetonsMcp;
 import jo.joide.agent.outils.OutilsV1;
 import jo.joide.agent.outils.PlanAgent;
 import jo.joide.platform.CancelToken;
@@ -258,6 +262,71 @@ public final class AgentService extends Service {
             return banc == null ? 0 : banc.taille();
         }
 
+        // ---- les connexions MCP (lot S, ADR-064 câblant l'ADR-063) ----
+
+        /**
+         * Pose le contenu du {@code .mcp.json} du projet (lu borné
+         * par l'atelier) : les serveurs declarés sont PARSÉS, pas
+         * activés — l'approbation reste un geste de l'utilisateur
+         * (ADR-063 : un dépôt cloné n'est pas un choix).
+         *
+         * @param contenu le texte du fichier, vide si absent
+         */
+        public void poserMcpJson(String contenu) {
+            List<ConfigServeurMcp> configs =
+                    GestionnaireMcp.lireFichier(contenu);
+            synchronized (AgentService.this) {
+                configsMcp = configs;
+            }
+            if (approuveMcp) {
+                gestionnaireMcp.maj(configs);
+            }
+        }
+
+        /** @return les serveurs declarés par le .mcp.json du projet */
+        public List<ConfigServeurMcp> configsMcp() {
+            synchronized (AgentService.this) {
+                return configsMcp;
+            }
+        }
+
+        /** @return vrai si l'utilisateur a activé les serveurs du projet */
+        public boolean approuveMcp() {
+            return approuveMcp;
+        }
+
+        /**
+         * L'approbation des serveurs du projet (lot S) : le geste
+         * explicite qui connecte — ou déconnecte. v1 : par session,
+         * la persistance par projet attend le store chiffré des
+         * signatures (backlog lot R).
+         *
+         * @param accordee vrai pour connecter les serveurs declarés
+         */
+        public void poserApprobationMcp(boolean accordee) {
+            approuveMcp = accordee;
+            List<ConfigServeurMcp> configs;
+            synchronized (AgentService.this) {
+                configs = configsMcp;
+            }
+            gestionnaireMcp.maj(accordee ? configs : List.of());
+        }
+
+        /** @return les états publiés des serveurs connectés */
+        public List<GestionnaireMcp.EtatServeur> etatsMcp() {
+            return gestionnaireMcp.etats();
+        }
+
+        /** Reconnecte un serveur nommé (après une signature, un échec). */
+        public void reconnecterMcp(String nom) {
+            gestionnaireMcp.reconnecter(nom);
+        }
+
+        /** @return le nombre d'outils MCP en ligne */
+        public int outilsMcp() {
+            return gestionnaireMcp.outils().size();
+        }
+
         /**
          * Pose l'écouteur live (appelé sur le fil UI) ; les entrées
          * déjà passées ne sont PAS rejouées ici — l'appelant rejoue
@@ -331,6 +400,31 @@ public final class AgentService extends Service {
     private int requetesDuTour;
     private ConversationsAgent conversations;
     private String idConversation = "";
+    private GestionnaireMcp gestionnaireMcp;
+    private List<ConfigServeurMcp> configsMcp = List.of();
+    private volatile boolean approuveMcp;
+
+    /** Le store des signatures MCP en mémoire (v1 : par session). */
+    private final StoreJetonsMcp jetonsMcpMemoire =
+            new StoreJetonsMcp() {
+                private final java.util.Map<String, JetonsMcp> jetons =
+                        new java.util.concurrent.ConcurrentHashMap<>();
+
+                @Override
+                public JetonsMcp lire(String identite) {
+                    return jetons.get(identite);
+                }
+
+                @Override
+                public void poser(String identite, JetonsMcp poses) {
+                    jetons.put(identite, poses);
+                }
+
+                @Override
+                public void retirer(String identite) {
+                    jetons.remove(identite);
+                }
+            };
 
     @Override
     public void onCreate() {
@@ -357,6 +451,11 @@ public final class AgentService extends Service {
                 "agent", "session.json"));
         idConversation = conversations.activeOuNeuve();
         relireSession();
+        // le gestionnaire MCP (lot R) : stdio non autorisé sur
+        // Android (NON_SUPPORTE honnête), les jetons en mémoire v1
+        gestionnaireMcp = new GestionnaireMcp(jetonsMcpMemoire,
+                new TransportOkHttp(), CancelToken.NEVER, false,
+                null);
     }
 
     @Override
@@ -806,6 +905,9 @@ public final class AgentService extends Service {
             EspaceTravailAgent espacePonte) {
         List<jo.joide.agent.OutilAgent> outils = OutilsV1.tous(
                 espaceQuestions, transportWeb(), plan);
+        // les outils MCP distants rejoignent le port quand les
+        // serveurs du projet sont approuvés (lot S)
+        outils.addAll(gestionnaireMcp.outils());
         return new ExecuteurOutils.PortOutils() {
             @Override
             public jo.joide.agent.OutilAgent outil(String nom) {
@@ -855,6 +957,9 @@ public final class AgentService extends Service {
     @Override
     public void onDestroy() {
         arreter();
+        if (gestionnaireMcp != null) {
+            gestionnaireMcp.close();
+        }
         if (executeur != null) {
             executeur.shutdownNow();
         }

@@ -1257,6 +1257,9 @@ public final class EcranAtelier extends Activity {
         agent.poserEspace(new EspaceCheckpoint(espace));
         Reglages reglages = Reglages.lire(sourceReglages);
         agent.poserModele(reglages.fournisseurIa, reglages.modeleIa);
+        // le .mcp.json du projet, lu borné, part au service : les
+        // serveurs déclarés sont parsés, pas activés (ADR-063)
+        agent.poserMcpJson(lireMcpJson());
         etatAgent.poserModele(reglages.modeleIa);
         etatAgent.poserMode(EtatAgentChat.TourEtat.EN_COURS
                 == etatAgent.etat()
@@ -1370,6 +1373,7 @@ public final class EcranAtelier extends Activity {
                         getString(R.string.agent_menu_nouvelle),
                         getString(R.string.agent_menu_historique),
                         getString(R.string.agent_modele_titre),
+                        getString(R.string.agent_connexions_titre),
                         getString(R.string.agent_usages_titre)},
                 (dialog, lequel) -> {
                     if (lequel == 0) {
@@ -1379,9 +1383,197 @@ public final class EcranAtelier extends Activity {
                     } else if (lequel == 2) {
                         ouvrirModeleAgent();
                     } else if (lequel == 3) {
+                        ouvrirConnexionsAgent();
+                    } else if (lequel == 4) {
                         ouvrirUsagesAgent();
                     }
                 });
+    }
+
+    /**
+     * Le {@code .mcp.json} du projet (lot S) : lu borné (64 Kio),
+     * vide si absent ou illisible — jamais un crash d'ouverture.
+     */
+    private String lireMcpJson() {
+        if (racineProjet == null) {
+            return "";
+        }
+        try {
+            Path cible = racineProjet.resolve(".mcp.json");
+            if (!Files.isRegularFile(cible)) {
+                return "";
+            }
+            byte[] octets = Files.readAllBytes(cible);
+            if (octets.length > 65_536) {
+                return "";
+            }
+            return new String(octets, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    /**
+     * L'écran Connexions (lot S, ADR-064 câblant l'ADR-063) : les
+     * serveurs déclarés par le projet, leur état publié, le geste
+     * d'approbation qui seul connecte — un dépôt cloné n'est pas un
+     * choix de l'utilisateur.
+     */
+    private void ouvrirConnexionsAgent() {
+        if (agent == null) {
+            return;
+        }
+        List<jo.joide.agent.mcp.ConfigServeurMcp> configs =
+                agent.configsMcp();
+        boolean approuve = agent.approuveMcp();
+        java.util.Map<String, jo.joide.agent.mcp.GestionnaireMcp
+                .EtatServeur> etats = new java.util.HashMap<>();
+        for (var etat : agent.etatsMcp()) {
+            etats.put(etat.nom, etat);
+        }
+
+        LinearLayout corps = new LinearLayout(this);
+        corps.setOrientation(LinearLayout.VERTICAL);
+        int marge = GraphiteVue.dp(this, 4);
+        corps.setPadding(marge, marge, marge, marge);
+
+        if (configs.isEmpty()) {
+            TextView vide = new TextView(this);
+            GraphiteVue.typographie(vide, Graphite.CORPS);
+            vide.setTextColor(palette.texteEstompe);
+            vide.setText(R.string.agent_connexions_vide);
+            vide.setPadding(0, GraphiteVue.dp(this, 10), 0,
+                    GraphiteVue.dp(this, 10));
+            corps.addView(vide);
+        } else {
+            TextView avertissement = new TextView(this);
+            GraphiteVue.typographie(avertissement, Graphite.LEGENDE);
+            avertissement.setTextColor(palette.texteSecondaire);
+            avertissement.setText(approuve
+                    ? R.string.agent_connexions_actives
+                    : R.string.agent_connexions_avertissement);
+            avertissement.setPadding(0, marge, 0,
+                    GraphiteVue.dp(this, 8));
+            corps.addView(avertissement);
+
+            TextView action = new TextView(this);
+            GraphiteVue.typographie(action, Graphite.CORPS);
+            action.setTextColor(palette.accent);
+            action.setText(approuve
+                    ? R.string.agent_connexions_desactiver
+                    : R.string.agent_connexions_activer);
+            action.setPadding(0, 0, 0, GraphiteVue.dp(this, 10));
+            action.setOnClickListener(vue -> {
+                if (agent != null) {
+                    agent.poserApprobationMcp(!approuve);
+                }
+                ouvrirConnexionsAgent();
+            });
+            corps.addView(action);
+
+            if (approuve) {
+                TextView compte = new TextView(this);
+                GraphiteVue.typographie(compte, Graphite.LEGENDE);
+                compte.setTextColor(palette.texteEstompe);
+                compte.setText(getString(R.string.agent_connexions_outils,
+                        agent.outilsMcp()));
+                compte.setPadding(0, 0, 0, GraphiteVue.dp(this, 6));
+                corps.addView(compte);
+            }
+
+            for (jo.joide.agent.mcp.ConfigServeurMcp config : configs) {
+                corps.addView(ligneServeurMcp(config, approuve,
+                        etats.get(config.nom)));
+            }
+        }
+
+        ScrollView defilement = new ScrollView(this);
+        defilement.addView(corps, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        Dialogue.saisieTexte(this, palette,
+                getString(R.string.agent_connexions_titre), defilement,
+                R.string.action_ok, null);
+    }
+
+    /** Une ligne de serveur MCP : nom, état, motif, reconnexion. */
+    private View ligneServeurMcp(
+            jo.joide.agent.mcp.ConfigServeurMcp config, boolean approuve,
+            jo.joide.agent.mcp.GestionnaireMcp.EtatServeur etat) {
+        LinearLayout ligne = new LinearLayout(this);
+        ligne.setOrientation(LinearLayout.VERTICAL);
+        int padding = GraphiteVue.dp(this, 10);
+        ligne.setPadding(padding, padding, padding, padding);
+        android.graphics.drawable.GradientDrawable fond =
+                new android.graphics.drawable.GradientDrawable();
+        fond.setColor(palette.surface);
+        fond.setCornerRadius(GraphiteVue.dp(this,
+                Graphite.RAYON_COMPOSANT));
+        fond.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
+        ligne.setBackground(fond);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        int marge = GraphiteVue.dp(this, 4);
+        params.setMargins(0, marge, 0, marge);
+        ligne.setLayoutParams(params);
+
+        TextView nom = new TextView(this);
+        GraphiteVue.typographie(nom, Graphite.CORPS);
+        nom.setTextColor(palette.texte);
+        nom.setText(config.nom);
+        ligne.addView(nom);
+
+        TextView statut = new TextView(this);
+        GraphiteVue.typographie(statut, Graphite.LEGENDE);
+        CharSequence texteStatut = !approuve
+                ? getString(R.string.agent_connexions_non_active)
+                : etat == null
+                        ? getString(R.string.agent_connexions_statut_connexion)
+                        : texteStatutMcp(etat.statut)
+                                + (etat.motif == null ? ""
+                                        : " — " + etat.motif);
+        statut.setText(texteStatut);
+        statut.setTextColor(approuve && etat != null
+                && etat.statut == jo.joide.agent.mcp.GestionnaireMcp
+                        .Statut.ECHEC
+                ? palette.erreur : palette.texteEstompe);
+        statut.setPadding(0, GraphiteVue.dp(this, 3), 0, 0);
+        ligne.addView(statut);
+
+        if (approuve && etat != null
+                && (etat.statut == jo.joide.agent.mcp.GestionnaireMcp
+                        .Statut.ECHEC
+                || etat.statut == jo.joide.agent.mcp.GestionnaireMcp
+                        .Statut.AUTH_REQUISE)) {
+            TextView reconnecter = new TextView(this);
+            GraphiteVue.typographie(reconnecter, Graphite.CORPS);
+            reconnecter.setTextColor(palette.accent);
+            reconnecter.setText(R.string.agent_connexions_reconnecter);
+            reconnecter.setPadding(0, GraphiteVue.dp(this, 6), 0, 0);
+            reconnecter.setOnClickListener(vue -> {
+                if (agent != null) {
+                    agent.reconnecterMcp(config.nom);
+                }
+                ouvrirConnexionsAgent();
+            });
+            ligne.addView(reconnecter);
+        }
+        return ligne;
+    }
+
+    /** Le libellé localisé d'un statut MCP. */
+    private CharSequence texteStatutMcp(
+            jo.joide.agent.mcp.GestionnaireMcp.Statut statut) {
+        return getString(switch (statut) {
+            case CONNECTE -> R.string.agent_connexions_statut_connecte;
+            case CONNEXION -> R.string.agent_connexions_statut_connexion;
+            case AUTH_REQUISE -> R.string.agent_connexions_statut_auth;
+            case ECHEC -> R.string.agent_connexions_statut_echec;
+            case NON_SUPPORTE ->
+                    R.string.agent_connexions_statut_non_supporte;
+            default -> R.string.agent_connexions_statut_desactive;
+        });
     }
 
     /**
