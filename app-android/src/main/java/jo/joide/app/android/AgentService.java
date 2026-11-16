@@ -722,14 +722,23 @@ public final class AgentService extends Service {
                 jo.joide.app.android.parametres.Reglages.lire(
                         jo.joide.app.android.parametres.PreferencesAndroid
                                 .source(this));
-        String nomFournisseur =
-                jo.joide.app.android.parametres.Reglages.FournisseurIa
-                        .ANTHROPIC == fournisseur ? "anthropic"
-                        : jo.joide.app.android.parametres.Reglages
-                        .FournisseurIa.GEMINI == fournisseur
-                        ? "gemini" : jo.joide.app.android.parametres
-                        .Reglages.FournisseurIa.OPENROUTER == fournisseur
-                        ? "openrouter" : "openai";
+        // lot U/6 : le fournisseur PART DES RÉGLAGES RELUS à
+        // l'instant — le champ en mémoire n'est qu'un cache de
+        // session qui restait SUR ANTHROPIC quand le choix était posé
+        // pendant que le binder n'était pas encore lié (sélecteur
+        // ouvert avant la connexion du service) ou posé dans
+        // Paramètres après le démarrage : la requête partait sur
+        // anthropic (« no anthropic key », rapporté le 2026-11-17).
+        // Le choix PERSISTÉ (sélecteur, dialogue personnalisé,
+        // Paramètres — tous écrivent avant de pousser) est le
+        // dernier choix explicite de l'utilisateur.
+        fournisseur = reglages.fournisseurIa;
+        String nomFournisseur = switch (fournisseur) {
+            case ANTHROPIC -> "anthropic";
+            case GEMINI -> "gemini";
+            case OPENROUTER -> "openrouter";
+            default -> "openai";
+        };
         String cle = lireCle(nomFournisseur);
         if (cle == null) {
             consigner(new Entree(EvenementAgent.erreur(
