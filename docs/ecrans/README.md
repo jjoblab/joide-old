@@ -21,7 +21,14 @@ principal, les autres fichiers sont les previews écran par écran.
 | `006-console-build.md` | Console de build | `design/console.html` |
 | `007-apercu-mise-en-page.md` | Aperçu de mise en page | `design/apercu.html` |
 | `008-parametres.md` | Paramètres | `design/parametres.html` |
+| `009-analyse-ia-codeassist.md` | Analyse du code IA de CodeAssist (agent, LLM, MCP, UI, tests) | — |
+| `010-plan-lots.md` | Plan des lots d'implémentation : UI v2 (G-M) et agent IA (N-R) | — |
 
 Statut : design accepté en revue interne ; l'implémentation viendra en
-lots futurs, à planifier avec le propriétaire. Le code existant (P8)
-n'est pas touché par cette série.
+lots futurs. Le code existant (P8) n'est pas touché par cette série.
+
+Révision du 2026-11-16 : le propriétaire rouvre le sujet IA (mandat :
+« Étendre l'analyse pour les fonctionnalités de AI — pour l'IA tu dois regarder le
+code »). L'ADR-É9 analyse le code de l'agent de CodeAssist ; l'ADR-É10 propose le
+plan des lots d'implémentation (UI v2 G-M, agent IA N-R) avec ses questions D-1 à
+D-9 au propriétaire. L'implémentation attend son GO.

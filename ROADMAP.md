@@ -15,6 +15,8 @@
 | P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Validée** (GO du 2026-11-16) | `PHASE-P7-RAPPORT.md` |
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | **Livrée** — arrêt pour validation | `PHASE-P8-RAPPORT.md` |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
+| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : découpage en lots G-R, jalons et questions au propriétaire | — | **En planification** (ADR-É10, GO attendu) | `docs/ecrans/010-plan-lots.md` |
+| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : découpage en lots G-R, jalons et questions au propriétaire | — | **En planification** (ADR-É10, GO attendu) | `docs/ecrans/010-plan-lots.md` |
 
 ## Règles de passage
 
@@ -24,10 +26,11 @@
    décisions nouvelles, `CHANGES.md`, backlog mis à jour, rapport
    `PHASE-Pn-RAPPORT.md` (critères un par un, preuves, écarts,
    mesures, dette, questions), push, **arrêt pour validation**.
-3. Le journal clean-room (`docs/clean-room/JOURNAL.md`) reste vide
-   tant qu'aucune consultation de CodeAssist n'a lieu ; le travail ne
-   s'appuie que sur le prompt, le rapport d'analyse et la
-   documentation publique des outils.
+3. Le journal clean-room (`docs/clean-room/JOURNAL.md`) consigne toute
+   consultation de CodeAssist ; les deux consultations à ce jour
+   (2026-11-16, écrans puis agent IA) sont mandatées par le
+   propriétaire et produites en notes fonctionnelles sans code
+   (ADR-É1, ADR-É9) ; l'implémentation reste clean-room.
 
 ## Où regarder
 

@@ -1,21 +1,61 @@
-# CHANGES — Écrans v2 : analyse CodeAssist, ADR-É1 à É8, maquettes HTML
+# CHANGES — Analyse IA de CodeAssist (ADR-É9) et plan des lots (ADR-É10)
+
+Le propriétaire rouvre le sujet IA écarté par l'ADR-É1 et change la
+méthode (2026-11-16) : « Étendre l'analyse pour les fonctionnalités de
+AI (par contre pour l'IA tu dois regarder le code). Tu peux commencer
+à planifier les lots. » L'ADR-É9 analyse le code de l'agent de
+CodeAssist — 67 fichiers, ≈ 18 700 lignes lus (agent-api, agent-impl,
+agent-mcp, agent-ui, ide-core/agent, service Android, doc de
+conception, tests) — boucle d'agent, économie des tokens (prompt
+caching, compaction), six fournisseurs LLM, robustesse à trois étages,
+34 outils + port d'espace de travail, permissions sur diff, MCP dans
+les deux sens, UI du chat, service de premier plan, évaluations sans
+LLM ; verdict : adopter les principes, pas le code (17 leçons
+retenues, 11 risques à ne pas reproduire). L'ADR-É10 propose le plan
+des lots d'implémentation : UI v2 (G-M, ADR-É1 à É8) et agent IA
+(N-R, ADR-É9), jalons de validation par groupes, module pur agent dans
+le graphe, neuf questions D-1 à D-9 au propriétaire avant GO. Aucun
+code n'est implémenté ; l'arrêt pour validation du propriétaire
+s'applique.
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| docs/ecrans | `009-analyse-ia-codeassist.md` (ADR-É9 : analyse du code IA de CodeAssist — méthode, cartographie, leçons, risques, verdict) ; `010-plan-lots.md` (ADR-É10 : plan des lots G-R, principes de découpage, jalons, questions D-1 à D-9) |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| docs/ecrans | `001-analyse-codeassist.md` | famille IA du tableau : verdict « écarter » révisé (références ADR-É9/É10, réouverture par le propriétaire) ; note de révision dans « Ce que JoIDE ne prend pas » |
+| docs/ecrans | `README.md` | lignes 009/010 dans l'index ; statut : révision du 2026-11-16, plan proposé au propriétaire |
+| Racine | `ROADMAP.md` | ligne V2 (UI v2 + agent IA : en planification, ADR-É10) ; règle 3 du journal clean-room actualisée (deux consultations mandatées consignées) |
+| docs/clean-room | `JOURNAL.md` | les deux consultations CodeAssist (écrans puis agent IA, 2026-11-16) consignées avec fichiers, notes produites et impact — mandats du propriétaire, notes sans code |
+| Racine | `CHANGES.md` | le présent fichier ; typographie corrigée au passage sur les entrées existantes (espaces insécables) |
+
+## Supprimés
+
+Rien.
+
+# CHANGES — Écrans v2 : analyse CodeAssist, ADR-É1 à É8, maquettes HTML
 
 Après le premier test du propriétaire (2026-11-16) — l'UI P8 est
 fonctionnelle mais minimale (SAF unique, aucune création, apparence
 brute du cadre) — la série `docs/ecrans` définit l'architecture des
-écrans v2 AVANT implémentation : analyse des écrans de CodeAssist
+écrans v2 AVANT implémentation : analyse des écrans de CodeAssist
 (tyron12233), huit ADR (système de design « Graphite » + un par
 écran), maquettes HTML autonomes (preview principal + un par écran).
 Aucune ligne de code n'est reprise de CodeAssist (GPL-3.0, lecture
-seule, clean-room ADR-008) ; le code P8 n'est pas touché ; aucune
+seule, clean-room ADR-008) ; le code P8 n'est pas touché ; aucune
 implémentation n'est engagée sans validation du propriétaire.
 
 ## Ajoutés
 
 | Zone | Fichiers |
 |---|---|
-| docs/ecrans | `README.md` (index de la série) ; `001-analyse-codeassist.md` (inventaire complet des écrans de CodeAssist par famille, verdicts, six leçons avec preuves dans le source) ; `002-systeme-design.md` (palette Graphite, typographie à deux familles, composants, implémentation en vues du cadre sans AndroidX, états purs JVM par écran) ; `003-accueil-mes-projets.md` ; `004-creation-projet.md` ; `005-atelier.md` ; `006-console-build.md` ; `007-apercu-mise-en-page.md` ; `008-parametres.md` |
-| docs/ecrans/design | `index.html` (preview principal : parcours, galerie des six écrans, jetons, principes de franchise) ; `accueil-projets.html` (peuplé + première ouverture) ; `creation-projet.html` (trois étapes, franchise du modèle sur la carte) ; `atelier.html` (compact, tiroir arborescence, grand écran amarré) ; `console.html` (échoué avec problème cliquable + en cours) ; `apercu.html` (nominal + pendant la frappe) ; `parametres.html` — fichiers autonomes, aucune ressource externe, jetons ADR-É2 textuels |
+| docs/ecrans | `README.md` (index de la série) ; `001-analyse-codeassist.md` (inventaire complet des écrans de CodeAssist par famille, verdicts, six leçons avec preuves dans le source) ; `002-systeme-design.md` (palette Graphite, typographie à deux familles, composants, implémentation en vues du cadre sans AndroidX, états purs JVM par écran) ; `003-accueil-mes-projets.md` ; `004-creation-projet.md` ; `005-atelier.md` ; `006-console-build.md` ; `007-apercu-mise-en-page.md` ; `008-parametres.md` |
+| docs/ecrans/design | `index.html` (preview principal : parcours, galerie des six écrans, jetons, principes de franchise) ; `accueil-projets.html` (peuplé + première ouverture) ; `creation-projet.html` (trois étapes, franchise du modèle sur la carte) ; `atelier.html` (compact, tiroir arborescence, grand écran amarré) ; `console.html` (échoué avec problème cliquable + en cours) ; `apercu.html` (nominal + pendant la frappe) ; `parametres.html` — fichiers autonomes, aucune ressource externe, jetons ADR-É2 textuels |
 | scripts (hors dépôt) | capture et audit Playwright des maquettes (débordements, troncatures, coupures) — outils de revue de la série, pas des contrôles du dépôt |
 
 ## Modifiés

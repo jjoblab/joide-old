@@ -45,7 +45,7 @@ pas une ligne).
 | Outils spécialisés | `SdkManagerScreen`, `KeystoreManagerScreen`, `IconManagerScreen`, `AppIconStudioScreen`, `DependenciesScreen`, `ModuleConfigScreen`, `LanguageServersScreen`, `PluginsScreen`, `SearchScreen` | écarter de v2 — JoIDE n'a ni SDK ni keystore gérés dans l'app, pas de greffons, pas de serveurs configurables (moteurs embarqués) ; `SearchScreen` et `DependenciesScreen` au backlog ; `ModuleConfigScreen` écarté (le `joide.toml` s'édite dans l'éditeur de texte) |
 | Communauté et distribution | `ProjectsStoreScreen`, `StoreItemScreen`, `StoreSearchScreen`, `ExploreFeedScreen`, `SubmitProjectScreen`, `ProjectSharingScreens`, `PublisherProfileScreen`, `PublishingGuideScreen`, `ModerationScreen`, `Learn*` (4), `Challenge*` (2), `DailyChallengeScreen`, `FalseErrorReportDialog`, `ScreenshotViewer` | écarter — plateforme communautaire et pédagogie : pas le produit JoIDE (construire, pas animer) |
 | Git | `AccountsScreen`, `BranchesScreen`, `CloneScreen`, `DiffScreen`, `GitHubScreen`, `HistoryScreen`, `StashesScreen` (vcs-ui) | écarter de v2 — backlog lointain |
-| IA | `AgentPermissionDialog` (services/agent-ui) | écarter — pas d'agent dans JoIDE |
+| IA | `AgentPermissionDialog` (services/agent-ui) | révisé — analysé en profondeur sur le code (ADR-É9) et planifié en lots N-R (ADR-É10) après réouverture du sujet par le propriétaire |
 | Dialogues de franchise | `CloseProjectDialog`, `UnsavedCloseDialog`, `ErrorDialog`, `PermissionDialog`, `IndexStatusDialog`, `NewFileDialog`, `FileOperationsDialogs` | adopter le principe — leçon 5 |
 
 ## Leçons retenues (avec leurs preuves dans le code source)
@@ -121,7 +121,11 @@ adaptatif, dock, franchise — et se dessine aussi bien en vues.
 Ensuite les surfaces produit : Store, Apprentissage, Défis, IA, Git,
 gestion de SDK/keystore/icônes : hors périmètre, listées pour que
 l'architecture des écrans v2 n'en dépende pas (l'ADR-É8 garde des
-sections extensibles, jamais des onglets réservés).
+sections extensibles, jamais des onglets réservés). L'IA, écartée ici
+sur la seule vue des écrans, est réouverte par le propriétaire
+(2026-11-16) : l'ADR-É9 analyse le code de l'agent et l'ADR-É10 en
+planifie les lots — l'écran de chat sera conçu en ADR-É11 au lot P,
+sur la méthode de la présente série.
 
 ## Conséquences
 
