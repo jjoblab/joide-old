@@ -109,14 +109,15 @@ public final class VueAgent extends LinearLayout {
         palette = GraphiteVue.palette(contexte);
         int fond = palette.fond;
 
-        // ---- en-tête : titre, puces, fermer ----
+        // ---- en-tête : titre, puces, fermer (compact, lot S) ----
         LinearLayout tete = new LinearLayout(contexte);
         tete.setOrientation(LinearLayout.HORIZONTAL);
         tete.setGravity(Gravity.CENTER_VERTICAL);
         tete.setBackgroundColor(palette.surface);
-        int marge = GraphiteVue.dp(contexte, 10);
-        tete.setPadding(marge, GraphiteVue.dp(contexte, 8), marge,
-                GraphiteVue.dp(contexte, 8));
+        int marge = GraphiteVue.dp(contexte, 8);
+        tete.setPadding(marge, GraphiteVue.dp(contexte, 5),
+                GraphiteVue.dp(contexte, 2),
+                GraphiteVue.dp(contexte, 5));
         TextView titre = new TextView(contexte);
         GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
         titre.setTextColor(palette.texte);
@@ -158,11 +159,11 @@ public final class VueAgent extends LinearLayout {
                 LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        // ---- transcript ----
+        // ---- transcript (les cartes respirent de 8 dp, lot S) ----
         colonneCartes = new LinearLayout(contexte);
         colonneCartes.setOrientation(LinearLayout.VERTICAL);
         colonneCartes.setBackgroundColor(fond);
-        int margeCarte = GraphiteVue.dp(contexte, 10);
+        int margeCarte = GraphiteVue.dp(contexte, 8);
         colonneCartes.setPadding(margeCarte, margeCarte, margeCarte,
                 margeCarte);
         defilement = new ScrollView(contexte);
@@ -213,8 +214,16 @@ public final class VueAgent extends LinearLayout {
         saisie.setInputType(InputType.TYPE_CLASS_TEXT
                 | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
         saisie.setMaxLines(4);
-        saisie.setBackground(null);
-        saisie.setPadding(0, GraphiteVue.dp(contexte, 8), 0,
+        // la saisie vit dans une pilule discrète (finesse du lot S)
+        android.graphics.drawable.GradientDrawable pilule =
+                new android.graphics.drawable.GradientDrawable();
+        pilule.setColor(palette.fond);
+        pilule.setCornerRadius(GraphiteVue.dp(contexte, 18));
+        pilule.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
+        saisie.setBackground(pilule);
+        saisie.setPadding(GraphiteVue.dp(contexte, 12),
+                GraphiteVue.dp(contexte, 8),
+                GraphiteVue.dp(contexte, 12),
                 GraphiteVue.dp(contexte, 8));
         rangee.addView(saisie, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
@@ -314,11 +323,23 @@ public final class VueAgent extends LinearLayout {
             colonneCartes.addView(vue);
         }
         if (etat.cartes().isEmpty()) {
-            TextView vide = new TextView(contexte);
-            GraphiteVue.typographie(vide, Graphite.CORPS);
-            vide.setTextColor(palette.texteEstompe);
-            vide.setText(R.string.agent_vide);
-            vide.setPadding(0, GraphiteVue.dp(contexte, 24), 0, 0);
+            LinearLayout vide = new LinearLayout(contexte);
+            vide.setOrientation(LinearLayout.VERTICAL);
+            vide.setGravity(Gravity.CENTER_HORIZONTAL);
+            vide.setPadding(0, GraphiteVue.dp(contexte, 28), 0, 0);
+            Icone bulle = new Icone(contexte);
+            bulle.setGlyphe(Icone.Glyphe.BULLE);
+            bulle.setCouleur(palette.texteEstompe);
+            vide.addView(bulle, new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(contexte, 34),
+                    GraphiteVue.dp(contexte, 34)));
+            TextView consigne = new TextView(contexte);
+            GraphiteVue.typographie(consigne, Graphite.CORPS);
+            consigne.setTextColor(palette.texteEstompe);
+            consigne.setGravity(Gravity.CENTER);
+            consigne.setText(R.string.agent_vide);
+            consigne.setPadding(0, GraphiteVue.dp(contexte, 8), 0, 0);
+            vide.addView(consigne);
             colonneCartes.addView(vide);
         }
         if (etat.plafondAnnonce()) {
@@ -358,22 +379,27 @@ public final class VueAgent extends LinearLayout {
         vue.setTextColor(palette.texte);
         vue.setText(carte.texte);
         vue.setPadding(GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 9),
+                GraphiteVue.dp(contexte, 8),
                 GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 9));
+                GraphiteVue.dp(contexte, 8));
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(palette.surfaceHaute);
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 13));
+        // le coin bas-droit se resserre : la bulle parle DU côté de
+        // son auteur (finesse du lot S)
+        int grand = GraphiteVue.dp(contexte, 16);
+        int petit = GraphiteVue.dp(contexte, 6);
+        fond.setCornerRadii(new float[]{grand, grand, grand, grand,
+                petit, petit, grand, grand});
         fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
         vue.setBackground(fond);
         LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT,
                 LayoutParams.WRAP_CONTENT);
         params.gravity = Gravity.END;
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
+        params.setMargins(0, GraphiteVue.dp(contexte, 2), 0,
+                GraphiteVue.dp(contexte, 2));
         vue.setLayoutParams(params);
-        vue.setMaxWidth(Integer.MAX_VALUE);
+        vue.setMaxWidth(GraphiteVue.dp(contexte, 300));
         bloc.addView(vue);
         if (carte.pieces != null && !carte.pieces.isEmpty()) {
             LinearLayout puces = new LinearLayout(contexte);
@@ -547,12 +573,13 @@ public final class VueAgent extends LinearLayout {
     private View carteUsage(Carte carte) {
         Context contexte = getContext();
         TextView vue = new TextView(contexte);
-        vue.setTypeface(GraphiteVue.police(contexte, 400, true));
-        vue.setTextSize(11f);
-        vue.setTextColor(palette.texteSecondaire);
+        GraphiteVue.typographie(vue, Graphite.LEGENDE);
+        vue.setTextColor(palette.texteEstompe);
         vue.setText(contexte.getString(R.string.agent_usage,
                 carte.usage.entrees, carte.usage.sorties,
                 carte.usage.lecturesCache, carte.requetes));
+        vue.setPadding(0, GraphiteVue.dp(contexte, 2), 0,
+                GraphiteVue.dp(contexte, 2));
         return vue;
     }
 

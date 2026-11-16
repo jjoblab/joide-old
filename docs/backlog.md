@@ -3,32 +3,43 @@
 Entrées ouvertes à l'issue des lots Q (ADR-061/062) et R
 (ADR-063) — la piste 2 du plan ADR-É10 est clôturée :
 
-- [ ] Lot Q : les PRODUCTEURS d'images restent à câbler — le genre
-      `IMAGE` du modèle neutre, la sérialisation des trois
-      fournisseurs et la réduction côté client (`ReductionImages`)
-      sont en place, aucun outil v1 ne produit encore d'image
-      (capture d'aperçu, rendu de vue) ; l'hôte posera aussi le
-      réducteur BitmapFactory.
-- [ ] Lot Q : l'UI des bandes d'usage — `BandesUsage` est lisible
-      côté hôte, le pied d'usage du chat peut l'afficher (la bande
-      critique avant le 429).
+- [ ] Lot Q : les PRODUCTEURS d'images restent à câbler pour les
+      OUTILS — le genre `IMAGE` du modèle neutre, la sérialisation
+      des trois fournisseurs, la réduction côté client
+      (`ReductionImages`) et le réducteur BitmapFactory sont en
+      place, et le lot S a posé le PREMIER producteur (les
+      attachements du chat, ADR-064) ; les outils v1 restent sans
+      image (capture d'aperçu, rendu de vue).
+- [ ] Lot Q : les BANDES d'usage — le lot S a posé l'écran Usages
+      (usage cumulé de la conversation, état du banc de clés par
+      raison, ADR-064), mais `BandesUsage` (NORMALE/ATTENTION/
+      CRITIQUE) reste non affiché : le régulateur vit dans
+      `FournisseurBascule` et n'est pas exposé au binder —
+      l'exposer (la bande critique avant le 429) reste à faire.
 - [ ] Lot Q : le sélecteur de niveau de réflexion Gemini est un
       réglage de construction — l'exposer dans Paramètres si le
       propriétaire le veut.
-- [ ] Lot R : la section Connexions MCP des Paramètres (les états
-      publiés par `GestionnaireMcp` sont prêts : CONNECTE /
-      AUTH_REQUISE / ECHEC / NON_SUPPORTE) et le flux de signature
-      OAuth (ouvrir l'URL du navigateur, capter la redirection
-      bouclage, `echanger`) ; en v1, la lecture du `.mcp.json` du
-      projet se branchera à l'ouverture de la conversation.
+- [x] Lot R : la section Connexions MCP — CLOS par le lot S
+      (ADR-064) : l'écran Connexions vit dans le menu ⋯ de l'agent
+      (états publiés, reconnexion, compte d'outils), la lecture du
+      `.mcp.json` se branche à l'ouverture de la conversation, les
+      outils distants approuvés rejoignent le port du tour. Restent
+      au backlog : le flux de signature OAuth UI (ouvrir l'URL,
+      capter le rebouclage, `echanger`) et le store chiffré des
+      jetons (v1 : mémoire, par session).
 - [ ] Lot R : le serveur MCP local n'est pas démarré par l'hôte
       (le service l'exposera aux clients de bureau via `adb
       forward`, pattern de l'ADR-É9) — les outils, le transport et
       la sécurité sont prouvés en JVM.
 - [ ] Lot R : l'approbation des serveurs d'un `.mcp.json` issu du
-      PROJET (un dépôt cloné n'est pas un choix de l'utilisateur)
-      reste non accordée tant que l'utilisateur n'a pas approuvé ;
-      l'identité lie déjà approbation et signatures.
+      PROJET — le lot S pose le GESTE explicite (Activer les
+      serveurs de ce projet, ADR-064) mais par SESSION ; la
+      persistance par projet (identité liée aux signatures, store
+      chiffré) reste à faire.
+- [ ] Lot S : la cible caméra de l'agent
+      (`FournisseurCameraAgent`) ne survit pas à la mort du
+      processus (champ statique) — une photo en vol au kill est
+      perdue, jamais un crash.
 
 
 # Backlog (après le lot P de la V2)
@@ -38,11 +49,15 @@ Entrées ouvertes à l'issue du lot P (ADR-É11/060) :
 - [ ] Lot P : l'amarrage grand écran du tiroir agent (partage du
       bord droit avec l'aperçu, ADR-É11 point 1) — v1 pousse le
       tiroir aux deux tailles.
-- [ ] Lot P : le sélecteur de modèle IN-SITU (la puce ouvre les
-      réglages en v1) — fournisseur + modèle par conversation.
+- [x] Lot P : le sélecteur de modèle IN-SITU — CLOS par le lot S
+      (ADR-064) : la puce ouvre le dialogue fournisseur +
+      modèle + URL sans quitter la conversation, les clés restent
+      gérées dans les Paramètres.
 - [ ] Lot P : « Demander à l'IA » sur la SÉLECTION de l'éditeur
-      (v1 quote le fichier actif borné) — attend l'exposition d'une
-      API de sélection par celeris (ADR-060 §7).
+      (v1 quote le fichier actif borné ; le lot S ajoute le
+      FICHIER COURANT en pièce jointe `<file>`) — la sélection
+      précise attend l'exposition d'une API de sélection par
+      celeris (ADR-060 §7).
 - [ ] Lot P : la preuve appareil de la liaison Keystore (fabriquer
       la clé dans le Keystore matériel) — le format AES-GCM est
       éprouvé JVM, le composant Android reste mince (ADR-060 §8).

@@ -118,7 +118,8 @@ public final class ConversationsAgent {
                     .filter(f -> f.getFileName().toString()
                             .endsWith(SUFFIXE))
                     .sorted()
-                    .toList()) {
+                    .collect(java.util.stream.Collectors
+                            .toList())) {
                 Resume resume = resumer(fichier);
                 if (resume != null) {
                     resumes.add(resume);

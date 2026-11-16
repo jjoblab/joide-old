@@ -190,4 +190,28 @@ class MaquetteAgentTest {
                 EvenementAgent.RaisonFin.TERMINE));
         assertEquals(EtatAgentChat.TourEtat.TERMINE, etat.etat());
     }
+
+    @Test
+    void leLotSDeLaMaquettePorteLeMenuEtLesPieces()
+            throws IOException {
+        String maquette = maquette();
+        // le menu ⋯ : cinq entrées câblées, jamais mortes
+        assertTrue(maquette.contains("ADR-064"));
+        assertTrue(maquette.contains("nouvelle conversation"));
+        assertTrue(maquette.contains("historique"));
+        assertTrue(maquette.contains("fournisseur et modèle"));
+        assertTrue(maquette.contains("connexions MCP"));
+        assertTrue(maquette.contains("usages"));
+        // le bouton + et les puces de pièces au-dessus de la saisie
+        assertTrue(maquette.contains("capture.png ×"));
+        assertTrue(maquette.contains("fichier courant"));
+        assertTrue(maquette.contains("arbre du projet"));
+        // l'état porte les pièces nommées du message (la carte les
+        // montre en puces, le journal les rejoue)
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("pourquoi ce rendu ?", List.of("capture.png"));
+        List<Carte> cartes = etat.cartes();
+        assertEquals(1, cartes.size());
+        assertEquals(List.of("capture.png"), cartes.get(0).pieces);
+    }
 }

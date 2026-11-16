@@ -1,4 +1,43 @@
-# CHANGES — Correction de l'atelier sourd : le rideau des tiroirs (2026-11-17)
+# CHANGES — Lot S : l'agent complet (2026-11-17)
+
+**Le retour du propriétaire sur la V2** (message du 2026-11-17) :
+« Le design est peu brute, manque de finesse, compacité. Pour IA,
+il manque plusieurs écrans et fonctionnalités, les écrans popups
+[…]
+Les options de new chat, history, manage provider, connection,
+usages, etc.. Les options de add (image, take photo, current file
+ou projet ». Le lot S (ADR-064, note clean-room n° 4) répond point
+par point — cinq écrans au menu ⋯, quatre attachements au bouton
++, une passe de compacité aux jetons Graphite.
+
+| Étape | Contenu | Commit |
+|---|---|---|
+| S/1 | le menu ⋯, les conversations multiples (new chat,
+historique : reprendre/supprimer, migration de la session unique
+du lot P, plafond 50 avec éviction) et la correction des rôles
+restaurés (une réponse n'est plus rejouée en message) | `2bd1b82` |
+| S/2 | le fournisseur et le modèle IN-SITU (l'écart du lot P
+fermé : point de sélection, état de clé, URL) et l'écran
+Usages (usage cumulé, banc de clés par raison) | `1e087a2` |
+| S/3 | les connexions MCP câblées dans l'hôte : lecture
+bornée du `.mcp.json`, écran Connexions, geste d'approbation
+explicite, outils distants dans le port du tour | `f11dc6d` |
+| S/4 | les attachements : image (SAF, 8 Mio), photo
+(FournisseurCameraAgent, zéro AndroidX), fichier courant en bloc
+`<file>`, arbre en `<project_tree>`, réducteur BitmapFactory
+(1 568 px, JPEG 85), multimodal jusqu'aux fournisseurs,
+pixels persistés dans la session | `9c00313` |
+| S/5 | la finesse (en-tête compact, bulles au coin d'auteur,
+pilule de saisie, état vide à glyphe), la maquette enrichie et
+son test de capture, l'ADR-064, la note clean-room n° 4 | ce commit |
+
+Tests : ConversationsAgentTest (9), PieceJointeTest (8),
+MaquetteAgentTest (9), EtatAgentChatTest (16) —
+`:app-android:testDebugUnitTest` et `:agent:test` verts.
+
+---
+
+# CHANGES — Correction de l'atelier sourd : le rideau des tiroirs (2026-11-17)
 
 **Le symptôme** (rapport du propriétaire) : l'écran atelier d'un
 projet ouvert ne réagit plus au toucher PARTOUT — onglets, arbre,
@@ -53,11 +92,11 @@ diffusés) ; la `thoughtSignature` se range dans la partie appel
 (fabrique `PartieContenu.appelSigne`, signature opaque) et revient
 sur la `functionCall` au tour suivant — sans elle l'outil est refusé ;
 pas d'identifiant d'appel chez Gemini : le nom sert de corrélation,
-dédoublonné par suffixe `#N` ; pas de rôle système en conversation :
+dédoublonné par suffixe `#N` ; pas de rôle système en conversation :
 l'ancrage stable part en `system_instruction`, la note volatile se
 plie en part `<system-reminder>` du DERNIER tour utilisateur — le
 préfixe stable ne dérive pas (le garde du test le prouve) ;
-`usageMetadata` : `promptTokenCount` CONTIENT les lectures de cache,
+`usageMetadata` : `promptTokenCount` CONTIENT les lectures de cache,
 l'adaptateur soustrait et le modèle neutre garde les entrées non
 cachées ; pas d'événement terminal : usage et fin s'émettent à la fin
 du flux, un flux qui n'a rien rendu est ILLISIBLE (jamais un tour
@@ -75,7 +114,7 @@ politique est conservatrice : rien au premier tour, pas de création
 sous 2 048 jetons estimés, repli inline sur tout échec ET échec
 mémorisé par clé de charge utile, recréation une minute AVANT
 l'expiration — le caching ne peut jamais être une perte nette.
-`FournisseurGemini` déclare `compactionDeleguee() = true` : l'élagage
+`FournisseurGemini` déclare `compactionDeleguee() = true` : l'élagage
 local se désactive quand ce fournisseur est choisi.
 
 **Les budgets de réflexion** au dialecte de la génération : niveau
@@ -668,7 +707,7 @@ propriétaire (D-8 : rythme par groupe, jalon « v2 bêta »).
 | app-android `atelier/` | `EtatAtelier` (onglets, surcouches, retour, 720 dp, pilule), `Arborescence` (arbre, parentsDe, sorties), `NouveauNom` (validation), `EcrituresFusionnees` (écriture multi-fichiers), `EtatApercu` (bannières, contrôles, stats), `VueArbre`, `VueApercu` — purs et vues minces |
 | app-android `console/` | `EtatConsole` (transcript plafonné annoncé, phases mesurées, filtres, états, résumé chiffré), `VueConsole` (grille deux colonnes, bande de phases, problème ouvrable) |
 | app-android `ecrans/` | `atelier/EcranAtelier` (l'atelier adaptatif, remplace EcranIde) |
-| app-android `ui/` | `Onglets`, `Pilule`, `Fab` ; glyphes `TERMINAL`, `RAFRAICHIR`, `AGRANDIR` dans `Icone` |
+| app-android `ui/` | `Onglets`, `Pilule`, `Fab` ; glyphes `TERMINAL`, `RAFRAICHIR`, `AGRANDIR` dans `Icone` |
 | ide-integration `apercu/` | `ReferencesManquantes` (détection des replis, parseur maison, package-private) |
 | app-android `src/test` | `EtatAtelierTest` (17), `ArborescenceTest` (7), `NouveauNomTest` (2), `EcrituresFusionneesTest` (4), `EtatApercuTest` (8), `MaquetteAtelierTest` (6), `MaquetteApercuTest` (6), `EtatConsoleTest` (10), `MaquetteConsoleTest` (6), `ConsoleBuildTest` (+5) |
 | ide-integration `src/test` | `ReferencesManquantesTest` (6, vrai résolveur), `ConfigurationApercuTest` (+1) |
@@ -739,7 +778,7 @@ readString, writeString, Stream.toList), 118 tests app-android
 0 échec (71 nouveaux : persistance, état d'accueil, classification,
 âges, salutation, analyse des modèles, génération — aller-retour
 disque—→ lecteur de workspace sans erreur —, écriture atomique,
-machine à états de l'assistant), :app-android:assembleDebug
+machine à états de l'assistant), :app-android:assembleDebug
 produit l'APK du groupe 1 (92 Mo, 30 dex, les quatre modèles dans
 assets, toutes les classes vérifiées dans les dex), politique de
 langue 0 problème (parité values/values-fr, identifiants ASCII,
@@ -877,7 +916,7 @@ implémentation n'est engagée sans validation du propriétaire.
 
 | Zone | Fichiers |
 |---|---|
-| docs/ecrans | `README.md` (index de la série) ; `001-analyse-codeassist.md` (inventaire complet des écrans de CodeAssist par famille, verdicts, six leçons avec preuves dans le source) ; `002-systeme-design.md` (palette Graphite, typographie à deux familles, composants, implémentation en vues du cadre sans AndroidX, états purs JVM par écran) ; `003-accueil-mes-projets.md` ; `004-creation-projet.md` ; `005-atelier.md` ; `006-console-build.md` ; `007-apercu-mise-en-page.md` ; `008-parametres.md` |
+| docs/ecrans | `README.md` (index de la série) ; `001-analyse-codeassist.md` (inventaire complet des écrans de CodeAssist par famille, verdicts, six leçons avec preuves dans le source) ; `002-systeme-design.md` (palette Graphite, typographie à deux familles, composants, implémentation en vues du cadre sans AndroidX, états purs JVM par écran) ; `003-accueil-mes-projets.md` ; `004-creation-projet.md` ; `005-atelier.md` ; `006-console-build.md` ; `007-apercu-mise-en-page.md` ; `008-parametres.md` |
 | docs/ecrans/design | `index.html` (preview principal : parcours, galerie des six écrans, jetons, principes de franchise) ; `accueil-projets.html` (peuplé + première ouverture) ; `creation-projet.html` (trois étapes, franchise du modèle sur la carte) ; `atelier.html` (compact, tiroir arborescence, grand écran amarré) ; `console.html` (échoué avec problème cliquable + en cours) ; `apercu.html` (nominal + pendant la frappe) ; `parametres.html` — fichiers autonomes, aucune ressource externe, jetons ADR-É2 textuels |
 | scripts (hors dépôt) | capture et audit Playwright des maquettes (débordements, troncatures, coupures) — outils de revue de la série, pas des contrôles du dépôt |
 
@@ -941,7 +980,7 @@ complète : service de build de premier plan, UI IDE, APK).
 | Zone | Fichiers | Nature du changement |
 |---|---|---|
 | build-daemon | `DaemonClient` | factory `over(InputStream, OutputStream)` (transport par flux, ADR-043) ; `DaemonMain` délègue à `BoucleDemon` — aucun protocole dupliqué |
-| ide-integration | `LanguageModelSync` | `derniereResolution()` : le build réutilise les jars de la synchronisation (additif, lot F) |
+| ide-integration | `LanguageModelSync` | `derniereResolution()` : le build réutilise les jars de la synchronisation (additif, lot F) |
 | core-store | `StoreException` | constructeur à un argument (additif, lot F) |
 | Gradle | `settings.gradle.kts`, `gradle/module-graph.txt`, catalogue | conditionnel SDK (ADR-045), arêtes ide-integration et app-android, briques en Maven Local |
 | app-android | `AndroidManifest.xml`, `res/values/strings.xml` | service `:build` de premier plan, permissions INTERNET/FOREGROUND_SERVICE, chaînes réelles |
@@ -964,7 +1003,7 @@ Rien.
 | import-gradle (import) | `GradleImporter` (orchestrateur : réglages, propriétés, catalogue, module racine ou inclus, types, sources, dépendances à portées et variantes, facettes android/kotlin/gradle, min-sdk d'espace), `SyncReport` (rapport exhaustif, rendu hiérarchisé), `ModuleConfidence` (HIGH/MEDIUM/LOW à seuils fixes — ADR-040) |
 | import-gradle (export) | `GradleExporter` (export déterministe en mémoire : réglages avec dépôts, build.gradle.kts par module, greffons avec versions, bloc android, ensembles de sources explicites, dépendances à l'ordre du modèle, EXPORT-NOTES.md — ADR-041) |
 | import-gradle (tests) | `script/ScriptParserTest` (11 cas : deux dialectes, ordures, fuzz 500 entrées), `ReadersTest` (9 cas : propriétés, catalogue avec tables en ligne, réglages, interpolation), `GradleImporterTest` (7 cas : cinq échantillons — Groovy simple, multi-modules avec catalogue, Kotlin+Compose, parfoms et variantes, projet empoisonné —, module racine unique, répertoire absent), `NoExecutionDisciplineTest` (scan des API d'exécution interdites, absence de dépendance aux runtimes Gradle et Groovy), `GradleExporterTest` (déterminisme, aller-retour ≡ modèle sur modèle riche et sur échantillon importé, EXPORT-NOTES, formes DSL), `ExportRealGradleTest` (vrais Gradle sur les exports : JVM compileJava+jar, Android assembleDebug — armé par propriétés, lancé par script) |
-| import-gradle (fixtures) | cinq projets Gradle échantillons sous `src/test/resources/gradle-samples/` : `jvm-groovy` (Groovy, interpolation), `multi-catalog` (multi-modules Kotlin DSL, catalogue, parfum des deux dialectes, AGP 9), `compose-app` (Kotlin+Compose, BOM, variantes debug), `flavors` (Groovy, parfums, désucrage, sourceSets), `poisoned` (constructions non mappées + poison d'exécution : System.exit, marqueurs, exec — jamais exécutés) |
+| import-gradle (fixtures) | cinq projets Gradle échantillons sous `src/test/resources/gradle-samples/` : `jvm-groovy` (Groovy, interpolation), `multi-catalog` (multi-modules Kotlin DSL, catalogue, parfum des deux dialectes, AGP 9), `compose-app` (Kotlin+Compose, BOM, variantes debug), `flavors` (Groovy, parfums, désucrage, sourceSets), `poisoned` (constructions non mappées + poison d'exécution : System.exit, marqueurs, exec — jamais exécutés) |
 | Scripts | `scripts/verify-export-gradle.sh` (lance la distribution Gradle du wrapper sur les exports, JVM et Android), `scripts/export-verification-init.gradle.kts` (miroir de Central pour la machine de développement, contournement documenté) |
 | docs | `docs/adr/039-parseur-gradle-statique.md`, `docs/adr/040-syncreport-confiance.md`, `docs/adr/041-export-gradle-aller-retour.md`, `docs/adr/042-build-gradle-deporte.md` |
 | Racine | `PHASE-P7-RAPPORT.md` |

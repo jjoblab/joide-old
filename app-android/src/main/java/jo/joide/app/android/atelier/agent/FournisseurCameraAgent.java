@@ -42,7 +42,8 @@ public final class FournisseurCameraAgent extends ContentProvider {
         Files.createDirectories(dossier);
         // les photos précédentes partent : une seule en vol
         try (var anciennes = Files.list(dossier)) {
-            for (Path ancienne : anciennes.toList()) {
+            for (Path ancienne : anciennes.collect(
+                    java.util.stream.Collectors.toList())) {
                 Files.deleteIfExists(ancienne);
             }
         }

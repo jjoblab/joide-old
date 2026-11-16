@@ -1512,7 +1512,17 @@ public final class EcranAtelier extends Activity {
             if (flux == null) {
                 return;
             }
-            octets = flux.readNBytes(8_000_000 + 1);
+            // lecture bornée à la main (readNBytes exige l'API 33,
+            // le min est 28) : un octet de plus révèle le dépassement
+            java.io.ByteArrayOutputStream tampon =
+                    new java.io.ByteArrayOutputStream();
+            byte[] morceau = new byte[65_536];
+            int lus;
+            while (tampon.size() <= 8_000_000
+                    && (lus = flux.read(morceau)) > 0) {
+                tampon.write(morceau, 0, lus);
+            }
+            octets = tampon.toByteArray();
         } catch (IOException | RuntimeException e) {
             Dialogue.information(this, palette,
                     getString(R.string.agent_ajouter),

@@ -16,6 +16,15 @@
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | **Livrée** — arrêt pour validation | `PHASE-P8-RAPPORT.md` |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
 | V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lots G-M : `ui/`, `accueil/`, `creation/`, `atelier/`, `console/`, `parametres/`, `atelier/agent/` au lot P), `agent` (lots N/O/P : noyau, outils, diff), `ide-integration` (port agent sur les briques) | **V2 livrée** — les cinq groupes complets (G+H+I, J+K+L, M, N+O+P « agent v1 », Q+R « agent v1.1 ») : trois fournisseurs, la robustesse transverse (banc de clés, bascule, régulateur apprenant, images), le MCP dans ses deux sens (client, serveur local) — l'arrêt pour validation du groupe 5 attend le propriétaire | `docs/ecrans/010-plan-lots.md`, ADR-048 à 063 |
+| V2.1 | Agent complet (lot S, ADR-064) : menu ⋯ (conversations
+multiples + historique, fournisseur/modèle in-situ, usages,
+connexions MCP câblées), attachements (image, photo, fichier
+courant, arbre) et passe de finesse | `app-android` (atelier/agent :
+ConversationsAgent, PieceJointe, ReducteurImagesAndroid,
+FournisseurCameraAgent), `agent` (surcharge multimodale de
+BoucleAgent, pixels dans SessionsAgent) | **Livrée** — retour du
+propriétaire du 2026-11-17 traité point par point (note clean-room
+n° 4) | ADR-064 |
 
 ## Règles de passage
 
