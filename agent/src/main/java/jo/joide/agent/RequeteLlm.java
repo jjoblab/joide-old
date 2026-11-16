@@ -84,6 +84,10 @@ public final class RequeteLlm {
                     case RESULTAT_OUTIL -> sortie.append(partie.erreur
                             ? "e<" : "q<").append(partie.idAppel)
                             .append('|').append(partie.texte);
+                    case IMAGE -> sortie.append("i<")
+                            .append(partie.mediaType).append(':')
+                            .append(partie.donnees.length()).append('>')
+                            .append(partie.donnees);
                     default -> sortie.append('?');
                 }
                 sortie.append('\n');

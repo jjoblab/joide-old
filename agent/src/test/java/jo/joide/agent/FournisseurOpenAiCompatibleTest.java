@@ -196,4 +196,27 @@ class FournisseurOpenAiCompatibleTest {
             assertTrue(erreur.genre.retentable);
         }
     }
+
+    @Test
+    void uneImageUtilisateurPartEnMessageDataUri() {
+        FauxTransport transport = new FauxTransport(List.of());
+        FournisseurOpenAiCompatible fournisseur =
+                new FournisseurOpenAiCompatible("", "cle-test");
+        RequeteLlm requete = new RequeteLlm("modele-x", "SYS",
+                List.of(new MessageAgent(MessageAgent.Role.UTILISATEUR,
+                        List.of(PartieContenu.resultat("appel-1", "ok",
+                                false),
+                                PartieContenu.image("image/jpeg",
+                                        "Zm9vYmFy")))), "",
+                List.of(), 128);
+        try {
+            fournisseur.envoyer(transport, requete, CancelToken.NEVER,
+                    null);
+        } catch (RuntimeException e) {
+            // le flux scripté est vide : seule la REQUÊTE compte
+        }
+        String corps = transport.requetes.get(0).corps();
+        assertTrue(corps.contains("data:image/jpeg;base64,Zm9vYmFy"),
+                "l'image part en data URI d'un message utilisateur");
+    }
 }

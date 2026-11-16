@@ -299,6 +299,20 @@ public final class FournisseurOpenAiCompatible implements FournisseurLlm {
                             resultat.put("content", partie.texte);
                             sortie.add(resultat);
                         }
+                        case IMAGE -> {
+                            // Chat Completions ne porte d'images que
+                            // dans un message utilisateur : l'image
+                            // d'un résultat arrive en message data URI
+                            Map<String, Object> image =
+                                    new LinkedHashMap<>();
+                            image.put("type", "image_url");
+                            image.put("image_url", Map.of("url",
+                                    "data:" + partie.mediaType
+                                            + ";base64,"
+                                            + partie.donnees));
+                            sortie.add(Map.of("role", "user",
+                                    "content", List.of(image)));
+                        }
                         default -> {
                         }
                     }

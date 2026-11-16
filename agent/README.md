@@ -1,10 +1,11 @@
-# agent — noyau de l'agent IA (lot N, ADR-055)
+# agent — noyau de l'agent IA (lots N et Q, ADR-055/061/062)
 
 Module pur JVM : le modèle neutre à signatures opaques, la boucle
 (prompt coupé par volatilité, historique append-only, lecture
 parallèle / mutation séquentielle, réparation d'historique, attentes
 visibles, plafond d'itérations en passation, compaction à hystérésis
-à décisions permanentes), la taxonomie d'erreurs actionnables, les
+à décisions permanentes), la taxonomie d'erreurs actionnables (les
+quotas énoncés voyagent avec l'erreur), les
 permissions (gate, trois modes), la persistance des sessions (double
 moitié, écriture atomique) et deux fournisseurs : Anthropic
 (Messages API) et OpenAI-compatible (Chat Completions, URL de base
@@ -19,3 +20,8 @@ libre).
 - Les tests tournent hors ligne : trames SSE rejouées par un faux
   transport, modèle scripté jugeant l'état final, garde-fous
   « préfixe stable » et « budget de surface d'outils ».
+
+La robustesse transverse (lot Q, ADR-062) : le banc de clés à bancs
+différenciés, la bascule qui ne re-émet jamais après la première
+sortie, le régulateur préventif RPM/TPM qui apprend des erreurs, les
+bandes d'usage et les images réduites côté client.

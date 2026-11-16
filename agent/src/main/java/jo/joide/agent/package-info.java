@@ -1,9 +1,11 @@
 /**
- * Le noyau de l'agent JoIDE (lot N, ADR-055/É9) : module PUR, pair de
- * core-tasks — modèle neutre à signatures opaques, boucle à
- * historique append-only, taxonomie d'erreurs actionnables,
- * permissions, sessions à double moitié, fournisseurs Anthropic et
- * OpenAI-compatible derrière un transport unique.
+ * Le noyau de l'agent JoIDE (lots N et Q, ADR-055/061/062/É9) :
+ * module PUR, pair de core-tasks — modèle neutre à signatures
+ * opaques, boucle à historique append-only, taxonomie d'erreurs
+ * actionnables, permissions, sessions à double moitié, fournisseurs
+ * Anthropic, OpenAI-compatible et Gemini derrière un transport
+ * unique, robustesse transverse (banc de clés, bascule, régulateur
+ * préventif, bandes d'usage, images).
  *
  * <p>Invariants du paquet :</p>
  * <ul>

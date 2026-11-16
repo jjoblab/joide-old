@@ -19,6 +19,12 @@ final class FauxTransport implements TransportHttp {
     /** Les requêtes reçues, dans l'ordre. */
     final List<RequeteCapturee> requetes = new ArrayList<>();
 
+    /**
+     * Les corps de réponse des POST simples, dans l'ordre (la
+     * création de cache de Gemini se scripte ici) ; vide : "{}".
+     */
+    final List<String> reponsesPost = new ArrayList<>();
+
     private final List<List<TrameSse>> tours;
     private int tour;
 
@@ -67,6 +73,8 @@ final class FauxTransport implements TransportHttp {
                         String corps, CancelToken jeton)
             throws IOException {
         requetes.add(new RequeteCapturee(url, entetes, corps));
+        String reponse = reponsesPost.isEmpty() ? "{}"
+                : reponsesPost.remove(0);
         return new Reponse() {
             @Override
             public int statut() {
@@ -80,7 +88,7 @@ final class FauxTransport implements TransportHttp {
 
             @Override
             public String corps() {
-                return "{}";
+                return reponse;
             }
         };
     }

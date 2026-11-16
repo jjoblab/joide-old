@@ -90,9 +90,10 @@ class FournisseurAnthropicTest {
         assertEquals(PartieContenu.Genre.RAISONNEMENT,
                 assistant.parties.get(0).genre);
         assertEquals("je réfléchis", assistant.parties.get(0).texte);
-        assertEquals("sig-opaque-123",
+        assertEquals("anthropic:sig-opaque-123",
                 assistant.parties.get(0).signature,
-                "la signature opaque voyage telle quelle");
+                "la signature opaque voyage taguée du fournisseur — "
+                        + "elle ne repart que chez lui");
         assertEquals("Voici ça", assistant.parties.get(1).texte);
         PartieContenu appel = assistant.parties.get(2);
         assertEquals(PartieContenu.Genre.APPEL_OUTIL, appel.genre);
@@ -223,5 +224,30 @@ class FournisseurAnthropicTest {
         assertTrue(corps.contains("\"tool_use_id\":\"id-1\""));
         assertTrue(corps.contains("\"role\":\"assistant\""));
         assertTrue(corps.contains("\"role\":\"user\""));
+    }
+
+    @Test
+    void uneImageUtilisateurPartEnBlocBase64() {
+        FauxTransport transport = new FauxTransport(List.of());
+        FournisseurAnthropic fournisseur =
+                new FournisseurAnthropic("", "cle-test");
+        RequeteLlm requete = new RequeteLlm("claude-x", "SYS",
+                List.of(new MessageAgent(MessageAgent.Role.UTILISATEUR,
+                        List.of(PartieContenu.resultat("outil-1", "ok",
+                                false),
+                                PartieContenu.image("image/png",
+                                        "Zm9vYmFy")))), "",
+                List.of(), 128);
+        try {
+            fournisseur.envoyer(transport, requete, CancelToken.NEVER,
+                    null);
+        } catch (RuntimeException e) {
+            // le flux scripté est vide : seule la REQUÊTE compte
+        }
+        String corps = transport.requetes.get(0).corps();
+        assertTrue(corps.contains("\"type\":\"image\""),
+                "l'image part en bloc base64 : " + corps);
+        assertTrue(corps.contains("image/png") && corps
+                .contains("Zm9vYmFy"), corps);
     }
 }

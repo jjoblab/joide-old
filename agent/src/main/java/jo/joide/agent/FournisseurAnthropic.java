@@ -269,8 +269,11 @@ public final class FournisseurAnthropic implements FournisseurLlm {
                 return PartieContenu.texte(texte.toString());
             }
             if ("thinking".equals(type)) {
+                // le tag du fournisseur : la signature ne repart que
+                // chez Anthropic (révision N/O, lot Q) — jamais chez
+                // un autre, qui la refuserait
                 return PartieContenu.raisonnement(texte.toString(),
-                        signature.toString());
+                        "anthropic:" + signature);
             }
             if ("tool_use".equals(type)) {
                 String arguments = json.toString().trim();
@@ -295,9 +298,20 @@ public final class FournisseurAnthropic implements FournisseurLlm {
                 switch (partie.genre) {
                     case TEXTE -> blocs.add(Map.of("type", "text",
                             "text", partie.texte));
-                    case RAISONNEMENT -> blocs.add(Map.of("type",
-                            "thinking", "thinking", partie.texte,
-                            "signature", partie.signature));
+                    case RAISONNEMENT -> {
+                        // seul le raisonnement TAGUÉ anthropique
+                        // repart chez Anthropic (révision N/O) : une
+                        // signature d'un autre fournisseur serait
+                        // refusée par l'API
+                        if (partie.signature
+                                .startsWith("anthropic:")) {
+                            blocs.add(Map.of("type", "thinking",
+                                    "thinking", partie.texte,
+                                    "signature",
+                                    partie.signature.substring(
+                                            "anthropic:".length())));
+                        }
+                    }
                     case APPEL_OUTIL -> blocs.add(Map.of("type",
                             "tool_use", "id", partie.idAppel, "name",
                             partie.nomOutil, "input",
@@ -313,6 +327,10 @@ public final class FournisseurAnthropic implements FournisseurLlm {
                         }
                         blocs.add(resultat);
                     }
+                    case IMAGE -> blocs.add(Map.of("type", "image",
+                            "source", Map.of("type", "base64",
+                                    "media_type", partie.mediaType,
+                                    "data", partie.donnees)));
                     default -> {
                     }
                 }

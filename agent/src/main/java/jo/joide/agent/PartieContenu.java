@@ -11,8 +11,8 @@ import java.util.Objects;
  * raisonnement chiffré d'OpenAI tagué) : opaque pour le noyau, vitale
  * pour le fournisseur au tour suivant.
  *
- * <p>Quatre genres fermés : texte, raisonnement (avec signature),
- * appel d'outil, résultat d'outil. Immuable.</p>
+ * <p>Cinq genres fermés : texte, raisonnement (avec signature),
+ * appel d'outil, résultat d'outil, image (lot Q). Immuable.</p>
  */
 public final class PartieContenu {
 
@@ -25,7 +25,16 @@ public final class PartieContenu {
         /** Un appel d'outil demandé par le modèle. */
         APPEL_OUTIL,
         /** Le résultat d'un appel d'outil (succès ou erreur). */
-        RESULTAT_OUTIL
+        RESULTAT_OUTIL,
+        /**
+         * Une image portée par la conversation (lot Q, ADR-062) —
+         * produite par un outil (capture, rendu) et rangée juste
+         * après son résultat ; les fournisseurs la sérialisent à
+         * leur dialecte, la réduction côté client passe par
+         * {@link ReductionImages} AVANT l'insertion dans
+         * l'historique.
+         */
+        IMAGE
     }
 
     /** Le genre de cette partie. */
@@ -42,10 +51,15 @@ public final class PartieContenu {
     public final String arguments;
     /** Vrai si le résultat est une erreur d'outil (RESULTAT_OUTIL). */
     public final boolean erreur;
+    /** Le type de média (IMAGE, ex. {@code image/png}), ou vide. */
+    public final String mediaType;
+    /** Les octets de l'image en base64 (IMAGE), ou vide. */
+    public final String donnees;
 
     private PartieContenu(Genre genre, String texte, String signature,
                           String idAppel, String nomOutil,
-                          String arguments, boolean erreur) {
+                          String arguments, boolean erreur,
+                          String mediaType, String donnees) {
         this.genre = genre;
         this.texte = texte;
         this.signature = signature;
@@ -53,13 +67,15 @@ public final class PartieContenu {
         this.nomOutil = nomOutil;
         this.arguments = arguments;
         this.erreur = erreur;
+        this.mediaType = mediaType;
+        this.donnees = donnees;
     }
 
     /** @param texte le texte @return une partie texte */
     public static PartieContenu texte(String texte) {
         return new PartieContenu(Genre.TEXTE,
                 Objects.requireNonNull(texte, "text"), "", "", "", "",
-                false);
+                false, "", "");
     }
 
     /**
@@ -73,7 +89,7 @@ public final class PartieContenu {
         return new PartieContenu(Genre.RAISONNEMENT,
                 Objects.requireNonNull(texte, "text"),
                 Objects.requireNonNull(signature, "signature"), "", "",
-                "", false);
+                "", false, "", "");
     }
 
     /**
@@ -85,7 +101,27 @@ public final class PartieContenu {
     public static PartieContenu appel(String id, String nom,
                                       String arguments) {
         return new PartieContenu(Genre.APPEL_OUTIL, "", "", id, nom,
-                arguments, false);
+                arguments, false, "", "");
+    }
+
+    /**
+     * Un appel d'outil PORTEUR d'une signature opaque du fournisseur
+     * (lot Q, Gemini : la {@code thoughtSignature} reçue avec l'appel
+     * doit revenir sur la {@code functionCall} correspondante au tour
+     * suivant, sans quoi l'outil est refusé) — opaque pour le noyau,
+     * vitale pour le fournisseur.
+     *
+     * @param id        l'identifiant de l'appel
+     * @param nom       le nom de l'outil
+     * @param arguments les arguments en JSON compact
+     * @param signature la signature opaque du fournisseur
+     * @return une partie appel d'outil signée
+     */
+    public static PartieContenu appelSigne(String id, String nom,
+                                           String arguments,
+                                           String signature) {
+        return new PartieContenu(Genre.APPEL_OUTIL, "", signature == null
+                ? "" : signature, id, nom, arguments, false, "", "");
     }
 
     /**
@@ -99,7 +135,25 @@ public final class PartieContenu {
                                          boolean erreur) {
         return new PartieContenu(Genre.RESULTAT_OUTIL,
                 Objects.requireNonNull(contenu, "content"), "", idAppel,
-                "", "", erreur);
+                "", "", erreur, "", "");
+    }
+
+    /**
+     * Une image de la conversation (lot Q, ADR-062) : type de média
+     * et octets base64. La réduction côté client (budget d'octets,
+     * ré-encodage par l'hôte) se fait AVANT cette fabrique — une
+     * partie IMAGE insérée est déjà à sa taille finale, l'historique
+     * ne se réécrit jamais.
+     *
+     * @param mediaType le type de média (ex. {@code image/png})
+     * @param donnees   les octets en base64
+     * @return une partie image
+     */
+    public static PartieContenu image(String mediaType, String donnees) {
+        return new PartieContenu(Genre.IMAGE, "", "", "", "", "",
+                false,
+                Objects.requireNonNull(mediaType, "media type"),
+                Objects.requireNonNull(donnees, "data"));
     }
 
     @Override
@@ -113,7 +167,9 @@ public final class PartieContenu {
                 && idAppel.equals(partie.idAppel)
                 && nomOutil.equals(partie.nomOutil)
                 && arguments.equals(partie.arguments)
-                && erreur == partie.erreur;
+                && erreur == partie.erreur
+                && mediaType.equals(partie.mediaType)
+                && donnees.equals(partie.donnees);
     }
 
     @Override
@@ -124,7 +180,9 @@ public final class PartieContenu {
         resultat = 31 * resultat + idAppel.hashCode();
         resultat = 31 * resultat + nomOutil.hashCode();
         resultat = 31 * resultat + arguments.hashCode();
-        return 31 * resultat + (erreur ? 1 : 0);
+        resultat = 31 * resultat + (erreur ? 1 : 0);
+        resultat = 31 * resultat + mediaType.hashCode();
+        return 31 * resultat + donnees.hashCode();
     }
 
     @Override
