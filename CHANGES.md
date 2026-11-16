@@ -1,3 +1,26 @@
+# CHANGES — Lot U : le parcours complet (2026-11-17)
+
+**Le mandat du propriétaire** (message du 2026-11-17) : « Oui pour
+le flux OAuth d'interface pour compléter le parcours MCP. Ajoute
+aussi openrouter dans le providers. Le emptyview quand aucun
+onglets n'est ouvert, le tiroir pour l'arborescence des fichiers
+du projet. J'ai appuyé sur build, ça dit que d8 et autre n'est
+pas embarque ». Le lot U (ADR-066, note clean-room n° 6) répond
+point par point — OpenRouter dans les fournisseurs, le tiroir de
+l'arborescence avec son point d'entrée visible, l'état vide à une
+source de vérité, la signature OAuth du parcours MCP, et la
+chaîne Android EMBARQUÉE : d8, apksig, bundletool dans l'APK,
+aapt2 en jniLibs — l'APK Android se construit sur l'appareil.
+
+| Étape | Contenu | Commit |
+|---|---|---|
+| U/1 | OpenRouter rejoint les fournisseurs : l'enum s'allonge EN FIN (l'ordinal est le numéraire des favoris et récents), l'URL de base propre dans la fabrique du service, la rangée de clés dans Paramètres, la puce dans le sélecteur — les puces DÉFILENT horizontalement | `a47a139` |
+| U/2 | le tiroir de l'arborescence a son point d'entrée VISIBLE sur téléphone (le dossier de la barre supérieure pousse l'arbre, le retour le referme) ; l'état vide du puits EST l'état sans onglet actif — `majPuits()` une seule source de vérité | `4815167` |
+| U/3 | le flux OAuth d'interface : `FluxOAuthMcp` (une tentative par serveur, état anti-CSRF), « Se connecter par le navigateur » dans l'écran Connexions, l'écran de rappel exporté `joide://mcp/oauth`, le code échangé contre des jetons posés sous l'identité du serveur, la connexion repart en fond | `5160608` |
+| U/4 | d8 et aapt2 EMBARQUÉS : la route `SpecsBuild.constituer()` ouvre le pipeline ANDROID sur appareil (manifeste, android-res, actifs, AAR extraits, variante debug) ; aapt2 en jniLibs par ABI (ReVanced, 16 Ko, ELF vérifié), toolsApi + r8 + apksig + bundletool dans l'APK, déxeur en processus (ServiceLoader puis réflexion), fork réservé aux JVM filles, android.jar et r8 téléchargés épinglés | `c8afaf9` |
+
+---
+
 # CHANGES — Lot T : les popups ancrés et la finition CodeAssist (2026-11-17)
 
 **Le mandat du propriétaire** (message du 2026-11-17) : « L'écran
