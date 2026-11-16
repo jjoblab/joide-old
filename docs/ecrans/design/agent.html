@@ -143,6 +143,30 @@
   .pied{max-width:1280px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
   .pied a{color:var(--texte2);text-decoration:none}
   @keyframes pulse{from{opacity:.4}to{opacity:1}}
+  /* ---- lot T : les popups ancrés, la réflexion vivante, les compteurs ---- */
+  .popup{position:absolute;background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;box-shadow:0 18px 44px rgba(0,0,0,.5);padding:8px;z-index:5}
+  .popup .ligne{display:flex;align-items:center;padding:11px 14px;border-radius:9px;font-size:13.5px;color:var(--texte)}
+  .popup .ligne:nth-child(2n){background:var(--surfaceHaute)}
+  .ligne-activite{flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px 0;font-size:12px;color:var(--texte)}
+  .ligne-activite .point{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite alternate}
+  .ligne-activite .epacer{flex:1}
+  .ligne-activite .ecart{color:var(--texte3)}
+  .raisonnement.vivant{border-color:rgba(130,170,255,.4)}
+  .raisonnement.vivant .plis{color:var(--accent)}
+  .compteur{padding:8px 14px 2px}
+  .compteur .nom{display:flex;justify-content:space-between;font-size:12px;color:var(--texte2);margin-bottom:5px}
+  .compteur .piste{height:6px;border-radius:999px;background:var(--surfaceHaute);overflow:hidden;display:flex}
+  .compteur .rempli{height:100%}
+  .popup .pied{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 2px 6px}
+  .popup .pied .icone{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--texte2);border-radius:50%}
+  .popup .titre-pop{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px 8px;font-size:14px;font-weight:600}
+  .puce-mod{display:inline-flex;align-items:center;font-size:11.5px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:4px 10px}
+  .puce-mod.on{color:var(--accent);border-color:rgba(130,170,255,.4)}
+  .recherche{margin:8px 6px 2px;background:var(--fond);border:1px solid var(--bordFin);border-radius:18px;padding:8px 12px;font-size:13px;color:var(--texte3)}
+  .mod-ligne{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:var(--texte)}
+  .mod-ligne .etoile{color:var(--alerte);margin-left:auto}
+  .mod-ligne .coche{color:var(--accent)}
+  .sec{font-size:11px;color:var(--texte3);padding:10px 14px 2px}
 </style>
 </head>
 <body>
@@ -455,6 +479,133 @@ cannot find symbol: class Gson
     <figcaption>
       <h2>Fin de tour</h2>
       <p>La ligne d'usage somme les requêtes du tour (entrées, sorties ET lectures de cache — le pied « cached » qui régresse est le symptôme d'un préfixe qui a dérivé). La compaction s'annonce, la passation au plafond rend un état exploitable, et chaque genre d'erreur a son verbe : ici « Ouvrir les réglages IA », ailleurs « changer de modèle », « reprise dans 12 s »…</p>
+    </figcaption>
+  </figure>
+
+
+  <!-- ============ VUE 4 (lot T) : LE MENU ⋯ ANCRÉ, LA RÉFLEXION VIVANTE ============ -->
+  <figure>
+    <span class="étiquette">Lot T — le menu ⋯ ancré, la réflexion vivante</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <span style="font-size:11px;color:var(--reussite)">●&nbsp;agent</span>
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier">
+            <span class="nom">MonApp</span><span class="puce-modules">2 modules</span><span class="epacer"></span>
+          </div>
+          <div class="code-derriere">android&nbsp;{<br>&nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br></div>
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">claude-sonnet-4-5 <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px;color:var(--accent);background:rgba(130,170,255,.12)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3.5" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="8" cy="12.5" r="1.6"/></svg>
+              </span>
+            </div>
+            <div class="popup" style="top:52px;right:10px;width:210px">
+              <div class="ligne">Nouvelle conversation</div>
+              <div class="ligne">Historique</div>
+              <div class="ligne">Fournisseur et modèle</div>
+              <div class="ligne">Connexions MCP</div>
+              <div class="ligne">Usages</div>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Ajoute un constructeur sans argument à Config et relance.</div>
+              <div class="raisonnement vivant">
+                <div class="plis"><span style="color:var(--accent)">●</span> Réflexion… <span class="lignes" style="margin-left:auto">▾</span></div>
+                <div style="padding:0 12px 9px;font-size:12px;color:var(--texte2)">La classe Config est désérialisée par Gson — un constructeur sans argument suffit ; j'ouvre le fichier et j'ajoute le constructeur avant le build.</div>
+              </div>
+            </div>
+            <div class="ligne-activite"><span class="point"></span> Réflexion <span class="epacer"></span><span class="ecart">12&nbsp;s</span></div>
+            <div class="composeur">
+              <div class="rangée">
+                <span class="ic-btn" style="width:32px;height:32px;flex:none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                </span>
+                <div class="saisie"><span class="texte">Écrire à l'agent…</span></div>
+                <div class="btn-envoyer desactive">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+              <div class="rangée">
+                <div class="btn-arreter"><span class="carre"></span> Arrêter le tour</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Le menu ⋯ vit près de son icône (lot T)</h2>
+      <p>Les cinq entrées ouvrent en POPUP ANCRÉE qui tombe de l'icône — jamais un dialogue centré qui coupe la conversation. Pendant le tour, la réflexion reste OUVERTE (point accent, « Réflexion… »), se replie à la fin du tour, se rouvre au tap ; la ligne d'activité au-dessus du composeur dit ce que le tour fait et depuis combien de temps.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ VUE 5 (lot T) : L'ÉCRAN USAGES ANCRÉ, COMPTEURS ET BANDES ============ -->
+  <figure>
+    <span class="étiquette">Lot T — l'écran Usages de la manière CodeAssist</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut"><span>9:41</span>
+        <span class="droite">
+          <span style="font-size:11px;color:var(--reussite)">●&nbsp;agent</span>
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier"><span class="nom">MonApp</span><span class="puce-modules">2 modules</span><span class="epacer"></span></div>
+          <div class="code-derriere">android&nbsp;{<br>&nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br></div>
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">claude-sonnet-4-5 <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></span>
+            </div>
+            <div class="popup" style="top:52px;right:10px;width:270px">
+              <div class="titre-pop">Usages <span style="display:flex;gap:6px"><span class="icone"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 10a7.5 7.5 0 1 1-2.2-5.3"/><path d="M17.5 3v4h-4"/></svg></span><span class="icone"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></span></span></div>
+              <div class="compteur"><div class="nom"><span>Requêtes / min</span><span style="color:var(--alerte)">72%</span></div><div class="piste"><span class="rempli" style="width:72%;background:var(--alerte)"></span></div></div>
+              <div class="compteur"><div class="nom"><span>Jetons / min</span><span>18%</span></div><div class="piste"><span class="rempli" style="width:18%;background:var(--accent)"></span></div></div>
+              <div style="padding:10px 14px 2px;font-size:12.5px;color:var(--texte)">Cette conversation — 12.4k entrées · 3.1k sorties · 8.9k cache</div>
+              <div style="padding:6px 14px 2px;font-size:12.5px;color:var(--texte)">Banc de clés — 3 clé(s)</div>
+              <div style="padding:2px 14px 8px;font-size:11.5px;color:var(--texte3)">1 au banc — limite de débit</div>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Ajoute un constructeur sans argument à Config et relance.</div>
+              <div class="msg-agent">C'est fait — le constructeur est ajouté et le build repasse (12.4k in · 3.1k out · 8.9k cached · 2 requêtes).</div>
+              <div class="ligne-tonale">edit_file — app/src/main/java/com/exemple/Config.java</div>
+            </div>
+            <div class="composeur">
+              <div class="rangée">
+                <span class="ic-btn" style="width:32px;height:32px;flex:none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                </span>
+                <div class="saisie"><span class="texte">Écrire à l'agent…</span></div>
+                <div class="btn-envoyer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>L'écran Usages : un compteur par fenêtre plafonnée</h2>
+      <p>Un COMPTEUR (requêtes / min, jetons / min) porte sa bande colorée — accent sous 70 %, alerte 70–90 %, erreur au-delà : l'alerte précède le 429. Les trois pieds de la conversation en jetons compacts, le banc de clés par raison d'assise, l'Actualiser qui relit sans rouvrir, la Fermeture au tap. Sans plafond appris, l'écran le dit honnêtement. Le sélecteur de modèles (puce ▾) ouvre en popup ancrée : fournisseurs pointés, recherche, favoris à l'étoile, récents, la coche du courant.</p>
     </figcaption>
   </figure>
 

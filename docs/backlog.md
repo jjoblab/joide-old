@@ -10,12 +10,11 @@ Entrées ouvertes à l'issue des lots Q (ADR-061/062) et R
       place, et le lot S a posé le PREMIER producteur (les
       attachements du chat, ADR-064) ; les outils v1 restent sans
       image (capture d'aperçu, rendu de vue).
-- [ ] Lot Q : les BANDES d'usage — le lot S a posé l'écran Usages
-      (usage cumulé de la conversation, état du banc de clés par
-      raison, ADR-064), mais `BandesUsage` (NORMALE/ATTENTION/
-      CRITIQUE) reste non affiché : le régulateur vit dans
-      `FournisseurBascule` et n'est pas exposé au binder —
-      l'exposer (la bande critique avant le 429) reste à faire.
+- [x] Lot Q : les BANDES d'usage — CLOS par le lot T (ADR-065) :
+      `FournisseurBascule.occupationModele` expose la plus haute
+      occupation des fenêtres du modèle courant au binder et
+      l'écran Usages la dessine (compteur, pourcentage, bande
+      accent→alerte→erreur) — l'alerte précède le 429.
 - [ ] Lot Q : le sélecteur de niveau de réflexion Gemini est un
       réglage de construction — l'exposer dans Paramètres si le
       propriétaire le veut.

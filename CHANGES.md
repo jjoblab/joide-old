@@ -1,3 +1,46 @@
+# CHANGES — Lot T : les popups ancrés et la finition CodeAssist (2026-11-17)
+
+**Le mandat du propriétaire** (message du 2026-11-17) : « L'écran
+usages doit similaire a celui de CodeAssist, de même pour la
+section thinking et aussi choix de modèles, utiliser des écrans
+popups ancre. Tu as mon approbation pour le MPC ». Le lot T
+(ADR-065, note clean-room n° 5) répond point par point — les six
+écrans du tiroir ancrés à leur appelant, l'écran Usages à
+compteurs et bandes, la réflexion vivante, le sélecteur de
+modèles d'un tap, l'approbation MCP qui se souvient par projet.
+
+| Étape | Contenu | Commit |
+|---|---|---|
+| T/1+2 | `PopupAncre` (la mécanique d'ancrage seule : tombée,
+montée, hauteur bornée, tap extérieur), le menu ⋯ et le menu +
+ancrés, l'historique et les connexions en popups ancrées, la
+réflexion vivante (ouverte tant que le tour vit, pliée à la fin,
+chevron), la ligne d'activité au-dessus du composeur (réflexion /
+outil / rédaction + l'écart au pas d'une seconde), le pied d'usage
+en jetons compacts | `ff5d5c1` |
+| T/3 | l'écran Usages de la manière CodeAssist : le régulateur
+SORT (`FournisseurBascule.occupationModele` → binder — l'écart de
+l'ADR-064 se ferme), un COMPTEUR par fenêtre (requêtes / min,
+jetons / min) avec pourcentage et bande colorée
+(accent→alerte→erreur), les trois pieds compacts, le banc par
+raison, Actualiser sans rouvrir | `81a7f66` |
+| T/4 | le sélecteur de modèles en popup ancrée : fournisseurs
+pointés, recherche, sections Favoris / Récents / Suggestions, la
+coche du courant, l'étoile (glyphe ETOILE) qui bascule sans
+fermer, favoris et récents persistés par fournisseur, le modèle
+personnalisé garde son dialogue | `e76579a` |
+| T/5 | l'approbation MCP persistée PAR PROJET, liée à la
+signature SHA-256 du `.mcp.json` — le même fichier retrouve ses
+serveurs, un fichier changé redemande le geste explicite | `e8a6084` |
+| T/6 | l'ADR-065, la note clean-room n° 5, le journal, le
+backlog (BANDES et approbation MCP fermés), la maquette aux vues
+du lot T | ce commit |
+
+Tests : `:app-android:testDebugUnitTest` et `:agent:test` verts
+(MaquetteAgentTest éprouve les vues du lot T).
+
+---
+
 # CHANGES — Lot S : l'agent complet (2026-11-17)
 
 **Le retour du propriétaire sur la V2** (message du 2026-11-17) :

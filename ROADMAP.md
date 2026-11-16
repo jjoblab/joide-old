@@ -25,6 +25,16 @@ FournisseurCameraAgent), `agent` (surcharge multimodale de
 BoucleAgent, pixels dans SessionsAgent) | **Livrée** — retour du
 propriétaire du 2026-11-17 traité point par point (note clean-room
 n° 4) | ADR-064 |
+| V2.2 | Finition agent (lot T, ADR-065) : popups ancrés (menu ⋯,
++, historique, connexions, usages, sélecteur de modèles — jamais un
+dialogue centré), l'écran Usages à compteurs et bandes (le
+régulateur exposé), la réflexion vivante et la ligne d'activité, le
+choix de modèles d'un tap (favoris/récents persistés), l'approbation
+MCP persistée par projet liée à la signature du `.mcp.json` |
+`app-android` (ui/PopupAncre, atelier/agent : réflexion vivante,
+ligne d'activité), `agent` (FournisseurBascule.occupationModele) |
+**Livrée** — mandat du propriétaire du 2026-11-17 traité point par
+point (note clean-room n° 5) | ADR-065 |
 
 ## Règles de passage
 
