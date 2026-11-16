@@ -1286,6 +1286,13 @@ public final class EcranAtelier extends Activity {
         // le .mcp.json du projet, lu borné, part au service : les
         // serveurs déclarés sont parsés, pas activés (ADR-063)
         agent.poserMcpJson(lireMcpJson());
+        // l'approbation PERSISTÉE par projet (lot T, ADR-065) : liée
+        // à la signature du fichier qui l'a motivée — le même
+        // .mcp.json retrouve ses serveurs, un fichier changé redemande
+        // le geste explicite de l'utilisateur
+        if ("1".equals(sourceReglages.lire(cleApprobationMcp()))) {
+            agent.poserApprobationMcp(true);
+        }
         etatAgent.poserModele(reglages.modeleIa);
         etatAgent.poserMode(EtatAgentChat.TourEtat.EN_COURS
                 == etatAgent.etat()
@@ -1671,6 +1678,34 @@ public final class EcranAtelier extends Activity {
     }
 
     /**
+     * La clé d'approbation MCP du projet (lot T) : liée à la
+     * SIGNATURE du fichier (chemin + contenu passés au SHA-256) —
+     * l'approbation vaut pour ce qui a été approuvé, un serveur
+     * ajouté ou modifié redemande le geste explicite.
+     */
+    private String cleApprobationMcp() {
+        String chemin = racineProjet == null ? ""
+                : racineProjet.resolve(".mcp.json").toString();
+        try {
+            java.security.MessageDigest empreinte =
+                    java.security.MessageDigest.getInstance("SHA-256");
+            byte[] octets = empreinte.digest((chemin + "\n"
+                    + lireMcpJson()).getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(
+                    "agent.mcp.approuve.");
+            for (int i = 0; i < 8; i++) {
+                hex.append(String.format("%02x", octets[i]));
+            }
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            // SHA-256 manque (impossible sur Android) : la clé retombe
+            // sur le chemin seul — la persistance reste par projet
+            return "agent.mcp.approuve."
+                    + Integer.toHexString(chemin.hashCode());
+        }
+    }
+
+    /**
      * L'écran Connexions (lot S, ADR-064 câblant l'ADR-063) : les
      * serveurs déclarés par le projet, leur état publié, le geste
      * d'approbation qui seul connecte — un dépôt cloné n'est pas un
@@ -1724,6 +1759,10 @@ public final class EcranAtelier extends Activity {
                 if (agent != null) {
                     agent.poserApprobationMcp(!approuve);
                 }
+                // la décision se souvient par projet (lot T), liée à
+                // la signature du .mcp.json qui l'a motivée
+                sourceReglages.ecrire(cleApprobationMcp(),
+                        !approuve ? "1" : "0");
                 ouvrirConnexionsAgent();
             });
             corps.addView(action);

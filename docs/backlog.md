@@ -31,11 +31,14 @@ Entrées ouvertes à l'issue des lots Q (ADR-061/062) et R
       (le service l'exposera aux clients de bureau via `adb
       forward`, pattern de l'ADR-É9) — les outils, le transport et
       la sécurité sont prouvés en JVM.
-- [ ] Lot R : l'approbation des serveurs d'un `.mcp.json` issu du
-      PROJET — le lot S pose le GESTE explicite (Activer les
-      serveurs de ce projet, ADR-064) mais par SESSION ; la
-      persistance par projet (identité liée aux signatures, store
-      chiffré) reste à faire.
+- [x] Lot R : l'approbation des serveurs d'un `.mcp.json` issu du
+      PROJET — CLOS par le lot T (ADR-065) : la décision se
+      souvient PAR PROJET, liée à la signature du fichier (chemin +
+      contenu passés au SHA-256) — le même `.mcp.json` retrouve ses
+      serveurs, un fichier changé redemande le geste explicite. La
+      clé persistée vit dans les préférences privées (une décision
+      de l'utilisateur, pas un secret) ; le STORE CHIFFRÉ reste
+      réservé aux jetons OAuth (item suivant, toujours ouvert).
 - [ ] Lot S : la cible caméra de l'agent
       (`FournisseurCameraAgent`) ne survit pas à la mort du
       processus (champ statique) — une photo en vol au kill est
