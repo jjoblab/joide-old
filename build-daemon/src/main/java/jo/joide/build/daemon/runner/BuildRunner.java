@@ -239,6 +239,25 @@ public final class BuildRunner implements AutoCloseable {
     }
 
     /**
+     * Le budget d'admission EFFECTIF d'un tas demandé : plafonné au
+     * tas réel de la machine virtuelle qui exécute le build — le
+     * budget est un plafond d'usage, jamais un motif de refus (lot
+     * U/7 : sur appareil le tas vaut souvent 256 Mio, un budget
+     * demandé au-dessus s'ajuste au lieu de fermer la porte).
+     *
+     * @param demandeMb le budget demandé par la spec (Mio)
+     * @return le budget effectif (Mio), jamais supérieur au tas
+     */
+    public static int budgetEffectif(int demandeMb) {
+        long maxHeap = Runtime.getRuntime().maxMemory();
+        long budgetBytes = demandeMb * 1024L * 1024L;
+        if (budgetBytes <= maxHeap) {
+            return demandeMb;
+        }
+        return (int) Math.max(1, maxHeap / 1048576L);
+    }
+
+    /**
      * Exécute le build décrit.
      *
      * @param spec        description du build
@@ -257,13 +276,21 @@ public final class BuildRunner implements AutoCloseable {
         RootSet roots = rootsOf(spec);
         TaskGraph graph = graphOf(spec, roots);
         long maxHeap = Runtime.getRuntime().maxMemory();
-        long budgetBytes = spec.heapMb * 1024L * 1024;
-        if (budgetBytes > maxHeap) {
-            return new Outcome(false, 0, 0, 0, 0,
-                    System.currentTimeMillis() - started, List.of(
-                            "build refused: memory budget " + spec.heapMb
-                                    + " MiB exceeds daemon heap "
-                                    + (maxHeap / 1048576) + " MiB"), false);
+        // lot U/7 : le budget demandé DÉPASSE le tas ? il s'AJUSTE au
+        // tas — jamais un refus. Sur appareil le plafond est celui du
+        // manifeste (256 Mio sans largeHeap sur beaucoup de
+        // téléphones, même récents) : refuser signifiait « aucun
+        // build » pour ces appareils — le rapport du 2026-11-17
+        // (« build refused: memory budget 448 MiB exceeds daemon heap
+        // 256 MiB ») suivait exactement ce mur. La manière CodeAssist
+        // (AndroidMemory) : le matériel borne, l'outil s'adapte — le
+        // budget reste un plafond d'usage, pas un droit d'entrée.
+        int budgetMb = budgetEffectif(spec.heapMb);
+        if (budgetMb != spec.heapMb && sink != null) {
+            sink.task("budget mémoire",
+                    "AJUSTÉ " + budgetMb + " MIO (demandé "
+                            + spec.heapMb + " MIO, tas "
+                            + (maxHeap / 1048576L) + " MIO)");
         }
         try (BuildStore store = storeOpener.open(Path.of(spec.out))) {
             BuildEngine engine = BuildEngine.builder()
@@ -274,7 +301,7 @@ public final class BuildRunner implements AutoCloseable {
                     .mode(SchedulingMode.FAIL_FAST)
                     .events(liveEvents(sink))
                     .budget(new ResourceBudget(Math.max(1, spec.threads),
-                            spec.heapMb))
+                            budgetMb))
                     .outputCacheDir(Path.of(spec.out).resolveSibling("cache"))
                     .build();
             currentCancellation.set(cancellation);

@@ -158,7 +158,7 @@ class HoteDemonSocketTest {
     }
 
     @Test
-    void buildRefusePourMemoireSansMortDuCanal() throws Exception {
+    void budgetAjusteAuTasLeCanalSurvitEtLeBuildTourne() throws Exception {
         Path project = Files.createDirectories(temp.resolve("projet"));
         Path out = temp.resolve("out");
         Path m2 = Files.createDirectories(temp.resolve("m2"));
@@ -170,9 +170,11 @@ class HoteDemonSocketTest {
             int port = hote.demarrer();
             try (DaemonClient client = connecter(port)) {
                 client.await("hello", 60);
-                // budget d'admission au-dessus du tas réel du démon :
-                // refus explicite, le canal sert toujours (calculé au
-                // runtime — le tas du JVM de test varie par machine)
+                // lot U/7 : budget d'admission au-dessus du tas réel du
+                // démon — le budget s'AJUSTE au tas et le build TOURNE
+                // (réclamations plafonnées), le canal sert toujours ;
+                // l'ancien refus fermait le build entier sur les
+                // appareils à 256 Mio (rapport du 2026-11-17)
                 int budgetExcessif = (int) Math.min(Integer.MAX_VALUE,
                         Runtime.getRuntime().maxMemory()
                                 / (1024L * 1024L) + 64L);
@@ -188,10 +190,12 @@ class HoteDemonSocketTest {
                 client.build(1, tropGros);
                 DaemonClient.Event fini = client.await(
                         "build-finished", 300);
-                assertFalse(fini.body.member("success").asBoolean());
-                assertTrue(fini.body.member("problems").items()
-                        .size() >= 1, "the refusal must say why");
-                // le canal survit au refus
+                assertTrue(fini.body.member("success").asBoolean(),
+                        () -> fini.toString());
+                assertTrue(Files.isRegularFile(out.resolve(
+                        "jvm/app/libs/app.jar")),
+                        "the clamped build must still produce the jar");
+                // le canal survit au build
                 client.ping(9);
                 DaemonClient.Event pong = client.await("pong", 60);
                 assertEquals(9L, pong.id);

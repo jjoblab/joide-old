@@ -123,6 +123,8 @@ public final class TaskScheduler {
         final ResourceBudget budget;
         final CancelToken.Cancellation internal = CancelToken.create();
         final CancelToken external;
+        /** Les revendications ADMISES (plafonnées au budget, lot U/7). */
+        final ResourceClaim[] claims;
         int inFlight;
         int finished;
         boolean stopping;
@@ -138,6 +140,7 @@ public final class TaskScheduler {
             this.pendingDeps = new int[total];
             this.pendingOrder = new int[total];
             this.results = new TaskResult[total];
+            this.claims = new ResourceClaim[total];
             this.ready = new PriorityQueue<>((a, b) -> {
                 int byPriority = Long.compare(priority[b], priority[a]);
                 return byPriority != 0 ? byPriority
@@ -149,15 +152,26 @@ public final class TaskScheduler {
                 priority[i] = priorities.getOrDefault(name, 0L);
                 pendingDeps[i] = graph.hardDepsOf(name).size();
                 pendingOrder[i] = countOrderPredecessors(graph, name);
-                ResourceClaim claim = graph.task(name).resourceClaim();
-                if (claim.cpu() > budget.cpuCap()
-                        || claim.memoryMb() > budget.memoryCap()) {
-                    throw new TaskSchedulingException(
-                            "task claim exceeds budget: " + name + " claims "
-                                    + claim.cpu() + " cpu units and "
-                                    + claim.memoryMb() + " MB, budget allows "
-                                    + budget.cpuCap() + " and " + budget.memoryCap());
-                }
+                // lot U/7 : une réclamation au-dessus du plafond
+                // s'AJUSTE au plafond — jamais une exception qui tue le
+                // build entier. La réclamation est une ESTIMATION
+                // d'usage, pas un droit d'entrée : sur un appareil dont
+                // le tas vaut 256 Mio, refuser la compilation parce que
+                // son estimation vise 320 Mo fermait l'IDE au build
+                // (« task claim exceeds budget », suite directe du
+                // rapport du 2026-11-17). La réclamation plafonnée
+                // occupe tout le budget quand elle tourne : la
+                // sérialisation, elle, reste garantie.
+                ResourceClaim demande = graph.task(name).resourceClaim();
+                claims[i] = demande.cpu() <= budget.cpuCap()
+                        && demande.memoryMb() <= budget.memoryCap()
+                        ? demande
+                        : new ResourceClaim(
+                        (int) Math.max(1, Math.min((long) demande.cpu(),
+                                budget.cpuCap())),
+                        Math.max(1, Math.min(demande.memoryMb(),
+                                budget.memoryCap())),
+                        demande.exclusive());
             }
             external.onCancel(this::initiateStop);
         }
@@ -398,7 +412,9 @@ public final class TaskScheduler {
         }
 
         ResourceClaim claimOf(int index) {
-            return graph.task(names.get(index)).resourceClaim();
+            // lot U/7 : la revendication PLAFONNÉE au budget — la
+            // sérialisation reste garantie, le build n'est jamais refusé
+            return claims[index];
         }
 
         String pendingNames() {

@@ -133,23 +133,28 @@ class DaemonLifecycleTest {
     }
 
     @Test
-    void memoryBudgetAboveHeapIsRefusedExplicitly() throws Exception {
+    void memoryBudgetAboveHeapIsAdjustedAndTheBuildRuns() throws Exception {
         Path project = Files.createDirectories(temp.resolve("projet"));
         Path out = temp.resolve("out");
         Path m2 = Files.createDirectories(temp.resolve("m2"));
-        writeProject(project, "refus");
+        writeProject(project, "ajuste");
         try (DaemonClient daemon = spawnDaemon(128)) {
             daemon.await("hello", 60);
-            // budget au-dessus du tas du démon : refus explicite, pas
-            // d'OOM silencieuse
+            // lot U/7 : budget au-dessus du tas du démon — le budget
+            // s'AJUSTE au tas et le build TOURNE (la réclamation de la
+            // compilation se plafonne au budget) ; refuser fermait le
+            // build entier sur les appareils à 256 Mio (rapport du
+            // 2026-11-17 : « build refused: memory budget 448 MiB
+            // exceeds daemon heap 256 MiB »). La manière CodeAssist :
+            // le matériel borne, l'outil s'adapte.
             daemon.build(1, jvmSpec(project, out, m2, 4096));
             DaemonClient.Event finished =
-                    daemon.await("build-finished", 60);
-            assertFalse(finished.body.member("success").asBoolean());
-            String problem = finished.body.member("problems").items()
-                    .get(0).asString();
-            assertTrue(problem.contains("refused: memory"),
-                    () -> problem);
+                    daemon.await("build-finished", 300);
+            assertTrue(finished.body.member("success").asBoolean(),
+                    () -> finished.toString());
+            assertTrue(Files.isRegularFile(out.resolve(
+                    "jvm/app/libs/app.jar")),
+                    "the clamped build must still produce the jar");
             daemon.shutdown();
         }
     }
