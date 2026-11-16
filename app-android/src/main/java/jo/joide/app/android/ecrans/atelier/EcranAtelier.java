@@ -457,6 +457,11 @@ public final class EcranAtelier extends Activity {
             }
 
             @Override
+            public void ouvrirModele() {
+                ouvrirModeleAgent();
+            }
+
+            @Override
             public void ouvrirMenuAgent() {
                 ouvrirMenuAgentOptions();
             }
@@ -1363,14 +1368,251 @@ public final class EcranAtelier extends Activity {
                 getString(R.string.agent_menu_titre),
                 new CharSequence[]{
                         getString(R.string.agent_menu_nouvelle),
-                        getString(R.string.agent_menu_historique)},
+                        getString(R.string.agent_menu_historique),
+                        getString(R.string.agent_modele_titre),
+                        getString(R.string.agent_usages_titre)},
                 (dialog, lequel) -> {
                     if (lequel == 0) {
                         nouvelleConversationAgent();
                     } else if (lequel == 1) {
                         ouvrirHistoriqueAgent();
+                    } else if (lequel == 2) {
+                        ouvrirModeleAgent();
+                    } else if (lequel == 3) {
+                        ouvrirUsagesAgent();
                     }
                 });
+    }
+
+    /**
+     * Le sélecteur IN-SITU de fournisseur et de modèle (lot S,
+     * ADR-064) : ferme l'écart du lot P — la puce n'ouvre plus les
+     * réglages, le choix se fait sans quitter la conversation. Les
+     * clés restent gérées dans les Paramètres (le lien y mène).
+     */
+    private void ouvrirModeleAgent() {
+        Reglages reglages = Reglages.lire(sourceReglages);
+        jo.joide.app.android.parametres.ClesChiffrees cles =
+                jo.joide.app.android.parametres.KeystoreCles.sur(this);
+        Reglages.FournisseurIa[] fournisseurs =
+                Reglages.FournisseurIa.values();
+        int[] selection = {reglages.fournisseurIa.ordinal()};
+
+        LinearLayout corps = new LinearLayout(this);
+        corps.setOrientation(LinearLayout.VERTICAL);
+        int marge = GraphiteVue.dp(this, 4);
+        corps.setPadding(marge, marge, marge, marge);
+
+        TextView etiquetteFournisseur = new TextView(this);
+        GraphiteVue.typographie(etiquetteFournisseur,
+                Graphite.LEGENDE);
+        etiquetteFournisseur.setTextColor(palette.texteEstompe);
+        etiquetteFournisseur.setText(R.string.agent_fournisseur_section);
+        etiquetteFournisseur.setPadding(0, marge, 0, marge);
+        corps.addView(etiquetteFournisseur);
+
+        View[] points = new View[fournisseurs.length];
+        String[] idsStockage = {"anthropic", "openai", "gemini"};
+        for (int i = 0; i < fournisseurs.length; i++) {
+            final int index = i;
+            LinearLayout ligne = new LinearLayout(this);
+            ligne.setOrientation(LinearLayout.HORIZONTAL);
+            ligne.setGravity(Gravity.CENTER_VERTICAL);
+            ligne.setPadding(0, GraphiteVue.dp(this, 7), 0,
+                    GraphiteVue.dp(this, 7));
+            View point = new View(this);
+            point.setBackground(cercle(
+                    i == selection[0] ? palette.accent
+                            : palette.bord));
+            ligne.addView(point, new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(this, 9),
+                    GraphiteVue.dp(this, 9)));
+            points[i] = point;
+            TextView nom = new TextView(this);
+            GraphiteVue.typographie(nom, Graphite.CORPS);
+            nom.setTextColor(palette.texte);
+            nom.setText(nomFournisseur(fournisseurs[i]));
+            LinearLayout.LayoutParams paramsNom =
+                    new LinearLayout.LayoutParams(0,
+                            LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            paramsNom.leftMargin = GraphiteVue.dp(this, 11);
+            ligne.addView(nom, paramsNom);
+            boolean posee = false;
+            try {
+                posee = cles.estPosee(idsStockage[i]);
+            } catch (RuntimeException e) {
+                // l'état de clé se lit au mieux : « absente » honnête
+            }
+            Puce etat = new Puce(this);
+            etat.setText(posee
+                    ? R.string.agent_cle_posee
+                    : R.string.agent_cle_absente);
+            etat.setPointee(posee);
+            ligne.addView(etat);
+            ligne.setOnClickListener(vue -> {
+                selection[0] = index;
+                for (int j = 0; j < points.length; j++) {
+                    points[j].setBackground(cercle(
+                            j == index ? palette.accent
+                                    : palette.bord));
+                }
+            });
+            corps.addView(ligne);
+        }
+
+        TextView etiquetteModele = new TextView(this);
+        GraphiteVue.typographie(etiquetteModele, Graphite.LEGENDE);
+        etiquetteModele.setTextColor(palette.texteEstompe);
+        etiquetteModele.setText(R.string.parametres_modele_ia);
+        etiquetteModele.setPadding(0, GraphiteVue.dp(this, 12), 0,
+                marge);
+        corps.addView(etiquetteModele);
+        android.widget.EditText saisieModele =
+                new android.widget.EditText(this);
+        saisieModele.setText(reglages.modeleIa);
+        saisieModele.setHint(R.string.parametres_modele_indice);
+        saisieModele.setSingleLine(true);
+        corps.addView(saisieModele);
+
+        TextView etiquetteUrl = new TextView(this);
+        GraphiteVue.typographie(etiquetteUrl, Graphite.LEGENDE);
+        etiquetteUrl.setTextColor(palette.texteEstompe);
+        etiquetteUrl.setText(R.string.parametres_url_ia);
+        etiquetteUrl.setPadding(0, GraphiteVue.dp(this, 12), 0,
+                marge);
+        corps.addView(etiquetteUrl);
+        android.widget.EditText saisieUrl =
+                new android.widget.EditText(this);
+        saisieUrl.setText(reglages.urlIa);
+        saisieUrl.setHint(R.string.parametres_url_indice);
+        saisieUrl.setSingleLine(true);
+        corps.addView(saisieUrl);
+
+        TextView gererCles = new TextView(this);
+        GraphiteVue.typographie(gererCles, Graphite.CORPS);
+        gererCles.setTextColor(palette.accent);
+        gererCles.setText(R.string.agent_cles_gerer);
+        gererCles.setPadding(0, GraphiteVue.dp(this, 12), 0, 0);
+        gererCles.setOnClickListener(vue -> {
+            try {
+                startActivity(new Intent(this,
+                        jo.joide.app.android.ecrans.parametres
+                                .EcranParametres.class));
+            } catch (RuntimeException e) {
+                // les réglages restent atteignables par le menu
+            }
+        });
+        corps.addView(gererCles);
+
+        Dialogue.saisie(this, palette,
+                getString(R.string.agent_modele_titre), corps,
+                R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel != DialogInterface.BUTTON_POSITIVE) {
+                        return;
+                    }
+                    Reglages.FournisseurIa choisi =
+                            fournisseurs[Math.max(0,
+                                    Math.min(selection[0],
+                                            fournisseurs.length - 1))];
+                    String modele = saisieModele.getText()
+                            .toString().trim();
+                    if (modele.isEmpty()) {
+                        modele = reglages.modeleIa;
+                    }
+                    String url = saisieUrl.getText().toString().trim();
+                    try {
+                        Reglages.ecrireUrlIa(sourceReglages, url);
+                    } catch (IllegalArgumentException e) {
+                        Dialogue.information(this, palette,
+                                getString(R.string.agent_modele_titre),
+                                getString(R.string.parametres_url_indice),
+                                R.string.action_ok);
+                        return;
+                    }
+                    Reglages.ecrireFournisseurIa(sourceReglages, choisi);
+                    Reglages.ecrireModeleIa(sourceReglages, modele);
+                    if (agent != null) {
+                        agent.poserModele(choisi, modele);
+                    }
+                    etatAgent.poserModele(modele);
+                    vueAgent.rafraichir();
+                });
+    }
+
+    /** Le nom lisible d'un fournisseur. */
+    private CharSequence nomFournisseur(
+            Reglages.FournisseurIa fournisseur) {
+        return getString(switch (fournisseur) {
+            case ANTHROPIC -> R.string.agent_fournisseur_anthropic;
+            case GEMINI -> R.string.agent_fournisseur_gemini;
+            default -> R.string.agent_fournisseur_openai;
+        });
+    }
+
+    /**
+     * L'écran Usages (lot S, ADR-064) : l'usage cumulé de la
+     * conversation et l'état du banc de clés — ce qui est facturé
+     * est facturé, ce qui est au banc est montré.
+     */
+    private void ouvrirUsagesAgent() {
+        if (agent == null) {
+            return;
+        }
+        LinearLayout corps = new LinearLayout(this);
+        corps.setOrientation(LinearLayout.VERTICAL);
+        int marge = GraphiteVue.dp(this, 4);
+        corps.setPadding(marge, marge, marge, marge);
+
+        jo.joide.agent.UsageLlm usage = agent.usageConversation();
+        TextView conversation = new TextView(this);
+        GraphiteVue.typographie(conversation, Graphite.CORPS);
+        conversation.setTextColor(palette.texte);
+        conversation.setText(getString(R.string.agent_usages_conversation,
+                usage.entrees, usage.sorties, usage.lecturesCache));
+        corps.addView(conversation);
+
+        int taille = agent.tailleBanc();
+        TextView banc = new TextView(this);
+        GraphiteVue.typographie(banc, Graphite.CORPS);
+        banc.setTextColor(palette.texte);
+        banc.setText(taille == 0
+                ? getString(R.string.agent_usages_banc_vide)
+                : getString(R.string.agent_usages_banc, taille));
+        banc.setPadding(0, GraphiteVue.dp(this, 12), 0, 0);
+        corps.addView(banc);
+
+        for (var assise : agent.bancParRaison().entrySet()) {
+            TextView ligne = new TextView(this);
+            GraphiteVue.typographie(ligne, Graphite.LEGENDE);
+            ligne.setTextColor(palette.texteSecondaire);
+            ligne.setText(getString(R.string.agent_usages_assis,
+                    assise.getValue(),
+                    libelleGenre(assise.getKey())));
+            ligne.setPadding(0, GraphiteVue.dp(this, 3), 0, 0);
+            corps.addView(ligne);
+        }
+
+        ScrollView defilement = new ScrollView(this);
+        defilement.addView(corps, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        Dialogue.saisieTexte(this, palette,
+                getString(R.string.agent_usages_titre), defilement,
+                R.string.action_ok, null);
+    }
+
+    /** Le libellé localisé d'un genre d'assise du banc. */
+    private CharSequence libelleGenre(
+            jo.joide.agent.ErreursLlm.Genre genre) {
+        return getString(switch (genre) {
+            case LIMITE_DEBIT -> R.string.agent_genre_limite_debit;
+            case LIMITE_JOUR -> R.string.agent_genre_limite_jour;
+            case QUOTA_EPUISE -> R.string.agent_genre_quota;
+            case CLE_INVALIDE -> R.string.agent_genre_cle_invalide;
+            case CLE_SANS_DROIT -> R.string.agent_genre_cle_sans_droit;
+            default -> R.string.agent_genre_autre;
+        });
     }
 
     /** Nouvelle conversation : le service garde la vérité, l'état suit. */
@@ -1580,12 +1822,18 @@ public final class EcranAtelier extends Activity {
 
     /** Le point d'activité du glyphe agent. */
     private android.graphics.drawable.GradientDrawable pointActivite() {
-        android.graphics.drawable.GradientDrawable point =
+        return cercle(palette.accent);
+    }
+
+    /** Un petit disque de couleur (les points de sélection). */
+    private android.graphics.drawable.GradientDrawable cercle(
+            int couleur) {
+        android.graphics.drawable.GradientDrawable rond =
                 new android.graphics.drawable.GradientDrawable();
-        point.setShape(
+        rond.setShape(
                 android.graphics.drawable.GradientDrawable.OVAL);
-        point.setColor(palette.accent);
-        return point;
+        rond.setColor(couleur);
+        return rond;
     }
 
     // ------------------------------------------------------------------

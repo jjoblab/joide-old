@@ -58,6 +58,14 @@ public final class VueAgent extends LinearLayout {
         void poserMode(Permissions.Mode mode);
 
         /**
+         * Le sélecteur de fournisseur et de modèle IN-SITU (lot S,
+         * ADR-064 — ferme l'écart du lot P « la puce ouvre les
+         * réglages ») : l'atelier compose le dialogue, la vue ne
+         * décide rien.
+         */
+        void ouvrirModele();
+
+        /**
          * Le menu de l'agent (lot S, ADR-064) : nouvelle
          * conversation, historique, fournisseur, connexions, usages
          * — la vue ne décide RIEN du contenu du menu, l'atelier le
@@ -598,11 +606,15 @@ public final class VueAgent extends LinearLayout {
         auditeur.envoyer(message);
     }
 
-    /** Le sélecteur de modèle (puce d'en-tête). */
+    /**
+     * Le sélecteur de fournisseur et de modèle (puce d'en-tête, lot
+     * S) : l'atelier ouvre le dialogue in-situ — plus de détour par
+     * les réglages.
+     */
     private void auditeurModele() {
-        // v1 : le modèle se change dans les réglages IA — la puce
-        // AFFICHE, elle ne devine pas ; ouvrir les réglages
-        ouvrirReglagesIa();
+        if (auditeur != null) {
+            auditeur.ouvrirModele();
+        }
     }
 
     /** La puce de mode de permission (ADR-É11 point 3). */

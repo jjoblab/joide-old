@@ -1,8 +1,6 @@
 package jo.joide.app.android;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -239,6 +237,25 @@ public final class AgentService extends Service {
             synchronized (AgentService.this) {
                 return usageConversation;
             }
+        }
+
+        /**
+         * @return le banc de clés par raison d'assise (l'écran Usages
+         *         le montre), ou une carte vide si le banc n'est pas
+         *         né (aucun tour n'a encore tourné)
+         */
+        public java.util.Map<ErreursLlm.Genre, Integer> bancParRaison() {
+            BancCles banc = bancCles;
+            return banc == null ? java.util.Map.of()
+                    : banc.bancParRaison();
+        }
+
+        /**
+         * @return le nombre de clés du banc (0 si le banc n'est pas né)
+         */
+        public int tailleBanc() {
+            BancCles banc = bancCles;
+            return banc == null ? 0 : banc.taille();
         }
 
         /**
