@@ -1,3 +1,36 @@
+# Backlog (après les lots Q et R de la V2)
+
+Entrées ouvertes à l'issue des lots Q (ADR-061/062) et R
+(ADR-063) — la piste 2 du plan ADR-É10 est clôturée :
+
+- [ ] Lot Q : les PRODUCTEURS d'images restent à câbler — le genre
+      `IMAGE` du modèle neutre, la sérialisation des trois
+      fournisseurs et la réduction côté client (`ReductionImages`)
+      sont en place, aucun outil v1 ne produit encore d'image
+      (capture d'aperçu, rendu de vue) ; l'hôte posera aussi le
+      réducteur BitmapFactory.
+- [ ] Lot Q : l'UI des bandes d'usage — `BandesUsage` est lisible
+      côté hôte, le pied d'usage du chat peut l'afficher (la bande
+      critique avant le 429).
+- [ ] Lot Q : le sélecteur de niveau de réflexion Gemini est un
+      réglage de construction — l'exposer dans Paramètres si le
+      propriétaire le veut.
+- [ ] Lot R : la section Connexions MCP des Paramètres (les états
+      publiés par `GestionnaireMcp` sont prêts : CONNECTE /
+      AUTH_REQUISE / ECHEC / NON_SUPPORTE) et le flux de signature
+      OAuth (ouvrir l'URL du navigateur, capter la redirection
+      bouclage, `echanger`) ; en v1, la lecture du `.mcp.json` du
+      projet se branchera à l'ouverture de la conversation.
+- [ ] Lot R : le serveur MCP local n'est pas démarré par l'hôte
+      (le service l'exposera aux clients de bureau via `adb
+      forward`, pattern de l'ADR-É9) — les outils, le transport et
+      la sécurité sont prouvés en JVM.
+- [ ] Lot R : l'approbation des serveurs d'un `.mcp.json` issu du
+      PROJET (un dépôt cloné n'est pas un choix de l'utilisateur)
+      reste non accordée tant que l'utilisateur n'a pas approuvé ;
+      l'identité lie déjà approbation et signatures.
+
+
 # Backlog (après le lot P de la V2)
 
 Entrées ouvertes à l'issue du lot P (ADR-É11/060) :

@@ -115,6 +115,72 @@ final class FauxTransport implements TransportHttp {
         };
     }
 
+    /**
+     * Les lignes de corps des POST ouverts et GET SSE, dans l'ordre
+     * (le lot R : les transports MCP se testent hors ligne comme les
+     * fournisseurs) ; vide : un corps vide.
+     */
+    final List<String> lignesCorps = new ArrayList<>();
+    /** Le statut des requêtes ouvertes (défaut 200). */
+    int statutOuvert = 200;
+
+    @Override
+    public ReponseOuverte postOuvert(String url,
+                                     Map<String, String> entetes,
+                                     String corps, CancelToken jeton) {
+        requetes.add(new RequeteCapturee(url, entetes, corps));
+        List<String> lignes = new ArrayList<>(lignesCorps);
+        lignesCorps.clear();
+        int statut = statutOuvert;
+        return new ReponseOuverte() {
+            private int index;
+
+            @Override
+            public int statut() {
+                return statut;
+            }
+
+            @Override
+            public String entete(String nom) {
+                return null;
+            }
+
+            @Override
+            public String ligne() {
+                return index < lignes.size()
+                        ? lignes.get(index++) : null;
+            }
+        };
+    }
+
+    @Override
+    public ReponseOuverte getSse(String url, Map<String, String> entetes,
+                                 CancelToken jeton) {
+        return postOuvert(url, entetes, "", jeton);
+    }
+
+    @Override
+    public Reponse supprimer(String url, Map<String, String> entetes,
+                             CancelToken jeton) {
+        requetes.add(new RequeteCapturee(url, entetes, ""));
+        return new Reponse() {
+            @Override
+            public int statut() {
+                return 200;
+            }
+
+            @Override
+            public String entete(String nom) {
+                return null;
+            }
+
+            @Override
+            public String corps() {
+                return "";
+            }
+        };
+    }
+
     /** Un faux transport qui répond toujours une erreur HTTP. */
     static final class Erreur implements TransportHttp {
         final int statut;

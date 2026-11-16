@@ -91,6 +91,86 @@ public final class TransportOkHttp implements TransportHttp {
         return fermerApresLecture(reponse);
     }
 
+    @Override
+    public ReponseOuverte postOuvert(String url,
+                                     Map<String, String> entetes,
+                                     String corps, CancelToken jeton)
+            throws IOException {
+        Response reponse = appeler("POST", url, entetes, corps, jeton);
+        return ouvrir(reponse);
+    }
+
+    @Override
+    public ReponseOuverte getSse(String url, Map<String, String> entetes,
+                                 CancelToken jeton) throws IOException {
+        Response reponse = appeler("GET", url, entetes, null, jeton);
+        return ouvrir(reponse);
+    }
+
+    @Override
+    public Reponse supprimer(String url, Map<String, String> entetes,
+                             CancelToken jeton) throws IOException {
+        Response reponse = appeler("DELETE", url, entetes, null, jeton);
+        return fermerApresLecture(reponse);
+    }
+
+    /** La réponse vivante : statut, en-têtes, corps lu ligne à ligne. */
+    private static ReponseOuverte ouvrir(Response reponse)
+            throws IOException {
+        ResponseBody corps = reponse.body();
+        if (!reponse.isSuccessful()) {
+            try {
+                throw new EchecHttp(reponse.code(),
+                        entetesDe(reponse),
+                        corps == null ? "" : corps.string());
+            } finally {
+                reponse.close();
+            }
+        }
+        BufferedReader lecteur = corps == null ? null
+                : new BufferedReader(new InputStreamReader(
+                        corps.byteStream(), StandardCharsets.UTF_8));
+        BufferedReader tamponFinal = lecteur;
+        Response reponseVivante = reponse;
+        ResponseBody corpsVivant = corps;
+        return new ReponseOuverte() {
+            @Override
+            public int statut() {
+                return reponseVivante.code();
+            }
+
+            @Override
+            public String entete(String nom) {
+                return reponseVivante.header(nom);
+            }
+
+            @Override
+            public String ligne() throws IOException {
+                String ligne = tamponFinal == null ? null
+                        : tamponFinal.readLine();
+                if (ligne == null) {
+                    fermer();
+                }
+                return ligne;
+            }
+
+            @Override
+            public void fermer() {
+                if (tamponFinal != null) {
+                    try {
+                        tamponFinal.close();
+                    } catch (IOException e) {
+                        // déjà fermé : rien à faire
+                    }
+                }
+                if (corpsVivant != null) {
+                    corpsVivant.close();
+                }
+                reponseVivante.close();
+            }
+        };
+    }
+
     private Response appeler(String methode, String url,
                              Map<String, String> entetes, String corps,
                              CancelToken jeton) throws IOException {
@@ -100,6 +180,8 @@ public final class TransportOkHttp implements TransportHttp {
         }
         if ("GET".equals(methode)) {
             construction.get();
+        } else if ("DELETE".equals(methode)) {
+            construction.delete();
         } else {
             construction.post(RequestBody.create(
                     corps == null ? "" : corps, JSON));

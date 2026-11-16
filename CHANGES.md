@@ -1,3 +1,240 @@
+# CHANGES — Lots Q et R : la robustesse (Gemini, banc de clés, bascule, régulateur) et le MCP (ADR-É10/061/062/063)
+
+Les lots Q et R clôt la piste 2 du plan ADR-É10 : l'agent v1.1 —
+trois fournisseurs, la robustesse à trois étages complète, et
+l'écosystème MCP dans ses deux sens. La consultation clean-room n° 3
+a été consignée au préalable (mandat explicite du propriétaire :
+regarder le design de CodeAssist, le journal et la note
+`docs/clean-room/003-robustesse-mcp.md` portent la traçabilité),
+l'implémentation reste clean-room — Java 17 pur module `agent`,
+identifiants ASCII, Javadoc française, le graphe des modules et le
+catalogue des dépendances INCHANGÉS.
+
+## Lot Q — Robustesse et Gemini (ADR-061/062)
+
+**Le fournisseur Gemini** (ADR-061) : `streamGenerateContent?alt=sse`
+sur l'URL officielle surchargeable, la clé par en-tête
+`x-goog-api-key` (jamais dans l'URL) ; rôles `user`/`model`, les
+résultats d'outils en parts `functionResponse` (nom de corrélation
+avant `#`), les appels ENTIERS en parts `functionCall` (jamais
+diffusés) ; la `thoughtSignature` se range dans la partie appel
+(fabrique `PartieContenu.appelSigne`, signature opaque) et revient
+sur la `functionCall` au tour suivant — sans elle l'outil est refusé ;
+pas d'identifiant d'appel chez Gemini : le nom sert de corrélation,
+dédoublonné par suffixe `#N` ; pas de rôle système en conversation :
+l'ancrage stable part en `system_instruction`, la note volatile se
+plie en part `<system-reminder>` du DERNIER tour utilisateur — le
+préfixe stable ne dérive pas (le garde du test le prouve) ;
+`usageMetadata` : `promptTokenCount` CONTIENT les lectures de cache,
+l'adaptateur soustrait et le modèle neutre garde les entrées non
+cachées ; pas d'événement terminal : usage et fin s'émettent à la fin
+du flux, un flux qui n'a rien rendu est ILLISIBLE (jamais un tour
+vide muet que la boucle lirait comme une fin), les `finishReason` de
+sécurité classent en `CONTENU_REFUSE` actionnable ; les schémas
+d'outils perdent `additionalProperties` à toute profondeur (Gemini
+les rejette).
+
+**Le cache de contexte serveur** (`CacheContexteGemini`, horloge
+injectée) : l'instruction système + les déclarations d'outils se
+posent côté fournisseur (`cachedContents`, TTL 3 600 s) et se
+référencent par `cachedContent` — le système et les outils ne repartent
+PLUS inline quand le cache est référencé (l'API le rejette). La
+politique est conservatrice : rien au premier tour, pas de création
+sous 2 048 jetons estimés, repli inline sur tout échec ET échec
+mémorisé par clé de charge utile, recréation une minute AVANT
+l'expiration — le caching ne peut jamais être une perte nette.
+`FournisseurGemini` déclare `compactionDeleguee() = true` : l'élagage
+local se désactive quand ce fournisseur est choisi.
+
+**Les budgets de réflexion** au dialecte de la génération : niveau
+(`thinkingLevel`) pour Gemini 3, budget (`thinkingBudget`) pour la
+famille 2.5 — envoyer le mauvais échoue la requête entière ; `minimal`
+devient `low` sur un Pro 3, le minimum 128 force le budget sur un Pro
+2.5 ; `maxOutputTokens` couvre réflexion ET réponse ENSEMBLE (la
+marge de réflexion s'ajoute au plafond demandé, plafond absolu
+65 536) — sinon un effort élevé dépense tout le plafond en réflexion
+et rend un tour vide coupé à `MAX_TOKENS`.
+
+**Le banc de clés** (`BancCles`) : l'ordre de l'utilisateur
+(principale d'abord, blâmes et doublons écartés) — un failover, pas
+un round-robin, la clé principale revient dès son temps écoulé ; les
+bancs différenciés par nature de limite : minute → le délai ÉNONCÉ
+sinon 60 s (jamais moins d'une seconde), jour/quota/hors-plan → 1 h,
+auth → À VIE (le banc se reconstruit à l'édition des clés) ; seuls
+les genres qui peuvent différer d'une clé à l'autre font basculer.
+
+**La bascule** (`FournisseurBascule`, décorateur `FournisseurLlm`) :
+une requête refusée AVANT TOUTE SORTIE repart sur la clé suivante,
+JAMAIS après la première sortie (le texte déjà affiché ne se duplique
+pas) ; quand tout le banc est assis : l'attente courte (≤ 120 s)
+devient une `LIMITE_DEBIT` porteuse du délai que la boucle attend
+visiblement, sinon le message agrégé honnête compte les clés par
+raison et conseille quoi faire ; un banc d'une clé est un
+pass-through honnête ; la régulation préventive vit DANS la bascule
+(un `RegulateurDebit` par couple clé+modèle, l'attente courte est
+découpée pour traverser l'annulation).
+
+**Le régulateur préventif** (`RegulateurDebit`) : attendre AVANT la
+requête au lieu de récolter un 429 — fenêtre glissante de 60 s sur
+requêtes ET jetons d'entrée estimés (≈ 4 caractères/jeton, image ≈
+1 500) ; les limites du plus spécifique au plus général : configurées,
+puis ÉNONCÉES par le fournisseur (`QuotaFournisseur` porté par
+l'erreur — la révision N/O), puis le plafond OBSERVÉ (jetons ×9/10,
+requêtes en vol − 1) ; sans limite connue, il n'attend jamais ; les
+limites apprises SURVIVENT à la conversation (le régulateur vit hors
+du tour — le critère du lot).
+
+**Les bandes d'usage** (`BandesUsage`) : NORMALE (< 70 %),
+ATTENTION (70–90 %), CRITIQUE (≥ 90 %) sur l'occupation des fenêtres,
+la requête à venir comptée — prévenir AVANT ; sans plafond connu,
+l'occupation est 0 et la bande est NORMALE (une alerte sans référence
+mesurée serait une invention).
+
+**Les images** : le genre `IMAGE` du modèle neutre
+(`PartieContenu.image`, type de média + base64) sérialisé chez les
+trois fournisseurs (bloc `image` Anthropic, `data:` URI OpenAI,
+`inline_data` Gemini) — avant, une partie image était avalée
+muettement ; la réduction se fait CÔTÉ CLIENT AVANT l'historique
+(`ReductionImages`, budget d'octets décodés, ré-encodage par le
+`Reducteur` de l'hôte — BitmapFactory côté Android), le repli honnête
+remplace l'image par une note qui dit ce qui s'est passé — jamais une
+omission muette.
+
+**La révision N/O qui porte le lot** : `ErreurLlm` transporte le
+`QuotaFournisseur` énoncé (métrique requêtes/jetons, fenêtre
+minute/jour, limite — champ transient) ; le 429 à PLAFOND ZÉRO est le
+modèle hors plan de la clé (`QUOTA_EPUISE` — le cas d'école de
+l'ADR-É9 : la bascule changera de clé, retenter ne sert à rien) ; la
+précédence du wording crédit/quota est explicitée (un 429 rate limit
+qui cite le crédit reste transitoire) ; le raisonnement Anthropic est
+tagué `anthropic:` et ne repart que chez lui (le même garde que celui
+d'OpenAI du lot N) — une signature d'un autre fournisseur serait
+refusée par l'API.
+
+**Le câblage hôte** (app-android) : `Reglages.FournisseurIa` gagne
+GEMINI ; la rangée de clé Gemini rejoint la section IA des Paramètres
+(vingt rangées, libellés fr/en — la parité values/values-fr) ;
+le champ clé du stockage chiffré porte PLUSIEURS clés séparées par
+saut de ligne ou virgule ; `AgentService` enveloppe le fournisseur
+dans `BancCles` + `FournisseurBascule` DÉTENUS PAR SERVICE (les
+limites apprises survivent à la conversation), reconstruits seulement
+quand le fournisseur ou l'ensemble des clés change.
+
+## Lot R — MCP client puis serveur (ADR-063)
+
+**Le paquet `jo.joide.agent.mcp`**, pur module : aucune dépendance de
+plus, le graphe des modules et le catalogue inchangés.
+
+**Le port transport s'étend ADDITIVEMENT** : `postOuvert` (le corps
+se lit ligne à ligne — le Streamable HTTP décide au vu des EN-TÊTES
+si le corps est un JSON complet ou un flux d'événements et s'arrête à
+SA réponse), `getSse` (le flux vivant du repli), `supprimer` (le
+DELETE de clôture) — défauts qui refusent honnêtement, implémentés
+par OkHttp et le faux de test ; la règle du lot N tient (hors 2xx,
+`EchecHttp` voyage avec son corps).
+
+**Le client** (`ClientMcp`) : la poignée de main `initialize`
+(protocole 2025-06-18 proposé, celui du serveur fixé, AUCUNE
+capacité déclarée — un `ping` reçoit sa réponse vide, le reste
+method-not-found) ; `tools/list` paginé mais BORNÉ (vingt pages) ;
+`tools/call` aplati : blocs texte joints, images supportées listées,
+ressources texte ou notées binaires, liens et audio DÉCRITS plutôt
+que perdus, contenu structuré seulement sans texte, plafond
+40 000 caractères avec coupure qui conseille, `isError` honnête ;
+délais 30 s de poignée, 180 s d'appel ; les demandes du serveur
+répondent hors fil ; la déconnexion complète les appels en attente
+avec la cause.
+
+**LA règle de sécurité** (`GestionnaireMcp`) : un appel ne se retente
+que si le serveur a PROUVÉ qu'il n'a pas exécuté l'outil — session
+expirée (une reconnexion), identifiants refusés avant examen (un
+refresh de signature) ; toute autre rupture EN COURS d'appel répond
+« il a pu s'exécuter ou non » — un outil mutant n'est JAMAIS lancé
+deux fois (le test le prouve par comptage) ; un échec JSON-RPC ou un
+délai ne se retentent pas non plus ; les états publiés
+(DESACTIVE/CONNEXION/CONNECTE/AUTH_REQUISE/ECHEC/NON_SUPPORTE) et la
+version d'outils incrémentée : l'UI affiche sans déduire ; les
+connexions vont EN ARRIÈRE-PLAN — un serveur lent ne retient jamais
+le chat ; le repli SSE historique se tente une fois pour un refus 4xx
+du Streamable, l'échec ORIGINAL rapporté si le repli échoue aussi.
+
+**Les transports** : Streamable HTTP (POST unique, session en
+`Mcp-Session-Id`, `MCP-Protocol-Version` après négociation, DELETE
+best-effort daemon, PAS de flux GET permanent) et le vieux SSE
+historique (GET flux + `endpoint` + POST). La configuration lit le
+format `.mcp.json` Claude Code/Cursor (racine `mcpServers` ou
+`servers`, inférence URL/commande, `headers`, `disabled`, entrées
+sans sens sautées) ; l'IDENTITÉ est l'URL ou la commande+arguments —
+les signatures et l'approbation se lient à elle ; stdio est lu mais
+jamais lancé ici (NON_SUPPORTE honnête sur Android).
+
+**OAuth 2.1 complet** (`AutorisationMcp`) : RFC 9728 (métadonnées de
+ressource protégée, du défi du 401 puis les emplacements bien connus)
+→ RFC 8414/OpenID → RFC 7591 (enregistrement dynamique comme client
+public pour l'URI de redirection de CETTE signature) → PKCE S256
+OBLIGATOIRE (le vecteur de test de la RFC 7636 prouve le calcul ;
+un serveur sans S256 est refusé avec le conseil du jeton en en-tête)
+→ RFC 8707 (`resource`, l'URL canonique comme audience) → échange et
+refresh (rotation tolérée). Les secrets partent en corps
+form-encodé, JAMAIS dans une URL ; la signature se stocke chiffrée
+côté hôte et se rafraîchit avant l'échec (périssable à une minute de
+son expiration).
+
+**La normalisation des schémas tiers** (`NormalisationSchemas`) :
+`$ref` inlinés bornés en profondeur (12), tableaux de types réduits
+au premier non-null, enums de CHAÎNES seulement, `anyOf` consolidé,
+`items` par défaut pour les tableaux, liste blanche de clés,
+niveau supérieur FORCÉ en objet — un mauvais schéma ferait échouer la
+requête entière du fournisseur.
+
+**Les outils distants** (`OutilMcpDistant`) : nommés
+`mcp__<serveur>__<outil>` dans les caractères que tous les
+fournisseurs acceptent, 64 au plus, dédoublonnés par suffixe (deux
+serveurs dont les noms se nettoient pareil survivent tous deux) ;
+MUTANTS sauf `readOnlyHint` — soumis au même gate que les écritures
+locales ; la description préfixée du serveur, tronquée à 1 000 ; le
+résumé d'arguments porte les trois premiers scalaires.
+
+**Le serveur local** (`ServeurMcpLocal`) : `ServerSocket` lié à
+127.0.0.1 UNIQUEMENT (non configurable par intention — le transport
+n'authentifie personne et ses outils éditent le projet) ; la
+vérification LOCALE couvre le DNS rebinding : `Host` local obligatoire
+et un `Origin` PRÉSENT doit être local (absent = client natif accepté,
+présent et étranger = 403 — le test braque un attaquant et le refuse) ;
+corps plafonné à 16 Mio, socket à 30 s, Connection: close, un fil par
+connexion ; la lecture d'en-tête OCTET PAR OCTET en ISO-8859-1 et le
+corps de EXACTEMENT `Content-Length` octets (la leçon consignée d'un
+emoji qui bloquait la lecture jusqu'au délai de socket — le test renvoie
+un résultat à caractères multi-octets) ; sessions créées à
+l'initialize (`Mcp-Session-Id`), mode requête-réponse, GET 405 (les
+clients SDK replient), DELETE ferme la session ; les annotations du
+protocole se déduisent du modèle (`mutant` → `readOnlyHint: false`) ;
+classes plutôt que records (l'API 28 n'a pas de `java.lang.Record`,
+le checkApi28 l'a prouvé).
+
+**Les jobs longs découplés** : au-delà du seuil (90 s), le travail
+CONTINUE sur un pool borné et le client reçoit « toujours en cours —
+appelez `task_status`, NE RELANCEZ PAS » ; `task_status` est une
+pseudo-outil read-only consultable sans limite, elle rend le résultat
+ou l'erreur du job quand il finit — le test prouve que le travail a
+fini TOUT SEUL sans que l'outil ait été relancé.
+
+## Acceptation
+
+- `:agent:test` 180/0 — 80 tests nouveaux au lot (Gemini, banc,
+  bascule, régulateur, bandes, images, config MCP, normalisation,
+  autorisation, client↔serveur RÉELS en JVM, gestionnaire) et la
+  taxonomie enrichie de la révision N/O ; les critères du lot :
+  tests à horloge fausse (failover, pacer, TTL du cache), l'usage
+  sommé de toutes les requêtes du tour (déjà prouvé côté boucle),
+  les limites apprises qui survivent à la conversation, un outil
+  mutant distant jamais lancé deux fois.
+- `:app-android:testDebugUnitTest` 263/0 (vingt rangées exactement)
+  ; `:check` complet vert AVEC SDK (tous les modules) et SANS SDK ;
+  `checkApi28` vert après la conversion des records en classes ;
+  politique de langue : 0 problème (typographie --fix appliquée aux
+  entrées nouvelles).
+
 # CHANGES — Lot P : l'UI du chat et l'intégration applicative (groupe 4 de la V2, ADR-É11/060)
 
 Le lot P clôt le groupe 4 « agent v1 » du plan ADR-É10 : l'agent

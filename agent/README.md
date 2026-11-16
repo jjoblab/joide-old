@@ -25,3 +25,11 @@ La robustesse transverse (lot Q, ADR-062) : le banc de clés à bancs
 différenciés, la bascule qui ne re-émet jamais après la première
 sortie, le régulateur préventif RPM/TPM qui apprend des erreurs, les
 bandes d'usage et les images réduites côté client.
+
+Le Model Context Protocol (lot R, ADR-063) : le client MCP (config
+`.mcp.json` Claude Code/Cursor, Streamable HTTP + repli SSE, OAuth
+2.1 complet, schémas tiers normalisés, outils `mcp__<serveur>__<outil>`
+mutants sauf readOnlyHint — un appel ne se retente que PROUVÉ non
+exécuté) et le serveur local (bouclage vérifié Host/Origin, corps
+plafonné, lecture d'octets exacte, jobs longs découplés en
+task_status), dans le paquet `jo.joide.agent.mcp`.
