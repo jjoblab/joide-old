@@ -109,6 +109,14 @@ système, couleurs exactes des jetons ci-dessus. Les maquettes sont
 contractuelles pour la structure (sections, états, franchise), pas
 pour le pixel.
 
+## Révision du 2026-11-16 (lot G)
+
+Le plan ADR-É10 (accepté) avance
+le clair au lot G : la palette claire, le mode nuit du
+système et l'application du thème vivent dans l'ADR-048 ;
+les rayons restent 16/12/999 (la maquette affiche 14 sur tuile et
+bouton — écart pixel, É2 fait autorité).
+
 ## Conséquences
 
 - Les ADR-É3 à É8 héritent des jetons et composants sans les

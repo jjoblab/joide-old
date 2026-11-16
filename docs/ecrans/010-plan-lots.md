@@ -1,7 +1,10 @@
 # ADR-É10 — Plan des lots : UI v2 et agent IA (après P8)
 
-- **Statut** : Proposed (GO du propriétaire sur l'ordre, les jalons et
-  les questions D-1 à D-9 attendu)
+- **Statut** : Accepted (GO du propriétaire reçu le 2026-11-16 : « Pour
+  les 9 questions, je suis d'accord pour tes recommandations, à part
+  pour OkHttp je le préfère plutôt de créé une maison. Donc, je te dis
+  GO. » — D-1 à D-9 tranchées, D-5 : OkHttp retenu par le propriétaire,
+  l'implémentation démarre par le lot G)
 - **Date** : 2026-11-16
 
 ## Contexte
@@ -95,7 +98,7 @@ Tailles relatives au tiers de bench (S/M/L/XL) : effort de conception
   réutilisée (lot A).
 - **Critères** : capture contre `design/accueil-projets.html` (états
   vide / peuplé) ; tests JVM de l'état d'écran (tri, reprise,
-  suppression) ; ADR-048 — lieu et format des projets récents
+  suppression) ; ADR-049 — lieu et format des projets récents
   (fichier JSON atomique par `AtomicFiles`, proposition).
 
 ### Lot I — Création de projet
@@ -111,7 +114,7 @@ Tailles relatives au tiers de bench (S/M/L/XL) : effort de conception
   l'écran en trois étapes.
 - **Critères** : capture contre `design/creation-projet.html` (trois
   étapes) ; tests JVM (dérivation du paquet, valeurs par défaut du
-  modèle, échec atomique) ; ADR-049 — format déclaratif des modèles
+  modèle, échec atomique) ; ADR-050 — format déclaratif des modèles
   (dérivé du `joide.toml`, pas un script).
 
 ### Lot J — Atelier adaptatif
@@ -284,37 +287,48 @@ jetons G et l'atelier J) : les lots N, O et Q peuvent avancer dès que
 le propriétaire l'ordonne, en parallèle du groupe 2 — c'est l'objet
 de D-1.
 
-## Questions au propriétaire avant GO
+## Décisions du propriétaire — GO du 2026-11-16
+
+Réponse du propriétaire : « Pour les 9 questions, je suis
+d'accord pour tes recommandations, à part pour OkHttp je le préfère
+plutôt de créé une maison. Donc, je te dis GO. » Chaque recommandation
+est donc retenue telle quelle, sauf D-5 où le propriétaire tranche
+pour OkHttp.
 
 - **D-1 — Ordre des pistes.** Recommandation : groupe 1 puis 2
   (l'exigence de design est la plus récente et la plus visible),
   pendant que les lots N et O avancent en parallèle dès le groupe 1
   clos ; l'agent v1 (groupe 4) après la v2 complète. Alternative :
-  agent d'abord.
+  agent d'abord. — **Retenue.**
 - **D-2 — Fournisseurs de la v1.** Recommandation : Anthropic +
   OpenAI-compatible (URL de base libre couvre les passerelles et les
-  serveurs locaux) ; Gemini au lot Q. BYOK pur.
+  serveurs locaux) ; Gemini au lot Q. BYOK pur. — **Retenue.**
 - **D-3 — Offre gratuite.** Hors v1 : c'est un modèle d'affaires
   complet (comptes, points, publicités, backend à créer), pas une
-  fonctionnalité d'agent (ADR-É9 § offre gratuite).
+  fonctionnalité d'agent (ADR-É9 § offre gratuite). — **Retenue.**
 - **D-4 — MCP.** Recommandation : différer au lot R, client avant
-  serveur ; relais hébergé et FTP écartés de v1 (D-7).
+  serveur ; relais hébergé et FTP écartés de v1 (D-7). — **Retenue.**
 - **D-5 — Transport HTTP/SSE.** Recommandation : implémentation
   maison sur `HttpURLConnection` avec lecture SSE dédiée (zéro
   dépendance, cohérent avec les parseurs maison ADR-028) ;
   alternative OkHttp (Apache-2.0) si la maintenance du TLS/redirects
-  pèse.
+  pèse. — **Décision du propriétaire : OkHttp.**
+  L'implémentation maison est écartée : `okhttp` entre au
+  catalogue au lot N (la seule dépendance tierce du module agent),
+  NOTICE et `docs/third-party.md` mis à jour, ADR transport dédiée.
+  Le transport du résolveur P4 (ADR-031) n'est pas concerné : il
+  reste maison dans `core-deps`.
 - **D-6 — Stockage des clés.** Recommandation : chiffré dès la v1 —
   clé dans Android Keystore, fichier AES-GCM via `AtomicFiles`, sans
-  AndroidX ; jamais de clés de secours en clair.
+  AndroidX ; jamais de clés de secours en clair. — **Retenue.**
 - **D-7 — Surfaces locales.** Serveur FTP d'assets et relais MCP
   hébergé : écartés de v1 (surfaces d'attaque documentées, utilité
-  desktop d'abord).
+  desktop d'abord). — **Retenue.**
 - **D-8 — Rythme de validation.** Par groupe (recommandation) ou par
-  lot.
+  lot. — **Retenue : par groupe** (arrêt pour validation après G+H+I, puis J+K+L, puis M, puis N+O+P, puis Q/R).
 - **D-9 — Concurrence avec le backlog P8/P9.** Embarquer D8/R8 sur
   appareil, accès SAF direct, stockage importé, débogueur : aucun
-  n'entre dans ce plan ; à prioriser séparément si exigé.
+  n'entre dans ce plan ; à prioriser séparément si exigé. — **Retenue.**
 
 ## Hors périmètre de ce plan
 

@@ -8,9 +8,11 @@ plan `:build`) — l'IDE de P8.
 | Paquet | `jo.joide.app` |
 | Nature | Android (ADR-045) |
 | Dépendances JoIDE | build-daemon, ide-integration |
-| Phase de remplissage | P8 (lot A squelette, lot F complet) |
+| Phase de remplissage | P8 (lots A-F), V2 lot G (kit Graphite, ADR-048) |
 
 ## Ce qu'il y a (état du lot F)
+
+(Voir plus bas « État du lot G » pour le kit Graphite.)
 
 - **`MainActivity`** — l'écran IDE : ouverture d'un projet par le
   sélecteur système (SAF), détection de sa nature

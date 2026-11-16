@@ -16,7 +16,8 @@ import org.junit.jupiter.api.io.TempDir;
  * Contrôle de la politique de langue :
  * le script doit échouer sur la fixture de violations — identifiant non
  * ASCII, message d'exception français, classe publique sans Javadoc,
- * typographie — et passer sur la fixture conforme.
+ * typographie, parité values/values-fr (lot G, ADR-048) — et passer
+ * sur la fixture conforme (chaînes des deux langues, mêmes clés).
  */
 class LanguagePolicyScriptTest {
 
@@ -55,6 +56,15 @@ class LanguagePolicyScriptTest {
                 "missing javadoc must be reported");
         assertTrue(result.output.contains("insecable"),
                 "typography must be reported");
+        assertTrue(result.output.contains("parite"),
+                "values/values-fr parity must be reported, output was: "
+                        + result.output);
+        assertTrue(result.output.contains("oui"),
+                "the key missing from values-fr must be named, output was: "
+                        + result.output);
+        assertTrue(result.output.contains("extra"),
+                "the orphan key of values-fr must be named, output was: "
+                        + result.output);
     }
 
     @Test

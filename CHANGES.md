@@ -1,3 +1,49 @@
+# CHANGES — Lot G : le système de design « Graphite » en code
+
+Le GO du propriétaire sur le plan ADR-É10 (2026-11-16 : « je te dis
+GO », D-5 tranchée OkHttp — l'implémentation maison écartée) ouvre la
+piste UI par le lot G : les jetons ADR-É2 et la palette claire
+ADR-048 en constantes pures (Graphite), le kit de composants en vues
+du cadre sans AndroidX (boutons, champs, cartes à tuile tonale,
+puces, tiroir poussé, dock repliable, dialogues, états vides),
+l'écran d'exercice qui les montre dans les deux modes, la parité de
+langue values/values-fr activée (anglais par défaut, français
+traduit — les chaînes P8 comprises), le thème passé à
+Theme.Material.NoActionBar avec couleurs de fenêtre posées en code.
+La conformité aux jetons de design/index.html est prouvée par test
+(JetonMaquetteTest), les contrastes AA par mathématique (GraphiteTest)
+— la validation visuelle sur appareil revient au propriétaire via
+l'APK du CI (pas d'émulateur au bac à sable, écart P8 n° 4).
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| app-android `ui/` | `Graphite` (jetons purs), `GraphiteVue` (colle dp/sp/typographie/fenêtre), `Bouton`, `Champ`, `Carte`, `Puce`, `TiroirPousse`, `Dock`, `Dialogue`, `EtatVide` |
+| app-android `ui/choix/` | `ChoixBouton`, `ChoixChamp`, `ChoixPuce`, `ChoixCarte`, `ChoixTexte`, `ChoixMouvement` (purs, testés JVM) |
+| app-android `ecrans/exercice/` | `EcranExercice` (écran d'exercice du kit, non exporté) |
+| app-android `res` | `values-fr/strings.xml` (français, 113 clés) ; chaînes du kit dans `values/strings.xml` (anglais) |
+| app-android `src/test` | `GraphiteTest` (7 cas), `JetonMaquetteTest` (3), `ChoixBoutonTest` (4), `ChoixChampTest` (3), `ChoixPuceTest` (3), `ChoixCarteTest` (3), `ChoixTexteTest` (6), `ChoixMouvementTest` (3) |
+| tools-test | fixtures de parité `res/values`+`values-fr` dans `language-clean` (conforme) et `language-violation` (violation) |
+| docs/adr | `048-lot-g-graphite-code.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| app-android | `MainActivity` | couleurs de fenêtre Graphite + entrée discrète « Kit Graphite » (temporaire, retirée au lot H) |
+| app-android | `AndroidManifest.xml` | `Theme.Material.NoActionBar` + activité `EcranExercice` non exportée |
+| app-android | `res/values/strings.xml` | traduit en anglais (langue par défaut) |
+| Racine | `scripts/check-language-policy` | contrôle n° 5 : parité values/values-fr |
+| tools-test | `LanguagePolicyScriptTest` | assertions de parité (« parite », « oui », « extra ») |
+| Racine | `ROADMAP.md` | ligne V2 dédupliquée ; lot G livré, suite H-R |
+| docs/ecrans | `002`, `010`, `README.md` | É2 : note de révision (clair au lot G) ; É10 : Accepted + décisions + renumérotation H 049 / I 050 ; README : GO et lot G |
+| docs | `docs/backlog.md` | entrée P0 « parité values/values-fr » fermée |
+
+## Supprimés
+
+Rien.
+
 # CHANGES — Analyse IA de CodeAssist (ADR-É9) et plan des lots (ADR-É10)
 
 Le propriétaire rouvre le sujet IA écarté par l'ADR-É1 et change la

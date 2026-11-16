@@ -13,14 +13,15 @@ Vérifie, sur tous les fichiers versionnés :
      être ASCII et hors d'un petit lexique français ;
   3. présence d'une Javadoc pour les classes publiques ;
   4. typographie française des fichiers Markdown (espace insécable
-     avant « ; », « : », « ! », « ? »).
+     avant « ; », « : », « ! », « ? ») ;
+  5. parité values/values-fr (ADR-008 de celeris, point d'extension
+     dormant depuis P0, ACTIVÉ au lot G — ADR-048) : values/ porte la
+     langue par défaut (anglais), values-fr/ le français — même
+     ensemble de clés <string>, pour tout module portant des chaînes.
 
 Les fichiers de données de test (src/test/resources, y compris les
 fixtures Java volontairement fausses qui servent à tester ce script et
 les autres contrôles) sont exclus : ce sont des données, pas du code.
-
-Le point d'extension « parité values/values-fr » (ADR-008 de celeris)
-resterait inactif jusqu'à P8 : il n'est pas repris ici.
 
 Usage :  python3 scripts/check-language-policy [chemin] [--fix]
 Le mode --fix corrige la typographie (4) ; tout le reste échoue.
@@ -188,6 +189,46 @@ def check_typography(path: str, fix: bool) -> list:
     return problems
 
 
+def check_parity_values(path: str) -> list:
+    """Parité values/values-fr : même ensemble de clés <string>.
+
+    values/strings.xml porte la langue par défaut (anglais),
+    values-fr/strings.xml le français (convention celeris android-host,
+    ADR-048) ; toute clé de l'un doit exister dans l'autre.
+    """
+    problems = []
+    try:
+        with open(path, encoding="utf-8") as fh:
+            defaut = fh.read()
+    except (OSError, UnicodeDecodeError):
+        return problems
+    fr_path = path.replace(
+        os.sep + "values" + os.sep + "strings.xml",
+        os.sep + "values-fr" + os.sep + "strings.xml")
+    try:
+        with open(fr_path, encoding="utf-8") as fh:
+            traduit = fh.read()
+    except (OSError, UnicodeDecodeError):
+        return [f"{path}:1: parite values/values-fr : "
+                f"aucun values-fr/strings.xml pour ce module"]
+    cles_defaut = set(re.findall(
+        r"<string[^>]*\sname=\"([^\"]+)\"", defaut))
+    cles_fr = set(re.findall(
+        r"<string[^>]*\sname=\"([^\"]+)\"", traduit))
+    manquantes = sorted(cles_defaut - cles_fr)
+    extras = sorted(cles_fr - cles_defaut)
+    if manquantes:
+        problems.append(
+            f"{path}:1: parite values/values-fr : chaine(s) "
+            f"absente(s) de values-fr : {', '.join(manquantes)}")
+    if extras:
+        problems.append(
+            f"{fr_path}:1: parite values/values-fr : chaine(s) "
+            f"hors langue par defaut (absente(s) de values/) : "
+            f"{', '.join(extras)}")
+    return problems
+
+
 def check_javadoc(path: str) -> list:
     """Exige une Javadoc au-dessus de chaque classe publique."""
     problems = []
@@ -249,6 +290,9 @@ def main() -> int:
             problems += check_javadoc(f)
         elif f.endswith(".md"):
             problems += check_typography(f, args.fix)
+        elif (f.endswith(os.sep + "values" + os.sep + "strings.xml")
+              and os.sep + "src" + os.sep + "main" + os.sep in f):
+            problems += check_parity_values(f)
 
     if args.fix and not problems:
         print("politique de langue : typographie corrigee, aucun autre"

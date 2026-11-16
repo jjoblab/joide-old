@@ -80,8 +80,11 @@ phase.
       BuildStore).
 - [ ] P6/P8 : appliquer le conditionnel Android (ADR-015) à l'arrivée
       du premier module Android, avec JOIDE_SKIP_ANDROID.
-- [ ] P8 : réactiver la parité values/values-fr dans le script de
+- [x] P8 : réactiver la parité values/values-fr dans le script de
       langue (ADR-012) au premier module UI.
+      FERMÉE par le lot G (ADR-048) : contrôle n° 5 du script
+      (même ensemble de clés, fixtures et test dans tools-test),
+      values/ en anglais par défaut, values-fr/ en français.
 - [ ] Bench : surveiller le coût des tests TestKit ; si instabilité,
       bug à corriger, pas à relancer (§9 du prompt).
 - [ ] Bench : valider la comparaison temporelle (regressionTest S/M) sur

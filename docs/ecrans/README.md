@@ -31,4 +31,4 @@ Révision du 2026-11-16 : le propriétaire rouvre le sujet IA (mandat :
 « Étendre l'analyse pour les fonctionnalités de AI — pour l'IA tu dois regarder le
 code »). L'ADR-É9 analyse le code de l'agent de CodeAssist ; l'ADR-É10 propose le
 plan des lots d'implémentation (UI v2 G-M, agent IA N-R) avec ses questions D-1 à
-D-9 au propriétaire. L'implémentation attend son GO.
+D-9 au propriétaire. GO du 2026-11-16 : « je te dis GO », D-5 tranchée OkHttp — l'ADR-É10 est acceptée. Le lot G (système de design Graphite en code, ADR-048) est livré : jetons sombre/clair, kit de composants en vues du cadre, écran d'exercice, parité de langue values/values-fr activée.

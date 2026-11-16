@@ -15,8 +15,7 @@
 | P7 | Import/export Gradle : import statique (sans exécution), SyncReport sans ignorance silencieuse, export d'échappatoire | `import-gradle` | **Validée** (GO du 2026-11-16) | `PHASE-P7-RAPPORT.md` |
 | P8 | IDE : application Android (services de premier plan, UI), intégration celeris / code-lsp / LayoutLib derrière interfaces | `app-android`, `ide-integration` | **Livrée** — arrêt pour validation | `PHASE-P8-RAPPORT.md` |
 | P9+ | Passage à l'échelle mesuré sur machine de référence, benches L/XL, révisions reportées (ADR-027) | — | Backlog | `docs/backlog.md` |
-| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : découpage en lots G-R, jalons et questions au propriétaire | — | **En planification** (ADR-É10, GO attendu) | `docs/ecrans/010-plan-lots.md` |
-| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : découpage en lots G-R, jalons et questions au propriétaire | — | **En planification** (ADR-É10, GO attendu) | `docs/ecrans/010-plan-lots.md` |
+| V2 | UI v2 (ADR-É1 à É8) + agent IA (ADR-É9) : lots G-R (ADR-É10 acceptée, D-5 : OkHttp) | `app-android` (lot G : `ui/`, `ecrans/`) | **En cours** — lot G livré, suite H-R | `docs/ecrans/010-plan-lots.md` |
 
 ## Règles de passage
 

@@ -25,6 +25,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jo.joide.app.android.ecrans.exercice.EcranExercice;
+import jo.joide.app.android.ui.Bouton;
+import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.choix.ChoixBouton;
 import jo.joide.build.daemon.client.DaemonClient;
 import jo.joide.build.daemon.protocol.BuildSpec;
 import jo.joide.build.daemon.runner.BuildRunner;
@@ -108,6 +112,7 @@ public final class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        GraphiteVue.fondEcran(this, GraphiteVue.palette(this));
         setContentView(construireUi());
     }
 
@@ -197,6 +202,19 @@ public final class MainActivity extends Activity {
         racine.addView(zoneConsole,
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        // Lot G (ADR-048) : entrée discrète vers l'écran d'exercice du
+        // kit — TEMPORAIRE, retirée quand le lot H remplace l'ouverture
+        // par l'accueil « Mes projets ». Aucune navigation n'est câblée
+        // au lot G au-delà de ce bouton.
+        Bouton kit = new Bouton(this);
+        kit.setVariante(ChoixBouton.Variante.TEXTE);
+        kit.setTexte(R.string.kit_graphique);
+        kit.setOnClickListener(v -> startActivity(
+                new Intent(this, EcranExercice.class)));
+        racine.addView(kit, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         return racine;
     }
 
