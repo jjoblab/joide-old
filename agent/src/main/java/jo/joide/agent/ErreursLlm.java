@@ -69,12 +69,27 @@ public final class ErreursLlm {
         public final Genre genre;
         /** Le délai de reprise en secondes, ou -1 (aucun énoncé). */
         public final long delaiSecondes;
+        /**
+         * Le quota ÉNONCÉ par le fournisseur (révision N/O pour le
+         * lot Q : le régulateur apprend des limites énoncées), ou
+         * null — additif, jamais exigé des tests existants.
+         * Transient (l'erreur se reclasse toujours, la sérialisation
+         * ne la traverse pas).
+         */
+        public final transient QuotaFournisseur quota;
 
         /** @param genre le genre @param message le diagnostic (anglais) @param delaiSecondes le délai énoncé ou -1 */
         public ErreurLlm(Genre genre, String message, long delaiSecondes) {
+            this(genre, message, delaiSecondes, null);
+        }
+
+        /** @param genre le genre @param message le diagnostic @param delaiSecondes le délai énoncé ou -1 @param quota le quota énoncé ou null */
+        public ErreurLlm(Genre genre, String message, long delaiSecondes,
+                         QuotaFournisseur quota) {
             super(message);
             this.genre = genre;
             this.delaiSecondes = delaiSecondes;
+            this.quota = quota;
         }
     }
 
@@ -121,17 +136,30 @@ public final class ErreursLlm {
                                 + "the conversation and retry", -1);
             case 429: {
                 // le code gagne : 429 = transitoire ; le wording
-                // raffine : quota du jour ? crédit ? délai énoncé ?
+                // raffine : quota du jour ? plafond zéro (hors plan) ?
+                // crédit ? délai énoncé ? — le raffinement des quotas
+                // porte la métrique et la fenêtre au régulateur (lot Q)
                 String bas = texte.toLowerCase(Locale.ROOT);
+                if (QuotaFournisseur.plafondZero(texte)) {
+                    // le cas d'école de l'ADR-É9 : plafond zéro = le
+                    // modèle n'est pas dans le plan de la clé —
+                    // retenter ne sert à rien, changer de clé oui
+                    return new ErreurLlm(Genre.QUOTA_EPUISE,
+                            "quota is 0 for this model on this key "
+                                    + "(429): the key's plan does not "
+                                    + "include it — use another model "
+                                    + "or key", -1);
+                }
                 if (bas.contains("daily") || bas.contains("per day")
                         || bas.contains("until tomorrow")) {
                     return new ErreurLlm(Genre.LIMITE_JOUR,
                             "daily limit reached (429): wait for the "
-                                    + "daily window to reset", -1);
+                                    + "daily window to reset", -1,
+                            QuotaFournisseur.raffiner(texte));
                 }
                 if (bas.contains("credit") || bas.contains("billing")
-                        || bas.contains("quota exceeded")
-                        && !bas.contains("rate")) {
+                        || (bas.contains("quota exceeded")
+                        && !bas.contains("rate"))) {
                     return new ErreurLlm(Genre.QUOTA_EPUISE,
                             "billing limit reached (429): the account "
                                     + "cannot pay this request", -1);
@@ -143,7 +171,7 @@ public final class ErreursLlm {
                         "rate limited (429): wait "
                                 + (delai >= 0 ? delai + "s"
                                 : "the announced delay") + " then retry",
-                        delai);
+                        delai, QuotaFournisseur.raffiner(texte));
             }
             case 500:
             case 502:

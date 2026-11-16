@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.ParseurSseTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.732Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.012">
+<testsuite name="jo.joide.agent.ParseurSseTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-16T15:37:39.022Z" hostname="c-6afb1a3d-140d72b5-29f8ed445f82" time="0.023">
   <properties/>
   <testcase name="uneTrameSimpleAvecEvenementEtDonnees()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <testcase name="unFluxVideNeDonneAucuneTrame()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <testcase name="lesDonneesMultiLignesSeConcatenentAvecSaut()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
-  <testcase name="lesMajusculesEtEspacesDesChampsSontToleres()" classname="jo.joide.agent.ParseurSseTest" time="0.0"/>
+  <testcase name="lesMajusculesEtEspacesDesChampsSontToleres()" classname="jo.joide.agent.ParseurSseTest" time="0.005"/>
   <testcase name="uneFinSansLigneVideLivrelaDerniereTrame()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <testcase name="plusieursTramesDansLOrdre()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <testcase name="lesCommentairesSontIgnoresJamaisUneErreur()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
-  <testcase name="lesLignesSansDeuxPointsSontDesChampsSansValeur()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
+  <testcase name="lesLignesSansDeuxPointsSontDesChampsSansValeur()" classname="jo.joide.agent.ParseurSseTest" time="0.0"/>
   <testcase name="lesHeadersSseReelsDOpenAiSeParsent()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <testcase name="lesTramesAnthropiquesSeParsent()" classname="jo.joide.agent.ParseurSseTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

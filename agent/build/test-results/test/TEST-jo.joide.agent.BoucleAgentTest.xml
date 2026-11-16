@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.BoucleAgentTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.514Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.075">
+<testsuite name="jo.joide.agent.BoucleAgentTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-16T15:37:38.758Z" hostname="c-6afb1a3d-140d72b5-29f8ed445f82" time="0.071">
   <properties/>
-  <testcase name="leGateRefuseEtLeDefautEstSur()" classname="jo.joide.agent.BoucleAgentTest" time="0.005"/>
-  <testcase name="leGateAccordeEtLeDiffEstPasseALaDemande()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
+  <testcase name="leGateRefuseEtLeDefautEstSur()" classname="jo.joide.agent.BoucleAgentTest" time="0.004"/>
+  <testcase name="leGateAccordeEtLeDiffEstPasseALaDemande()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
   <testcase name="lePlafondDiterationsTermineEnPassationSansOutils()" classname="jo.joide.agent.BoucleAgentTest" time="0.006"/>
-  <testcase name="laReparationAvantLeTourApparieLesAppelsInterrompus()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
+  <testcase name="laReparationAvantLeTourApparieLesAppelsInterrompus()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
   <testcase name="leModePlanSeulRefuseLesEcrituresAvecUnResultatQuiLeDit()" classname="jo.joide.agent.BoucleAgentTest" time="0.005"/>
-  <testcase name="lordreDesResultatsSuitLordreDesAppelsDuModele()" classname="jo.joide.agent.BoucleAgentTest" time="0.004"/>
-  <testcase name="apresLeMaximumDattentesLErreurFinitLeTourEnLeDisant()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
-  <testcase name="lesLecturesSontParallelesLesMutationsEnSequence()" classname="jo.joide.agent.BoucleAgentTest" time="0.038"/>
-  <testcase name="lusageSommeToutesLesRequetesDuTour()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
-  <testcase name="laLimiteDeDebitSePatienteVisiblementPuisReussit()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
-  <testcase name="lePrefixeEstStableAuFilDeLaBoucleDoutils()" classname="jo.joide.agent.BoucleAgentTest" time="0.003"/>
-  <testcase name="unTourAvecOutilsJugeLEtatFinal()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
+  <testcase name="lordreDesResultatsSuitLordreDesAppelsDuModele()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
+  <testcase name="apresLeMaximumDattentesLErreurFinitLeTourEnLeDisant()" classname="jo.joide.agent.BoucleAgentTest" time="0.002"/>
+  <testcase name="lesLecturesSontParallelesLesMutationsEnSequence()" classname="jo.joide.agent.BoucleAgentTest" time="0.027"/>
+  <testcase name="lusageSommeToutesLesRequetesDuTour()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
+  <testcase name="laLimiteDeDebitSePatienteVisiblementPuisReussit()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
+  <testcase name="lePrefixeEstStableAuFilDeLaBoucleDoutils()" classname="jo.joide.agent.BoucleAgentTest" time="0.005"/>
+  <testcase name="unTourAvecOutilsJugeLEtatFinal()" classname="jo.joide.agent.BoucleAgentTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

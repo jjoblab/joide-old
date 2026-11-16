@@ -2,6 +2,7 @@ package jo.joide.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -130,5 +131,66 @@ class ErreursLlmTest {
                 .filter(g -> g.retentable).count();
         assertEquals(4, retentables,
                 "réseau, délai, débit, 5xx — et c'est tout");
+    }
+
+    // ---- Révision N/O (lot Q) : les quotas énoncés voyagent ----
+
+    @Test
+    void leCasDEcoleGeminiPlafondZeroEstHorsPlan() {
+        // ADR-É9 : un 429 gratuit de Gemini annonce un plafond zéro —
+        // le modèle n'est pas dans le plan de la clé ; retenter ne
+        // sert à rien, CHANGER DE CLÉ oui (la bascule du lot Q
+        // tournera sur QUOTA_EPUISE)
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(429,
+                Map.of(),
+                "Rate limit exceeded. Limit: 0 requests per minute. "
+                        + "Please retry in 21s.");
+        assertEquals(ErreursLlm.Genre.QUOTA_EPUISE, erreur.genre);
+        assertTrue(erreur.getMessage().contains("use another model"),
+                "le message dit quoi faire : modèle ou clé");
+    }
+
+    @Test
+    void un429JetonsParMinutePorteLeQuotaAuRegulateur() {
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(429,
+                Map.of(),
+                "Resource has been exhausted (e.g. check quota). "
+                        + "Tokens per minute limit: 250000");
+        assertEquals(ErreursLlm.Genre.LIMITE_DEBIT, erreur.genre);
+        assertEquals(QuotaFournisseur.Metrique.JETONS_ENTREE,
+                erreur.quota.metrique);
+        assertEquals(QuotaFournisseur.Fenetre.MINUTE,
+                erreur.quota.fenetre);
+        assertEquals(250000, erreur.quota.limite,
+                "la limite énoncée devient la borne apprise");
+    }
+
+    @Test
+    void un429RequetesParMinutePorteLaMetriqueRequetes() {
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(429,
+                Map.of(), "Requests per minute limit: 15 reached");
+        assertEquals(QuotaFournisseur.Metrique.REQUETES,
+                erreur.quota.metrique);
+        assertEquals(15, erreur.quota.limite);
+    }
+
+    @Test
+    void un429SansWordingClassablePorteUnQuotaNull() {
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(429,
+                Map.of(), "slow down");
+        assertEquals(ErreursLlm.Genre.LIMITE_DEBIT, erreur.genre);
+        assertNull(erreur.quota, "pas de wording classable : pas de quota énoncé");
+    }
+
+    @Test
+    void leWordingFacturationRaffineMaisLe429ResteDebitSansCredit() {
+        // la précédence explicite : « quota exceeded » ne gagne que
+        // sans « rate » — un 429 rate limit qui cite le crédit reste
+        // transitoire
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(429,
+                Map.of(),
+                "rate limit hit: quota exceeded for requests per minute");
+        assertEquals(ErreursLlm.Genre.LIMITE_DEBIT, erreur.genre);
+        assertTrue(erreur.genre.retentable);
     }
 }
