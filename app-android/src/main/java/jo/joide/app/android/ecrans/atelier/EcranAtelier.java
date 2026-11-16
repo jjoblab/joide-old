@@ -62,6 +62,7 @@ import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Icone;
 import jo.joide.app.android.ui.Onglets;
 import jo.joide.app.android.ui.Pilule;
+import jo.joide.app.android.ui.PopupAncre;
 import jo.joide.app.android.ui.Puce;
 import jo.joide.app.android.ui.TiroirPousse;
 import jo.joide.app.android.ui.choix.ChoixBouton;
@@ -1403,8 +1404,11 @@ public final class EcranAtelier extends Activity {
     // sait faire (caméra présente, fichier actif ouvert).
     // ------------------------------------------------------------------
 
-    /** Le menu + du composeur : chaque entrée est câblée, jamais morte. */
+    /** Le menu + ancré à son bouton (lot T) : chaque entrée est câblée, jamais morte. */
     private void ouvrirAjoutsAgent() {
+        if (vueAgent == null) {
+            return;
+        }
         List<CharSequence> elements = new ArrayList<>();
         List<Integer> actions = new ArrayList<>();
         elements.add(getString(R.string.agent_ajouter_image));
@@ -1421,21 +1425,34 @@ public final class EcranAtelier extends Activity {
         }
         elements.add(getString(R.string.agent_ajouter_projet));
         actions.add(3);
-        Dialogue.menu(this, palette,
-                getString(R.string.agent_ajouter),
-                elements.toArray(new CharSequence[0]),
-                (dialog, lequel) -> {
-                    int action = actions.get(lequel);
-                    if (action == 0) {
-                        choisirImageAgent();
-                    } else if (action == 1) {
-                        prendrePhotoAgent();
-                    } else if (action == 2) {
-                        joindreFichierCourant();
-                    } else if (action == 3) {
-                        joindreProjet();
-                    }
-                });
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        android.widget.PopupWindow[] fenetre = new android.widget
+                .PopupWindow[1];
+        Runnable fermer = () -> {
+            if (fenetre[0] != null) {
+                fenetre[0].dismiss();
+            }
+        };
+        for (int i = 0; i < elements.size(); i++) {
+            CharSequence nom = elements.get(i);
+            int action = actions.get(i);
+            colonne.addView(PopupAncre.ligneMenu(this, palette, nom,
+                    () -> {
+                        fermer.run();
+                        if (action == 0) {
+                            choisirImageAgent();
+                        } else if (action == 1) {
+                            prendrePhotoAgent();
+                        } else if (action == 2) {
+                            joindreFichierCourant();
+                        } else {
+                            joindreProjet();
+                        }
+                    }));
+        }
+        fenetre[0] = PopupAncre.montrer(vueAgent.ancreAjouter(),
+                palette, colonne, 240);
     }
 
     /** Le choix d'une image : SAF, lecture bornée, réduction. */
@@ -1587,29 +1604,47 @@ public final class EcranAtelier extends Activity {
     // n'annonce que les actions câblées.
     // ------------------------------------------------------------------
 
-    /** Le menu ⋯ du tiroir : chaque entrée est câblée, jamais morte. */
+    /** Le menu ⋯ ancré à son icône (lot T) : chaque entrée est câblée, jamais morte. */
     private void ouvrirMenuAgentOptions() {
-        Dialogue.menu(this, palette,
-                getString(R.string.agent_menu_titre),
-                new CharSequence[]{
-                        getString(R.string.agent_menu_nouvelle),
-                        getString(R.string.agent_menu_historique),
-                        getString(R.string.agent_modele_titre),
-                        getString(R.string.agent_connexions_titre),
-                        getString(R.string.agent_usages_titre)},
-                (dialog, lequel) -> {
-                    if (lequel == 0) {
-                        nouvelleConversationAgent();
-                    } else if (lequel == 1) {
-                        ouvrirHistoriqueAgent();
-                    } else if (lequel == 2) {
-                        ouvrirModeleAgent();
-                    } else if (lequel == 3) {
-                        ouvrirConnexionsAgent();
-                    } else if (lequel == 4) {
-                        ouvrirUsagesAgent();
-                    }
-                });
+        if (vueAgent == null) {
+            return;
+        }
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        android.widget.PopupWindow[] fenetre = new android.widget
+                .PopupWindow[1];
+        Runnable fermer = () -> {
+            if (fenetre[0] != null) {
+                fenetre[0].dismiss();
+            }
+        };
+        colonne.addView(PopupAncre.ligneMenu(this, palette,
+                getString(R.string.agent_menu_nouvelle), () -> {
+                    fermer.run();
+                    nouvelleConversationAgent();
+                }));
+        colonne.addView(PopupAncre.ligneMenu(this, palette,
+                getString(R.string.agent_menu_historique), () -> {
+                    fermer.run();
+                    ouvrirHistoriqueAgent();
+                }));
+        colonne.addView(PopupAncre.ligneMenu(this, palette,
+                getString(R.string.agent_modele_titre), () -> {
+                    fermer.run();
+                    ouvrirModeleAgent();
+                }));
+        colonne.addView(PopupAncre.ligneMenu(this, palette,
+                getString(R.string.agent_connexions_titre), () -> {
+                    fermer.run();
+                    ouvrirConnexionsAgent();
+                }));
+        colonne.addView(PopupAncre.ligneMenu(this, palette,
+                getString(R.string.agent_usages_titre), () -> {
+                    fermer.run();
+                    ouvrirUsagesAgent();
+                }));
+        fenetre[0] = PopupAncre.montrer(vueAgent.ancreMenu(), palette,
+                colonne, 220);
     }
 
     /**
@@ -1713,9 +1748,12 @@ public final class EcranAtelier extends Activity {
         defilement.addView(corps, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
-        Dialogue.saisieTexte(this, palette,
-                getString(R.string.agent_connexions_titre), defilement,
-                R.string.action_ok, null);
+        // le popup ancré (lot T) : l'écran Connexions vit près du menu
+        // qui l'appelle, jamais un dialogue centré qui coupe le fil
+        if (vueAgent != null) {
+            PopupAncre.montrer(vueAgent.ancreMenu(), palette,
+                    defilement, 320);
+        }
     }
 
     /** Une ligne de serveur MCP : nom, état, motif, reconnexion. */
@@ -2084,9 +2122,12 @@ public final class EcranAtelier extends Activity {
             colonne.addView(ligneConversation(resume,
                     resume.id.equals(active), formatDate, formatHeure));
         }
-        Dialogue.saisieTexte(this, palette,
-                getString(R.string.agent_historique_titre), defilement,
-                R.string.action_ok, null);
+        // le popup ancré (lot T) : l'historique vit près du menu qui
+        // l'appelle, jamais un dialogue centré qui coupe le fil
+        if (vueAgent != null) {
+            PopupAncre.montrer(vueAgent.ancreMenu(), palette,
+                    defilement, 320);
+        }
     }
 
     /** Une ligne de l'historique : titre, méta, la courante marquée. */

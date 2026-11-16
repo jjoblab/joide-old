@@ -557,6 +557,11 @@ public final class EtatAgentChat {
     }
 
     private void fermerCartesOuvertes() {
+        // la réflexion SE REPLIE quand le tour passe à autre chose
+        // (lot T, la manière CodeAssist) — le tap la rouvre
+        if (raisonnementCourant != null) {
+            raisonnementCourant.deplie = false;
+        }
         reponseCourante = null;
         raisonnementCourant = null;
     }

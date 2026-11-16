@@ -15,6 +15,7 @@ import android.widget.TextView;
 import java.util.List;
 
 import jo.joide.agent.Permissions;
+import jo.joide.agent.UsageLlm;
 import jo.joide.app.android.R;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Champ;
@@ -95,6 +96,14 @@ public final class VueAgent extends LinearLayout {
     private final Bouton arreter;
     private final Puce puceModele;
     private final Puce puceMode;
+    private final Icone vueMenu;
+    private final Icone vueAjouter;
+    private final LinearLayout ligneActivite;
+    private final TextView texteActivite;
+    private final TextView tempsActivite;
+    private final android.os.Handler horloge = new android.os.Handler(
+            android.os.Looper.getMainLooper());
+    private Long debutEnCours;
     private Auditeur auditeur;
     private EtatAgentChat etat = new EtatAgentChat();
     private List<String> pieces = List.of();
@@ -131,7 +140,8 @@ public final class VueAgent extends LinearLayout {
         puceMode = new Puce(contexte);
         puceMode.setOnClickListener(vue -> auditeurMode());
         tete.addView(puceMode, margeParams(contexte));
-        Icone menu = new Icone(contexte);
+        vueMenu = new Icone(contexte);
+        Icone menu = vueMenu;
         menu.setGlyphe(Icone.Glyphe.POINTS);
         menu.setCouleur(palette.texte);
         menu.setClickable(true);
@@ -189,7 +199,8 @@ public final class VueAgent extends LinearLayout {
         LinearLayout rangee = new LinearLayout(contexte);
         rangee.setOrientation(LinearLayout.HORIZONTAL);
         rangee.setGravity(Gravity.BOTTOM);
-        Icone ajouter = new Icone(contexte);
+        vueAjouter = new Icone(contexte);
+        Icone ajouter = vueAjouter;
         ajouter.setGlyphe(Icone.Glyphe.PLUS);
         ajouter.setCouleur(palette.texteSecondaire);
         ajouter.setClickable(true);
@@ -255,6 +266,39 @@ public final class VueAgent extends LinearLayout {
         addView(composeur, new LinearLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        // ---- ligne d'activité (lot T, la manière CodeAssist) : le
+        // tour qui tourne dit ce qu'il fait et depuis combien de temps
+        ligneActivite = new LinearLayout(contexte);
+        ligneActivite.setOrientation(LinearLayout.HORIZONTAL);
+        ligneActivite.setGravity(Gravity.CENTER_VERTICAL);
+        ligneActivite.setPadding(marge, GraphiteVue.dp(contexte, 6),
+                marge, 0);
+        ligneActivite.setVisibility(GONE);
+        View pointVivant = new View(contexte);
+        pointVivant.setBackground(cercle(contexte, palette.accent));
+        LinearLayout.LayoutParams paramsPoint = new LinearLayout
+                .LayoutParams(GraphiteVue.dp(contexte, 7),
+                GraphiteVue.dp(contexte, 7));
+        paramsPoint.rightMargin = GraphiteVue.dp(contexte, 8);
+        ligneActivite.addView(pointVivant, paramsPoint);
+        texteActivite = new TextView(contexte);
+        GraphiteVue.typographie(texteActivite, Graphite.LEGENDE);
+        texteActivite.setTextColor(palette.texte);
+        texteActivite.setSingleLine(true);
+        texteActivite.setEllipsize(android.text.TextUtils
+                .TruncateAt.END);
+        ligneActivite.addView(texteActivite, new LinearLayout
+                .LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
+        tempsActivite = new TextView(contexte);
+        GraphiteVue.typographie(tempsActivite, Graphite.LEGENDE);
+        tempsActivite.setTextColor(palette.texteEstompe);
+        ligneActivite.addView(tempsActivite, new LinearLayout
+                .LayoutParams(LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT));
+        addView(ligneActivite, new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     /**
@@ -264,6 +308,21 @@ public final class VueAgent extends LinearLayout {
      */
     public void poserAuditeur(Auditeur auditeur) {
         this.auditeur = auditeur;
+    }
+
+    /** L'ancre du menu ⋯ (les popups ancrés, lot T). */
+    public View ancreMenu() {
+        return vueMenu;
+    }
+
+    /** L'ancre du bouton + du composeur (les popups ancrés, lot T). */
+    public View ancreAjouter() {
+        return vueAjouter;
+    }
+
+    /** L'ancre de la puce modèle (le sélecteur ancré, lot T). */
+    public View ancreModele() {
+        return puceModele;
     }
 
     /**
@@ -354,6 +413,7 @@ public final class VueAgent extends LinearLayout {
         envoyer.setEnabled(!enCours);
         envoyer.setVisibility(enCours ? GONE : VISIBLE);
         arreter.setVisibility(enCours ? VISIBLE : GONE);
+        majLigneActivite(enCours);
         if (etat.preRemplissage() != null) {
             saisie.setText(etat.preRemplissage());
         }
@@ -430,36 +490,72 @@ public final class VueAgent extends LinearLayout {
 
     private View carteRaisonnement(Carte carte) {
         Context contexte = getContext();
+        // la manière CodeAssist (lot T) : la réflexion OUVERTE tant
+        // que le tour vit (il se passe quelque chose à regarder),
+        // repliée à une ligne quand il est fini — le tap rouvre.
+        boolean vivant = etat.etat() == TourEtat.EN_COURS
+                && estDernierRaisonnement(carte);
+        boolean ouverte = carte.deplie || vivant;
         LinearLayout bloc = new LinearLayout(contexte);
         bloc.setOrientation(LinearLayout.VERTICAL);
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
-        fond.setColor(palette.surface);
+        if (ouverte) {
+            fond.setColor(palette.surface);
+            fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
+        } else {
+            fond.setColor(android.graphics.Color.TRANSPARENT);
+        }
         fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
-        fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
         bloc.setBackground(fond);
+        int horizontal = GraphiteVue.dp(contexte, ouverte ? 11 : 2);
+        bloc.setPadding(horizontal, GraphiteVue.dp(contexte, ouverte ? 7 : 2),
+                horizontal, GraphiteVue.dp(contexte, ouverte ? 8 : 2));
+        LinearLayout entete = new LinearLayout(contexte);
+        entete.setOrientation(LinearLayout.HORIZONTAL);
+        entete.setGravity(Gravity.CENTER_VERTICAL);
+        if (vivant) {
+            // le point qui dit « ça réfléchit » (l'accent du tiroir)
+            View point = new View(contexte);
+            point.setBackground(cercle(contexte, palette.accent));
+            LinearLayout.LayoutParams paramsPoint = new LinearLayout
+                    .LayoutParams(GraphiteVue.dp(contexte, 6),
+                    GraphiteVue.dp(contexte, 6));
+            paramsPoint.rightMargin = GraphiteVue.dp(contexte, 7);
+            entete.addView(point, paramsPoint);
+        }
         TextView plis = new TextView(contexte);
         GraphiteVue.typographie(plis, Graphite.LEGENDE);
-        plis.setTextColor(palette.texteEstompe);
-        plis.setText(getContext().getString(
-                R.string.agent_raisonnement, carte.lignesRaisonnement));
-        plis.setPadding(GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 8),
-                GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 8));
-        plis.setOnClickListener(vue -> {
-            carte.deplie = !carte.deplie;
+        plis.setTextColor(vivant ? palette.accent
+                : palette.texteEstompe);
+        plis.setText(getContext().getString(vivant
+                ? R.string.agent_raisonnement_vivant
+                : R.string.agent_raisonnement,
+                carte.lignesRaisonnement));
+        plis.setSingleLine(true);
+        plis.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        // le chevron suit l'état (la rotation du précédent CodeAssist)
+        Icone chevron = new Icone(contexte);
+        chevron.setGlyphe(Icone.Glyphe.CHEVRON);
+        chevron.setCouleur(palette.texteEstompe);
+        chevron.setTraitDp(1.6f);
+        chevron.setRotation(ouverte ? 180f : 0f);
+        entete.setOnClickListener(vue -> {
+            carte.deplie = !ouverte;
             rafraichir();
         });
-        bloc.addView(plis);
-        if (carte.deplie) {
+        entete.addView(plis, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        entete.addView(chevron, new LinearLayout.LayoutParams(
+                GraphiteVue.dp(contexte, 16),
+                GraphiteVue.dp(contexte, 16)));
+        bloc.addView(entete);
+        if (ouverte && carte.raisonnement.length() > 0) {
             TextView texte = new TextView(contexte);
             GraphiteVue.typographie(texte, Graphite.LEGENDE);
             texte.setTextColor(palette.texteSecondaire);
             texte.setText(carte.raisonnement.toString());
-            texte.setPadding(GraphiteVue.dp(contexte, 11), 0,
-                    GraphiteVue.dp(contexte, 11),
-                    GraphiteVue.dp(contexte, 9));
+            texte.setPadding(0, GraphiteVue.dp(contexte, 6), 0, 0);
             bloc.addView(texte);
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
@@ -572,15 +668,57 @@ public final class VueAgent extends LinearLayout {
 
     private View carteUsage(Carte carte) {
         Context contexte = getContext();
+        // la légende discrète de fin de tour (la manière CodeAssist) :
+        // les jetons compacts (« 940 », « 8.4k », « 1.2M »), la ligne
+        // qui monte tendance sans prendre la place
         TextView vue = new TextView(contexte);
         GraphiteVue.typographie(vue, Graphite.LEGENDE);
         vue.setTextColor(palette.texteEstompe);
-        vue.setText(contexte.getString(R.string.agent_usage,
-                carte.usage.entrees, carte.usage.sorties,
-                carte.usage.lecturesCache, carte.requetes));
+        vue.setMaxLines(1);
+        vue.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        UsageLlm u = carte.usage;
+        StringBuilder ligne = new StringBuilder();
+        if (u.entrees > 0) {
+            ligne.append(jetonsCompacts(u.entrees)).append(' ')
+                    .append(contexte.getString(R.string.agent_usage_entrees));
+        }
+        if (u.sorties > 0) {
+            if (ligne.length() > 0) {
+                ligne.append(" · ");
+            }
+            ligne.append(jetonsCompacts(u.sorties)).append(' ')
+                    .append(contexte.getString(R.string.agent_usage_sorties));
+        }
+        if (u.lecturesCache > 0) {
+            if (ligne.length() > 0) {
+                ligne.append(" · ");
+            }
+            ligne.append(jetonsCompacts(u.lecturesCache)).append(' ')
+                    .append(contexte.getString(R.string.agent_usage_cache));
+        }
+        if (ligne.length() == 0) {
+            ligne.append(contexte.getString(R.string.agent_usage_requete,
+                    carte.requetes));
+        } else if (carte.requetes > 0) {
+            ligne.append(" · ")
+                    .append(contexte.getString(R.string.agent_usage_requete,
+                            carte.requetes));
+        }
+        vue.setText(ligne);
         vue.setPadding(0, GraphiteVue.dp(contexte, 2), 0,
                 GraphiteVue.dp(contexte, 2));
         return vue;
+    }
+
+    /** Les jetons compacts (« 940 », « 8.4k », « 1.2M ») du pied. */
+    private static String jetonsCompacts(long n) {
+        if (n < 1_000) {
+            return String.valueOf(n);
+        }
+        if (n < 1_000_000) {
+            return (n / 1_000) + "." + (n % 1_000) / 100 + "k";
+        }
+        return (n / 1_000_000) + "." + (n % 1_000_000) / 100_000 + "M";
     }
 
     private View carteErreur(Carte carte) {
@@ -791,6 +929,94 @@ public final class VueAgent extends LinearLayout {
         rond.setShape(android.graphics.drawable.GradientDrawable.OVAL);
         rond.setColor(couleur);
         return rond;
+    }
+
+    /** Vrai si cette carte est le dernier raisonnement du transcript. */
+    private boolean estDernierRaisonnement(Carte carte) {
+        List<Carte> cartes = etat.cartes();
+        for (int i = cartes.size() - 1; i >= 0; i--) {
+            Carte c = cartes.get(i);
+            if (c.genre == Genre.RAISONNEMENT) {
+                return c == carte;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * La ligne d'activité (lot T, la manière CodeAssist) : le tour qui
+     * tourne annonce ce qu'il fait — réflexion, outil, rédaction — et
+     * depuis combien de temps, si un pas long ne lit jamais un blocage.
+     */
+    private void majLigneActivite(boolean enCours) {
+        if (!enCours) {
+            horloge.removeCallbacks(tic);
+            debutEnCours = null;
+            ligneActivite.setVisibility(GONE);
+            return;
+        }
+        if (debutEnCours == null) {
+            debutEnCours = android.os.SystemClock
+                    .elapsedRealtime();
+        }
+        texteActivite.setText(labelActivite());
+        ligneActivite.setVisibility(VISIBLE);
+        horloge.removeCallbacks(tic);
+        horloge.postDelayed(tic, 1000);
+    }
+
+    /** Le pas d'une seconde : l'écart du tour se met à jour tout seul. */
+    private final Runnable tic = new Runnable() {
+        @Override
+        public void run() {
+            if (debutEnCours == null) {
+                return;
+            }
+            tempsActivite.setText(texteEcart());
+            horloge.postDelayed(tic, 1000);
+        }
+    };
+
+    /** L'écart lisible : « 12 s », puis « 1 min 05 ». */
+    private String texteEcart() {
+        long secondes = (android.os.SystemClock.elapsedRealtime()
+                - debutEnCours) / 1000;
+        if (secondes < 60) {
+            return getContext().getString(R.string.agent_ecart_secondes,
+                    (int) secondes);
+        }
+        return getContext().getString(R.string.agent_ecart_minutes,
+                (int) (secondes / 60), (int) (secondes % 60));
+    }
+
+    /**
+     * Ce que le tour fait, lu du transcript (la vue ne déduit rien :
+     * elle lit les cartes posées par le service) — le dernier pas
+     * parle : outil en cours, rédaction, sinon réflexion.
+     */
+    private String labelActivite() {
+        List<Carte> cartes = etat.cartes();
+        for (int i = cartes.size() - 1; i >= 0; i--) {
+            Carte c = cartes.get(i);
+            if (c.genre == Genre.OUTIL
+                    && c.etatOutil == EtatOutil.EN_COURS) {
+                return getContext().getString(
+                        R.string.agent_activite_outil, c.outil);
+            }
+            if (c.genre == Genre.ATTENTE) {
+                return getContext().getString(R.string.agent_attente,
+                        c.secondes);
+            }
+            if (c.genre == Genre.REPONSE) {
+                return getContext()
+                        .getString(R.string.agent_activite_redaction);
+            }
+            if (c.genre == Genre.RAISONNEMENT) {
+                return getContext()
+                        .getString(R.string.agent_activite_reflexion);
+            }
+        }
+        return getContext().getString(R.string.agent_activite_reflexion);
     }
 
     private static LinearLayout.LayoutParams margeParams(
