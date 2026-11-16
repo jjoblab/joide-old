@@ -58,7 +58,12 @@ class ModuleGraphFileTest {
         expected.put("ide-integration",
                 Set.of("core-model", "build-daemon", "agent",
                         "core-store"));
-        expected.put("app-android", Set.of("build-daemon", "ide-integration"));
+        // Lot U (ADR-066) : l'arête app-android -> build-android porte
+        // UNIQUEMENT les outils embarqués (configuration toolsApi) —
+        // D8/R8, apksig et bundletool vivent DANS l'APK pour que le
+        // build Android tourne sur l'appareil. Aucune autre brique.
+        expected.put("app-android",
+                Set.of("build-daemon", "ide-integration", "build-android"));
         return expected;
     }
 

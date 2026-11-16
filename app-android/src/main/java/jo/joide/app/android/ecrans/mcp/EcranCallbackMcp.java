@@ -16,10 +16,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import jo.joide.app.android.AgentService;
-import jo.joide.app.android.Graphite;
-import jo.joide.app.android.GraphiteVue;
 import jo.joide.app.android.R;
 import jo.joide.app.android.ui.Bouton;
+import jo.joide.app.android.ui.Graphite;
+import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.choix.ChoixBouton;
 
 /**

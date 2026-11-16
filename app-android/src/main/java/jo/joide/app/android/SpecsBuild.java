@@ -103,6 +103,55 @@ public final class SpecsBuild {
     }
 
     /**
+     * Constitue la description du build JVM du workspace — la route
+     * JVM reste la voie des workspaces sans module Android (le
+     * moteur build-jvm tourne sur l'appareil depuis P8).
+     *
+     * @param workspace modèle du workspace (core-model)
+     * @param externals dépendances externes résolues (sync)
+     * @param projet    racine du projet sur le disque
+     * @param sorties   répertoire des sorties du build
+     * @param m2        racine du cache des externes (jars)
+     * @return la constitution (spec ou écarts, jamais null)
+     */
+    public static Constitution jvm(Workspace workspace,
+                                   ExternalResolution externals,
+                                   Path projet, Path sorties, Path m2) {
+        List<String> ecarts = new ArrayList<>();
+        List<BuildSpec.ModuleSpec> modules = new ArrayList<>();
+        for (Module module : workspace.allModules().values()) {
+            String type = module.type().id();
+            if ("android-library".equals(type)
+                    || "android-application".equals(type)) {
+                // garde-fou : un module Android ici est une rupture de
+                // routage (constituer doit ouvrir la route android)
+                ecarts.add(module.path()
+                        + " : module Android sur la route JVM"
+                        + " (route android attendue)");
+                continue;
+            }
+            if (!"jvm-library".equals(type)) {
+                ecarts.add(module.path()
+                        + " : type de module non construit ("
+                        + type + ")");
+                continue;
+            }
+            modules.add(moduleJvm(module, externals, ecarts));
+        }
+        if (modules.isEmpty()) {
+            if (ecarts.isEmpty()) {
+                ecarts.add("aucun module dans le workspace");
+            }
+            return new Constitution(null, ecarts);
+        }
+        BuildSpec spec = new BuildSpec(BuildSpec.Kind.JVM,
+                projet.toString(), sorties.toString(), m2.toString(),
+                NIVEAU_SOURCE, FILS_PAR_DEFAUT, TAS_PAR_DEFAUT_MIO,
+                modules, List.of());
+        return new Constitution(spec, ecarts);
+    }
+
+    /**
      * La route ANDROID sur appareil (lot U) : chaque module devient
      * un ModuleSpec du pipeline Android — sources, ressources
      * (rôle android-res), actifs, manifeste (facette android), jars
@@ -126,7 +175,7 @@ public final class SpecsBuild {
                         + type + ")");
                 continue;
             }
-            modules.add(moduleAndroid(module, externals, ecarts));
+            modules.add(moduleAndroid(module, externals, projet, ecarts));
         }
         if (modules.isEmpty()) {
             if (ecarts.isEmpty()) {
@@ -158,7 +207,7 @@ public final class SpecsBuild {
 
     /** Un module Android (ou frère JVM) du pipeline Android. */
     private static BuildSpec.ModuleSpec moduleAndroid(
-            Module module, ExternalResolution externals,
+            Module module, ExternalResolution externals, Path projet,
             List<String> ecarts) {
         String dossierModule = module.path().substring(1)
                 .replace(':', '/');
@@ -280,7 +329,7 @@ public final class SpecsBuild {
                 String texte = Files.readString(
                         projet.resolve(module.manifest));
                 java.util.regex.Matcher m = java.util.regex.Pattern
-                        .compile("package\\s*=\\s*\\"([^\\"]+)\\"")
+                        .compile("package\\s*=\\s*\"([^\"]+)\"")
                         .matcher(texte);
                 if (m.find()) {
                     return m.group(1);

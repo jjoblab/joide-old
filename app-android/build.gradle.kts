@@ -2,6 +2,11 @@
 // build, service de premier plan :build, installation, logcat. Le code
 // de l'application ne voit QUE jo.joide.ide (interfaces) et les modules
 // JoIDE — jamais une brique directement (ADR-010).
+// Import explicite : dans le DSL Kotlin, « java » est masqué par
+// l'accesseur java { } — « java.net.URL » non qualifié d'un import ne
+// résout pas (la CI rouge l'a prouvé).
+import java.net.URL
+
 plugins {
     id("joide.android-application-conventions")
 }
@@ -44,10 +49,12 @@ val fetchAapt2 = tasks.register("fetchAapt2") {
     val abis = aapt2Abis
     outputs.upToDateWhen {
         // à jour : le marqueur porte la source — un changement de tag relance
+        // (la comparaison tient sur UNE ligne : le Kotlin du DSL Gradle refuse
+        // un retour à la ligne AVANT « == » — la CI rouge l'a prouvé)
         abis.all { abi ->
             val marqueur = File(File(jniLibsDir, abi), ".aapt2-source")
-            marqueur.takeIf { it.exists() }?.readText()?.trim()
-                    == "revanced-$tag"
+            val source = marqueur.takeIf { it.exists() }?.readText()?.trim()
+            source == "revanced-$tag"
         }
     }
     doLast {
@@ -55,15 +62,16 @@ val fetchAapt2 = tasks.register("fetchAapt2") {
             val dossierAbi = File(jniLibsDir, abi)
             val aapt2 = File(dossierAbi, "libaapt2.so")
             val marqueur = File(dossierAbi, ".aapt2-source")
-            if (aapt2.exists() && aapt2.length() > 0L
-                    && marqueur.readText().trim() == "revanced-$tag") {
+            val dejaTelecharge = aapt2.exists() && aapt2.length() > 0L
+                    && marqueur.takeIf { it.exists() }?.readText()?.trim() == "revanced-$tag"
+            if (dejaTelecharge) {
                 continue
             }
             dossierAbi.mkdirs()
             val url = "https://github.com/ReVanced/aapt2/releases/download/$tag/aapt2-$abi"
             val temporaire = File.createTempFile("aapt2-$abi", ".bin")
             try {
-                java.net.URL(url).openStream().use { entree ->
+                URL(url).openStream().use { entree ->
                     temporaire.outputStream().use { entree.copyTo(it) }
                 }
                 // garde-fou : jamais une page d'erreur GitHub en binaire
@@ -167,8 +175,11 @@ android {
         // AGP 9 refuse un Provider ici (généré contre statique
         // indécidable) : le dossier est posé en statique et la tâche
         // de copie est câblée aux fusions d'assets ci-dessous.
-        assets.srcDir(layout.buildDirectory
-                .dir("generated/assets/licences").get().asFile)
+        // srcDir est dépréciée (niveau erreur) en AGP 9 : le passage
+        // se fait par la liste mutable « directories » — chemin ABSOLU
+        // pour lever toute ambiguïté de résolution relative.
+        assets.directories.add(layout.buildDirectory
+                .dir("generated/assets/licences").get().asFile.absolutePath)
     }
 }
 

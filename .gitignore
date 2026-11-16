@@ -33,3 +33,6 @@ local.properties
 .cxx/
 # Répertoire de sortie du module de conventions (build-logic est une construction Gradle separee)
 /build-logic/convention/build/
+# Lot U (ADR-066) : les binaires aapt2 préconstruits (fetchAapt2) sont
+# téléchargés À LA CONSTRUCTION dans src/main/jniLibs — jamais commis.
+/app-android/src/main/jniLibs/
