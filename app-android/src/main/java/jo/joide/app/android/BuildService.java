@@ -69,19 +69,28 @@ public final class BuildService extends Service {
 
     private void demarrer() {
         Path stockage = Paths.get(getFilesDir().getAbsolutePath());
-        // lot M (ADR-É8) : les fils par build viennent des réglages,
-        // lus au démarrage du service — jamais codés deux fois
-        int fils = jo.joide.app.android.parametres.Reglages.lire(
-                jo.joide.app.android.parametres.PreferencesAndroid
-                        .source(this)).filsParBuild;
         try {
+            // lot M (ADR-É8) : les fils par build viennent des réglages,
+            // lus au démarrage du service — jamais codés deux fois.
+            // La lecture vit DANS le try : un réglage illisible ne tue
+            // JAMAIS le processus sans nettoyage — un crash ici laisserait
+            // le vieux fichier de port, et chaque build bouclerait sur
+            // « service de build injoignable » (rapporté le 2026-11-17).
+            int fils = jo.joide.app.android.parametres.Reglages.lire(
+                    jo.joide.app.android.parametres.PreferencesAndroid
+                            .source(this)).filsParBuild;
             hote = new HoteDemonSocket(
                     outDir -> StoreAndroid.open(outDir), fils);
             int port = hote.demarrer();
             publierPort(stockage, port);
+            android.util.Log.i("joide-build",
+                    "démon prêt, port " + port);
         } catch (IOException | RuntimeException e) {
             // le démon ne part pas : le service s'arrête, l'UI le
-            // relancera au build suivant — jamais un service muet
+            // relancera au build suivant — jamais un service muet, la
+            // trace part au journal (Paramètres → Journal la lit)
+            android.util.Log.e("joide-build",
+                    "démon ne part pas", e);
             stopSelf();
             return;
         }
@@ -126,6 +135,23 @@ public final class BuildService extends Service {
                     new String(contenu, StandardCharsets.UTF_8).trim());
         } catch (IOException | RuntimeException e) {
             return -1;
+        }
+    }
+
+    /**
+     * Efface le fichier de port (le client, après un refus de connexion :
+     * un port lu n'est pas un port servi — un fichier PÉRIMÉ laissé par
+     * un service mort sans onDestroy bouclerait l'échec, la republication
+     * du service reparti doit pouvoir le remplacer).
+     *
+     * @param fichiers le dossier des fichiers internes
+     */
+    public static void effacerPort(File fichiers) {
+        try {
+            Files.deleteIfExists(Paths.get(
+                    fichiers.getAbsolutePath(), FICHIER_PORT));
+        } catch (IOException e) {
+            // au mieux : la boucle du client réessaie dans son budget
         }
     }
 

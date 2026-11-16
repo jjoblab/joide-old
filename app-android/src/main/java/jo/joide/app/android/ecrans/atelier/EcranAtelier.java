@@ -2937,21 +2937,47 @@ public final class EcranAtelier extends Activity {
 
     private void construireParService(BuildSpec spec, long numero) {
         startForegroundService(new Intent(this, BuildService.class));
-        int port = -1;
+        Socket socket = null;
+        DaemonClient client = null;
         long limite = System.currentTimeMillis() + ATTENTE_PORT_MS;
-        while (port < 0 && System.currentTimeMillis() < limite) {
-            port = BuildService.lirePort(getFilesDir());
-            if (port < 0) {
+        // un port lu n'est pas un port servi : le fichier peut être
+        // PÉRIMÉ (un service mort sans onDestroy l'a laissé — force
+        // stop, crash du processus :build) — chaque tentative refusée
+        // efface le fichier et la boucle attend la republication du
+        // service reparti, jamais une boucle d'échec sur un vieux
+        // port (« service de build injoignable » rapporté le
+        // 2026-11-17)
+        while (System.currentTimeMillis() < limite) {
+            int port = BuildService.lirePort(getFilesDir());
+            if (port >= 0) {
                 try {
-                    Thread.sleep(100L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    runOnUiThread(this::finirBuild);
-                    return;
+                    socket = new Socket("127.0.0.1", port);
+                    socket.setTcpNoDelay(true);
+                    client = DaemonClient.over(
+                            socket.getInputStream(),
+                            socket.getOutputStream());
+                    break;
+                } catch (IOException refuse) {
+                    BuildService.effacerPort(getFilesDir());
+                    if (socket != null) {
+                        try {
+                            socket.close();
+                        } catch (IOException ignore) {
+                            // le socket est déjà mort
+                        }
+                        socket = null;
+                    }
                 }
             }
+            try {
+                Thread.sleep(150L);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                runOnUiThread(this::finirBuild);
+                return;
+            }
         }
-        if (port < 0) {
+        if (client == null) {
             runOnUiThread(() -> {
                 etatConsole.surInjoignable();
                 etat.interrompreBuild();
@@ -2960,18 +2986,13 @@ public final class EcranAtelier extends Activity {
             });
             return;
         }
-        try (Socket socket = new Socket("127.0.0.1", port)) {
-            socket.setTcpNoDelay(true);
-            try (DaemonClient client = DaemonClient.over(
-                    socket.getInputStream(),
-                    socket.getOutputStream())) {
-                clientDemon.set(client);
-                DaemonClient.Event salutation =
-                        client.await("hello", 30);
-                evenement(salutation.type, salutation.id,
-                        salutation.body);
-                construireAvecClient(client, spec, numero);
-            }
+        try (DaemonClient branche = client) {
+            clientDemon.set(branche);
+            DaemonClient.Event salutation =
+                    branche.await("hello", 30);
+            evenement(salutation.type, salutation.id,
+                    salutation.body);
+            construireAvecClient(branche, spec, numero);
         } catch (DaemonClient.DaemonDiedException e) {
             // §6.7 : la mort du démon est un événement, l'UI survit —
             // le build suivant relance le service
@@ -2989,6 +3010,13 @@ public final class EcranAtelier extends Activity {
                 majFab();
             });
         } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException ignore) {
+                    // le socket est déjà mort
+                }
+            }
             clientDemon.set(null);
             runOnUiThread(this::finirBuild);
         }

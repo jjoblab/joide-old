@@ -83,7 +83,8 @@
         <service
             android:name=".BuildService"
             android:process=":build"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Lot P (ADR-É11 point 8) : le service de premier plan de
              l'agent — le tour survit au changement d'écran ;
