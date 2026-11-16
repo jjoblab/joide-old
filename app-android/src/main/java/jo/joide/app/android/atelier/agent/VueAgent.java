@@ -72,18 +72,32 @@ public final class VueAgent extends LinearLayout {
          * compose et le service garde la vérité.
          */
         void ouvrirMenuAgent();
+
+        /**
+         * Les options d'ajout du composeur (lot S) : image, photo,
+         * fichier courant, projet — l'atelier compose le menu et
+         * porte les pièces, la vue n’affiche que les noms posés.
+         */
+        void ouvrirAjouts();
+
+        /**
+         * @param index la pièce retirée du composeur
+         */
+        void retirerPiece(int index);
     }
 
     private final Graphite.Palette palette;
     private final LinearLayout colonneCartes;
     private final ScrollView defilement;
     private final EditText saisie;
+    private final LinearLayout rangeePieces;
     private final Bouton envoyer;
     private final Bouton arreter;
     private final Puce puceModele;
     private final Puce puceMode;
     private Auditeur auditeur;
     private EtatAgentChat etat = new EtatAgentChat();
+    private List<String> pieces = List.of();
 
     public VueAgent(Context contexte) {
         this(contexte, null);
@@ -165,9 +179,31 @@ public final class VueAgent extends LinearLayout {
         composeur.setBackgroundColor(palette.surface);
         int margeBas = GraphiteVue.dp(contexte, 10);
         composeur.setPadding(marge, marge, marge, margeBas);
+        rangeePieces = new LinearLayout(contexte);
+        rangeePieces.setOrientation(LinearLayout.HORIZONTAL);
+        rangeePieces.setVisibility(GONE);
+        composeur.addView(rangeePieces, new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         LinearLayout rangee = new LinearLayout(contexte);
         rangee.setOrientation(LinearLayout.HORIZONTAL);
         rangee.setGravity(Gravity.BOTTOM);
+        Icone ajouter = new Icone(contexte);
+        ajouter.setGlyphe(Icone.Glyphe.PLUS);
+        ajouter.setCouleur(palette.texteSecondaire);
+        ajouter.setClickable(true);
+        ajouter.setContentDescription(
+                getContext().getString(R.string.agent_ajouter));
+        ajouter.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.ouvrirAjouts();
+            }
+        });
+        LinearLayout.LayoutParams paramsAjouter = new LinearLayout.LayoutParams(
+                GraphiteVue.dp(contexte, 36),
+                GraphiteVue.dp(contexte, 36));
+        paramsAjouter.gravity = Gravity.CENTER_VERTICAL;
+        rangee.addView(ajouter, paramsAjouter);
         saisie = new EditText(contexte);
         saisie.setHint(R.string.agent_ecrire_indice);
         saisie.setTextColor(palette.texte);
@@ -231,6 +267,30 @@ public final class VueAgent extends LinearLayout {
         rafraichir();
     }
 
+    /**
+     * Pose les pièces en attente du composeur (lot S) : des puces
+     * nommées au-dessus de la saisie, chacune retirable.
+     *
+     * @param noms les noms d'affichage des pièces
+     */
+    public void poserPieces(List<String> noms) {
+        pieces = noms == null ? List.of() : List.copyOf(noms);
+        Context contexte = getContext();
+        rangeePieces.removeAllViews();
+        rangeePieces.setVisibility(pieces.isEmpty() ? GONE : VISIBLE);
+        for (int i = 0; i < pieces.size(); i++) {
+            final int index = i;
+            Puce puce = new Puce(contexte);
+            puce.setText(pieces.get(i));
+            puce.setOnClickListener(vue -> {
+                if (auditeur != null) {
+                    auditeur.retirerPiece(index);
+                }
+            });
+            rangeePieces.addView(puce, margeParams(contexte));
+        }
+    }
+
     /** Redessine depuis l'état courant. */
     public void rafraichir() {
         Context contexte = getContext();
@@ -290,6 +350,9 @@ public final class VueAgent extends LinearLayout {
 
     private View carteMessage(Carte carte) {
         Context contexte = getContext();
+        LinearLayout bloc = new LinearLayout(contexte);
+        bloc.setOrientation(LinearLayout.VERTICAL);
+        bloc.setGravity(Gravity.END);
         TextView vue = new TextView(contexte);
         GraphiteVue.typographie(vue, Graphite.CORPS);
         vue.setTextColor(palette.texte);
@@ -311,7 +374,21 @@ public final class VueAgent extends LinearLayout {
                 GraphiteVue.dp(contexte, 3));
         vue.setLayoutParams(params);
         vue.setMaxWidth(Integer.MAX_VALUE);
-        return vue;
+        bloc.addView(vue);
+        if (carte.pieces != null && !carte.pieces.isEmpty()) {
+            LinearLayout puces = new LinearLayout(contexte);
+            puces.setOrientation(LinearLayout.HORIZONTAL);
+            puces.setGravity(Gravity.END);
+            for (String nom : carte.pieces) {
+                Puce puce = new Puce(contexte);
+                puce.setText(nom);
+                puces.addView(puce, margeParams(contexte));
+            }
+            bloc.addView(puces, new LayoutParams(
+                    LayoutParams.WRAP_CONTENT,
+                    LayoutParams.WRAP_CONTENT));
+        }
+        return bloc;
     }
 
     private View carteReponse(Carte carte) {

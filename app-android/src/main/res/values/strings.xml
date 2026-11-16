@@ -95,6 +95,13 @@
     <string name="agent_connexions_statut_echec">failed</string>
     <string name="agent_connexions_statut_non_supporte">not supported here (stdio)</string>
     <string name="agent_connexions_statut_desactive">disabled</string>
+    <string name="agent_ajouter">Add to the message</string>
+    <string name="agent_ajouter_image">Image…</string>
+    <string name="agent_ajouter_photo">Take a photo…</string>
+    <string name="agent_ajouter_fichier">Current file</string>
+    <string name="agent_ajouter_projet">Project tree</string>
+    <string name="agent_image_indisponible">The image could not be read here.</string>
+    <string name="agent_image_trop_grande">This image stays above the conversation budget after reduction — it cannot join.</string>
     <string name="canal_build">JoIDE build</string>
     <string name="service_build_actif">JoIDE build service active</string>
     <string name="import_en_cours">Importing project…</string>

@@ -1,5 +1,6 @@
 package jo.joide.agent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -182,6 +183,33 @@ public final class BoucleAgent {
                              Permissions.PortePermission gate,
                              String contexteVolatile, CancelToken jeton,
                              EcouteurAgent ecouteur) {
+        return tour(message, historique, mode, gate, contexteVolatile,
+                jeton, ecouteur, List.of());
+    }
+
+    /**
+     * Déroule un tour complet, avec des pièces jointes IMAGE (lot S,
+     * ADR-064) : les images entrent dans le message utilisateur
+     * AVANT le texte — multimodal natif, la réduction est déjà faite
+     * côté hôte (ADR-062 : une partie IMAGE insérée est à sa taille
+     * finale).
+     *
+     * @param message           ce que dit l'utilisateur
+     * @param historique        la conversation (append-only, mutée par le tour)
+     * @param mode              le mode de permission
+     * @param gate              le gate des écritures (mode DEMANDE_CHAQUE)
+     * @param contexteVolatile  le contexte projet vif (note de fin)
+     * @param jeton             l'annulation du tour
+     * @param ecouteur          les événements du tour (peut être null)
+     * @param images            les parties IMAGE du message, dans l'ordre
+     * @return le résultat du tour
+     */
+    public ResultatTour tour(String message, HistoriqueAgent historique,
+                             Permissions.Mode mode,
+                             Permissions.PortePermission gate,
+                             String contexteVolatile, CancelToken jeton,
+                             EcouteurAgent ecouteur,
+                             List<PartieContenu> images) {
         Objects.requireNonNull(historique, "history");
         if (jeton == null) {
             jeton = CancelToken.NEVER;
@@ -194,7 +222,11 @@ public final class BoucleAgent {
             historique.remplacer(reparation.historique,
                     historique.compactes());
         }
-        historique.ajouter(MessageAgent.utilisateur(message));
+        List<PartieContenu> parties =
+                new ArrayList<>(images == null ? List.of() : images);
+        parties.add(PartieContenu.texte(message));
+        historique.ajouter(new MessageAgent(
+                MessageAgent.Role.UTILISATEUR, parties));
         String note = noteVolatile(mode, contexteVolatile);
         int iteration = 0;
         while (iteration < config.plafondIterations) {

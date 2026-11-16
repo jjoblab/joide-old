@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +40,11 @@ import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatApercu;
 import jo.joide.app.android.AgentService;
 import jo.joide.app.android.atelier.EtatAtelier;
+import jo.joide.agent.ReductionImages;
 import jo.joide.app.android.atelier.agent.ConversationsAgent;
+import jo.joide.app.android.atelier.agent.FournisseurCameraAgent;
+import jo.joide.app.android.atelier.agent.PieceJointe;
+import jo.joide.app.android.atelier.agent.ReducteurImagesAndroid;
 import jo.joide.app.android.atelier.agent.EtatAgentChat;
 import jo.joide.app.android.atelier.agent.VueAgent;
 import jo.joide.app.android.atelier.NouveauNom;
@@ -190,6 +195,13 @@ public final class EcranAtelier extends Activity {
     private View pointAgent;
     private AgentService.AgentBinder agent;
     private EtatAgentChat etatAgent = new EtatAgentChat();
+    private final List<PieceJointe> piecesAgent = new ArrayList<>();
+
+    /** Le code de requête du choix d'image (SAF). */
+    private static final int REQUETE_IMAGE = 47_101;
+
+    /** Le code de requête de la photo (caméra). */
+    private static final int REQUETE_PHOTO = 47_102;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -464,6 +476,19 @@ public final class EcranAtelier extends Activity {
             @Override
             public void ouvrirMenuAgent() {
                 ouvrirMenuAgentOptions();
+            }
+
+            @Override
+            public void ouvrirAjouts() {
+                ouvrirAjoutsAgent();
+            }
+
+            @Override
+            public void retirerPiece(int index) {
+                if (index >= 0 && index < piecesAgent.size()) {
+                    piecesAgent.remove(index);
+                    vueAgent.poserPieces(PieceJointe.noms(piecesAgent));
+                }
             }
         });
         tiroirAgent = new TiroirPousse(this);
@@ -1274,7 +1299,7 @@ public final class EcranAtelier extends Activity {
         etatAgent = new EtatAgentChat();
         for (AgentService.Entree entree : agent.journal()) {
             if (entree.estMessage()) {
-                etatAgent.envoyer(entree.message);
+                etatAgent.envoyer(entree.message, entree.pieces);
             } else if (entree.estReponse()) {
                 etatAgent.restaurerReponse(entree.reponse);
             } else {
@@ -1288,7 +1313,9 @@ public final class EcranAtelier extends Activity {
     /** L'entrée live du service : événement ou message. */
     private void surEntreeAgent(AgentService.Entree entree) {
         if (entree.estMessage()) {
-            etatAgent.envoyer(entree.message);
+            etatAgent.envoyer(entree.message, entree.pieces);
+        } else if (entree.estReponse()) {
+            etatAgent.restaurerReponse(entree.reponse);
         } else {
             etatAgent.surEvenement(entree.evenement);
         }
@@ -1354,9 +1381,194 @@ public final class EcranAtelier extends Activity {
         if (agent == null) {
             ouvrirAgent();
         }
-        if (agent != null) {
-            agent.envoyer(message);
+        if (agent == null) {
+            return;
         }
+        if (agent.tourEnCours()) {
+            // le service n'empile jamais deux tours — les pièces
+            // restent posées, l'utilisateur renverra après l'arrêt
+            return;
+        }
+        // les fichiers et l'arbre se fondent dans le message, les
+        // images partent multimodales (lot S)
+        String fondu = PieceJointe.fondre(message, piecesAgent);
+        agent.envoyer(fondu, List.copyOf(piecesAgent));
+        piecesAgent.clear();
+        vueAgent.poserPieces(List.of());
+    }
+
+    // ------------------------------------------------------------------
+    // Les pièces jointes (lot S, ADR-064) : image, photo, fichier
+    // courant, projet — le menu ne montre que ce que l'appareil
+    // sait faire (caméra présente, fichier actif ouvert).
+    // ------------------------------------------------------------------
+
+    /** Le menu + du composeur : chaque entrée est câblée, jamais morte. */
+    private void ouvrirAjoutsAgent() {
+        List<CharSequence> elements = new ArrayList<>();
+        List<Integer> actions = new ArrayList<>();
+        elements.add(getString(R.string.agent_ajouter_image));
+        actions.add(0);
+        boolean camera = getPackageManager().hasSystemFeature(
+                android.content.pm.PackageManager.FEATURE_CAMERA_ANY);
+        if (camera) {
+            elements.add(getString(R.string.agent_ajouter_photo));
+            actions.add(1);
+        }
+        if (etat.actif() != null) {
+            elements.add(getString(R.string.agent_ajouter_fichier));
+            actions.add(2);
+        }
+        elements.add(getString(R.string.agent_ajouter_projet));
+        actions.add(3);
+        Dialogue.menu(this, palette,
+                getString(R.string.agent_ajouter),
+                elements.toArray(new CharSequence[0]),
+                (dialog, lequel) -> {
+                    int action = actions.get(lequel);
+                    if (action == 0) {
+                        choisirImageAgent();
+                    } else if (action == 1) {
+                        prendrePhotoAgent();
+                    } else if (action == 2) {
+                        joindreFichierCourant();
+                    } else if (action == 3) {
+                        joindreProjet();
+                    }
+                });
+    }
+
+    /** Le choix d'une image : SAF, lecture bornée, réduction. */
+    private void choisirImageAgent() {
+        Intent intention = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intention.addCategory(Intent.CATEGORY_OPENABLE);
+        intention.setType("image/*");
+        try {
+            startActivityForResult(intention, REQUETE_IMAGE);
+        } catch (android.content.ActivityNotFoundException e) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_ajouter),
+                    getString(R.string.agent_image_indisponible),
+                    R.string.action_ok);
+        }
+    }
+
+    /** La photo : cible du cache servie par le fournisseur local. */
+    private void prendrePhotoAgent() {
+        try {
+            android.net.Uri cible = FournisseurCameraAgent.preparer(this);
+            Intent intention = new Intent(
+                    android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            intention.putExtra(
+                    android.provider.MediaStore.EXTRA_OUTPUT, cible);
+            intention.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivityForResult(intention, REQUETE_PHOTO);
+        } catch (IOException | RuntimeException e) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_ajouter),
+                    getString(R.string.agent_image_indisponible),
+                    R.string.action_ok);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requete, int resultat,
+                                    Intent donnees) {
+        super.onActivityResult(requete, resultat, donnees);
+        if (resultat != RESULT_OK) {
+            return;
+        }
+        if (requete == REQUETE_IMAGE && donnees != null
+                && donnees.getData() != null) {
+            attacherImage(donnees.getData(),
+                    nomDadresse(donnees.getData()));
+        } else if (requete == REQUETE_PHOTO) {
+            Path photo = FournisseurCameraAgent.dernierePhoto();
+            if (photo != null && Files.isRegularFile(photo)) {
+                attacherImage(android.net.Uri.fromFile(photo.toFile()),
+                        photo.getFileName().toString());
+            }
+        }
+    }
+
+    /** Le nom lisible d'une URI SAF (dernier segment, décodé). */
+    private String nomDadresse(android.net.Uri adresse) {
+        String chemin = adresse == null ? ""
+                : String.valueOf(adresse.getLastPathSegment());
+        int barre = chemin.lastIndexOf('/');
+        return barre >= 0 ? chemin.substring(barre + 1) : chemin;
+    }
+
+    /**
+     * Attache une image : lecture bornée (8 Mio), type de média,
+     * réduction au budget — une image qui ne passe pas est REFUSÉE
+     * nommément, jamais attachée en silence.
+     */
+    private void attacherImage(android.net.Uri adresse, String nom) {
+        byte[] octets;
+        try (java.io.InputStream flux =
+                     getContentResolver().openInputStream(adresse)) {
+            if (flux == null) {
+                return;
+            }
+            octets = flux.readNBytes(8_000_000 + 1);
+        } catch (IOException | RuntimeException e) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_ajouter),
+                    getString(R.string.agent_image_indisponible),
+                    R.string.action_ok);
+            return;
+        }
+        if (octets.length > 8_000_000) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_ajouter),
+                    getString(R.string.agent_image_trop_grande),
+                    R.string.action_ok);
+            return;
+        }
+        String mediaType = getContentResolver().getType(adresse);
+        if (mediaType == null || !mediaType.startsWith("image/")) {
+            mediaType = ReducteurImagesAndroid.mediaTypeDe(nom);
+        }
+        String base64 = java.util.Base64.getEncoder()
+                .encodeToString(octets);
+        ReductionImages.ResultatImage reduite =
+                ReductionImages.reduire(mediaType, base64,
+                        new ReducteurImagesAndroid(),
+                        ReductionImages.BUDGET_OCTETS_DEFAUT);
+        if (reduite.image == null) {
+            Dialogue.information(this, palette,
+                    getString(R.string.agent_ajouter),
+                    getString(R.string.agent_image_trop_grande),
+                    R.string.action_ok);
+            return;
+        }
+        piecesAgent.add(PieceJointe.image(
+                nom.isEmpty() ? "image" : nom,
+                reduite.image.mediaType, reduite.image.donnees));
+        vueAgent.poserPieces(PieceJointe.noms(piecesAgent));
+    }
+
+    /** Le fichier courant : cité en bloc borné (le modèle a read_file). */
+    private void joindreFichierCourant() {
+        String actif = etat.actif();
+        if (actif == null || scene == null) {
+            return;
+        }
+        piecesAgent.add(PieceJointe.fichier(actif,
+                PieceJointe.bornerTexte(scene.texte())));
+        vueAgent.poserPieces(PieceJointe.noms(piecesAgent));
+    }
+
+    /** La structure du projet : l'arbre borné en lignes. */
+    private void joindreProjet() {
+        String arbre = PieceJointe.arbre(fichiersArbre);
+        if (arbre.isEmpty()) {
+            return;
+        }
+        piecesAgent.add(PieceJointe.projet(arbre));
+        vueAgent.poserPieces(PieceJointe.noms(piecesAgent));
     }
 
     // ------------------------------------------------------------------

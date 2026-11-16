@@ -25,6 +25,7 @@ import android.os.Looper;
 
 import jo.joide.agent.BoucleAgent;
 import jo.joide.app.android.atelier.agent.ConversationsAgent;
+import jo.joide.app.android.atelier.agent.PieceJointe;
 import jo.joide.agent.ErreursLlm;
 import jo.joide.agent.espace.EspaceTravailInjecteur;
 import jo.joide.agent.EvenementAgent;
@@ -94,26 +95,39 @@ public final class AgentService extends Service {
         public final String message;
         /** La réponse restaurée (null sinon). */
         public final String reponse;
+        /** Les noms des pièces jointes du message (affichage seul). */
+        public final List<String> pieces;
 
         Entree(EvenementAgent evenement, String message) {
-            this(evenement, message, null);
+            this(evenement, message, null, List.of());
         }
 
         Entree(EvenementAgent evenement, String message,
-               String reponse) {
+               String reponse, List<String> pieces) {
             this.evenement = evenement;
             this.message = message;
             this.reponse = reponse;
+            this.pieces = List.copyOf(pieces);
         }
 
         /** @return l'entrée message utilisateur */
         public static Entree message(String texte) {
-            return new Entree(null, texte, null);
+            return new Entree(null, texte, null, List.of());
+        }
+
+        /**
+         * @param texte le message
+         * @param noms  les noms des pièces jointes (affichage)
+         * @return l'entrée message avec pièces
+         */
+        public static Entree message(String texte,
+                                     List<String> noms) {
+            return new Entree(null, texte, null, noms);
         }
 
         /** @return l'entrée réponse restaurée */
         public static Entree reponse(String texte) {
-            return new Entree(null, null, texte);
+            return new Entree(null, null, texte, List.of());
         }
 
         /** @return vrai si c'est un message utilisateur */
@@ -170,7 +184,22 @@ public final class AgentService extends Service {
          * @param message ce que dit l'utilisateur
          */
         public void envoyer(String message) {
-            AgentService.this.envoyer(message);
+            AgentService.this.envoyer(message, List.of());
+        }
+
+        /**
+         * Envoie un message avec ses pièces jointes (lot S) : les
+         * images partent en parties IMAGE du message neutre, les
+         * fichiers et l'arbre sont déjà fondus par l'atelier dans le
+         * message.
+         *
+         * @param message ce que dit l'utilisateur (contexte fondu)
+         * @param pieces  les pièces jointes du tour
+         */
+        public void envoyer(String message,
+                            List<jo.joide.app.android.atelier.agent
+                                    .PieceJointe> pieces) {
+            AgentService.this.envoyer(message, pieces);
         }
 
         /** Arrête le tour en cours (bouton Arrêter, notification). */
@@ -398,6 +427,7 @@ public final class AgentService extends Service {
     private CompletableFuture<List<String>> attenteQuestions;
     private PlanAgent plan;
     private int requetesDuTour;
+    private List<jo.joide.agent.PartieContenu> imagesDuTour = List.of();
     private ConversationsAgent conversations;
     private String idConversation = "";
     private GestionnaireMcp gestionnaireMcp;
@@ -500,7 +530,24 @@ public final class AgentService extends Service {
     // ------------------------------------------------------------------
 
     private void envoyer(String message) {
-        if (message == null || message.isBlank()) {
+        envoyer(message, List.of());
+    }
+
+    /**
+     * Envoie un message avec ses pièces jointes (lot S) : les images
+     * réduites partent en parties IMAGE du message neutre, le texte
+     * des fichiers/projet est déjà fondu dans le message par
+     * l'atelier.
+     *
+     * @param message ce que dit l'utilisateur (contexte fondu)
+     * @param pieces  les pièces jointes du tour
+     */
+    private void envoyer(String message,
+                         List<jo.joide.app.android.atelier.agent
+                                 .PieceJointe> pieces) {
+        if (message == null || (message.isBlank()
+                && PieceJointe
+                        .images(pieces).isEmpty())) {
             return;
         }
         if (tour != null && !tour.isDone()) {
@@ -516,7 +563,11 @@ public final class AgentService extends Service {
                     EvenementAgent.RaisonFin.ERREUR), null));
             return;
         }
-        consigner(Entree.message(message));
+        imagesDuTour = PieceJointe
+                .images(pieces);
+        consigner(Entree.message(message,
+                PieceJointe
+                        .noms(pieces)));
         demarrerAvantPlan(1);
         annulation = CancelToken.create();
         jeton = annulation.token();
@@ -620,7 +671,8 @@ public final class AgentService extends Service {
                     this::demanderPermission,
                     contexteVolatile(), jeton,
                     evenement -> consigner(
-                            new Entree(evenement, null)));
+                            new Entree(evenement, null)),
+                    imagesDuTour);
             usageConversation = usageConversation.plus(resultat.usage);
             transcript.add(message);
             transcript.add(resultat.texteFinal == null

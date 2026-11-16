@@ -166,6 +166,12 @@ public final class SessionsAgent {
             objet.put("outil", partie.nomOutil);
             objet.put("arguments", partie.arguments);
             objet.put("erreur", partie.erreur);
+            if (partie.genre == PartieContenu.Genre.IMAGE) {
+                // lot S : l'historique modèle garde ce que le modèle
+                // a réellement vu — les pixels suivent la session
+                objet.put("mediaType", partie.mediaType);
+                objet.put("donnees", partie.donnees);
+            }
             parties.add(objet);
         }
         Map<String, Object> sortie = new LinkedHashMap<>();
@@ -200,6 +206,12 @@ public final class SessionsAgent {
                         partie.member("texte").asString(),
                         Boolean.TRUE.equals(
                                 partie.member("erreur").asBoolean())));
+            } else if ("IMAGE".equals(genre)) {
+                // lot S : les pixels reviennent avec la session (les
+                // fichiers d'avant n'ont pas ces champs — tolérant)
+                parties.add(PartieContenu.image(
+                        partie.member("mediaType").asString(),
+                        partie.member("donnees").asString()));
             }
         }
         return new MessageAgent(role, parties);

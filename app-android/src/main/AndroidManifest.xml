@@ -72,5 +72,16 @@
             android:name=".AgentService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Lot S (ADR-064) : la cible caméra de l'agent —
+             ACTION_IMAGE_CAPTURE avec EXTRA_OUTPUT exige une URI
+             content:// sur API 28 ; zéro AndroidX (ADR-É2), le
+             fournisseur sert UN fichier de cache, non exporté,
+             l'accès passe par la permission URI de l'intent. -->
+        <provider
+            android:name=".atelier.agent.FournisseurCameraAgent"
+            android:authorities="joide.agent.camera"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>
