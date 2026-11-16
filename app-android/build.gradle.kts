@@ -91,9 +91,17 @@ android {
     }
 }
 
-// Le vidage/merge des assets dépend de la copie des licences (lot M)
+// Les tâches qui lisent le dossier d'assets généré dépendent de la
+// copie des licences (lot M) — Gradle 9 exige la dépendance
+// EXPLICITE : la fusion des assets ET toutes les tâches lint (le
+// lint vital de release construit son modèle et analyse les assets
+// sans connaître la tâche de copie — la validation du CI l'a prouvé
+// rouge depuis le lot M ; un dependsOn sur une copie à jour est
+// sans coût).
 tasks.matching {
-    it.name.startsWith("merge") && it.name.endsWith("Assets")
+    it.name.contains("Lint") || it.name.startsWith("lint")
+            || (it.name.startsWith("merge")
+            && it.name.endsWith("Assets"))
 }.configureEach {
     dependsOn(copierLicences)
 }
