@@ -1,0 +1,147 @@
+# CI des APK signés JoIDE (ADR-047, docs/dev.md « CI — APK signés »).
+# Deux APK par exécution — debug (logcat, diagnostic) et release —
+# signés par la MÊME clé CI stable : une nouvelle génération s'installe
+# sur la précédente, jamais de désinstallation forcée (exigence du
+# propriétaire du 2026-11-16). Les briques privées sont clonées aux
+# refs épinglées (ADR-044) et publiées en Maven Local, puis mises en
+# cache : les exécutions suivantes sautent la publication.
+name: APK signés
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Refs épinglées des briques (ADR-044, docs/dev.md) — la clé du
+  # cache Maven Local en dépend : monter une version = changer la
+  # ref ICI et dans gradle/libs.versions.toml.
+  CELERIS_REF: f9001fc
+  CODELSP_REF: 657d787
+  LAYOUTLIB_REF: 720e85d
+
+jobs:
+  apk:
+    name: debug et release signés
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout JoIDE
+        uses: actions/checkout@v4
+
+      - name: JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle (cache des dépendances)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache: true
+
+      - name: Cache Maven Local des briques
+        id: briques
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: briques-${{ env.CELERIS_REF }}-${{ env.CODELSP_REF }}-${{ env.LAYOUTLIB_REF }}
+
+      - name: SDK Android (plateformes et build-tools épinglés)
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install \
+            "platforms;android-36" "platforms;android-37.2" \
+            "build-tools;36.0.0" "build-tools;37.0.0" > /dev/null
+
+      - name: Publication des briques en Maven Local (ADR-044)
+        if: steps.briques.outputs.cache-hit != 'true'
+        env:
+          PAT_BRIQUES: ${{ secrets.JOIDE_BRIQUES_PAT }}
+        run: |
+          set -euo pipefail
+          git config --global \
+            url."https://x-access-token:${PAT_BRIQUES}@github.com/".insteadOf "https://github.com/"
+          mkdir -p "$RUNNER_TEMP/briques"
+          cd "$RUNNER_TEMP/briques"
+          git clone --quiet https://github.com/jjoblab/celeris.git
+          git clone --quiet https://github.com/jjoblab/code-lsp.git
+          git clone --quiet https://github.com/jjoblab/LayoutLib.git
+          ( cd celeris && git checkout --quiet "$CELERIS_REF" \
+            && ./gradlew --max-workers=2 publishToMavenLocal )
+          ( cd code-lsp && git checkout --quiet "$CODELSP_REF" \
+            && ./gradlew --max-workers=2 :java:publishToMavenLocal :kotlin:publishToMavenLocal \
+                :xml:publishToMavenLocal :model:publishToMavenLocal :index:publishToMavenLocal \
+                :ecj-art:publishToMavenLocal )
+          ( cd LayoutLib && git checkout --quiet "$LAYOUTLIB_REF" \
+            && ./gradlew --max-workers=2 :module-inflater:publishToMavenLocal \
+                :module-resources:publishToMavenLocal :module-drawables:publishToMavenLocal \
+                :module-themes:publishToMavenLocal :module-attributes:publishToMavenLocal \
+                :module-layout:publishToMavenLocal )
+
+      - name: Dépôt de la clé de signature CI
+        env:
+          CLE_B64: ${{ secrets.JOIDE_CI_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$CLE_B64" ]; then
+            echo "::error::Secret JOIDE_CI_KEYSTORE_B64 absent — voir docs/dev.md, section CI des APK signés"
+            exit 1
+          fi
+          printf '%s' "$CLE_B64" | base64 --decode > "$RUNNER_TEMP/joide-ci.keystore"
+
+      - name: Assemblage des APK signés (debug + release)
+        env:
+          JOIDE_CI_KEYSTORE: ${{ runner.temp }}/joide-ci.keystore
+          JOIDE_CI_KEYSTORE_PASSWORD: ${{ secrets.JOIDE_CI_KEYSTORE_PASSWORD }}
+          JOIDE_CI_KEY_ALIAS: ${{ secrets.JOIDE_CI_KEY_ALIAS }}
+        run: ./gradlew :app-android:assembleDebug :app-android:assembleRelease
+
+      - name: Vérification des signatures (apksigner)
+        run: |
+          APKSIGNER="$ANDROID_HOME/build-tools/37.0.0/apksigner"
+          for apk in app-android/build/outputs/apk/debug/app-android-debug.apk \
+                     app-android/build/outputs/apk/release/app-android-release.apk; do
+            echo "== $apk =="
+            "$APKSIGNER" verify --print-certs "$apk" | head -4
+            "$APKSIGNER" verify "$apk" || exit 1
+          done
+
+      - name: Mise en page des APK (SHA court du commit)
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          mkdir -p dist
+          cp app-android/build/outputs/apk/debug/app-android-debug.apk "dist/joide-debug-$SHA.apk"
+          cp app-android/build/outputs/apk/release/app-android-release.apk "dist/joide-release-$SHA.apk"
+          ls -lh dist
+
+      - name: Nettoyage des artefacts précédents (quota du dépôt privé)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          ids=$(curl -sf -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/jjoblab/joide/actions/artifacts?per_page=100" \
+            | jq -r '.artifacts[] | select(.name | startswith("joide-apk-")) | .id')
+          if [ -n "$ids" ]; then
+            for id in $ids; do
+              curl -sf -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/jjoblab/joide/actions/artifacts/$id" || true
+            done
+          fi
+          exit 0
+
+      - name: Publication des artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: joide-apk-${{ github.sha }}
+          path: dist/*.apk
+          retention-days: 14
+          if-no-files-found: error

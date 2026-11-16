@@ -223,3 +223,50 @@ git clone github.com/jjoblab/LayoutLib && cd LayoutLib && git checkout 720e85d
 - `:app-android:assembleDebug` (APK 88 Mo à dexer) : démon Gradle
   RÉDUIT (`-Xmx1024m`) pour laisser le travailleur D8 vivre
   (`--max-workers=1`) — un démon à 3 Go y est tué par le noyau.
+
+## CI — APK signés (GitHub Actions, ADR-047)
+
+Le workflow « APK signés » (`.github/workflows/apk.yml`) produit à
+chaque exécution deux APK installables — debug (logcat, diagnostic) et
+release — signés par la MÊME clé CI : une nouvelle génération
+s'installe sur la précédente, jamais de désinstallation (exigence du
+propriétaire du 2026-11-16). Déclencheurs : `workflow_dispatch`
+(onglet Actions) et chaque push sur `main`. Les APK sont dans l'onglet
+Actions de la dernière exécution (les artefacts précédents sont
+supprimés — quota de stockage du dépôt privé).
+
+Secrets du dépôt (posés le 2026-11-16, restauration dans Paramètres →
+Secrets and variables → Actions) :
+
+| Nom | Rôle |
+|---|---|
+| `JOIDE_CI_KEYSTORE_B64` | keystore de signature CI (base64) |
+| `JOIDE_CI_KEYSTORE_PASSWORD` | mot de passe du magasin et de la clé (PKCS12 : un seul) |
+| `JOIDE_CI_KEY_ALIAS` | alias de la clé (`joide-ci`) |
+| `JOIDE_BRIQUES_PAT` | jeton clonant les dépôts privés celeris/code-lsp/LayoutLib (à remplacer un jour par un PAT fin limité aux trois dépôts) |
+
+La copie de secours de la clé (keystore + identifiants) est détenue
+par le propriétaire hors du dépôt : sa perte impose un jour la
+désinstallation complète de l'application sur chaque appareil — dès le
+premier APK installé, la clé est l'identité de l'application. Pour
+restaurer les secrets depuis la copie : `base64 -w0 joide-ci.pkcs12`,
+puis poser les quatre valeurs ci-dessus.
+
+Le workflow installe le SDK (plateformes 36 et 37.2, build-tools 36.0.0
+et 37.0.0), publie les briques en Maven Local aux refs épinglées
+(`CELERIS_REF`, `CODELSP_REF`, `LAYOUTLIB_REF` dans le workflow — une
+montée de version s'y fait ET dans `gradle/libs.versions.toml`),
+met le résultat en cache, assemble, vérifie les signatures puis dépose
+les artefacts. Équivalent local de la signature :
+
+```bash
+JOIDE_CI_KEYSTORE=<chemin>/joide-ci.pkcs12 \
+JOIDE_CI_KEYSTORE_PASSWORD=<mot de passe> \
+JOIDE_CI_KEY_ALIAS=joide-ci \
+./gradlew :app-android:assembleDebug :app-android:assembleRelease
+```
+
+APK produits : `app-android/build/outputs/apk/{debug,release}/` —
+vérification : `apksigner verify --print-certs` (empreinte SHA-256
+attendue du certificat CI :
+`8da507f58a63eed7d4db4aac71e04bc2c01c8eaa02dff1e6f22d7e1d42646d75`).

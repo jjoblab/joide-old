@@ -1,3 +1,29 @@
+# CHANGES — CI des APK signés (validation P8)
+
+Le propriétaire teste l'application pour la première fois : le
+workflow GitHub Actions « APK signés » produit debug et release signés
+par la même clé CI stable — chaque génération s'installe sur la
+précédente, jamais de désinstallation (exigence du 2026-11-16).
+ADR-047.
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| CI | `.github/workflows/apk.yml` (JDK 21, SDK 36+37.2, publication des briques en Maven Local aux refs épinglées puis cache `~/.m2`, signature par secrets, vérification `apksigner`, nettoyage des artefacts précédents, dépôt debug+release nommés au SHA court) |
+| app-android | signature CI conditionnelle dans `build.gradle.kts` (variables `JOIDE_CI_KEYSTORE`, `JOIDE_CI_KEYSTORE_PASSWORD`, `JOIDE_CI_KEY_ALIAS` — sans elles, comportement local inchangé : debug sur keystore local, release non signée) |
+| docs | `docs/adr/047-ci-apk-signes.md`, section « CI — APK signés » de `docs/dev.md` (secrets, sauvegarde de la clé, montée de version des briques, équivalent local) |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.
+
 # CHANGES — P8 (sur la base P7)
 
 L'IDE arrive en six lots : A (conditionnel Android et squelette
