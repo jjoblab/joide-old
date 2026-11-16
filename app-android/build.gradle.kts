@@ -26,6 +26,71 @@ val shaCourt = runCatching {
     }.standardOutput.asText.get().trim()
 }.getOrDefault("dev")
 
+// --- aapt2 embarqué (lot U, ADR-066) -------------------------------------------------
+// ART n'exécute les binaires QUE depuis nativeLibraryDir et Google ne publie
+// PAS d'aapt2 pour les ABI Android : l'APK embarque un aapt2 préconstruit en
+// libaapt2.so par ABI (la même approche que les IDE sur appareil). La source
+// est ReVanced/aapt2 — un build dont les segments LOAD sont alignés 16 Ko, ce
+// qui charge sur les appareils 4 Ko COMME 16 Ko. L'outillage de build
+// (ToolchainLocator.aapt2Embarque) le trouve par joide.native.dir.
+val aapt2ReleaseTag = "v1.1.0"
+val aapt2Abis = listOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+
+val fetchAapt2 = tasks.register("fetchAapt2") {
+    description = "Télécharge l'aapt2 préconstruit dans src/main/jniLibs/<abi>/libaapt2.so."
+    group = "build setup"
+    val jniLibsDir = layout.projectDirectory.dir("src/main/jniLibs").asFile
+    val tag = aapt2ReleaseTag
+    val abis = aapt2Abis
+    outputs.upToDateWhen {
+        // à jour : le marqueur porte la source — un changement de tag relance
+        abis.all { abi ->
+            val marqueur = File(File(jniLibsDir, abi), ".aapt2-source")
+            marqueur.takeIf { it.exists() }?.readText()?.trim()
+                    == "revanced-$tag"
+        }
+    }
+    doLast {
+        for (abi in abis) {
+            val dossierAbi = File(jniLibsDir, abi)
+            val aapt2 = File(dossierAbi, "libaapt2.so")
+            val marqueur = File(dossierAbi, ".aapt2-source")
+            if (aapt2.exists() && aapt2.length() > 0L
+                    && marqueur.readText().trim() == "revanced-$tag") {
+                continue
+            }
+            dossierAbi.mkdirs()
+            val url = "https://github.com/ReVanced/aapt2/releases/download/$tag/aapt2-$abi"
+            val temporaire = File.createTempFile("aapt2-$abi", ".bin")
+            try {
+                java.net.URL(url).openStream().use { entree ->
+                    temporaire.outputStream().use { entree.copyTo(it) }
+                }
+                // garde-fou : jamais une page d'erreur GitHub en binaire
+                val magique = temporaire.inputStream().use { it.readNBytes(4) }
+                val estElf = magique.size == 4 && magique[0] == 0x7F.toByte()
+                        && magique[1] == 'E'.code.toByte()
+                        && magique[2] == 'L'.code.toByte()
+                        && magique[3] == 'F'.code.toByte()
+                if (!estElf || temporaire.length() < 100_000L) {
+                    throw GradleException(
+                            "L'aapt2 téléchargé ($abi) n'est pas un binaire ELF "
+                                    + "(${temporaire.length()} octets de $url)")
+                }
+                temporaire.copyTo(aapt2, overwrite = true)
+                aapt2.setExecutable(true)
+                marqueur.writeText("revanced-$tag")
+            } finally {
+                temporaire.delete()
+            }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(fetchAapt2)
+}
+
 // Licences et NOTICE empaquetées (lot M, ADR-É8 « écran texte ») :
 // les fichiers de la racine sont copiés dans les assets par une tâche
 // — jamais de copie à la main qui vieillirait mal.
@@ -79,6 +144,22 @@ android {
         // builtins identiques (annotation, collections, ranges…) — la
         // première suffit, jamais de perte (même version 2.3.0).
         resources.pickFirsts += "**/*.kotlin_builtins"
+        // Lot U : D8/R8, apksig et bundletool vivent DANS l'APK (le
+        // build Android tourne sur l'appareil) — leurs méta-fichiers
+        // se fusionnent au premier, jamais de doublon fatal.
+        resources.excludes += setOf(
+                "META-INF/*.kotlin_module",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/versions/9/module-info.class",
+                "module-info.class")
+        // les dex de l'app : stockés (l'APK du build embarque assez —
+        // les propres dex de JoIDE restent compressés par défaut)
+        // l'aapt2 embarqué ne passe JAMAIS au dépouilleur : le binaire
+        // préconstruit doit rester tel quel (CodeAssist a montré la
+        // voie — un dépouillage n'améliore pas un ELF déjà lié)
+        jniLibs.keepDebugSymbols += "**/libaapt2.so"
     }
 
     sourceSets.getByName("main") {
@@ -114,4 +195,15 @@ dependencies {
         // Sans cet exclusion, D8 refuse les classes en double.
         exclude(group = "org.eclipse.jdt", module = "ecj")
     }
+    // Lot U (ADR-066) : la chaîne Android EMBARQUÉE — les adaptations
+    // d'outils du source set tools (D8/R8 en processus, apksig,
+    // bundletool) et les jars des outils eux-mêmes vivent dans l'APK :
+    // « d8 et autre non embarqué » ne se dit plus, le pipeline Android
+    // complet tourne sur l'appareil.
+    implementation(project(mapOf("path" to ":build-android",
+            "configuration" to "toolsApi")))
+    implementation(libs.r8)
+    implementation(libs.apksig)
+    implementation(libs.bundletool)
+    implementation(libs.guava)
 }

@@ -56,17 +56,40 @@ public final class ToolchainLocator {
     private final Transport transport;
 
     /**
-     * @return le répertoire de cache de l'outillage : la variable
-     *         d'environnement {@code JOIDE_TOOLCHAIN_DIR} si posée,
-     *         sinon {@code ~/.cache/joide/toolchain}
+     * @return le répertoire de cache de l'outillage : la propriété
+     *         système {@code joide.toolchain.dir} d'abord (sur
+     *         appareil, l'application ne peut pas poser d'env), la
+     *         variable d'environnement {@code JOIDE_TOOLCHAIN_DIR}
+     *         ensuite, sinon {@code ~/.cache/joide/toolchain}
      */
     public static Path defaultCacheDir() {
+        String propriete = System.getProperty("joide.toolchain.dir");
+        if (propriete != null && !propriete.isBlank()) {
+            return Path.of(propriete.trim());
+        }
         String override = System.getenv("JOIDE_TOOLCHAIN_DIR");
         if (override != null && !override.isBlank()) {
             return Path.of(override.trim());
         }
         return Path.of(System.getProperty("user.home"), ".cache",
                 "joide", "toolchain");
+    }
+
+    /**
+     * Le binaire aapt2 EMBARQUÉ de l'application (lot U) : jniLibs
+     * porte libaapt2.so par ABI (ReVanced/aapt2, segments 16 Ko
+     * alignés), ART n'exécute les binaires que depuis
+     * nativeLibraryDir — la propriété système {@code joide.native.dir}
+     * le nomme. Absent (bureau) : {@code null}.
+     */
+    public static Path aapt2Embarque() {
+        String natif = System.getProperty("joide.native.dir");
+        if (natif == null || natif.isBlank()) {
+            return null;
+        }
+        Path exe = Path.of(natif.trim(), "libaapt2.so");
+        return Files.isRegularFile(exe) && exe.toFile().canExecute()
+                ? exe : null;
     }
 
     /**
@@ -91,6 +114,12 @@ public final class ToolchainLocator {
         Path r8 = envPath("JOIDE_R8_JAR");
         if (r8 == null) {
             r8 = r8FromClasspath();
+        }
+        if (aapt2 == null) {
+            // lot U : sur appareil, aapt2 est EMBARQUÉ (jniLibs) —
+            // jamais téléchargé (un binaire natif Android n'existe
+            // pas chez Google, l'exec depuis le cache est refusé)
+            aapt2 = aapt2Embarque();
         }
         if (aapt2 == null) {
             aapt2 = cachedAapt2();

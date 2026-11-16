@@ -151,16 +151,58 @@ public final class BuildRunner implements AutoCloseable {
         void ensure() {
             if (scopeDexer == null) {
                 DEXER_INSTANCES.incrementAndGet();
-                scopeDexer = ServiceLoader.load(Dexer.class).findFirst()
-                        .orElseThrow(() -> new IllegalStateException(
-                                "in-process dexer missing from classpath"));
-                mergeDexer = new jo.joide.build.android.dex.ForkDexer(
-                        ToolchainLocator.r8FromClasspath(), "1g", 900);
-                signer = ServiceLoader.load(ApkSignerService.class)
-                        .findFirst().orElseThrow();
-                assembler = ServiceLoader.load(BundleAssembler.class)
-                        .findFirst().orElseThrow();
+                scopeDexer = outil(Dexer.class,
+                        "jo.joide.build.android.tools.InProcessDexer");
+                // lot U : le fork à gros tas n'existe que là où une
+                // JVM fille existe (bureau) — sur APPAREIL, la fusion
+                // passe par le dexeur en processus embarqué
+                Path r8 = ToolchainLocator.r8FromClasspath();
+                mergeDexer = r8 != null && javaExecutablePresente()
+                        ? new jo.joide.build.android.dex.ForkDexer(
+                                r8, "1g", 900) : scopeDexer;
+                signer = outil(ApkSignerService.class,
+                        "jo.joide.build.android.tools.ApksigSigner");
+                assembler = outil(BundleAssembler.class,
+                        "jo.joide.build.android.tools"
+                                + ".BundletoolAssembler");
             }
+        }
+
+        /**
+         * L'outil ServiceLoader d'abord ; le source set tools ne
+         * vit PAS dans l'APK par un jar séparé — si la fusion des
+         * services Android a avalé les fichiers META-INF, le
+         * ServiceLoader les voit ; sinon le constructeur sans
+         * argument est chargé par réflexion (embarqué, lot U).
+         */
+        private static <T> T outil(Class<T> type, String nomClasse) {
+            try {
+                T charge = ServiceLoader.load(type).findFirst()
+                        .orElse(null);
+                if (charge != null) {
+                    return charge;
+                }
+            } catch (Throwable ignore) {
+                // la lecture des services peut manquer : la
+                // réflexion reste la route de l'appareil
+            }
+            try {
+                Class<?> classe = Class.forName(nomClasse);
+                return type.cast(
+                        classe.getDeclaredConstructor().newInstance());
+            } catch (Throwable e) {
+                throw new IllegalStateException(
+                        "embedded build tool missing from classpath: "
+                                + nomClasse, e);
+            }
+        }
+
+        /** @return vrai si un exécutable java est à portée de fork */
+        private static boolean javaExecutablePresente() {
+            String home = System.getProperty("java.home", "");
+            return !home.isBlank()
+                    && java.nio.file.Files.isRegularFile(
+                    java.nio.file.Path.of(home, "bin", "java"));
         }
     }
 

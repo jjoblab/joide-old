@@ -208,6 +208,14 @@ public final class EcranAtelier extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // lot U : l'outillage de build vit ICI — le cache dans les
+        // fichiers privés (jamais user.home, absent sur Android) et
+        // nativeLibraryDir où ART seul exécute les binaires
+        System.setProperty("joide.toolchain.dir",
+                Paths.get(getFilesDir().getAbsolutePath(),
+                        "toolchain").toString());
+        System.setProperty("joide.native.dir",
+                getApplicationInfo().nativeLibraryDir);
         palette = GraphiteVue.palette(this);
         GraphiteVue.fondEcran(this, palette);
         sourceReglages = PreferencesAndroid.source(this);
@@ -2881,44 +2889,50 @@ public final class EcranAtelier extends Activity {
         if (racineProjet == null || modele == null || buildEnCours) {
             return;
         }
-        ExternalResolution externals = sync.derniereResolution()
-                .orElse(ExternalResolution.empty());
-        SpecsBuild.Constitution constitution = SpecsBuild.jvm(modele,
-                externals, racineProjet,
-                racineProjet.resolve("build-joide"),
-                Paths.get(getFilesDir().getAbsolutePath(), "m2"));
-        etatConsole.surEcarts(constitution.ecarts);
-        if (!constitution.constructible()) {
-            etatConsole.surRienAConstruire();
-            etat.deplierConsole();
-            majVolets();
-            majConsole();
-            return;
-        }
         long numero = numerosBuild.incrementAndGet();
         etat.commencerBuild(numero);
         etatConsole.surDemarrage(numero, System.currentTimeMillis());
-        // lot M : le moteur par défaut vit dans Paramètres (ADR-É8)
-        boolean enProcessus = Reglages.lire(sourceReglages).moteur
-                == Reglages.Moteur.PROCESSUS;
-        if (enProcessus) {
-            etatConsole.surAnnonceEnProcessus();
-        }
         etat.deplierConsole();
         majVolets();
         majConsole();
         majFab();
         majArbre();
-        if (constitution.spec == null) {
-            return;
-        }
-        if (enProcessus) {
-            fond.execute(() -> construireEnProcessus(constitution.spec,
-                    numero));
-        } else {
-            fond.execute(() -> construireParService(constitution.spec,
-                    numero));
-        }
+        // lot U : la constitution peut EXTRAIRE des AAR au disque et
+        // LOCALISER l'outillage — elle vit sur le fil de fond, ses
+        // écarts remontent à la console dès qu'ils sont connus
+        ExternalResolution externals = sync.derniereResolution()
+                .orElse(ExternalResolution.empty());
+        fond.execute(() -> {
+            SpecsBuild.Constitution constitution = SpecsBuild
+                    .constituer(modele, externals, racineProjet,
+                            racineProjet.resolve("build-joide"),
+                            Paths.get(getFilesDir().getAbsolutePath(),
+                                    "m2"));
+            runOnUiThread(() -> {
+                etatConsole.surEcarts(constitution.ecarts);
+                if (!constitution.constructible()) {
+                    etatConsole.surRienAConstruire();
+                    etat.interrompreBuild();
+                    majConsole();
+                    finirBuild();
+                    return;
+                }
+                // lot M : le moteur par défaut vit dans Paramètres
+                boolean enProcessus = Reglages.lire(sourceReglages)
+                        .moteur == Reglages.Moteur.PROCESSUS;
+                if (enProcessus) {
+                    etatConsole.surAnnonceEnProcessus();
+                }
+                majConsole();
+                if (enProcessus) {
+                    fond.execute(() -> construireEnProcessus(
+                            constitution.spec, numero));
+                } else {
+                    fond.execute(() -> construireParService(
+                            constitution.spec, numero));
+                }
+            });
+        });
     }
 
     private void construireParService(BuildSpec spec, long numero) {
