@@ -547,6 +547,25 @@ public final class EcranAtelier extends Activity {
             retour.setOnClickListener(vue -> onBackPressed());
             barre.addView(retour, clicParams());
 
+            // lot U : le tiroir de l'arborescence a son point d'entrée
+            // VISIBLE sur téléphone — le dossier pousse l'arbre, le
+            // retour système le referme (l'ordre ADR-É5 y veille)
+            if (!etat.grandEcran()) {
+                Icone dossier = new Icone(EcranAtelier.this);
+                dossier.setGlyphe(Icone.Glyphe.DOSSIER);
+                dossier.setCouleur(palette.texte);
+                dossier.setClickable(true);
+                dossier.setContentDescription(getString(
+                        R.string.atelier_desc_fichiers));
+                dossier.setOnClickListener(vue -> {
+                    etat.ouvrirTiroir();
+                    if (tiroir != null) {
+                        tiroir.ouvrir();
+                    }
+                });
+                barre.addView(dossier, clicParams());
+            }
+
             LinearLayout identite = new LinearLayout(EcranAtelier.this);
             identite.setOrientation(LinearLayout.HORIZONTAL);
             identite.setGravity(Gravity.CENTER_VERTICAL);
@@ -923,10 +942,7 @@ public final class EcranAtelier extends Activity {
                 String uri = racineProjet.resolve(relatif).toString();
                 scene.ouvrir(uri, Arborescence.nomAffiche(relatif),
                         contenu);
-                etatVidePuits.setVisibility(View.GONE);
-                if (vueEditeur != null) {
-                    vueEditeur.setVisibility(View.VISIBLE);
-                }
+                majPuits();
                 boolean miseEnPage = FichiersProjet.estMiseEnPage(relatif);
                 etat.surActifEstMiseEnPage(miseEnPage);
                 if (miseEnPage) {
@@ -957,10 +973,6 @@ public final class EcranAtelier extends Activity {
         } else {
             fichierCourant = null;
             xmlCourant = null;
-            etatVidePuits.setVisibility(View.VISIBLE);
-            if (vueEditeur != null) {
-                vueEditeur.setVisibility(View.GONE);
-            }
             etat.fermerVoletApercu();
             majOnglets();
             majVolets();
@@ -3040,7 +3052,28 @@ public final class EcranAtelier extends Activity {
     // Volets, pilules, dock, aperçu
     // ------------------------------------------------------------------
 
+    /**
+     * L'état vide du puits EST l'état sans onglet actif — UNE seule
+     * source de vérité (lot U) : l'ouverture, la fermeture du dernier
+     * onglet, le chargement et l'erreur passent tous par ici ; jamais
+     * un puits muet derrière un éditeur absent.
+     */
+    private void majPuits() {
+        if (etatVidePuits == null) {
+            return;
+        }
+        boolean sansOnglet = etat.actif() == null;
+        etatVidePuits.setVisibility(
+                sansOnglet ? View.VISIBLE : View.GONE);
+        if (vueEditeur != null) {
+            vueEditeur.setVisibility(
+                    sansOnglet ? View.GONE : View.VISIBLE);
+        }
+    }
+
+
     private void majVolets() {
+        majPuits();
         if (dock != null) {
             dock.setDeplie(etat.consoleDepliee());
         }
