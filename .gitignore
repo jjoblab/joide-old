@@ -14,6 +14,10 @@ build-daemon/build/
 import-gradle/build/
 tools-bench/build/
 tools-test/build/
+# Lot N : le module agent a été ajouté au graphe après la liste des
+# répertoires de sortie — ses builds se committaient (268 fichiers
+# de classes et de rapports suivis). Corrigé au lot Q.
+agent/build/
 app-android/build/
 ide-integration/build/
 build-logic/build/
