@@ -1,3 +1,33 @@
+# CHANGES — Écrans v2 : analyse CodeAssist, ADR-É1 à É8, maquettes HTML
+
+Après le premier test du propriétaire (2026-11-16) — l'UI P8 est
+fonctionnelle mais minimale (SAF unique, aucune création, apparence
+brute du cadre) — la série `docs/ecrans` définit l'architecture des
+écrans v2 AVANT implémentation : analyse des écrans de CodeAssist
+(tyron12233), huit ADR (système de design « Graphite » + un par
+écran), maquettes HTML autonomes (preview principal + un par écran).
+Aucune ligne de code n'est reprise de CodeAssist (GPL-3.0, lecture
+seule, clean-room ADR-008) ; le code P8 n'est pas touché ; aucune
+implémentation n'est engagée sans validation du propriétaire.
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| docs/ecrans | `README.md` (index de la série) ; `001-analyse-codeassist.md` (inventaire complet des écrans de CodeAssist par famille, verdicts, six leçons avec preuves dans le source) ; `002-systeme-design.md` (palette Graphite, typographie à deux familles, composants, implémentation en vues du cadre sans AndroidX, états purs JVM par écran) ; `003-accueil-mes-projets.md` ; `004-creation-projet.md` ; `005-atelier.md` ; `006-console-build.md` ; `007-apercu-mise-en-page.md` ; `008-parametres.md` |
+| docs/ecrans/design | `index.html` (preview principal : parcours, galerie des six écrans, jetons, principes de franchise) ; `accueil-projets.html` (peuplé + première ouverture) ; `creation-projet.html` (trois étapes, franchise du modèle sur la carte) ; `atelier.html` (compact, tiroir arborescence, grand écran amarré) ; `console.html` (échoué avec problème cliquable + en cours) ; `apercu.html` (nominal + pendant la frappe) ; `parametres.html` — fichiers autonomes, aucune ressource externe, jetons ADR-É2 textuels |
+| scripts (hors dépôt) | capture et audit Playwright des maquettes (débordements, troncatures, coupures) — outils de revue de la série, pas des contrôles du dépôt |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| Racine | `CHANGES.md` | le présent fichier |
+
+## Supprimés
+
+Rien.
+
 # CHANGES — CI des APK signés (validation P8)
 
 Le propriétaire teste l'application pour la première fois : le

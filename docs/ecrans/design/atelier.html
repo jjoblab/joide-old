@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Atelier d'édition (maquette)</title>
+<!--
+  Maquette ADR-É5 — Atelier adaptatif : compact (téléphone, tiroir
+  poussé, dock), grand écran (rail, arborescence amarrée, aperçu
+  côte à côte, console amarrée). Fichier autonome, jetons ADR-É2.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --synMot:#C678DD; --synType:#E5C07B; --synFonction:#61AFEF; --synChaine:#98C379;
+    --synNombre:#D19A66; --synCommentaire:#7C8695; --synDefaut:#D6DAE3;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .entete-page{max-width:1420px;margin:0 auto 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .nav-page{max-width:1420px;margin:0 auto 34px;display:flex;gap:8px;flex-wrap:wrap}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  .scène{max-width:1420px;margin:0 auto;display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start}
+  figure{margin:0}
+  figure figcaption{max-width:390px;margin-top:18px}
+  figure.grand figcaption{max-width:1040px}
+  figure figcaption h2{font-size:15px;font-weight:600;margin-bottom:3px}
+  figure figcaption p{font-size:13px;color:var(--texte2)}
+  figure figcaption p a{color:var(--accent);text-decoration:none}
+  .étiquette{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  /* ---- cadres ---- */
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .fenetre{width:1040px;background:var(--fond);border:1px solid #232A34;border-radius:18px;overflow:hidden;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);display:flex;flex-direction:column;height:700px}
+  .titre-fenetre{height:44px;flex:none;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--surface);border-bottom:1px solid var(--bordFin)}
+  .titre-fenetre .points{display:flex;gap:8px}
+  .titre-fenetre .points i{width:12px;height:12px;border-radius:50%}
+  .titre-fenetre .nom-fenetre{flex:1;text-align:center;font-size:13px;color:var(--texte2)}
+  .titre-fenetre .outils{display:flex;gap:6px;align-items:center}
+  /* ---- barre supérieure & onglets ---- */
+  .barre-sup{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 8px}
+  .ic-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none}
+  .barre-sup .nom-projet{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .barre-sup .droite-sup{margin-left:auto;display:flex;gap:4px;align-items:center;flex:none}
+  .pilule{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--surfaceHaute);color:var(--texte2);border:1px solid var(--bordFin);white-space:nowrap;flex:none}
+  .pilule.index{display:flex;align-items:center;gap:6px}
+  .pilule.index i{width:7px;height:7px;border-radius:50%;background:var(--reussite)}
+  .onglets{flex:none;display:flex;align-items:stretch;gap:2px;padding:0 8px;border-bottom:1px solid var(--bordFin);background:var(--fond);overflow:hidden}
+  .onglet{display:flex;align-items:center;gap:7px;padding:8px 11px 6px;font-size:12.5px;color:var(--texte2);border-bottom:2px solid transparent;white-space:nowrap;overflow:hidden}
+  .onglet.actif{color:var(--texte);border-bottom-color:var(--accent);background:var(--puits)}
+  .onglet .sale{width:7px;height:7px;border-radius:50%;background:var(--alerte)}
+  .onglet .fermer{color:var(--texte3);margin-left:2px}
+  .onglet.actif .fermer{color:var(--texte2)}
+  /* ---- éditeur ---- */
+  .editeur{flex:1;background:var(--puits);overflow:hidden;font-family:var(--mono);font-size:12px;line-height:19px;display:flex}
+  .numeros{flex:none;width:36px;text-align:right;padding:12px 8px 0 0;color:#3E4A59;user-select:none}
+  .code{flex:1;padding:12px 0 56px 8px;white-space:pre;color:var(--synDefaut);overflow:hidden}
+  .code .ligne-active{display:block;margin:0 -8px 0 -8px;padding:0 8px;background:rgba(130,170,255,.08);box-shadow:inset 2px 0 0 var(--accent)}
+  .k{color:var(--synMot)} .t{color:var(--synType)} .f{color:var(--synFonction)}
+  .c{color:var(--synCommentaire)} .n{color:var(--synNombre)}
+  .s{color:var(--synChaine)}
+  .curseur{display:inline-block;width:2px;height:17px;background:var(--accent);vertical-align:-3px}
+  /* ---- dock & FAB ---- */
+  .dock{flex:none;display:flex;align-items:center;gap:10px;padding:0 18px;height:48px;background:var(--surface);border-top:1px solid var(--bordFin);color:var(--texte2);font-size:13px}
+  .dock .etat{color:var(--reussite);font-weight:600}
+  .dock .chev{margin-left:auto;color:var(--texte3)}
+  .fab{position:absolute;right:16px;bottom:64px;width:58px;height:58px;border-radius:18px;background:var(--reussite);color:#07130C;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 0 6px rgba(61,220,132,.16)}
+  /* ---- tiroir ---- */
+  .tiroir-rang{position:absolute;inset:0;display:flex;z-index:5}
+  .tiroir-rang .rideau{flex:1;background:rgba(4,6,10,.45)}
+  .tiroir{width:300px;background:var(--surfaceHaute);border-right:1px solid var(--bord);display:flex;flex-direction:column;box-shadow:24px 0 60px rgba(0,0,0,.35)}
+  .tiroir-titre{display:flex;align-items:center;gap:10px;padding:14px 16px 10px}
+  .tiroir-titre .nom{font-size:15px;font-weight:600;flex:1}
+  .btn-nouveau{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--accent);background:rgba(130,170,255,.14);border:1px solid rgba(130,170,255,.4);border-radius:999px;padding:6px 12px}
+  .arbre{flex:1;overflow:hidden;padding:4px 10px 12px;font-size:13px;display:flex;flex-direction:column}
+  .niveau{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;color:var(--texte2)}
+  .niveau .fleche{color:var(--texte3);width:14px;flex:none}
+  .niveau.dossier{color:var(--texte)}
+  .niveau.actif{background:rgba(130,170,255,.14);color:var(--accent);font-weight:600;box-shadow:inset 2px 0 0 var(--accent)}
+  .niveau.sorties{color:var(--texte3)}
+  .niveau .sale{width:7px;height:7px;border-radius:50%;background:var(--alerte);margin-left:auto}
+  .note-sorties{margin-top:auto;padding-top:10px;font-size:11px;color:var(--texte3);border-top:1px dashed var(--bordFin)}
+  /* ---- grand écran ---- */
+  .grand-rang{flex:1;display:flex;min-height:0}
+  .rail{width:56px;flex:none;background:var(--surface);border-right:1px solid var(--bordFin);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px}
+  .rail .ic-btn.on{color:var(--accent);background:rgba(130,170,255,.14)}
+  .rail .bas{margin-top:auto}
+  .col-arbre{width:242px;flex:none;background:var(--surface);border-right:1px solid var(--bordFin);display:flex;flex-direction:column}
+  .col-milieu{flex:1;display:flex;flex-direction:column;min-width:0}
+  .rang-apercu{flex:1;display:flex;min-height:0}
+  .volet-apercu{width:330px;flex:none;background:var(--surface);border-left:1px solid var(--bordFin);display:flex;flex-direction:column}
+  .entete-volet{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;color:var(--texte2);border-bottom:1px solid var(--bordFin)}
+  .entete-volet .titre-volet{font-weight:600;color:var(--texte)}
+  .entete-volet .outils{margin-left:auto;display:flex;gap:10px;color:var(--texte3)}
+  .controles{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px 0}
+  .seg-apercu{display:flex;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px}
+  .seg-apercu span{font-size:12px;padding:5px 12px;border-radius:999px;color:var(--texte3)}
+  .seg-apercu span.on{background:rgba(130,170,255,.2);color:var(--accent);font-weight:700}
+  .surface-apercu{flex:1;display:flex;align-items:center;justify-content:center;padding:14px;background:
+    repeating-conic-gradient(#12151B 0% 25%, #0F1218 0% 50%) 50%/22px 22px}
+  .perchoir{width:190px;height:320px;background:#FAFAFA;border-radius:22px;border:1px solid #D8DCE2;box-shadow:0 18px 44px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;font-size:12px;color:#1B1F26}
+  .perchoir .barre-perchoir{height:26px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:6px 14px 0;font-size:10px;font-weight:700;color:#3C4048}
+  .perchoir .corps-perchoir{flex:1;padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+  .perchoir h3{font-size:17px;color:#1B1F26}
+  .perchoir .champ-ui{border:1px solid #C9CED6;border-radius:10px;height:40px;display:flex;align-items:center;padding:0 12px;color:#7A8290}
+  .perchoir .btn-ui{background:#2E5B41;color:#EAF6EF;border-radius:10px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .stats-apercu{flex:none;padding:8px 14px 10px;font-size:11.5px;color:var(--texte3);border-top:1px solid var(--bordFin)}
+  .console-amarree{flex:none;height:130px;background:var(--puits);border-top:1px solid var(--bordFin);display:flex;flex-direction:column}
+  .poignee{display:flex;align-items:center;gap:10px;padding:8px 16px;font-size:12.5px;color:var(--texte2);background:var(--surface)}
+  .poignee .etat{color:var(--reussite);font-weight:600}
+  .transcript{flex:1;overflow:hidden;font-family:var(--mono);font-size:12px;line-height:19px;padding:8px 16px;color:var(--texte2)}
+  .tr .sys{color:var(--accent)} .tr .err{color:var(--erreur)}
+  .pied{max-width:1420px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
+  .pied a{color:var(--texte2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="entete-page">
+  <h1>Atelier d'édition</h1>
+  <span class="fil">JoIDE · écrans v2 · ADR-É5 · seuil adaptatif 720 dp</span>
+</header>
+<nav class="nav-page">
+  <a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a class="ic" href="#">Atelier</a><a href="console.html">Console</a><a href="apercu.html">Aperçu</a><a href="parametres.html">Paramètres</a><a href="index.html">Index général</a>
+</nav>
+
+<main class="scène">
+
+  <!-- ============ COMPACT — ÉDITION ============ -->
+  <figure>
+    <span class="étiquette">Téléphone · édition</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="barre-sup">
+          <span class="ic-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span class="nom-projet">mon-application</span>
+          <span class="pilule index"><i></i>Index · PRÊT</span>
+          <span class="droite-sup">
+            <span class="ic-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4.5" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="15.5" r="1.7"/></svg></span>
+          </span>
+        </div>
+        <div class="onglets">
+          <span class="onglet actif">MainActivity.kt <span class="fermer">✕</span></span>
+          <span class="onglet">activity_main.xml <span class="sale"></span></span>
+          <span class="onglet">joide.toml</span>
+        </div>
+        <div class="editeur">
+          <div class="numeros">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</div>
+          <div class="code"><span class="k">package</span> jo.exemple.monapplication
+
+<span class="k">import</span> android.os.Bundle
+<span class="k">import</span> android.app.Activity
+
+<span class="c">/** Écran principal de l'application. */</span>
+<span class="k">class</span> <span class="t">MainActivity</span> : <span class="t">Activity</span>() {
+
+    <span class="k">override fun</span> onCreate(etat: <span class="t">Bundle</span>?) {
+        <span class="k">super</span>.<span class="f">onCreate</span>(etat)
+        <span class="ligne-active">        <span class="f">setContentView</span>(R.layout.activity_main)<span class="curseur"></span></span>
+    }
+}</div>
+        </div>
+        <div class="dock">
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" transform="translate(-2,0) scale(.9)"/><path d="m6.5 10 2.5 2.5L6.5 15M11.5 15h4" transform="translate(-2,0)"/></svg>
+          Console — <span class="etat">prêt</span> · 0 problème
+          <span class="chev"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5 10 13l5.5-5.5"/></svg></span>
+        </div>
+        <div class="fab" aria-label="Construire">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>
+        </div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Compact — un volet d'édition, tout le reste en tiroir</h2>
+      <p>Barre supérieure exacte (modules, index PRÊT avec totaux au tap), onglets multi-fichiers avec point de modification, éditeur celeris dans le puits, dock de console repliable, FAB Construire. Le retour ferme d'abord les surcouches — jamais un état zombie. Spécification : <a href="../005-atelier.md">ADR-É5</a>.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ COMPACT — TIROIR OUVERT ============ -->
+  <figure>
+    <span class="étiquette">Téléphone · tiroir arborescence</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="tiroir-rang">
+          <div class="tiroir">
+            <div class="tiroir-titre">
+              <span class="nom">mon-application</span>
+              <span class="btn-nouveau"><svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 3.5v11M3.5 9h11"/></svg>Nouveau</span>
+            </div>
+            <div class="arbre">
+              <div class="niveau dossier" style="padding-left:8px"><span class="fleche">▾</span>mon-application</div>
+              <div class="niveau dossier" style="padding-left:24px"><span class="fleche">▾</span>app</div>
+              <div class="niveau" style="padding-left:40px"><span class="fleche">▸</span>src/main/java/…</div>
+              <div class="niveau dossier" style="padding-left:40px"><span class="fleche">▾</span>src/main/res</div>
+              <div class="niveau dossier" style="padding-left:56px"><span class="fleche">▾</span>layout</div>
+              <div class="niveau actif" style="padding-left:72px"><span class="fleche">&nbsp;</span>activity_main.xml</div>
+              <div class="niveau" style="padding-left:56px"><span class="fleche">▸</span>values</div>
+              <div class="niveau" style="padding-left:40px"><span class="fleche">&nbsp;</span>AndroidManifest.xml</div>
+              <div class="niveau dossier" style="padding-left:24px"><span class="fleche">▾</span>core</div>
+              <div class="niveau" style="padding-left:40px"><span class="fleche">▸</span>src/main/java/…</div>
+              <div class="niveau" style="padding-left:56px"><span class="fleche">&nbsp;</span>Outil.kt</div>
+              <div class="niveau" style="padding-left:8px">joide.toml<span class="sale"></span></div>
+              <div class="niveau sorties" style="padding-left:8px"><span class="fleche">▸</span>build-joide</div>
+              <div class="note-sorties">Sorties de build — estompées pendant qu'elles se construisent ; jamais présentées comme sources.</div>
+            </div>
+          </div>
+          <div class="rideau"></div>
+        </div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Arborescence — tiroir poussé depuis la gauche</h2>
+      <p>« Nouveau » (fichier/dossier) en tête, entrée active surlignée, joide.toml porte son point de modification, les sorties <span class="mono" style="font-family:var(--mono)">build-joide</span> sont estompées avec leur raison — la franchise CodeAssist leçon 5, appliquée à l'arbre. Spécification : <a href="../005-atelier.md">ADR-É5</a>.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ GRAND ÉCRAN ============ -->
+  <figure class="grand">
+    <span class="étiquette">Grand écran (≥ 720 dp) — tout amarré</span>
+    <div class="fenetre">
+      <div class="titre-fenetre">
+        <span class="points"><i style="background:#3A4450"></i><i style="background:#3A4450"></i><i style="background:#3A4450"></i></span>
+        <span class="nom-fenetre">JoIDE — mon-application · atelier</span>
+        <span class="outils">
+          <span class="ic-btn" style="color:var(--reussite)"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+          <span class="ic-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4.5" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="15.5" r="1.7"/></svg></span>
+        </span>
+      </div>
+      <div class="grand-rang">
+        <div class="rail">
+          <span class="ic-btn on"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg></span>
+          <span class="ic-btn"><svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 17 17"/></svg></span>
+          <span class="ic-btn bas"><svg width="21" height="21" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="6.5"/><path d="M10 6.5V10l2.5 2" stroke-linecap="round"/></svg></span>
+        </div>
+        <div class="col-arbre">
+          <div class="tiroir-titre" style="border-bottom:1px solid var(--bordFin)">
+            <span class="nom">mon-application</span>
+            <span class="btn-nouveau"><svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 3.5v11M3.5 9h11"/></svg>Nouveau</span>
+          </div>
+          <div class="arbre" style="background:var(--surface)">
+            <div class="niveau dossier" style="padding-left:8px"><span class="fleche">▾</span>mon-application</div>
+            <div class="niveau dossier" style="padding-left:24px"><span class="fleche">▾</span>app</div>
+            <div class="niveau" style="padding-left:40px"><span class="fleche">▸</span>src/main/java/…</div>
+            <div class="niveau dossier" style="padding-left:40px"><span class="fleche">▾</span>src/main/res</div>
+            <div class="niveau dossier" style="padding-left:56px"><span class="fleche">▾</span>layout</div>
+            <div class="niveau actif" style="padding-left:72px"><span class="fleche">&nbsp;</span>activity_main.xml</div>
+            <div class="niveau" style="padding-left:56px"><span class="fleche">▸</span>values</div>
+            <div class="niveau" style="padding-left:40px"><span class="fleche">&nbsp;</span>AndroidManifest.xml</div>
+            <div class="niveau dossier" style="padding-left:24px"><span class="fleche">▾</span>core</div>
+            <div class="niveau" style="padding-left:40px"><span class="fleche">▸</span>src/main/java/…</div>
+            <div class="niveau" style="padding-left:56px"><span class="fleche">&nbsp;</span>Outil.kt</div>
+            <div class="niveau" style="padding-left:8px">joide.toml<span class="sale"></span></div>
+            <div class="niveau sorties" style="padding-left:8px"><span class="fleche">▸</span>build-joide</div>
+            <div class="note-sorties">Sorties de build — estompées pendant qu'elles se construisent ; jamais présentées comme sources.</div>
+          </div>
+        </div>
+        <div class="col-milieu">
+          <div class="onglets" style="background:transparent">
+            <span class="onglet">MainActivity.kt</span>
+            <span class="onglet actif">activity_main.xml <span class="sale"></span> <span class="fermer">✕</span></span>
+            <span class="onglet">joide.toml</span>
+          </div>
+          <div class="rang-apercu">
+            <div class="editeur" style="background:var(--puits)">
+              <div class="numeros">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</div>
+              <div class="code"><span class="c">&lt;?xml version="1.0" encoding="utf-8"?&gt;</span>
+<span class="t">&lt;LinearLayout</span> <span class="k">xmlns:android</span>=<span class="s">"…"</span>
+    <span class="k">android:orientation</span>=<span class="s">"vertical"</span>
+    <span class="k">android:padding</span>=<span class="s">"16dp"</span>&gt;
+
+    <span class="t">&lt;TextView</span>
+        <span class="k">android:text</span>=<span class="s">"@string/bienvenue"</span>
+        <span class="k">android:textSize</span>=<span class="s">"20sp"</span> /&gt;
+
+    <span class="t">&lt;EditText</span> <span class="k">android:hint</span>=<span class="s">"@string/identifiant"</span> /&gt;
+    <span class="t">&lt;Button</span> <span class="k">android:text</span>=<span class="s">"@string/continuer"</span> /&gt;
+
+<span class="t">&lt;/LinearLayout&gt;</span></div>
+            </div>
+            <div class="volet-apercu">
+              <div class="entete-volet">
+                <span class="titre-volet">Aperçu</span>
+                <span style="color:var(--texte3)">activity_main.xml</span>
+                <span class="outils">
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a6.5 6.5 0 0 1 11.5-4.2M15.5 9a6.5 6.5 0 0 1-11.5 4.2"/><path d="M14 2.5v2.4h-2.4M4 15.5v-2.4h2.4"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6.5 6.5 3M3 3v3.5h-.0M15 11.5 11.5 15M15 15v-3.5"/></svg>
+                </span>
+              </div>
+              <div class="controles">
+                <span class="seg-apercu"><span>1×</span><span class="on">2×</span><span>3×</span></span>
+                <span class="seg-apercu"><span>🌙 Nuit</span></span>
+              </div>
+              <div class="surface-apercu">
+                <div class="perchoir">
+                  <div class="barre-perchoir"><span>9:41</span><span>▪ ▪ ▪</span></div>
+                  <div class="corps-perchoir">
+                    <h3>Bienvenue</h3>
+                    <div class="champ-ui">Identifiant</div>
+                    <div class="champ-ui">Mot de passe</div>
+                    <div class="btn-ui">Continuer</div>
+                  </div>
+                </div>
+              </div>
+              <div class="stats-apercu">42 vues · 38 ms · 360 × 640 · densité 2×</div>
+            </div>
+          </div>
+          <div class="console-amarree">
+            <div class="poignee">
+              <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" transform="translate(-2,0) scale(.85)"/><path d="m6.5 10 2.5 2.5L6.5 15M11.5 15h4" transform="translate(-2,0)"/></svg>
+              Console — <span class="etat">build #4 réussi · 6,2 s</span>
+              <span style="margin-left:auto;color:var(--texte3)">12 exécutées · 3 du cache · 2 à jour</span>
+            </div>
+            <div class="transcript">
+<span class="tr"><span class="sys">système</span>   écarts : modules Android non construits sur appareil (P8) — builds JVM seulement</span>
+<span class="tr"><span class="sys">phase</span>     compilation : 14 sources · 2 générées (4,1 s)</span>
+<span class="tr"><span class="sys">système</span>   build #4 réussi — <span style="color:var(--texte)">build-joide/dist/mon-application.jar</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Grand écran — rail, arborescence amarrée, aperçu côte à côte, console amarrée</h2>
+      <p>Le fichier de mise en page actif obtient son volet d'aperçu à droite (rendu LayoutLib brut sur damier, stats réelles de l'écouteur) ; la console s'amarre en bas avec le résumé chiffré — jamais un « succès » sans mesures. Sur téléphone, l'aperçu bascule en plein écran : <a href="apercu.html">voir l'écran Aperçu</a>. Spécification : <a href="../005-atelier.md">ADR-É5</a>, volet : <a href="../007-apercu-mise-en-page.md">ADR-É7</a>.</p>
+    </figcaption>
+  </figure>
+
+</main>
+
+<footer class="pied">
+  JoIDE — maquettes des écrans v2 · 2026-11-16 · fichiers HTML autonomes (aucune ressource externe) · jetons <a href="../002-systeme-design.md">ADR-É2</a>.
+</footer>
+
+</body>
+</html>

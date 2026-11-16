@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Aperçu de mise en page (maquette)</title>
+<!--
+  Maquette ADR-É7 — Aperçu de mise en page (panneau de l'atelier,
+  plein écran sur téléphone pour le fichier de mise en page actif).
+  Fichier autonome, jetons ADR-É2. Les bannières traduisent des
+  états que ApercuLayouts / ConfigurationApercu exposent déjà.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .entete-page{max-width:1180px;margin:0 auto 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .nav-page{max-width:1180px;margin:0 auto 34px;display:flex;gap:8px;flex-wrap:wrap}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  .scène{max-width:1180px;margin:0 auto;display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start}
+  figure{margin:0}
+  figure figcaption{max-width:390px;margin-top:18px}
+  figure figcaption h2{font-size:15px;font-weight:600;margin-bottom:3px}
+  figure figcaption p{font-size:13px;color:var(--texte2)}
+  figure figcaption p a{color:var(--accent);text-decoration:none}
+  .étiquette{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .ic-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none}
+  .sous-barre{display:flex;align-items:center;gap:8px;padding:10px 16px 4px}
+  .sous-barre .retour{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2)}
+  .sous-barre .titre{font-size:17px;font-weight:600}
+  .sous-barre .fichier{font-family:var(--mono);font-size:12.5px;color:var(--texte2)}
+  .sous-barre .outils{margin-left:auto;display:flex;gap:2px}
+  /* ---- contrôles ---- */
+  .controles{display:flex;gap:8px;flex-wrap:wrap;padding:4px 20px 8px}
+  .seg{display:flex;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px}
+  .seg span{font-size:12px;padding:5px 12px;border-radius:999px;color:var(--texte3)}
+  .seg span.on{background:rgba(130,170,255,.2);color:var(--accent);font-weight:700}
+  .seg span.nuit{padding:5px 13px}
+  .puce-dim{font-size:12px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:6px 13px}
+  /* ---- surface de rendu ---- */
+  .surface{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 20px 0;
+    background:repeating-conic-gradient(#12151B 0% 25%, #0F1218 0% 50%) 50%/22px 22px}
+  .perchoir{width:225px;height:380px;background:#FAFAFA;border-radius:24px;border:1px solid #D8DCE2;box-shadow:0 20px 50px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;font-size:12px;color:#1B1F26}
+  .perchoir.nuit-apercu{background:#15181E;border-color:#2A303A;color:#E7ECF3}
+  .barre-perchoir{height:30px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;font-size:10px;font-weight:700;color:#3C4048}
+  .perchoir.nuit-apercu .barre-perchoir{color:#9AA6B5}
+  .corps-perchoir{flex:1;padding:26px 20px;display:flex;flex-direction:column;gap:14px}
+  .perchoir h3{font-size:19px}
+  .perchoir .champ-ui{border:1px solid #C9CED6;border-radius:12px;height:44px;display:flex;align-items:center;padding:0 14px;color:#7A8290}
+  .perchoir.nuit-apercu .champ-ui{border-color:#3A4450;color:#64707F}
+  .perchoir .btn-ui{background:#2E5B41;color:#EAF6EF;border-radius:12px;height:46px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .perchoir.nuit-apercu .btn-ui{background:#9AB5A3;color:#10130F}
+  .perchoir .accent-manquant{font-size:10.5px;color:#B0793A;margin-top:-6px}
+  /* ---- stats & bannières ---- */
+  .stats{flex:none;padding:4px 20px 0;font-size:11.5px;color:var(--texte3)}
+  .stats .mesures{color:var(--texte2)}
+  .bannieres{flex:none;padding:2px 20px 6px;display:flex;flex-direction:column;gap:6px}
+  .banniere{display:flex;gap:9px;align-items:flex-start;font-size:12px;border-radius:12px;padding:8px 10px}
+  .banniere.info{background:rgba(130,170,255,.10);border:1px solid rgba(130,170,255,.35);color:#AFC6F0}
+  .banniere.alerte{background:rgba(229,192,123,.10);border:1px solid rgba(229,192,123,.35);color:var(--alerte)}
+  .pied{max-width:1180px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
+  .pied a{color:var(--texte2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="entete-page">
+  <h1>Aperçu de mise en page</h1>
+  <span class="fil">JoIDE · écrans v2 · ADR-É7 · lié à l'onglet actif</span>
+</header>
+<nav class="nav-page">
+  <a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a href="atelier.html">Atelier</a><a href="console.html">Console</a><a class="ic" href="#">Aperçu</a><a href="parametres.html">Paramètres</a><a href="index.html">Index général</a>
+</nav>
+
+<main class="scène">
+
+  <!-- ============ RENDU NOMINAL ============ -->
+  <figure>
+    <span class="étiquette">Rendu nominal</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="sous-barre">
+          <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span>
+            <span class="titre">Aperçu</span>
+            <span class="fichier"> · activity_main.xml</span>
+          </span>
+          <span class="outils">
+            <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a6.5 6.5 0 0 1 11.5-4.2M15.5 9a6.5 6.5 0 0 1-11.5 4.2"/><path d="M14 2.5v2.4h-2.4M4 15.5v-2.4h2.4"/></svg></span>
+            <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6.5 6.5 3M3 3v3.5h-.0M15 11.5 11.5 15M15 15v-3.5"/></svg></span>
+          </span>
+        </div>
+        <div class="controles">
+          <span class="seg"><span>1×</span><span class="on">2×</span><span>3×</span></span>
+          <span class="seg"><span>🌙 Nuit</span></span>
+          <span class="puce-dim">360 × 640</span>
+        </div>
+        <div class="surface">
+          <div class="perchoir">
+            <div class="barre-perchoir"><span>9:41</span><span>▪ ▪ ▪</span></div>
+            <div class="corps-perchoir">
+              <h3>Bienvenue</h3>
+              <div class="champ-ui">Identifiant</div>
+              <div class="champ-ui">Mot de passe</div>
+              <div class="btn-ui">Continuer</div>
+            </div>
+          </div>
+        </div>
+        <div class="stats"><span class="mesures">42 vues · 38 ms · 360 × 640</span> · densité 2× · debouncé 400 ms (lot E)</div>
+        <div class="bannieres"></div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Le rendu LayoutLib, tel quel</h2>
+      <p>Damier neutre derrière le perchoir ; le résultat de la brique n'est jamais retouché ni embelli. Les stats viennent de l'écouteur (vues, durée, dimensions) — jamais inventées. Les contrôles sont les réglages réels du <span style="font-family:var(--mono);font-size:12px">ConfigurationApercu</span> du lot E. Spécification : <a href="../007-apercu-mise-en-page.md">ADR-É7</a>.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ ÉTAT HONNÊTE (frappe + avertissement) ============ -->
+  <figure>
+    <span class="étiquette">Pendant la frappe — franchise</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="sous-barre">
+          <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span>
+            <span class="titre">Aperçu</span>
+            <span class="fichier"> · activity_main.xml</span>
+          </span>
+          <span class="outils">
+            <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a6.5 6.5 0 0 1 11.5-4.2M15.5 9a6.5 6.5 0 0 1-11.5 4.2"/><path d="M14 2.5v2.4h-2.4M4 15.5v-2.4h2.4"/></svg></span>
+            <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6.5 6.5 3M3 3v3.5h-.0M15 11.5 11.5 15M15 15v-3.5"/></svg></span>
+          </span>
+        </div>
+        <div class="controles">
+          <span class="seg"><span>1×</span><span class="on">2×</span><span>3×</span></span>
+          <span class="seg"><span class="on nuit">🌙 Nuit</span></span>
+          <span class="puce-dim">360 × 640</span>
+        </div>
+        <div class="surface">
+          <div class="perchoir nuit-apercu">
+            <div class="barre-perchoir"><span>9:41</span><span>▪ ▪ ▪</span></div>
+            <div class="corps-perchoir">
+              <h3>Bienvenue</h3>
+              <div class="champ-ui">Identifiant</div>
+              <div class="champ-ui">Mot de passe</div>
+              <div class="btn-ui">Continuer</div>
+              <div class="accent-manquant">bouton : @color/accent manquante — repli natif (indiqué, jamais masqué)</div>
+            </div>
+          </div>
+        </div>
+        <div class="stats"><span class="mesures">42 vues · 38 ms</span> · rendu conservé — mode nuit, qualificateur -night</div>
+        <div class="bannieres">
+          <div class="banniere info">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="flex:none;margin-top:2px"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.5v3.6"/><circle cx="8" cy="5.2" r=".5" fill="currentColor"/></svg>
+            XML en frappe — dernier rendu valide conservé (42 vues). Le volet ne devient jamais blanc ni faux.
+          </div>
+          <div class="banniere alerte">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M8 2 14.5 13.5H1.5Z"/><path d="M8 6.5v3.2"/><circle cx="8" cy="11.8" r=".4" fill="currentColor"/></svg>
+            <span>@color/accent manquante — repli aux ressources natives. Le rendu continue avec le repli ; la bannière reste tant que la ressource manque.</span>
+          </div>
+        </div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Pendant la frappe — jamais un blanc qui ment</h2>
+      <p>Le mode nuit sélectionne le qualificateur -night (lot E) ; une ressource manquante passe au repli natif <em>et le dit</em> ; la classe inconnue rend une MockView sans échec. Le debouncé 400 ms et « rendre sans délai » manuel sont conservés du lot E, inchangés. Spécification : <a href="../007-apercu-mise-en-page.md">ADR-É7</a>.</p>
+    </figcaption>
+  </figure>
+
+</main>
+
+<footer class="pied">
+  JoIDE — maquettes des écrans v2 · 2026-11-16 · fichiers HTML autonomes (aucune ressource externe) · jetons <a href="../002-systeme-design.md">ADR-É2</a>.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Paramètres (maquette)</title>
+<!--
+  Maquette ADR-É8 — Paramètres : recherche, sections, valeurs
+  réelles. Un réglage existe déjà comme comportement ou est un
+  backlog nommé — jamais une rangée morte.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .entete-page{max-width:1180px;margin:0 auto 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .nav-page{max-width:1180px;margin:0 auto 34px;display:flex;gap:8px;flex-wrap:wrap}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  .scène{max-width:1180px;margin:0 auto;display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start}
+  figure{margin:0}
+  figure figcaption{max-width:390px;margin-top:18px}
+  figure figcaption h2{font-size:15px;font-weight:600;margin-bottom:3px}
+  figure figcaption p{font-size:13px;color:var(--texte2)}
+  figure figcaption p a{color:var(--accent);text-decoration:none}
+  .étiquette{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .ic-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none}
+  .sous-barre{display:flex;align-items:center;gap:10px;padding:10px 16px 8px}
+  .sous-barre .retour{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2)}
+  .sous-barre .titre{font-size:20px;font-weight:700}
+  .recherche{display:flex;align-items:center;gap:10px;height:44px;border:1.5px solid var(--bord);border-radius:14px;padding:0 14px;color:var(--texte3);background:var(--surface);margin:0 20px 14px}
+  .corps{flex:1;overflow:hidden;padding:0 20px 8px;display:flex;flex-direction:column;gap:8px}
+  .sect .nom-sect{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--texte3);margin:0 12px 4px}
+  .groupe{background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;padding:0 14px}
+  .rangée{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--bordFin);font-size:14px}
+  .rangée:last-child{border-bottom:none}
+  .rangée .clé{color:var(--texte)}
+  .rangée .valeur{margin-left:auto;color:var(--texte2);font-size:13.5px;display:flex;align-items:center;gap:8px;text-align:right}
+  .rangée .valeur .chev{color:var(--texte3)}
+  .rangée .légende{display:block;width:100%;font-size:11.5px;color:var(--texte3);margin-top:3px}
+  .rangée-envers{display:flex;flex-direction:column;align-items:stretch;padding:8px 0;border-bottom:1px solid var(--bordFin)}
+  .rangée-envers:last-child{border-bottom:none}
+  .rangée-envers .haut{display:flex;align-items:center;gap:12px;font-size:14.5px}
+  .rangée-envers .légende{font-size:11px;color:var(--texte3);margin-top:3px}
+  /* segment / switch / stepper / accents */
+  .segment{display:flex;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px;gap:3px}
+  .segment span{font-size:12px;padding:6px 13px;border-radius:999px;color:var(--texte3)}
+  .segment span.on{background:rgba(130,170,255,.2);color:var(--accent);font-weight:700}
+  .segment span.grise{color:var(--texte3)}
+  .interrupteur{width:46px;height:27px;border-radius:999px;background:var(--surfaceHaute);border:1px solid var(--bord);position:relative}
+  .interrupteur i{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--texte3);transition:.18s}
+  .interrupteur.on{background:rgba(61,220,132,.25);border-color:rgba(61,220,132,.6)}
+  .interrupteur.on i{left:23px;background:var(--reussite)}
+  .stepper{display:flex;align-items:center;gap:2px;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px}
+  .stepper button{width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:var(--texte2);font-size:16px;display:flex;align-items:center;justify-content:center}
+  .stepper .val{min-width:52px;text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--texte)}
+  .nuancier{display:flex;gap:10px;align-items:center}
+  .nuancier i{width:26px;height:26px;border-radius:50%;border:2px solid transparent}
+  .nuancier i.choisi{border-color:var(--texte);box-shadow:0 0 0 3px rgba(231,236,243,.18)}
+  .action-texte{margin-left:auto;font-size:13px;color:var(--accent);font-weight:700}
+  .action-texte.rouge{color:var(--erreur)}
+  .pied{max-width:1180px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
+  .pied a{color:var(--texte2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="entete-page">
+  <h1>Paramètres</h1>
+  <span class="fil">JoIDE · écrans v2 · ADR-É8</span>
+</header>
+<nav class="nav-page">
+  <a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a href="atelier.html">Atelier</a><a href="console.html">Console</a><a href="apercu.html">Aperçu</a><a class="ic" href="#">Paramètres</a><a href="index.html">Index général</a>
+</nav>
+
+<main class="scène">
+
+  <figure>
+    <span class="étiquette">Réglages réels, sectionsvivantes</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="sous-barre">
+          <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span class="titre">Paramètres</span>
+        </div>
+        <div class="recherche">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 17 17"/></svg>
+          Rechercher dans les paramètres…
+        </div>
+        <div class="corps">
+
+          <div class="sect">
+            <div class="nom-sect">Apparence</div>
+            <div class="groupe">
+              <div class="rangée-envers">
+                <div class="haut"><span class="clé">Thème</span>
+                  <span class="segment" style="margin-left:auto"><span class="on">Sombre</span><span class="grise">Système</span><span class="grise">Clair</span></span>
+                </div>
+                <span class="légende">Sombre par défaut ; clair livré quand sa palette existera.</span>
+              </div>
+              <div class="rangée-envers">
+                <div class="haut"><span class="clé">Accent</span>
+                  <span class="nuancier" style="margin-left:auto">
+                    <i class="choisi" style="background:#82AAFF"></i><i style="background:#3DDC84"></i><i style="background:#E5C07B"></i><i style="background:#E06C75"></i><i style="background:#C678DD"></i>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sect">
+            <div class="nom-sect">Éditeur</div>
+            <div class="groupe">
+              <div class="rangée">
+                <span class="clé">Taille</span>
+                <span class="valeur"><span class="stepper"><button>−</button><span class="val">13,5</span><button>+</button></span></span>
+              </div>
+              <div class="rangée">
+                <span class="clé">Numéros de ligne</span>
+                <span class="valeur"><span class="interrupteur on"><i></i></span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sect">
+            <div class="nom-sect">Build</div>
+            <div class="groupe">
+              <div class="rangée-envers">
+                <div class="haut"><span class="clé">Moteur par défaut</span>
+                  <span class="segment" style="margin-left:auto"><span class="on">Service :build</span><span>En processus</span></span>
+                </div>
+                <span class="légende">La mort du service interrompt le build, jamais l'IDE.</span>
+              </div>
+              <div class="rangée">
+                <span class="clé">Fils par build</span>
+                <span class="valeur"><span class="stepper"><button>−</button><span class="val">2</span><button>+</button></span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sect">
+            <div class="nom-sect">Stockage</div>
+            <div class="groupe">
+              <div class="rangée">
+                <span class="clé">Cache CIDX</span>
+                <span class="valeur">42 Mo <span class="action-texte">Vider</span></span>
+              </div>
+              <div class="rangée">
+                <span class="clé">Dépendances (m2)</span>
+                <span class="valeur">240 Mo <span class="action-texte rouge">Vider</span></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Des réglages réels — et seulement eux</h2>
+      <p>Extrait lisible en un écran ; sections complètes dans l'ADR-É8 (retour à la ligne, police, projets importés, à propos : version, licences et NOTICE, journal). Chaque valeur vient du disque (stockage mesuré, jamais inventée) ; chaque action destructive confirme avec sa conséquence réelle en une phrase. Une section vide ne s'affiche pas : le thème Clair grisé n'existera qu'à sa livraison. Un réglage = une rangée + un consommateur, jamais une rangée orpheline. Spécification : <a href="../008-parametres.md">ADR-É8</a>.</p>
+    </figcaption>
+  </figure>
+
+</main>
+
+<footer class="pied">
+  JoIDE — maquettes des écrans v2 · 2026-11-16 · fichiers HTML autonomes (aucune ressource externe) · jetons <a href="../002-systeme-design.md">ADR-É2</a>.
+</footer>
+
+</body>
+</html>
