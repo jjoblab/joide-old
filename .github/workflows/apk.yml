@@ -57,10 +57,32 @@ jobs:
 
       - name: SDK Android (plateformes et build-tools épinglés)
         run: |
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install \
-            "platforms;android-36" "platforms;android-37.2" \
-            "build-tools;36.0.0" "build-tools;37.0.0" > /dev/null
+          set -euo pipefail
+          # Le premier run a échoué (127) : l'image runner livre le SDK
+          # complet mais ne met PAS sdkmanager sur le PATH — chemin complet
+          # obligatoire, avec repli et garde explicite (jamais muet).
+          : "${ANDROID_HOME:?ANDROID_HOME absent — image runner inattendue}"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager \
+              -type f 2>/dev/null | head -1 || true)"
+          fi
+          if [ -z "${SDKMANAGER:-}" ] || [ ! -x "$SDKMANAGER" ]; then
+            echo "::error::sdkmanager introuvable sous $ANDROID_HOME"
+            exit 1
+          fi
+          echo "sdkmanager : $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          # Succès silencieux, échec JAMAIS muet : journal affiché en cas
+          # d'échec (un paquet épinglé absent doit se voir, pas se deviner).
+          JOURNAL="$RUNNER_TEMP/sdkmanager-install.log"
+          if ! "$SDKMANAGER" --install \
+              "platforms;android-36" "platforms;android-37.2" \
+              "build-tools;36.0.0" "build-tools;37.0.0" > "$JOURNAL" 2>&1; then
+            echo "::error::échec de sdkmanager --install — fin du journal :"
+            tail -40 "$JOURNAL"
+            exit 1
+          fi
 
       - name: Publication des briques en Maven Local (ADR-044)
         if: steps.briques.outputs.cache-hit != 'true'
