@@ -55,6 +55,7 @@ public final class EtatParametres {
     public static final String SECT_APPARENCE = "apparence";
     public static final String SECT_EDITEUR = "editeur";
     public static final String SECT_BUILD = "build";
+    public static final String SECT_IA = "ia";
     public static final String SECT_STOCKAGE = "stockage";
     public static final String SECT_A_PROPOS = "a-propos";
 
@@ -74,6 +75,10 @@ public final class EtatParametres {
     public static final String R_LICENCES = "licences";
     public static final String R_JOURNAL = "journal";
     public static final String R_DEPOT = "depot";
+    public static final String R_CLE_ANTHROPIC = "cle-anthropic";
+    public static final String R_CLE_OPENAI = "cle-openai";
+    public static final String R_MODELE_IA = "modele-ia";
+    public static final String R_URL_IA = "url-ia";
 
     /**
      * La structure complète de l'écran : cinq sections, chaque rangée
@@ -97,6 +102,11 @@ public final class EtatParametres {
                 new Section(SECT_BUILD, List.of(
                         new Rangee(R_MOTEUR, Genre.SEGMENT, true),
                         new Rangee(R_FILS, Genre.STEPPER_ENTIER, true))),
+                new Section(SECT_IA, List.of(
+                        new Rangee(R_CLE_ANTHROPIC, Genre.ACTION, true),
+                        new Rangee(R_CLE_OPENAI, Genre.ACTION, true),
+                        new Rangee(R_MODELE_IA, Genre.ACTION, true),
+                        new Rangee(R_URL_IA, Genre.ACTION, true))),
                 new Section(SECT_STOCKAGE, List.of(
                         new Rangee(R_PROJETS, Genre.MESURE_SEULE, false),
                         new Rangee(R_CIDX, Genre.MESURE_ACTION, false),

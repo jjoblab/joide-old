@@ -20,6 +20,9 @@ package jo.joide.agent.espace;
  */
 public interface EspaceTravailAgent extends AutoCloseable {
 
+    /** Le fichier mémoire du projet (sa racine). */
+    String FICHIER_MEMOIRE = "AGENTS.md";
+
     /**
      * Lit un fichier du projet, OVERLAY d'abord : le texte de
      * l'éditeur ouvert prime sur le disque (tampon et disque

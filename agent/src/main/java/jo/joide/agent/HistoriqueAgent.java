@@ -24,6 +24,18 @@ public final class HistoriqueAgent {
         this.messages.addAll(messages);
     }
 
+    /**
+     * @param messages  l'état initial (chargé d'une session)
+     * @param compactes les identifiants d'appels déjà tronqués — les
+     *                  décisions de compaction sont PERMANENTES, la
+     *                  relecture d'une session les conserve (lot P)
+     */
+    public HistoriqueAgent(List<MessageAgent> messages,
+                           Set<String> compactes) {
+        this.messages.addAll(messages);
+        this.compactes.addAll(compactes);
+    }
+
     /** Un historique vide. */
     public static HistoriqueAgent vide() {
         return new HistoriqueAgent(List.of());

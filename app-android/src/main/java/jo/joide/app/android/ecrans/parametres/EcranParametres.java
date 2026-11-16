@@ -1,6 +1,7 @@
 package jo.joide.app.android.ecrans.parametres;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -14,6 +15,9 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import jo.joide.app.android.parametres.ClesChiffrees;
+import jo.joide.app.android.parametres.KeystoreCles;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -77,6 +81,8 @@ public final class EcranParametres extends Activity {
     private Graphite.Palette palette;
     private Reglages.Source source;
     private Reglages reglages;
+    /** Le stockage chiffré des clés d'API (lot P). */
+    private ClesChiffrees cles;
 
     private LinearLayout colonneSections;
     private EtatVide etatVide;
@@ -92,6 +98,7 @@ public final class EcranParametres extends Activity {
         GraphiteVue.fondEcran(this, palette);
         source = PreferencesAndroid.source(this);
         reglages = Reglages.lire(source);
+        cles = KeystoreCles.sur(this);
         setContentView(construireUi());
         mesurerStockage();
     }
@@ -544,6 +551,8 @@ public final class EcranParametres extends Activity {
                 return R.string.parametres_section_editeur;
             case EtatParametres.SECT_BUILD:
                 return R.string.parametres_section_build;
+            case EtatParametres.SECT_IA:
+                return R.string.parametres_section_ia;
             case EtatParametres.SECT_STOCKAGE:
                 return R.string.parametres_section_stockage;
             default:
@@ -581,6 +590,14 @@ public final class EcranParametres extends Activity {
                 return R.string.parametres_licences;
             case EtatParametres.R_JOURNAL:
                 return R.string.parametres_journal;
+            case EtatParametres.R_CLE_ANTHROPIC:
+                return R.string.parametres_cle_anthropic;
+            case EtatParametres.R_CLE_OPENAI:
+                return R.string.parametres_cle_openai;
+            case EtatParametres.R_MODELE_IA:
+                return R.string.parametres_modele_ia;
+            case EtatParametres.R_URL_IA:
+                return R.string.parametres_url_ia;
             default:
                 return R.string.parametres_depot;
         }
@@ -604,6 +621,24 @@ public final class EcranParametres extends Activity {
         if (EtatParametres.R_DEPOT.equals(cle)) {
             return DEPOT.replace("https://", "");
         }
+        if (EtatParametres.R_CLE_ANTHROPIC.equals(cle)) {
+            return getString(cles.estPosee(FOURNISSEUR_ANTHROPIC)
+                    ? R.string.parametres_cle_posee
+                    : R.string.parametres_cle_absente);
+        }
+        if (EtatParametres.R_CLE_OPENAI.equals(cle)) {
+            return getString(cles.estPosee(FOURNISSEUR_OPENAI)
+                    ? R.string.parametres_cle_posee
+                    : R.string.parametres_cle_absente);
+        }
+        if (EtatParametres.R_MODELE_IA.equals(cle)) {
+            return reglages.modeleIa;
+        }
+        if (EtatParametres.R_URL_IA.equals(cle)) {
+            return getString(reglages.urlIa.isEmpty()
+                    ? R.string.parametres_url_absente
+                    : R.string.parametres_url_definie);
+        }
         return getString(R.string.parametres_consulter);
     }
 
@@ -618,7 +653,152 @@ public final class EcranParametres extends Activity {
             montrerJournal();
         } else if (EtatParametres.R_DEPOT.equals(cle)) {
             ouvrirDepot();
+        } else if (EtatParametres.R_CLE_ANTHROPIC.equals(cle)) {
+            gererCle(FOURNISSEUR_ANTHROPIC);
+        } else if (EtatParametres.R_CLE_OPENAI.equals(cle)) {
+            gererCle(FOURNISSEUR_OPENAI);
+        } else if (EtatParametres.R_MODELE_IA.equals(cle)) {
+            gererModeleIa();
+        } else if (EtatParametres.R_URL_IA.equals(cle)) {
+            gererUrlIa();
         }
+    }
+
+    /** Les identifiants de fournisseur du stockage chiffré. */
+    private static final String FOURNISSEUR_ANTHROPIC = "anthropic";
+    private static final String FOURNISSEUR_OPENAI = "openai";
+
+    /**
+     * La clé d'un fournisseur (lot P, ADR-É11 point 9) : menu
+     * honnête — poser/remplacer, effacer si posée, annuler. La clé
+     * ne s'affiche JAMAIS en clair, seulement son état.
+     */
+    private void gererCle(String fournisseur) {
+        boolean posee = cles.estPosee(fournisseur);
+        CharSequence titre = getString(
+                FOURNISSEUR_ANTHROPIC.equals(fournisseur)
+                        ? R.string.parametres_cle_anthropic
+                        : R.string.parametres_cle_openai);
+        if (posee) {
+            Dialogue.menu(this, palette, titre,
+                    new CharSequence[]{
+                            getString(R.string.parametres_cle_remplacer),
+                            getString(R.string.parametres_cle_effacer)},
+                    (dialog, lequel) -> {
+                        if (lequel == 0) {
+                            saisirCle(fournisseur);
+                        } else if (lequel == 1) {
+                            effacerCle(fournisseur, titre);
+                        }
+                    });
+        } else {
+            saisirCle(fournisseur);
+        }
+    }
+
+    private void saisirCle(String fournisseur) {
+        android.widget.EditText saisie =
+                new android.widget.EditText(this);
+        saisie.setHint(R.string.parametres_cle_indice);
+        saisie.setTypeface(GraphiteVue.police(this, 400, true));
+        Dialogue.saisie(this, palette,
+                getString(
+                        FOURNISSEUR_ANTHROPIC.equals(fournisseur)
+                                ? R.string.parametres_cle_anthropic
+                                : R.string.parametres_cle_openai),
+                saisie, R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
+                        String valeur = saisie.getText().toString()
+                                .trim();
+                        if (valeur.isEmpty()) {
+                            Dialogue.information(this, palette,
+                                    getString(R.string.parametres_section_ia),
+                                    getString(R.string.parametres_cle_vide),
+                                    R.string.action_ok);
+                            return;
+                        }
+                        try {
+                            cles.poser(fournisseur, valeur);
+                        } catch (IOException e) {
+                            Dialogue.information(this, palette,
+                                    getString(R.string.parametres_section_ia),
+                                    getString(R.string.parametres_cle_echec),
+                                    R.string.action_ok);
+                            return;
+                        }
+                        reconstruireSections();
+                    }
+                });
+    }
+
+    private void effacerCle(String fournisseur, CharSequence titre) {
+        Dialogue.confirmation(this, palette, titre,
+                getString(R.string.parametres_cle_effacer_confirme),
+                R.string.action_annuler,
+                R.string.parametres_cle_effacer,
+                (dialog, lequel) -> {
+                    try {
+                        cles.effacer(fournisseur);
+                    } catch (IOException e) {
+                        // le fichier part au mieux : l'état se relit
+                    }
+                    reconstruireSections();
+                });
+    }
+
+    /** Le modèle par défaut : saisie bornée (jamais vide). */
+    private void gererModeleIa() {
+        android.widget.EditText saisie =
+                new android.widget.EditText(this);
+        saisie.setText(reglages.modeleIa);
+        saisie.setHint(R.string.parametres_modele_indice);
+        Dialogue.saisie(this, palette,
+                getString(R.string.parametres_modele_ia), saisie,
+                R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
+                        try {
+                            Reglages.ecrireModeleIa(source,
+                                    saisie.getText().toString());
+                        } catch (IllegalArgumentException e) {
+                            Dialogue.information(this, palette,
+                                    getString(R.string.parametres_modele_ia),
+                                    getString(R.string.parametres_valeur_invalide),
+                                    R.string.action_ok);
+                            return;
+                        }
+                        reglages = Reglages.lire(source);
+                        reconstruireSections();
+                    }
+                });
+    }
+
+    /** L'URL de base OpenAI-compatible : vide ou http(s), bornée. */
+    private void gererUrlIa() {
+        android.widget.EditText saisie =
+                new android.widget.EditText(this);
+        saisie.setText(reglages.urlIa);
+        saisie.setHint(R.string.parametres_url_indice);
+        Dialogue.saisie(this, palette,
+                getString(R.string.parametres_url_ia), saisie,
+                R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
+                        try {
+                            Reglages.ecrireUrlIa(source,
+                                    saisie.getText().toString());
+                        } catch (IllegalArgumentException e) {
+                            Dialogue.information(this, palette,
+                                    getString(R.string.parametres_url_ia),
+                                    getString(R.string.parametres_valeur_invalide),
+                                    R.string.action_ok);
+                            return;
+                        }
+                        reglages = Reglages.lire(source);
+                        reconstruireSections();
+                    }
+                });
     }
 
     private void ouvrirDepot() {

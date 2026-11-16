@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.FournisseurOpenAiCompatibleTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.618Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.029">
+<testsuite name="jo.joide.agent.FournisseurOpenAiCompatibleTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.721Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.01">
   <properties/>
-  <testcase name="leRaisonnementEstCaptureEnSignatureTagueeOpenAi()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.006"/>
-  <testcase name="sansDoneLeFluxEstIllisiblePasTermine()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.002"/>
-  <testcase name="laNoteVolatileEstLeDernierMessageSysteme()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.006"/>
-  <testcase name="unTourCompletAssembleTexteEtAppelFragmente()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.001"/>
-  <testcase name="sansCleLEnteteDAuthentificationEstOmis()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.001"/>
-  <testcase name="lUrlDeBaseSeNettoieDesCopierColler()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.001"/>
-  <testcase name="uneErreur5xxEstClasseeRetentable()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.001"/>
+  <testcase name="leRaisonnementEstCaptureEnSignatureTagueeOpenAi()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.002"/>
+  <testcase name="sansDoneLeFluxEstIllisiblePasTermine()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.0"/>
+  <testcase name="laNoteVolatileEstLeDernierMessageSysteme()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.001"/>
+  <testcase name="unTourCompletAssembleTexteEtAppelFragmente()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.002"/>
+  <testcase name="sansCleLEnteteDAuthentificationEstOmis()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.0"/>
+  <testcase name="lUrlDeBaseSeNettoieDesCopierColler()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.0"/>
+  <testcase name="uneErreur5xxEstClasseeRetentable()" classname="jo.joide.agent.FournisseurOpenAiCompatibleTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

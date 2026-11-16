@@ -38,6 +38,14 @@ public final class Reglages {
         PROCESSUS
     }
 
+    /** Le fournisseur LLM par défaut de l'agent (lot P, D-2 : BYOK pur, deux fournisseurs en v1). */
+    public enum FournisseurIa {
+        /** Anthropic (Messages API). */
+        ANTHROPIC,
+        /** OpenAI-compatible (Chat Completions, URL de base libre). */
+        OPENAI
+    }
+
     /** Lecture/écriture des valeurs persistées (préférences privées). */
     public interface Source {
         /**
@@ -64,6 +72,9 @@ public final class Reglages {
     static final String CLE_RETOUR_LIGNE = "editeur.retourLigne";
     static final String CLE_MOTEUR = "build.moteur";
     static final String CLE_FILS = "build.fils";
+    static final String CLE_FOURNISSEUR_IA = "ia.fournisseur";
+    static final String CLE_MODELE_IA = "ia.modele";
+    static final String CLE_URL_IA = "ia.url";
 
     // ---- Bornes (les steppers de l'écran et les tests les partagent) ----
     /** Taille du code : plancher (sp). */
@@ -106,14 +117,29 @@ public final class Reglages {
     public final boolean numerosLignes;
     /** Le retour à la ligne est actif. */
     public final boolean retourLigne;
+    /** Les bornes du modèle et de l'URL IA (des chaînes, mais pas non bornées). */
+    public static final int MODELE_IA_MAX = 100;
+    public static final int URL_IA_MAX = 500;
+
+    /** Le modèle IA par défaut (le sélecteur du tiroir le change par conversation). */
+    public static final String MODELE_IA_DEFAUT = "claude-sonnet-4-5";
+
     /** Le moteur de build par défaut. */
     public final Moteur moteur;
     /** Les fils par build. */
     public final int filsParBuild;
+    /** Le fournisseur LLM par défaut de l'agent. */
+    public final FournisseurIa fournisseurIa;
+    /** Le modèle par défaut de l'agent. */
+    public final String modeleIa;
+    /** L'URL de base OpenAI-compatible (vide : l'URL officielle). */
+    public final String urlIa;
 
     private Reglages(Theme theme, int accent, int echelleUi,
                      double tailleCode, boolean numerosLignes,
-                     boolean retourLigne, Moteur moteur, int filsParBuild) {
+                     boolean retourLigne, Moteur moteur, int filsParBuild,
+                     FournisseurIa fournisseurIa, String modeleIa,
+                     String urlIa) {
         this.theme = theme;
         this.accent = accent;
         this.echelleUi = echelleUi;
@@ -122,13 +148,17 @@ public final class Reglages {
         this.retourLigne = retourLigne;
         this.moteur = moteur;
         this.filsParBuild = filsParBuild;
+        this.fournisseurIa = fournisseurIa;
+        this.modeleIa = modeleIa;
+        this.urlIa = urlIa;
     }
 
     /** Les réglages par défaut (aucune préférence posée). */
     public static Reglages defauts() {
         return new Reglages(Theme.SOMBRE, 0, ECHELLE_UI_DEFAUT,
                 TAILLE_CODE_DEFAUT, true, false, Moteur.SERVICE,
-                FILS_DEFAUT);
+                FILS_DEFAUT, FournisseurIa.ANTHROPIC,
+                MODELE_IA_DEFAUT, "");
     }
 
     /**
@@ -181,10 +211,30 @@ public final class Reglages {
         if (fils < FILS_MIN || fils > FILS_MAX) {
             fils = defauts.filsParBuild;
         }
+        FournisseurIa fournisseur = defauts.fournisseurIa;
+        String brutFournisseur = source.lire(CLE_FOURNISSEUR_IA);
+        if (brutFournisseur != null) {
+            try {
+                fournisseur = FournisseurIa.valueOf(brutFournisseur);
+            } catch (IllegalArgumentException e) {
+                // valeur d'une version future : le défaut
+            }
+        }
+        String modele = source.lire(CLE_MODELE_IA);
+        if (modele == null || modele.isBlank()
+                || modele.length() > MODELE_IA_MAX) {
+            modele = defauts.modeleIa;
+        }
+        String url = source.lire(CLE_URL_IA);
+        if (url == null || url.length() > URL_IA_MAX
+                || (!url.isEmpty() && !url.startsWith("http://")
+                        && !url.startsWith("https://"))) {
+            url = "";
+        }
         return new Reglages(theme, accent, echelle, taille,
                 numeros == null ? defauts.numerosLignes : numeros,
                 retour == null ? defauts.retourLigne : retour,
-                moteur, fils);
+                moteur, fils, fournisseur, modele, url);
     }
 
     /** Pose le thème. */
@@ -236,6 +286,34 @@ public final class Reglages {
     public static void ecrireFils(Source source, int valeur) {
         int bornes = Math.max(FILS_MIN, Math.min(FILS_MAX, valeur));
         source.ecrire(CLE_FILS, String.valueOf(bornes));
+    }
+
+    /** Pose le fournisseur IA par défaut. */
+    public static void ecrireFournisseurIa(Source source,
+                                           FournisseurIa valeur) {
+        source.ecrire(CLE_FOURNISSEUR_IA, valeur.name());
+    }
+
+    /** Pose le modèle IA par défaut (borné, jamais vide). */
+    public static void ecrireModeleIa(Source source, String valeur) {
+        String borne = valeur == null ? "" : valeur.trim();
+        if (borne.isEmpty() || borne.length() > MODELE_IA_MAX) {
+            throw new IllegalArgumentException(
+                    "model name out of range");
+        }
+        source.ecrire(CLE_MODELE_IA, borne);
+    }
+
+    /** Pose l'URL de base OpenAI-compatible (vide ou http(s), bornée). */
+    public static void ecrireUrlIa(Source source, String valeur) {
+        String bornee = valeur == null ? "" : valeur.trim();
+        if (bornee.length() > URL_IA_MAX
+                || (!bornee.isEmpty() && !bornee.startsWith("http://")
+                        && !bornee.startsWith("https://"))) {
+            throw new IllegalArgumentException(
+                    "base url must be http(s) or empty");
+        }
+        source.ecrire(CLE_URL_IA, bornee);
     }
 
     private static int entier(String brut, int defaut) {

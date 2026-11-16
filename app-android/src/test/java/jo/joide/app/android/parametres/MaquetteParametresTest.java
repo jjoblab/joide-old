@@ -45,8 +45,11 @@ class MaquetteParametresTest {
         assertEquals("apparence", sections.get(0).cle());
         assertEquals("editeur", sections.get(1).cle());
         assertEquals("build", sections.get(2).cle());
-        assertEquals("stockage", sections.get(3).cle());
-        assertEquals("a-propos", sections.get(4).cle());
+        // la section IA (lot P, ADR-É11) s'intercale entre le build
+        // et le stockage — la maquette de l'agent la détaille
+        assertEquals("ia", sections.get(3).cle());
+        assertEquals("stockage", sections.get(4).cle());
+        assertEquals("a-propos", sections.get(5).cle());
     }
 
     @Test
@@ -166,7 +169,9 @@ class MaquetteParametresTest {
                 .map(Rangee::cle).toList();
         assertFalse(cles.contains("police-code"));
         assertFalse(cles.contains("syntaxe"));
-        assertEquals(15, cles.size());
+        // 15 au lot M, +4 au lot P (la section IA : deux clés, le
+        // modèle, l'URL — ADR-É11 point 9)
+        assertEquals(19, cles.size());
     }
 
     private static Rangee rangee(String cle) {

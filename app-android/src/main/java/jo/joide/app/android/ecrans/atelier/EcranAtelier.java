@@ -1,6 +1,7 @@
 package jo.joide.app.android.ecrans.atelier;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
@@ -8,6 +9,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -35,7 +37,10 @@ import jo.joide.app.android.parametres.Reglages;
 import jo.joide.app.android.atelier.Arborescence;
 import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatApercu;
+import jo.joide.app.android.AgentService;
 import jo.joide.app.android.atelier.EtatAtelier;
+import jo.joide.app.android.atelier.agent.EtatAgentChat;
+import jo.joide.app.android.atelier.agent.VueAgent;
 import jo.joide.app.android.atelier.NouveauNom;
 import jo.joide.app.android.atelier.VueApercu;
 import jo.joide.app.android.atelier.VueArbre;
@@ -61,6 +66,9 @@ import jo.joide.deps.cache.DependencyCache;
 import jo.joide.deps.repo.HttpTransport;
 import jo.joide.deps.repo.Repository;
 import jo.joide.deps.resolve.ResolverConfig;
+import jo.joide.agent.Permissions;
+import jo.joide.agent.espace.EspaceCheckpoint;
+import jo.joide.ide.agent.EspaceTravailIde;
 import jo.joide.ide.apercu.ApercuLayouts;
 import jo.joide.ide.apercu.ConfigurationApercu;
 import jo.joide.ide.apercu.ConfigurationsApercu;
@@ -173,6 +181,14 @@ public final class EcranAtelier extends Activity {
     private boolean sortiesPresentes;
     private volatile boolean buildEnCours;
     private Reglages.Source sourceReglages;
+
+    // ---- l'agent (lot P, ADR-É11) ----
+    private VueAgent vueAgent;
+    private TiroirPousse tiroirAgent;
+    private Icone boutonAgent;
+    private View pointAgent;
+    private AgentService.AgentBinder agent;
+    private EtatAgentChat etatAgent = new EtatAgentChat();
 
     @Override
     protected void onCreate(Bundle state) {
@@ -403,6 +419,49 @@ public final class EcranAtelier extends Activity {
                     FrameLayout.LayoutParams.MATCH_PARENT));
         }
 
+        // le tiroir agent (lot P) : poussé depuis la droite, 360 dp,
+        // au-dessus de tout — même form factor aux deux tailles (l'
+        // amarrage grand écran partagé avec l'aperçu va au backlog)
+        vueAgent = new VueAgent(this);
+        vueAgent.poserAuditeur(new VueAgent.Auditeur() {
+            @Override
+            public void envoyer(String message) {
+                envoyerAgent(message);
+            }
+
+            @Override
+            public void arreter() {
+                if (agent != null) {
+                    agent.arreter();
+                }
+            }
+
+            @Override
+            public void repondrePermission(boolean accordee) {
+                repondrePermissionAgent(accordee);
+            }
+
+            @Override
+            public void repondreQuestion(int index, int choix) {
+                repondreQuestionAgent(index, choix);
+            }
+
+            @Override
+            public void poserMode(jo.joide.agent.Permissions.Mode mode) {
+                etatAgent.poserMode(mode);
+                if (agent != null) {
+                    agent.poserMode(mode);
+                }
+                vueAgent.rafraichir();
+            }
+        });
+        tiroirAgent = new TiroirPousse(this);
+        tiroirAgent.setBordDroit(true);
+        tiroirAgent.setPanneau(vueAgent);
+        racineVue.addView(tiroirAgent, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
         fab = new Fab(this);
         fab.setAuditeur(new Fab.AuditeurFab() {
             @Override
@@ -469,6 +528,31 @@ public final class EcranAtelier extends Activity {
             piluleIndex = new Pilule(EcranAtelier.this);
             piluleIndex.setOnClickListener(vue -> montrerDetailIndex());
             barre.addView(piluleIndex);
+
+            boutonAgent = new Icone(EcranAtelier.this);
+            boutonAgent.setGlyphe(Icone.Glyphe.BULLE);
+            boutonAgent.setCouleur(palette.texte);
+            boutonAgent.setClickable(true);
+            boutonAgent.setContentDescription(getString(
+                    R.string.agent_titre));
+            boutonAgent.setOnClickListener(vue -> ouvrirAgent());
+            pointAgent = new View(EcranAtelier.this);
+            pointAgent.setBackground(pointActivite());
+            pointAgent.setVisibility(View.GONE);
+            FrameLayout agentBouton = new FrameLayout(EcranAtelier.this);
+            agentBouton.addView(boutonAgent, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+            FrameLayout.LayoutParams paramsPoint =
+                    new FrameLayout.LayoutParams(
+                            GraphiteVue.dp(EcranAtelier.this, 8),
+                            GraphiteVue.dp(EcranAtelier.this, 8));
+            paramsPoint.topMargin = GraphiteVue.dp(EcranAtelier.this, 7);
+            paramsPoint.rightMargin =
+                    GraphiteVue.dp(EcranAtelier.this, 7);
+            paramsPoint.gravity = Gravity.TOP | Gravity.END;
+            agentBouton.addView(pointAgent, paramsPoint);
+            barre.addView(agentBouton, clicParams());
 
             Icone menu = new Icone(EcranAtelier.this);
             menu.setGlyphe(Icone.Glyphe.POINTS);
@@ -1038,13 +1122,16 @@ public final class EcranAtelier extends Activity {
                 racineProjet == null ? ""
                         : String.valueOf(racineProjet.getFileName()),
                 new CharSequence[]{
+                        getString(R.string.agent_demander_ia),
                         getString(R.string.parametres_titre), fermer},
                 (dialog, lequel) -> {
                     if (lequel == 0) {
+                        demanderIa();
+                    } else if (lequel == 1) {
                         startActivity(new Intent(this,
                                 jo.joide.app.android.ecrans.parametres
                                         .EcranParametres.class));
-                    } else if (lequel == 1) {
+                    } else if (lequel == 2) {
                         demanderFermeture();
                     }
                 });
@@ -1057,6 +1144,12 @@ public final class EcranAtelier extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
+        // le tiroir agent est la surcouche la plus récente : le
+        // retour la ferme d'abord (ADR-É11 point 1, ordre ADR-É5)
+        if (tiroirAgent != null && tiroirAgent.ouvert()) {
+            fermerAgent();
+            return;
+        }
         switch (etat.surRetour()) {
             case FERMER_CONSOLE -> {
                 etat.replierConsole();
@@ -1086,6 +1179,219 @@ public final class EcranAtelier extends Activity {
                 R.string.action_annuler,
                 R.string.atelier_fermer_projet,
                 (dialog, lequel) -> finish());
+    }
+
+    // ------------------------------------------------------------------
+    // L'agent (lot P, ADR-É11) : le tiroir, le service, les deux
+    // blocages honnêtes, l'entrée « Demander à l'IA »
+    // ------------------------------------------------------------------
+
+    /** Ouvre le tiroir agent et lie le service de premier plan. */
+    private void ouvrirAgent() {
+        if (tiroirAgent == null) {
+            return;
+        }
+        tiroirAgent.ouvrir();
+        if (agent != null) {
+            brancherEspaceAgent();
+            rejouerJournalAgent();
+            return;
+        }
+        AgentService.demarrer(this);
+        bindService(new Intent(this, AgentService.class),
+                connexionAgent(), Context.BIND_AUTO_CREATE);
+    }
+
+    private void fermerAgent() {
+        if (tiroirAgent != null) {
+            tiroirAgent.fermer();
+        }
+    }
+
+    private android.content.ServiceConnection connexionAgent() {
+        return new android.content.ServiceConnection() {
+            @Override
+            public void onServiceConnected(
+                    android.content.ComponentName nom,
+                    android.os.IBinder service) {
+                agent = (AgentService.AgentBinder) service;
+                brancherEspaceAgent();
+                agent.poserEcouteur(VueAgentEntree -> runOnUiThread(
+                        () -> surEntreeAgent(VueAgentEntree)));
+                rejouerJournalAgent();
+            }
+
+            @Override
+            public void onServiceDisconnected(
+                    android.content.ComponentName nom) {
+                agent = null;
+            }
+        };
+    }
+
+    /** Construit l'espace de travail du projet pour l'agent. */
+    private void brancherEspaceAgent() {
+        if (agent == null || racineProjet == null || scene == null) {
+            return;
+        }
+        EspaceTravailIde espace = new EspaceTravailIde(racineProjet,
+                modele).poserMoteurs(moteurs);
+        espace.poserOverlayEditeur(chemin -> {
+            String actif = etat.actif();
+            if (actif != null && actif.equals(chemin)) {
+                return scene.texte();
+            }
+            return null;
+        });
+        agent.poserEspace(new EspaceCheckpoint(espace));
+        Reglages reglages = Reglages.lire(sourceReglages);
+        agent.poserModele(reglages.fournisseurIa, reglages.modeleIa);
+        etatAgent.poserModele(reglages.modeleIa);
+        etatAgent.poserMode(EtatAgentChat.TourEtat.EN_COURS
+                == etatAgent.etat()
+                ? etatAgent.mode() : Permissions.Mode.DEMANDE_CHAQUE);
+    }
+
+    /** Rejoue le journal du service dans l'état pur (retour d'écran). */
+    private void rejouerJournalAgent() {
+        if (agent == null) {
+            return;
+        }
+        etatAgent = new EtatAgentChat();
+        for (AgentService.Entree entree : agent.journal()) {
+            if (entree.estMessage()) {
+                etatAgent.envoyer(entree.message);
+            } else {
+                etatAgent.surEvenement(entree.evenement);
+            }
+        }
+        majQuestionsAgent();
+        vueAgent.poserEtat(etatAgent);
+    }
+
+    /** L'entrée live du service : événement ou message. */
+    private void surEntreeAgent(AgentService.Entree entree) {
+        if (entree.estMessage()) {
+            etatAgent.envoyer(entree.message);
+        } else {
+            etatAgent.surEvenement(entree.evenement);
+        }
+        majQuestionsAgent();
+        vueAgent.poserEtat(etatAgent);
+        if (pointAgent != null) {
+            pointAgent.setVisibility(
+                    etatAgent.etat()
+                            == EtatAgentChat.TourEtat.EN_COURS
+                            ? View.VISIBLE : View.GONE);
+        }
+        Permissions.DemandeEcriture permission =
+                agent == null ? null : agent.permissionEnAttente();
+        if (permission != null) {
+            montrerPermissionAgent(permission);
+        }
+    }
+
+    /** Les questions en attente deviennent une carte (ask_user). */
+    private void majQuestionsAgent() {
+        if (agent == null) {
+            return;
+        }
+        java.util.List<jo.joide.agent.espace.QuestionUtilisateur>
+                questions = agent.questionsEnAttente();
+        if (questions != null && !questions.isEmpty()
+                && etatAgent.reponses() == null) {
+            etatAgent.poserQuestions(questions);
+        }
+    }
+
+    /** Le dialogue de permission sur diff déplié (fermer = refuser). */
+    private void montrerPermissionAgent(
+            Permissions.DemandeEcriture demande) {
+        if (etatAgent.permissionEnAttente() != null) {
+            return;
+        }
+        etatAgent.poserPermission(demande);
+        vueAgent.poserEtat(etatAgent);
+        ScrollView defilement = new ScrollView(this);
+        TextView diff = new TextView(this);
+        diff.setTypeface(GraphiteVue.police(this, 400, true));
+        diff.setTextSize(11.5f);
+        diff.setTextColor(palette.texteSecondaire);
+        diff.setText(demande.diffApercu);
+        int marge = GraphiteVue.dp(this, 24);
+        diff.setPadding(marge, GraphiteVue.dp(this, 6), marge, 0);
+        defilement.addView(diff, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT));
+        Dialogue.autorisation(this, palette,
+                getString(R.string.agent_permission_ecriture),
+                demande.outil + " — " + demande.cible,
+                defilement,
+                R.string.agent_refuser, R.string.agent_appliquer,
+                (dialog, lequel) -> repondrePermissionAgent(
+                        lequel == android.content.DialogInterface
+                                .BUTTON_POSITIVE),
+                dialog -> repondrePermissionAgent(false));
+    }
+
+    private void envoyerAgent(String message) {
+        if (agent == null) {
+            ouvrirAgent();
+        }
+        if (agent != null) {
+            agent.envoyer(message);
+        }
+    }
+
+    private void repondrePermissionAgent(boolean accordee) {
+        etatAgent.repondrePermission(accordee);
+        if (agent != null) {
+            agent.repondrePermission(accordee);
+        }
+        vueAgent.rafraichir();
+    }
+
+    private void repondreQuestionAgent(int index, int choix) {
+        etatAgent.repondre(index, choix, null);
+        java.util.List<String> reponses = etatAgent.reponses();
+        if (reponses != null && agent != null) {
+            agent.repondreQuestions(reponses);
+        }
+        vueAgent.rafraichir();
+    }
+
+    /**
+     * « Demander à l'IA » (ADR-É11 point 10) : le tiroir s'ouvre, le
+     * composeur est prérempli avec le fichier ACTIF quoté (v1 : le
+     * document entier borné ; la sélection précise attend l'API
+     * celeris — écart consigné au backlog).
+     */
+    private void demanderIa() {
+        ouvrirAgent();
+        String actif = etat.actif();
+        if (actif == null || scene == null) {
+            return;
+        }
+        String texte = scene.texte();
+        int plafond = 8_000;
+        String borne = texte.length() > plafond
+                ? texte.substring(0, plafond)
+                        + "\n[… tronqué — "
+                        + (texte.length() - plafond)
+                        + " caractères de plus]"
+                : texte;
+        etatAgent.poserPreRemplissage(actif, borne);
+        vueAgent.poserEtat(etatAgent);
+    }
+
+    /** Le point d'activité du glyphe agent. */
+    private android.graphics.drawable.GradientDrawable pointActivite() {
+        android.graphics.drawable.GradientDrawable point =
+                new android.graphics.drawable.GradientDrawable();
+        point.setShape(
+                android.graphics.drawable.GradientDrawable.OVAL);
+        point.setColor(palette.accent);
+        return point;
     }
 
     // ------------------------------------------------------------------
@@ -1495,6 +1801,14 @@ public final class EcranAtelier extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (agent != null) {
+            try {
+                unbindService(connexionAgent());
+            } catch (RuntimeException e) {
+                // le service partait déjà
+            }
+            agent = null;
+        }
         fermerIde();
         fond.shutdown();
         ecrivain.shutdown();

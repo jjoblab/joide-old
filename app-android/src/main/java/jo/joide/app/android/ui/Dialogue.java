@@ -158,6 +158,47 @@ public final class Dialogue {
         habiller(constructeur.create(), palette);
     }
 
+    /**
+     * Le dialogue d'autorisation de l'agent (lot P, ADR-É11 point 3) :
+     * un corps LIBRE (le diff déplié dans sa vue défilante),
+     * Refuser / Appliquer — et TOUTE annulation (croix, tap
+     * extérieur, Retour) appelle {@code annuleur} : fermer revient
+     * à REFUSER, le défaut sûr.
+     */
+    public static void autorisation(Context contexte,
+                                    Graphite.Palette palette,
+                                    CharSequence titre,
+                                    CharSequence sousTitre,
+                                    android.view.View corps,
+                                    int idRefuser, int idAppliquer,
+                                    DialogInterface.OnClickListener valideur,
+                                    DialogInterface.OnCancelListener annuleur) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        TextView sousTitreVue = new TextView(contexte);
+        sousTitreVue.setText(sousTitre);
+        android.widget.LinearLayout colonne =
+                new android.widget.LinearLayout(contexte);
+        colonne.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int marge = (int) (24 * contexte.getResources()
+                .getDisplayMetrics().density);
+        sousTitreVue.setPadding(marge, 0, marge, 0);
+        colonne.addView(sousTitreVue, new android.widget.LinearLayout
+                .LayoutParams(android.widget.LinearLayout.LayoutParams
+                .MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+        colonne.addView(corps, new android.widget.LinearLayout
+                .LayoutParams(android.widget.LinearLayout.LayoutParams
+                .MATCH_PARENT, 0, 1f));
+        constructeur.setTitle(titre).setView(colonne)
+                .setNegativeButton(idRefuser, valideur)
+                .setPositiveButton(idAppliquer, valideur);
+        android.app.AlertDialog dialogue = constructeur.create();
+        dialogue.setOnCancelListener(annuleur);
+        habiller(dialogue, palette);
+        dialogue.show();
+    }
+
     private static void habiller(android.app.AlertDialog dialogue,
                                  Graphite.Palette palette) {
         Context contexte = dialogue.getContext();

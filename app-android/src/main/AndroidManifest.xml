@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:label="@string/app_name"
@@ -60,5 +62,15 @@
             android:name=".BuildService"
             android:process=":build"
             android:exported="false" />
+
+        <!-- Lot P (ADR-É11 point 8) : le service de premier plan de
+             l'agent — le tour survit au changement d'écran ;
+             notification silencieuse à bouton Arrêter (pattern
+             ADR-043). Même processus : le binder local partage
+             l'espace de travail de l'atelier. -->
+        <service
+            android:name=".AgentService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 </manifest>

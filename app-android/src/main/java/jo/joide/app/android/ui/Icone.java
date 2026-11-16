@@ -44,7 +44,9 @@ public final class Icone extends View {
         /** Flèches circulaires (rafraîchir — lot L). */
         RAFRAICHIR,
         /** Flèches d'agrandissement (plein écran — lot L). */
-        AGRANDIR
+        AGRANDIR,
+        /** Bulle de chat (l'agent — lot P). */
+        BULLE
     }
 
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -186,6 +188,17 @@ public final class Icone extends View {
                 chemin.moveTo(16.5f * u, 6f * u);
                 chemin.lineTo(16.5f * u, 10.5f * u);
                 chemin.lineTo(12f * u, 10.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case BULLE -> {
+                android.graphics.RectF bulle = new android.graphics
+                        .RectF(2.5f * u, 3.5f * u, 17.5f * u, 14.5f * u);
+                canvas.drawRoundRect(bulle, 4.5f * u, 4.5f * u,
+                        pinceau);
+                chemin.reset();
+                chemin.moveTo(6.5f * u, 14.2f * u);
+                chemin.lineTo(5.5f * u, 17.5f * u);
+                chemin.lineTo(9.5f * u, 14.5f * u);
                 canvas.drawPath(chemin, pinceau);
             }
             case AGRANDIR -> {

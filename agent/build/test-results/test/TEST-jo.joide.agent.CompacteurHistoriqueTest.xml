@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.CompacteurHistoriqueTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.387Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.062">
+<testsuite name="jo.joide.agent.CompacteurHistoriqueTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.590Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.022">
   <properties/>
-  <testcase name="lesDecisionsSontPermanentesJamaisReelargies()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.013"/>
-  <testcase name="auDessusDuSeuilLesVieuxSontTronquesLesQuatreRecentsEpargnes()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.009"/>
-  <testcase name="avecDesRecentsPetitsLaPasseAtteintLaCible()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.005"/>
-  <testcase name="leModeDelegueNeFaitRien()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.007"/>
-  <testcase name="sousLeSeuilRienNEstElague()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.003"/>
-  <testcase name="lesTextesUtilisateurEtAssistantNeSontJamaisTouches()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.001"/>
+  <testcase name="lesDecisionsSontPermanentesJamaisReelargies()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.005"/>
+  <testcase name="auDessusDuSeuilLesVieuxSontTronquesLesQuatreRecentsEpargnes()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.005"/>
+  <testcase name="avecDesRecentsPetitsLaPasseAtteintLaCible()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.002"/>
+  <testcase name="leModeDelegueNeFaitRien()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.001"/>
+  <testcase name="sousLeSeuilRienNEstElague()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.0"/>
+  <testcase name="lesTextesUtilisateurEtAssistantNeSontJamaisTouches()" classname="jo.joide.agent.CompacteurHistoriqueTest" time="0.003"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

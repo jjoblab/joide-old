@@ -62,8 +62,9 @@ public final class EspaceTravailIde implements EspaceTravailAgent {
             "build", "build-joide", ".git", ".gradle", ".joide",
             "node_modules");
 
-    /** Le nom du fichier mémoire du projet. */
-    public static final String FICHIER_MEMOIRE = "AGENTS.md";
+    /** Le nom du fichier mémoire du projet (constant du port). */
+    public static final String FICHIER_MEMOIRE =
+            EspaceTravailAgent.FICHIER_MEMOIRE;
 
     /** L'exécuteur borné injecté (l'hôte branche le moteur de build). */
     public interface ExecuteurBorne {

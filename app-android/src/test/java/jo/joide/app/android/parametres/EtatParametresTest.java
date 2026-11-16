@@ -56,10 +56,10 @@ class EtatParametresTest {
                     .getOrDefault(cle, "");
 
     @Test
-    void cinqSectionsDansLordreDeLAdr() {
+    void sixSectionsDansLordreDesAdr() {
         List<Section> sections = EtatParametres.sections();
-        assertEquals(List.of("apparence", "editeur", "build", "stockage",
-                "a-propos"),
+        assertEquals(List.of("apparence", "editeur", "build", "ia",
+                "stockage", "a-propos"),
                 sections.stream().map(Section::cle).toList());
     }
 
@@ -96,10 +96,10 @@ class EtatParametresTest {
     }
 
     @Test
-    void quinzeRangeesEtDeuxActionsDestructricesExactement() {
+    void dixNeufRangeesEtDeuxActionsDestructricesExactement() {
         int rangees = EtatParametres.sections().stream()
                 .mapToInt(s -> s.rangees().size()).sum();
-        assertEquals(15, rangees);
+        assertEquals(19, rangees);
         assertEquals(List.of(EtatParametres.R_CIDX, EtatParametres.R_M2),
                 EtatParametres.actionsDestructrices(),
                 "seules les deux vidanges sont destructrices, "
@@ -168,6 +168,6 @@ class EtatParametresTest {
                 vues.add(rangee.cle());
             }
         }
-        assertEquals(15, vues.size());
+        assertEquals(19, vues.size());
     }
 }

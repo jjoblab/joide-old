@@ -1,3 +1,130 @@
+# CHANGES — Lot P : l'UI du chat et l'intégration applicative (groupe 4 de la V2, ADR-É11/060)
+
+Le lot P clôt le groupe 4 « agent v1 » du plan ADR-É10 : l'agent
+des lots N et O reçoit sa face. D'abord l'ADR-É11, écrite ce lot
+sur la méthode de la série — le design de l'écran de l'agent
+(tiroir chat dans l'atelier, cartes d'outils pliables, diff Myers
+borné, dialogue de permission sur diff déplié à défaut sûr, cartes
+de questions, usage par tour, erreurs actionnables) avec sa
+maquette design/agent.html (trois vues : conversation en cours,
+permission sur diff, fin de tour), la carte Agent ajoutée à
+l'index général et le lien aux navigations des maquettes
+existante. Puis l'implémentation : le DIFF RÉEL — DiffMyers
+(module agent, pur) : Myers en avant avec trace, coupe commune
+préfixe/suffixe, budget d'édition borné (800) et repli honnête
+NOMMÉ au-delà (« fichier trop remanié pour un diff fin »), sortie
+unifiée à deux lignes de contexte, bornée à 400 lignes /
+20 000 caractères, amputation annoncée — éprouvé par
+RECONSTRUCTION (appliquer le diff à AVANT redonne APRÈS, fuzz de
+200 essais aléatoires) ; l'exécuteur d'outils calcule l'aperçu du
+VRAI contenu pour write/create/edit/write_memory par un
+LecteurContenu injecté (lecture overlay-preferred de l'espace),
+les opérations nommées gardent le résumé d'arguments — la
+permission porte sur l'édition réelle, jamais sur un nom de
+fichier (la leçon du risque n° 3 de l'ADR-É9) ;
+Dialogue.autorisation : corps libre (le diff déplié en mono),
+Refuser / Appliquer, et TOUTE annulation (croix, extérieur,
+retour) répond REFUSER — le défaut sûr est dans le cadre.
+L'ÉTAT PUR DU TIROIR : EtatAgentChat (app-android, JVM) consomme
+les EvenementAgent et construit le transcript carte par carte
+(message utilisateur, réponse composée en direct, raisonnement
+replié à n lignes rouvrable, carte d'outil à trois états avec
+résultat borné pliable, fichiers changés, attente décomptée,
+compaction chiffrée, ligne d'usage à TROIS pieds + requêtes,
+erreur actionnable) ; les QUATORZE genres d'erreur ont leur verbe
+(OUVRIR_REGLAGES pour les clés, CHANGER_MODELE pour le 404,
+ATTENDRE pour les retentables — jamais une carte sans action) ;
+ask_user arrive par la CARTE (options en puces, Autre, Passer,
+réponses une par ligne « question : réponse ») ; le transcript est
+plafonné à 200 cartes avec éviction annoncée des plus anciennes
+terminées ; le journal se REJOUE à l'identique (éprouvé). LE
+SERVICE DE PREMIER PLAN : AgentService — le tour vit dans le
+service, pas dans l'écran (pattern ADR-043) : notification
+silencieuse « l'agent travaille » à bouton Arrêter, journal
+ordonné rejouable, session persistée par SessionsAgent à chaque
+fin de tour (historique à signatures, compactés PERMANENTS
+restaurés par le nouveau constructeur), et les DEUX blocages
+honnêtes par futures : la permission et les questions se résolvent
+par l'UI quand elle est là, par le DÉFAUT SÛR sans elle ou après
+120 s (refuser / passer) — le bouton Arrêter annule le CancelToken
+ET débrique les futures ; l'arrêt mi-outils laisse la carte de
+l'outil EN COURS (jamais un résultat inventé), la réparation
+d'historique apparie les appels interrompus, la conversation
+reprend au message suivant. LES CLÉS CHIFFRÉES (D-6, ADR-058) :
+ClesChiffrees (pur, testé JVM avec clé forgée) — format
+joide.cles/1, AES-GCM à IV aléatoire par écriture (deux poses du
+même texte DIFFÈRENT, éprouvé), écriture atomique, un fichier par
+fournisseur neutralisé ; KeystoreCles (Android, mince) fabrique ou
+retrouve la clé Keystore (alias joide.cles, AES-256 GCM), un
+Keystore cassé retombe sur une clé mémoire — l'application
+démarre toujours, un fichier d'une autre clé est un absent honnête
+(réinstallation). LA SECTION IA DES PARAMÈTRES : quatre rangées
+réelles (clé Anthropic, clé OpenAI-compatible, modèle par défaut,
+URL de base) avec état affiché (« posée »/« absente » — jamais la
+clé en clair), effacement destructeur confirmé, tolérance totale
+de lecture (une valeur d'une version future retombe sur son
+défaut), bornes d'écriture (modèle jamais vide ≤ 100, URL http(s)
+ou vide ≤ 500) ; Reglages gagne fournisseurIa/modeleIa/urlIa ; la
+puce du tiroir affiche le modèle, la puce de mode change la
+permission par tour (Demander à chaque / Acceptation auto / Plan
+seul). LE TIROIR DANS L'ATELIER : glyphe BULLE dans la barre
+supérieure avec point d'activité pendant le tour, tiroir poussé
+depuis la droite (360 dp) monté sur la racine, le retour le ferme
+AVANT les autres surcouches ; VueAgent (vue mince) rend l'état :
+cartes, composeur désactivé pendant le tour (l'arrêt est l'action
+disponible), préremplissage « Demander à l'IA » (l'entrée du menu
+⋮ quote le fichier ACTIF borné à 8 000 caractères — la sélection
+précise attend l'API celeris, écart consigné ADR-060 §7 et
+backlog). Écarts consignés (ADR-060 §8) : l'amarrage grand écran
+du tiroir (v1 pousse aux deux tailles), le sélecteur in-situ, la
+preuve appareil de la liaison Keystore, run_task/add_dependency au
+défaut dégradé tant que l'atelier n'injecte pas l'exécuteur borné
+et le résolveur P4 au service. Acceptation : check vert sans SDK
+(politique de langue 0 problème — lint NewApi bloquant : les
+String#lines() API 33 remplacés par un comptage manuel), 100 tests
+agent 0 échec (15 nouveaux : DiffMyers 10, ApercuPermission 5), 72
+tests ide-integration 0 échec, 263 tests app-android 0 échec (36
+nouveaux : EtatAgentChat 13, MaquetteAgent 8 — capture contre la
+maquette, ClesChiffrees 9, Reglages +6) ; ADR-É11 + maquette +
+ADR-060, NOTICE inchangée (aucune dépendance nouvelle) ; arrêt
+pour validation du propriétaire — le groupe 4 est complet (jalon
+« agent v1 » : discuter avec l'agent, lui voir éditer le projet
+avec permission, annuler un tour), la suite est le lot Q
+(robustesse et Gemini) puis R (MCP, D-4).
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| agent `espace/` | `EspaceTravailInjecteur` (le délégué explicite — une signature ajoutée au port casse la compilation) |
+| agent | `DiffMyers` (Myers borné, repli honnête nommé, reconstruction éprouvée) |
+| app-android `atelier/agent/` | `EtatAgentChat` (transcript par événements, 14 verbes d'erreur, questions, permission, plafond annoncé), `VueAgent` (le tiroir : cartes, composeur/arrêt, puces) |
+| app-android racine | `AgentService` (premier plan, journal rejouable, session persistée, deux blocages par futures à défaut sûr) |
+| app-android `parametres/` | `ClesChiffrees` (format joide.cles/1, AES-GCM, IV aléatoire — pur), `KeystoreCles` (la clé Keystore, mince) |
+| app-android `ui/` | glyphe `BULLE` dans `Icone` ; `Dialogue.autorisation` (fermer = refuser dans le cadre) |
+| docs/ecrans | `011-agent-ecran.md` (ADR-É11) + `design/agent.html` (maquette, trois vues) |
+| docs/adr | `060-lot-p-ui-chat-et-integration.md` |
+| app-android `src/test` | `DiffMyersTest` (10), `ApercuPermissionTest` (5), `EtatAgentChatTest` (13), `MaquetteAgentTest` (8), `ClesChiffreesTest` (9), `ReglagesTest` (+6) |
+
+## Modifiés
+
+- `ExecuteurOutils` : le lecteur de contenu injecté, l'aperçu
+  DIFF RÉEL pour write/create/edit/write_memory, les opérations
+  nommées gardent le résumé ; `EspaceTravailAgent` porte
+  FICHIER_MEMOIRE.
+- `HistoriqueAgent` : constructeur (messages, compactes) — les
+  décisions de compaction survivent à la relecture de session.
+- `EcranParametres`/`EtatParametres` : la section IA (six
+  sections, dix-neuf rangées), l'état des clés lu du stockage
+  chiffré, les dialogues poser/remplacer/effacer et saisies
+  bornées.
+- `EcranAtelier` : glyphe agent + point d'activité, tiroir agent,
+  liaison du service, dialogue de permission, « Demander à l'IA »
+  au menu ⋮, le retour ferme le tiroir d'abord.
+- `Reglages` : fournisseurIa, modeleIa, urlIa (bornes et tolérance).
+- Manifeste : service AgentService (dataSync) + permission
+  FOREGROUND_SERVICE_DATA_SYNC ; chaînes agent fr/en (~50 clés).
+
 # CHANGES — Lots M, N et O : les Paramètres, le noyau agent, les outils (groupes 3 et 4-amorce de la V2)
 
 Le propriétaire a fusionné deux jalons en un GO (« Go pour M et

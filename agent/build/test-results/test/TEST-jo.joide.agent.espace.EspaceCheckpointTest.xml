@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.espace.EspaceCheckpointTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.815Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.186">
+<testsuite name="jo.joide.agent.espace.EspaceCheckpointTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.786Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.039">
   <properties/>
-  <testcase name="laCreationSAnnuleParSuppression()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.007"/>
-  <testcase name="laRestaurationVientDuPlusRecentAuPlusVieux()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.008"/>
-  <testcase name="unNouveauTourRepartDeZero()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.011"/>
-  <testcase name="laDependanceAjouteeEstAvoueeNonRestaurable()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.006"/>
-  <testcase name="lePlafondDeDeuxCentsFichiersTient()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.139"/>
-  <testcase name="lePremierToucherInstantanePasLesSuivants()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.011"/>
+  <testcase name="laCreationSAnnuleParSuppression()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.002"/>
+  <testcase name="laRestaurationVientDuPlusRecentAuPlusVieux()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.002"/>
+  <testcase name="unNouveauTourRepartDeZero()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.002"/>
+  <testcase name="laDependanceAjouteeEstAvoueeNonRestaurable()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.003"/>
+  <testcase name="lePlafondDeDeuxCentsFichiersTient()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.025"/>
+  <testcase name="lePremierToucherInstantanePasLesSuivants()" classname="jo.joide.agent.espace.EspaceCheckpointTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

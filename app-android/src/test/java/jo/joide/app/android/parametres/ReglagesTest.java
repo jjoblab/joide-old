@@ -147,4 +147,60 @@ class ReglagesTest {
         assertEquals(3, Theme.values().length);
         assertEquals(2, Moteur.values().length);
     }
+
+    @Test
+    void reglagesIaParDefautAnthropicEtModeleStandard() {
+        Reglages defauts = Reglages.defauts();
+        assertEquals(Reglages.FournisseurIa.ANTHROPIC,
+                defauts.fournisseurIa);
+        assertEquals(Reglages.MODELE_IA_DEFAUT, defauts.modeleIa);
+        assertEquals("", defauts.urlIa);
+    }
+
+    @Test
+    void leFournisseurIaInvalideRetombeSurLeDefaut() {
+        SourceMemoire source = new SourceMemoire();
+        source.valeurs.put("ia.fournisseur", "GEMINI_FUTUR");
+        assertEquals(Reglages.FournisseurIa.ANTHROPIC,
+                Reglages.lire(source).fournisseurIa);
+    }
+
+    @Test
+    void leModeleVideOuTropLongRetombeSurLeDefaut() {
+        SourceMemoire source = new SourceMemoire();
+        source.valeurs.put("ia.modele", "   ");
+        assertEquals(Reglages.MODELE_IA_DEFAUT,
+                Reglages.lire(source).modeleIa);
+        source.valeurs.put("ia.modele", "x".repeat(101));
+        assertEquals(Reglages.MODELE_IA_DEFAUT,
+                Reglages.lire(source).modeleIa);
+    }
+
+    @Test
+    void lUrlNonHttpEstRefuseeEnLectureEtEnEcriture() {
+        SourceMemoire source = new SourceMemoire();
+        source.valeurs.put("ia.url", "ftp://pirate.example");
+        assertEquals("", Reglages.lire(source).urlIa);
+        assertThrows(IllegalArgumentException.class,
+                () -> Reglages.ecrireUrlIa(source, "javascript:alert(1)"));
+    }
+
+    @Test
+    void leModeleSePoseEtSeRelitMaisJamaisVide() {
+        SourceMemoire source = new SourceMemoire();
+        Reglages.ecrireModeleIa(source, "gpt-5.2-mini");
+        assertEquals("gpt-5.2-mini", Reglages.lire(source).modeleIa);
+        assertThrows(IllegalArgumentException.class,
+                () -> Reglages.ecrireModeleIa(source, ""));
+    }
+
+    @Test
+    void lUrlHttpSePoseEtLaVideResteAutorisee() {
+        SourceMemoire source = new SourceMemoire();
+        Reglages.ecrireUrlIa(source, "https://passerelle.example/v1");
+        assertEquals("https://passerelle.example/v1",
+                Reglages.lire(source).urlIa);
+        Reglages.ecrireUrlIa(source, "");
+        assertEquals("", Reglages.lire(source).urlIa);
+    }
 }

@@ -23,6 +23,7 @@ principal, les autres fichiers sont les previews écran par écran.
 | `008-parametres.md` | Paramètres | `design/parametres.html` |
 | `009-analyse-ia-codeassist.md` | Analyse du code IA de CodeAssist (agent, LLM, MCP, UI, tests) | — |
 | `010-plan-lots.md` | Plan des lots d'implémentation : UI v2 (G-M) et agent IA (N-R) | — |
+| `011-agent-ecran.md` | L'écran de l'agent : tiroir chat, cartes, permissions | `design/agent.html` |
 
 Statut : design accepté en revue interne ; l'implémentation viendra en
 lots futurs. Le code existant (P8) n'est pas touché par cette série.
@@ -55,3 +56,21 @@ détectées par le parseur maison, MockView comptées, bannières de
 franchise, ADR-053). Arrêt pour validation du propriétaire — la
 suite est le lot M (paramètres) qui complète la v2, puis la piste
 agent (N-R).
+
+Livraisons M, N et O (2026-11-16, GO combiné « Go pour M et N/O »)
+: **lot M** (Paramètres, ADR-054 — la v2 est complète) ; **lot N**
+(noyau agent : module pur, boucle, compaction, taxonomie,
+sessions, deux fournisseurs, transport OkHttp D-5, ADR-055 à 058)
+; **lot O** (outils v1 et espace de travail sur les briques,
+confinement par construction, checkpoints, ADR-059). Arrêt pour
+validation — la suite est le lot P (UI du chat, ADR-É11) qui clôture
+le groupe 4.
+
+Livraison du lot P (2026-11-16) : **groupe 4 complet « agent
+v1 »** — l’ADR-É11 (ci-dessous) et sa maquette
+`design/agent.html`, puis l’implémentation : tiroir chat de
+l’atelier, cartes d’outils pliables, permission sur diff Myers
+déplié (fermer = refuser), questions par cartes, usage par tour,
+erreurs actionnables, service de premier plan à bouton Arrêter,
+réglages IA à clés chiffrées (ADR-060). Arrêt pour validation —
+la suite est le lot Q (robustesse, Gemini) puis R (MCP).

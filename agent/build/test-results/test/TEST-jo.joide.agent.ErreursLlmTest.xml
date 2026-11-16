@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="jo.joide.agent.ErreursLlmTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-16T06:32:02.451Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.095">
+<testsuite name="jo.joide.agent.ErreursLlmTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-16T07:39:50.687Z" hostname="c-6afa2f7b-140d72b5-3242cb56fe29" time="0.017">
   <properties/>
-  <testcase name="lesClesOntTroisGenresDistincts()" classname="jo.joide.agent.ErreursLlmTest" time="0.019"/>
-  <testcase name="un429AvecDelaiDansLeCorpsEstLuEnRepli()" classname="jo.joide.agent.ErreursLlmTest" time="0.002"/>
+  <testcase name="lesClesOntTroisGenresDistincts()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
+  <testcase name="un429AvecDelaiDansLeCorpsEstLuEnRepli()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
   <testcase name="quatorzeGenresExactementEtChacunTranche()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
-  <testcase name="le404GuideVersLEtNonVersLeModele()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
-  <testcase name="unFluxCoupeNEstJamaisRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.005"/>
-  <testcase name="leContexteTropLongSeDetecteAuCodeEtAuWording()" classname="jo.joide.agent.ErreursLlmTest" time="0.007"/>
+  <testcase name="le404GuideVersLEtNonVersLeModele()" classname="jo.joide.agent.ErreursLlmTest" time="0.0"/>
+  <testcase name="unFluxCoupeNEstJamaisRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.0"/>
+  <testcase name="leContexteTropLongSeDetecteAuCodeEtAuWording()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
   <testcase name="un429AvecRetryAfterEstUneLimiteDebitAvecDelai()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
-  <testcase name="un429DeFacturationEstUnCreditEpuise()" classname="jo.joide.agent.ErreursLlmTest" time="0.005"/>
-  <testcase name="unDelaiAvantPremierOctetSeRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.002"/>
-  <testcase name="un429QuotidienEstUneLimiteJourNonRetentable()" classname="jo.joide.agent.ErreursLlmTest" time="0.002"/>
-  <testcase name="les5xxSeRetentent()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
-  <testcase name="unReseauInjoignableSeRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
+  <testcase name="un429DeFacturationEstUnCreditEpuise()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
+  <testcase name="unDelaiAvantPremierOctetSeRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
+  <testcase name="un429QuotidienEstUneLimiteJourNonRetentable()" classname="jo.joide.agent.ErreursLlmTest" time="0.001"/>
+  <testcase name="les5xxSeRetentent()" classname="jo.joide.agent.ErreursLlmTest" time="0.0"/>
+  <testcase name="unReseauInjoignableSeRetente()" classname="jo.joide.agent.ErreursLlmTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

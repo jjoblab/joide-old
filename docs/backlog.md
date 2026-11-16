@@ -1,3 +1,26 @@
+# Backlog (après le lot P de la V2)
+
+Entrées ouvertes à l'issue du lot P (ADR-É11/060) :
+
+- [ ] Lot P : l'amarrage grand écran du tiroir agent (partage du
+      bord droit avec l'aperçu, ADR-É11 point 1) — v1 pousse le
+      tiroir aux deux tailles.
+- [ ] Lot P : le sélecteur de modèle IN-SITU (la puce ouvre les
+      réglages en v1) — fournisseur + modèle par conversation.
+- [ ] Lot P : « Demander à l'IA » sur la SÉLECTION de l'éditeur
+      (v1 quote le fichier actif borné) — attend l'exposition d'une
+      API de sélection par celeris (ADR-060 §7).
+- [ ] Lot P : la preuve appareil de la liaison Keystore (fabriquer
+      la clé dans le Keystore matériel) — le format AES-GCM est
+      éprouvé JVM, le composant Android reste mince (ADR-060 §8).
+- [ ] Lot P : brancher run_task et add_dependency au service de
+      l'agent (l'exécuteur borné du build et le résolveur P4 avec
+      lockfile existent déjà — ADR-059 —, c'est un travail d'hôte).
+- [ ] Lot P : le mode de permission n'est pas persisté par projet
+      (v1 : en mémoire par conversation, ADR-É11 point 3 vise par
+      projet).
+
+
 # Backlog (après les lots M, N et O de la V2)
 
 Entrées ouvertes à l'issue des lots M (ADR-054), N (ADR-055 à 058)
