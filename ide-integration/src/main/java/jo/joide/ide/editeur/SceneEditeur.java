@@ -157,6 +157,31 @@ public final class SceneEditeur implements AutoCloseable {
     }
 
     /**
+     * Positionne le caret au début d'une ligne et y amène le défilement
+     * (lot K, ADR-É6 : un problème de build s'ouvre jusqu'à la ligne).
+     * La ligne est bornée au document (1..lineCount) : une cible
+     * hors bornes atterrit sur la première ou la dernière ligne, jamais
+     * d'exception.
+     *
+     * @param ligne la ligne visée, numérotée depuis 1
+     */
+    public void allerALigne(int ligne) {
+        jo.celeris.core.text.Document document = session.document();
+        int bornee = Math.max(1, Math.min(ligne,
+                document.lineCount()));
+        int debut = document.lineStart(bornee - 1);
+        session.setSelection(
+                jo.celeris.core.text.MultiSelection.caretsAt(debut));
+        editeur.post(() -> {
+            android.graphics.Rect caret = editeur.caretBounds();
+            if (caret != null) {
+                editeur.requestRectangleOnScreen(caret);
+            }
+            editeur.invalidate();
+        });
+    }
+
+    /**
      * Les moteurs sous-jacents (synchronisation, état de l'index…).
      *
      * @return la façade du lot C

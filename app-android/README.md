@@ -8,7 +8,51 @@ service de premier plan `:build`).
 | Paquet | `jo.joide.app` |
 | Nature | Android (ADR-045) |
 | Dépendances JoIDE | build-daemon, ide-integration |
-| Phase de remplissage | P8 (lots A-F), V2 lots G-I (ADR-048/049/050) |
+| Phase de remplissage | P8 (lots A-F), V2 lots G-L (ADR-048 à 053) |
+
+## État des lots J, K et L (groupe 2 de la V2)
+
+- **`ecrans/atelier/EcranAtelier`** — l'atelier adaptatif (ADR-É5,
+  lot J, ADR-051) qui REMPLACE `EcranIde` de P8 : barre supérieure
+  exacte (nom du projet, puce « n modules », pilule d'état de
+  l'index CIDX honnête au tap, ⋮ fermer le projet avec fichiers
+  modifiés comptés), onglets multi-fichiers à état faible (plafond
+  10, éviction honnête du plus ancien non modifié, refus motivé si
+  tout est modifié), tiroir arborescence poussé (« Nouveau »
+  fichier/dossier validé par `NouveauNom`, sorties estompées jamais
+  dépliables, affichage plafonné annoncé), FAB Construire devenu
+  pilule d'état avec ARRÊT (`DaemonClient.cancel`), retour système
+  qui ferme les surcouches une à une, seuil 720 dp (rail,
+  arborescence amarrée, volet d'aperçu côte à côte, console
+  amarrée). Les montages des lots B-F sont repris tels quels.
+- **`atelier/`** — la logique pure : `EtatAtelier` (machine à états
+  des surcouches et des onglets), `Arborescence` (l'arbre du
+  tiroir), `NouveauNom` (validation des nouveaux fichiers),
+  `EcrituresFusionnees` (l'écriture disque multi-fichiers, le
+  dernier texte de chaque fichier gagne), `EtatApercu` (bannières de
+  franchise, contrôles réels, stats mesurées) ; les vues minces
+  `VueArbre` et `VueApercu`.
+- **`console/`** — la console de build v2 (ADR-É6, lot K, ADR-052) :
+  `EtatConsole` pur (transcript plafonné annoncé, phases du pipeline
+  déduites des noms de tâches avec durées mesurées, filtres par
+  nature et par phase, compteur d'erreurs exact, résumé final
+  chiffré, `surEvenement` LE point d'entrée du protocole) et
+  `VueConsole` (grille deux colonnes colorée par nature, problèmes
+  ouvrables jusqu'à la ligne). Le protocole du démon reste
+  inchangé ; les problèmes non localisés (le pipeline ne transporte
+  pas la localisation) s'affichent sans lien, jamais un faux bouton.
+- **`ui/`** — le kit étendu au groupe 2 : `Onglets` (barre
+  multi-fichiers), `Pilule` (état de l'index), `Fab` (FAB/pilule de
+  build), glyphes `TERMINAL`/`RAFRAICHIR`/`AGRANDIR`, `Dock` avec
+  titre libre/légende chiffrée/hauteur de contenu, `Segment`
+  .setSelection, `EtatVide` idempotent, `Dialogue.confirmation` à
+  message libre.
+- **Façade ide-integration (lot L, ADR-053)** —
+  `ConfigurationApercu.densiteRendu` (le contrôle de densité devient
+  un réglage réel), `ApercuLayouts.ressourcesManquantes` (les replis
+  de ressources détectés par le parseur XML maison — jamais une
+  regex — et le vrai résolveur de la brique) et
+  `SceneEditeur.allerALigne` (un problème s'ouvre jusqu'à la ligne).
 
 ## État des lots H et I (groupe 1 de la V2)
 
@@ -41,13 +85,6 @@ service de premier plan `:build`).
   `EcrireProjet` (temporaire voisin puis renommage atomique, chemins
   hors projet refusés — zip-slip), `EtatCreation` (machine à états,
   validations au fil de la saisie, refus de retrait motivé).
-- **`ecrans/ide/EcranIde`** — l'écran IDE de P8 (lots A-F), déplacé
-  du lanceur vers cet écran : la racine du projet, la bannière de
-  compatibilité Gradle et le fichier d'entrée arrivent par extras
-  d'intention. Montage des moteurs de langage (lot C) derrière
-  l'éditeur celeris (lot D) et l'aperçu de layouts (lot E), console
-  de build branchée au service de premier plan. Le lot J
-  (atelier adaptatif) remplacera cet empilement programmatique.
 - **`ui/`** — le kit Graphite du lot G (ADR-048), étendu au lot I :
   `Icone` (glyphes dessinés au canvas), `Segment` (options
   exclusives) et `ChoixSegment` ; `Carte.setTonale` (l'accentuation

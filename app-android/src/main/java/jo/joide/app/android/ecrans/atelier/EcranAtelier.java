@@ -1,0 +1,1488 @@
+package jo.joide.app.android.ecrans.atelier;
+
+import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+import jo.joide.app.android.BuildService;
+import jo.joide.app.android.FichiersProjet;
+import jo.joide.app.android.R;
+import jo.joide.app.android.SpecsBuild;
+import jo.joide.app.android.StoreAndroid;
+import jo.joide.app.android.atelier.Arborescence;
+import jo.joide.app.android.atelier.EcrituresFusionnees;
+import jo.joide.app.android.atelier.EtatApercu;
+import jo.joide.app.android.atelier.EtatAtelier;
+import jo.joide.app.android.atelier.NouveauNom;
+import jo.joide.app.android.atelier.VueApercu;
+import jo.joide.app.android.atelier.VueArbre;
+import jo.joide.app.android.console.EtatConsole;
+import jo.joide.app.android.console.VueConsole;
+import jo.joide.app.android.ui.Bouton;
+import jo.joide.app.android.ui.Dialogue;
+import jo.joide.app.android.ui.Dock;
+import jo.joide.app.android.ui.EtatVide;
+import jo.joide.app.android.ui.Fab;
+import jo.joide.app.android.ui.Graphite;
+import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.Icone;
+import jo.joide.app.android.ui.Onglets;
+import jo.joide.app.android.ui.Pilule;
+import jo.joide.app.android.ui.Puce;
+import jo.joide.app.android.ui.TiroirPousse;
+import jo.joide.app.android.ui.choix.ChoixBouton;
+import jo.joide.build.daemon.client.DaemonClient;
+import jo.joide.build.daemon.protocol.BuildSpec;
+import jo.joide.build.daemon.runner.BuildRunner;
+import jo.joide.deps.cache.DependencyCache;
+import jo.joide.deps.repo.HttpTransport;
+import jo.joide.deps.repo.Repository;
+import jo.joide.deps.resolve.ResolverConfig;
+import jo.joide.ide.apercu.ApercuLayouts;
+import jo.joide.ide.apercu.ConfigurationApercu;
+import jo.joide.ide.apercu.ConfigurationsApercu;
+import jo.joide.ide.editeur.SceneEditeur;
+import jo.joide.ide.langages.EtatIndex;
+import jo.joide.ide.langages.MoteursLangage;
+import jo.joide.ide.sync.AndroidPlatform;
+import jo.joide.ide.sync.ExternalResolution;
+import jo.joide.ide.sync.LanguageModelSnapshot;
+import jo.joide.ide.sync.LanguageModelSync;
+import jo.joide.ide.sync.ModuleDirectories;
+import jo.joide.ide.sync.ProjetLspAdapter;
+import jo.joide.ide.sync.Resolutions;
+import jo.joide.model.Workspace;
+import jo.joide.model.WorkspaceLoad;
+import jo.joide.model.WorkspaceLoader;
+
+/**
+ * L'atelier adaptatif (lot J, ADR-É5) : il remplace l'empilement
+ * programmatique de P8 — barre supérieure exacte (nom du projet, puce
+ * modules, pilule d'état de l'index, ⋮), onglets multi-fichiers à état
+ * faible (ADR-051), éditeur celeris dans le puits, tiroir
+ * arborescence avec sorties estompées, dock de console (lot K,
+ * ADR-É6), FAB Construire qui devient pilule de build, aperçu côte à
+ * côte au seuil 720 dp (lot L, ADR-É7). Le retour système ferme les
+ * surcouches une à une — jamais un état zombie.
+ *
+ * <p>La doctrine P8 est reconduite : l'UI reste mince, la logique
+ * testable vit dans {@link EtatAtelier}, {@link Arborescence},
+ * {@link EtatConsole}, {@link EtatApercu}, {@link FichiersProjet},
+ * {@link SpecsBuild} — l'écran monte, traduit et déroule. Les
+ * montages des lots B-F (sync, moteurs, éditeur, aperçu, build) sont
+ * repris tels quels : seul l'habillage change.</p>
+ */
+public final class EcranAtelier extends Activity {
+
+    /** Extra d'intention : la racine du projet (chemin absolu). */
+    public static final String EXTRA_RACINE = "joide.racine";
+
+    /** Extra d'intention : la bannière de compatibilité (optionnel). */
+    public static final String EXTRA_BANNIERE = "joide.banniere";
+
+    /**
+     * Extra d'intention : le fichier ouvert au montage (optionnel,
+     * lot I — l'atelier s'ouvre sur le fichier d'entrée du modèle,
+     * jamais un atelier vide).
+     */
+    public static final String EXTRA_FICHIER = "joide.fichier";
+
+    private static final long ATTENTE_PORT_MS = 10_000L;
+    private static final int HAUTEUR_CONSOLE_DP = 300;
+
+    private final ExecutorService fond = Executors.newSingleThreadExecutor(
+            runnable -> {
+                Thread fil = new Thread(runnable, "joide-atelier");
+                fil.setDaemon(true);
+                return fil;
+            });
+    private final ExecutorService ecrivain =
+            Executors.newSingleThreadExecutor(runnable -> {
+                Thread fil = new Thread(runnable, "joide-ecrivain");
+                fil.setDaemon(true);
+                return fil;
+            });
+    private final EcrituresFusionnees ecritures =
+            new EcrituresFusionnees();
+    private final AtomicLong numerosBuild = new AtomicLong();
+    private final AtomicReference<DaemonClient> clientDemon =
+            new AtomicReference<>();
+    private final Set<String> dossiersOuverts = new LinkedHashSet<>();
+
+    private Graphite.Palette palette;
+    private EtatAtelier etat;
+    private final EtatConsole etatConsole = new EtatConsole();
+    private final EtatApercu etatApercu = new EtatApercu();
+
+    private TextView nomProjet;
+    private Puce puceModules;
+    private Pilule piluleIndex;
+    private Onglets onglets;
+    private VueArbre vueArbre;
+    private VueConsole vueConsole;
+    private VueApercu vueApercu;
+    private Dock dock;
+    private Fab fab;
+    private TiroirPousse tiroir;
+    private FrameLayout puits;
+    private EtatVide etatVidePuits;
+    private LinearLayout voletDroit;
+    private LinearLayout colonneArbre;
+    private FrameLayout voletPleinEcran;
+    private Icone boutonRailArbre;
+    private Icone boutonRailConsole;
+    private Icone boutonApercuOnglets;
+    private TextView banniereCompat;
+    private View vueEditeur;
+
+    /** IDE monté (null tant qu'aucun projet natif n'est chargé). */
+    private MoteursLangage moteurs;
+    private LanguageModelSync sync;
+    private SceneEditeur scene;
+    private ApercuLayouts apercu;
+    private ConfigurationApercu configApercuBase;
+    private Workspace modele;
+    private Path racineProjet;
+    private String fichierCourant;
+    private String fichierInitial;
+    private String xmlCourant;
+    private List<String> fichiersArbre = List.of();
+    private boolean sortiesPresentes;
+    private volatile boolean buildEnCours;
+    private boolean enProcessus;
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        palette = GraphiteVue.palette(this);
+        GraphiteVue.fondEcran(this, palette);
+        boolean grandEcran = EtatAtelier.estGrandEcran(
+                getResources().getConfiguration().screenWidthDp);
+        etat = new EtatAtelier(grandEcran);
+        setContentView(construireUi());
+        String racine = getIntent().getStringExtra(EXTRA_RACINE);
+        String banniere = getIntent().getStringExtra(EXTRA_BANNIERE);
+        if (racine == null || racine.isEmpty()) {
+            montrerErreur(getString(R.string.projet_illisible_sans_detail));
+            return;
+        }
+        if (banniere != null && !banniere.isEmpty()) {
+            banniereCompat.setText(banniere);
+            banniereCompat.setVisibility(View.VISIBLE);
+            return;
+        }
+        etatVidePuits.setTitre(R.string.ide_chargement);
+        etatVidePuits.setAide(R.string.atelier_etat_vide_aide);
+        fichierInitial = getIntent().getStringExtra(EXTRA_FICHIER);
+        fond.execute(() -> charger(Paths.get(racine)));
+    }
+
+    // ------------------------------------------------------------------
+    // Construction de l'UI
+    // ------------------------------------------------------------------
+
+    private View construireUi() {
+        ContexteUi ui = new ContexteUi();
+        vueArbre = new VueArbre(this);
+        vueArbre.setAuditeur(new VueArbre.AuditeurArbre() {
+            @Override
+            public void surDossier(String chemin, boolean ouvrir) {
+                if (ouvrir) {
+                    dossiersOuverts.add(chemin);
+                } else {
+                    dossiersOuverts.remove(chemin);
+                }
+                majArbre();
+            }
+
+            @Override
+            public void surFichier(String chemin) {
+                ouvrirFichier(chemin, null);
+            }
+
+            @Override
+            public void surNouveau(boolean fichier) {
+                proposerNouveau(fichier);
+            }
+        });
+        vueConsole = new VueConsole(this);
+        vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
+            @Override
+            public void surArreter() {
+                arreterBuild();
+            }
+
+            @Override
+            public void surVider() {
+                confirmerVidage();
+            }
+
+            @Override
+            public void surFiltre(jo.joide.app.android.console.EtatConsole.Filtre filtre) {
+                etatConsole.setFiltre(filtre);
+                majConsole();
+            }
+
+            @Override
+            public void surPhase(jo.joide.app.android.ConsoleBuild.Phase phase) {
+                etatConsole.setFiltrePhase(phase);
+                majConsole();
+            }
+
+            @Override
+            public void surOuvrir(String cible) {
+                ouvrirCible(cible);
+            }
+        });
+        vueApercu = new VueApercu(this);
+        vueApercu.setAuditeur(new VueApercu.AuditeurApercu() {
+            @Override
+            public void surRafraichir() {
+                if (apercu != null && FichiersProjet.estMiseEnPage(
+                        fichierCourant)) {
+                    apercu.rendreSansDelai(scene.texte());
+                }
+            }
+
+            @Override
+            public void surPleinEcran() {
+                etat.basculerApercuPleinEcran();
+                majVolets();
+            }
+
+            @Override
+            public void surFermer() {
+                etat.fermerVoletApercu();
+                majVolets();
+            }
+
+            @Override
+            public void surDensite(int densite) {
+                etatApercu.setDensite(densite);
+                reconfigurerApercu();
+            }
+
+            @Override
+            public void surNuit(boolean nuit) {
+                etatApercu.setNuit(nuit);
+                reconfigurerApercu();
+            }
+
+            @Override
+            public void surDimensions(int largeurDp, int hauteurDp) {
+                etatApercu.setDimensions(largeurDp, hauteurDp);
+                reconfigurerApercu();
+            }
+        });
+
+        FrameLayout racineVue = new FrameLayout(this);
+
+        LinearLayout colonne = new LinearLayout(this);
+        colonne.setOrientation(LinearLayout.VERTICAL);
+        colonne.setBackgroundColor(palette.fond);
+        racineVue.addView(colonne, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+
+        colonne.addView(ui.barreSuperieure(), new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                GraphiteVue.dp(this, 52)));
+
+        banniereCompat = new TextView(this);
+        GraphiteVue.typographie(banniereCompat, Graphite.NOTE);
+        banniereCompat.setTextColor(palette.alerte);
+        banniereCompat.setBackgroundColor(Graphite.melange(
+                palette.alerte, 0.12f, palette.fond));
+        int marge = GraphiteVue.dp(this, 14);
+        banniereCompat.setPadding(marge, marge / 2, marge, marge / 2);
+        banniereCompat.setVisibility(View.GONE);
+        colonne.addView(banniereCompat, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        onglets = new Onglets(this);
+        onglets.setAuditeur(new Onglets.AuditeurOnglets() {
+            @Override
+            public void surActivation(String chemin) {
+                etat.activer(chemin);
+                montrerFichier(chemin, null);
+            }
+
+            @Override
+            public void surFermeture(String chemin) {
+                fermerOnglet(chemin);
+            }
+        });
+        LinearLayout barreOnglets = new LinearLayout(this);
+        barreOnglets.setOrientation(LinearLayout.HORIZONTAL);
+        barreOnglets.setBackgroundColor(palette.fond);
+        barreOnglets.addView(onglets, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+        if (!etat.grandEcran()) {
+            // téléphone : le volet d'aperçu se propose quand l'onglet
+            // actif est une mise en page (ADR-É7) — bouton de la barre
+            boutonApercuOnglets = new Icone(this);
+            boutonApercuOnglets.setGlyphe(Icone.Glyphe.AGRANDIR);
+            boutonApercuOnglets.setCouleur(palette.texteSecondaire);
+            boutonApercuOnglets.setClickable(true);
+            boutonApercuOnglets.setContentDescription(
+                    getString(R.string.apercu_desc_plein_ecran));
+            boutonApercuOnglets.setOnClickListener(vue -> {
+                etat.basculerApercuPleinEcran();
+                majVolets();
+                if (apercu != null && scene != null
+                        && FichiersProjet.estMiseEnPage(fichierCourant)) {
+                    apercu.rendreSansDelai(scene.texte());
+                }
+            });
+            boutonApercuOnglets.setVisibility(View.GONE);
+            LinearLayout.LayoutParams paramsApercu =
+                    new LinearLayout.LayoutParams(
+                            GraphiteVue.dp(this, 42),
+                            GraphiteVue.dp(this, 42));
+            paramsApercu.gravity = Gravity.CENTER_VERTICAL;
+            paramsApercu.rightMargin = GraphiteVue.dp(this, 6);
+            barreOnglets.addView(boutonApercuOnglets, paramsApercu);
+        }
+        colonne.addView(barreOnglets, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                GraphiteVue.dp(this, 42)));  
+
+        FrameLayout corps = new FrameLayout(this);
+        if (etat.grandEcran()) {
+            corps.addView(ui.rangeeGrandEcran());
+        } else {
+            corps.addView(ui.puitsCompact());
+        }
+        voletPleinEcran = new FrameLayout(this);
+        voletPleinEcran.setBackgroundColor(palette.fond);
+        voletPleinEcran.setVisibility(View.GONE);
+        corps.addView(voletPleinEcran, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        colonne.addView(corps, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        dock = new Dock(this);
+        dock.setTitre(R.string.console_build);
+        dock.setHauteurContenu(HAUTEUR_CONSOLE_DP);
+        dock.setContenu(vueConsole);
+        colonne.addView(dock, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        if (!etat.grandEcran()) {
+            tiroir = new TiroirPousse(this);
+            tiroir.setBordDroit(false);
+            tiroir.setPanneau(vueArbre);
+            racineVue.addView(tiroir, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+        }
+
+        fab = new Fab(this);
+        fab.setAuditeur(new Fab.AuditeurFab() {
+            @Override
+            public void surLancer() {
+                construire();
+            }
+
+            @Override
+            public void surOuvrirConsole() {
+                etat.deplierConsole();
+                majVolets();
+            }
+
+            @Override
+            public void surArreter() {
+                arreterBuild();
+            }
+        });
+        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.END);
+        fabParams.bottomMargin = GraphiteVue.dp(this, 64);
+        fabParams.rightMargin = GraphiteVue.dp(this, 20);
+        racineVue.addView(fab, fabParams);
+        return racineVue;
+    }
+
+    /** Les sous-constructions de l'atelier (méthodes à usage local). */
+    private final class ContexteUi {
+
+        private View barreSuperieure() {
+            LinearLayout barre = new LinearLayout(EcranAtelier.this);
+            barre.setOrientation(LinearLayout.HORIZONTAL);
+            barre.setGravity(Gravity.CENTER_VERTICAL);
+            barre.setBackgroundColor(palette.surface);
+            int marge = GraphiteVue.dp(EcranAtelier.this, 8);
+            barre.setPadding(marge, 0, marge, 0);
+
+            Icone retour = new Icone(EcranAtelier.this);
+            retour.setGlyphe(Icone.Glyphe.RETOUR);
+            retour.setCouleur(palette.texte);
+            retour.setClickable(true);
+            retour.setContentDescription(getString(
+                    R.string.atelier_desc_retour));
+            retour.setOnClickListener(vue -> onBackPressed());
+            barre.addView(retour, clicParams());
+
+            LinearLayout identite = new LinearLayout(EcranAtelier.this);
+            identite.setOrientation(LinearLayout.HORIZONTAL);
+            identite.setGravity(Gravity.CENTER_VERTICAL);
+            nomProjet = new TextView(EcranAtelier.this);
+            GraphiteVue.typographie(nomProjet, Graphite.SOUS_TITRE);
+            nomProjet.setTextColor(palette.texte);
+            nomProjet.setSingleLine(true);
+            identite.addView(nomProjet, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+            puceModules = new Puce(EcranAtelier.this);
+            identite.addView(puceModules, margeGauche());
+            barre.addView(identite, new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+            piluleIndex = new Pilule(EcranAtelier.this);
+            piluleIndex.setOnClickListener(vue -> montrerDetailIndex());
+            barre.addView(piluleIndex);
+
+            Icone menu = new Icone(EcranAtelier.this);
+            menu.setGlyphe(Icone.Glyphe.POINTS);
+            menu.setCouleur(palette.texte);
+            menu.setClickable(true);
+            menu.setContentDescription(getString(
+                    R.string.atelier_desc_menu));
+            menu.setOnClickListener(vue -> ouvrirMenu());
+            barre.addView(menu, clicParams());
+            return barre;
+        }
+
+        private View puitsCompact() {
+            puits = cadrePuits();
+            return puits;
+        }
+
+        private View rangeeGrandEcran() {
+            LinearLayout rang = new LinearLayout(EcranAtelier.this);
+            rang.setOrientation(LinearLayout.HORIZONTAL);
+
+            LinearLayout rail = new LinearLayout(EcranAtelier.this);
+            rail.setOrientation(LinearLayout.VERTICAL);
+            rail.setBackgroundColor(palette.surface);
+            rail.setPadding(0, GraphiteVue.dp(EcranAtelier.this, 10),
+                    0, 0);
+            boutonRailArbre = new Icone(EcranAtelier.this);
+            boutonRailArbre.setGlyphe(Icone.Glyphe.DOSSIER);
+            boutonRailArbre.setCouleur(palette.accent);
+            boutonRailArbre.setClickable(true);
+            boutonRailArbre.setContentDescription(getString(
+                    R.string.atelier_desc_fichiers));
+            boutonRailArbre.setOnClickListener(vue -> {
+                boolean visible = colonneArbre.getVisibility()
+                        != View.VISIBLE;
+                colonneArbre.setVisibility(
+                        visible ? View.VISIBLE : View.GONE);
+                boutonRailArbre.setCouleur(
+                        visible ? palette.accent
+                                : palette.texteSecondaire);
+            });
+            rail.addView(boutonRailArbre, clicParamsRail());
+            boutonRailConsole = new Icone(EcranAtelier.this);
+            boutonRailConsole.setGlyphe(Icone.Glyphe.TERMINAL);
+            boutonRailConsole.setCouleur(palette.texteSecondaire);
+            boutonRailConsole.setClickable(true);
+            boutonRailConsole.setContentDescription(getString(
+                    R.string.atelier_desc_console));
+            boutonRailConsole.setOnClickListener(vue -> {
+                etat.basculerConsole();
+                majVolets();
+            });
+            rail.addView(boutonRailConsole, clicParamsRail());
+            rang.addView(rail, new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(EcranAtelier.this, 48),
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+
+            colonneArbre = new LinearLayout(EcranAtelier.this);
+            colonneArbre.setOrientation(LinearLayout.VERTICAL);
+            GradientDrawable bord = new GradientDrawable();
+            bord.setColor(palette.surface);
+            colonneArbre.setBackground(bord);
+            colonneArbre.addView(vueArbre, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            rang.addView(colonneArbre, new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(EcranAtelier.this, 240),
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+
+            puits = cadrePuits();
+            rang.addView(puits, new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1f));
+
+            voletDroit = new LinearLayout(EcranAtelier.this);
+            voletDroit.setOrientation(LinearLayout.VERTICAL);
+            voletDroit.setVisibility(View.GONE);
+            rang.addView(voletDroit, new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(EcranAtelier.this, 320),
+                    LinearLayout.LayoutParams.MATCH_PARENT));
+            return rang;
+        }
+
+        private FrameLayout cadrePuits() {
+            FrameLayout cadre = new FrameLayout(EcranAtelier.this);
+            cadre.setBackgroundColor(palette.puits);
+            etatVidePuits = new EtatVide(EcranAtelier.this);
+            cadre.addView(etatVidePuits, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+            return cadre;
+        }
+
+        private LinearLayout.LayoutParams clicParams() {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(EcranAtelier.this, 42),
+                    GraphiteVue.dp(EcranAtelier.this, 42));
+            params.leftMargin = params.rightMargin =
+                    GraphiteVue.dp(EcranAtelier.this, 4);
+            return params;
+        }
+
+        private LinearLayout.LayoutParams clicParamsRail() {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    GraphiteVue.dp(EcranAtelier.this, 48),
+                    GraphiteVue.dp(EcranAtelier.this, 48));
+            return params;
+        }
+
+        private LinearLayout.LayoutParams margeGauche() {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.leftMargin = GraphiteVue.dp(EcranAtelier.this, 8);
+            return params;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Chargement et montage (les lots B-F repris tels quels)
+    // ------------------------------------------------------------------
+
+    private void montrerErreur(String message) {
+        etatVidePuits.setTitre(R.string.projet_illisible_sans_detail);
+        etatVidePuits.setAide(message);
+    }
+
+    private void charger(Path racine) {
+        WorkspaceLoad charge = WorkspaceLoader.load(racine);
+        if (!charge.isUsable()) {
+            String detail = charge.errors().isEmpty()
+                    ? "?" : charge.errors().get(0).message();
+            runOnUiThread(() -> montrerErreur(
+                    getString(R.string.projet_illisible, detail)));
+            return;
+        }
+        monterIde(racine, charge);
+    }
+
+    private void monterIde(Path racine, WorkspaceLoad charge) {
+        Workspace workspace = charge.workspace().orElse(null);
+        if (workspace == null) {
+            runOnUiThread(() -> montrerErreur(
+                    getString(R.string.projet_illisible_sans_detail)));
+            return;
+        }
+        DependencyCache cache;
+        try {
+            cache = new DependencyCache(
+                    Paths.get(getFilesDir().getAbsolutePath(), "m2"));
+        } catch (IOException e) {
+            runOnUiThread(() -> montrerErreur(
+                    getString(R.string.import_echoue,
+                            String.valueOf(e.getMessage()))));
+            return;
+        }
+        ResolverConfig config = new ResolverConfig.Builder()
+                .repository(new Repository.Remote("central",
+                        "https://repo.maven.apache.org/maven2",
+                        new HttpTransport()))
+                .cache(cache)
+                .build();
+        LanguageModelSync syncLocal = new LanguageModelSync(racine,
+                new ProjetLspAdapter(ModuleDirectories.nested(racine),
+                        AndroidPlatform.absent()),
+                Resolutions.byResolver(config));
+        MoteursLangage moteursLocal = new MoteursLangage(syncLocal,
+                Paths.get(getFilesDir().getAbsolutePath(), "cidx"));
+        LanguageModelSnapshot instantane =
+                moteursLocal.synchroniser(workspace);
+        runOnUiThread(() -> monterVues(racine, workspace, syncLocal,
+                moteursLocal, instantane));
+    }
+
+    private void monterVues(Path racine, Workspace workspace,
+                            LanguageModelSync syncLocal,
+                            MoteursLangage moteursLocal,
+                            LanguageModelSnapshot instantane) {
+        if (isFinishing() || isDestroyed()) {
+            moteursLocal.close();
+            return;
+        }
+        fermerIde();
+        racineProjet = racine;
+        modele = workspace;
+        sync = syncLocal;
+        moteurs = moteursLocal;
+        etat.setProjetMonte(true);
+        nomProjet.setText(String.valueOf(racine.getFileName()));
+        int modules = workspace.allModules().size();
+        puceModules.setText(modules == 1
+                ? getString(R.string.meta_module_1, modules)
+                : getString(R.string.meta_modules, modules));
+
+        apercu = new ApercuLayouts(this);
+        configApercuBase = ConfigurationsApercu.depuisSnapshot(instantane);
+        etatApercu.surAvertissementsConfig(
+                configApercuBase.avertissements());
+        reconfigurerApercu();
+        apercu.poserEcouteur(new ApercuLayouts.EcouteurRendu() {
+            @Override
+            public void onSucces(View rendu, long dureeMs, int vues,
+                                 int largeur, int hauteur) {
+                poserRendu(rendu);
+                etatApercu.surSucces(vues, dureeMs, largeur, hauteur);
+                etatApercu.surMockViews(compterMockViews(rendu));
+                etatApercu.surRessourcesManquantes(
+                        apercu.ressourcesManquantes(xmlCourant));
+                vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                        fichierCourant));
+            }
+
+            @Override
+            public void onErreur(String message, Throwable cause) {
+                etatApercu.surErreur(message);
+                vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                        fichierCourant));
+            }
+
+            @Override
+            public void onXmlInvalide(String message) {
+                etatApercu.surXmlInvalide();
+                vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                        fichierCourant));
+            }
+        });
+
+        scene = new SceneEditeur(this, moteurs);
+        scene.poserAuditeurEdition(texte -> {
+            if (fichierCourant == null) {
+                return;
+            }
+            ecritures.poser(fichierCourant, texte);
+            etat.marquerModifie(fichierCourant);
+            majOnglets();
+            if (FichiersProjet.estMiseEnPage(fichierCourant)) {
+                xmlCourant = texte;
+                apercu.rendre(texte);
+            }
+        });
+        vueEditeur = new FrameLayout(this);
+        ((FrameLayout) vueEditeur).addView(scene.vue(),
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+        ((FrameLayout) vueEditeur).addView(scene.couchePopups(),
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+        puits.addView(vueEditeur, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        etatVidePuits.setTitre(R.string.atelier_etat_vide_titre);
+        etatVidePuits.setAide(R.string.atelier_etat_vide_aide);
+        majPiluleIndex();
+        rechargerArbre();
+        if (fichierInitial != null && !fichierInitial.isEmpty()) {
+            // lot I : l'atelier s'ouvre sur le fichier d'entrée du
+            // modèle, jamais un atelier vide (ADR-É4)
+            ouvrirFichier(fichierInitial, null);
+            fichierInitial = null;
+        }
+    }
+
+    private void ecrireEnAttente() {
+        java.util.Map<String, String> aEcrire = ecritures.drainer();
+        for (java.util.Map.Entry<String, String> entree
+                : aEcrire.entrySet()) {
+            try {
+                Files.write(racineProjet.resolve(entree.getKey()),
+                        entree.getValue().getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                runOnUiThread(() -> Dialogue.information(
+                        EcranAtelier.this, palette,
+                        getString(R.string.import_echoue_titre),
+                        getString(R.string.ecriture_echouee),
+                        R.string.action_ok));
+                return;
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Onglets et fichiers
+    // ------------------------------------------------------------------
+
+    private void ouvrirFichier(String relatif, Integer ligne) {
+        if (racineProjet == null) {
+            return;
+        }
+        EtatAtelier.Ouverture ouverture = etat.ouvrir(relatif);
+        if (!ouverture.faite()) {
+            Dialogue.information(this, palette,
+                    getString(R.string.atelier_etat_vide_titre),
+                    getString(R.string.atelier_onglets_plafond,
+                            EtatAtelier.ONGLETS_MAX),
+                    R.string.action_ok);
+            return;
+        }
+        if (ouverture.evince() != null) {
+            majOnglets();
+        }
+        montrerFichier(relatif, ligne);
+    }
+
+    private void montrerFichier(String relatif, Integer ligne) {
+        if (racineProjet == null || scene == null) {
+            return;
+        }
+        fond.execute(() -> {
+            String contenu;
+            try {
+                contenu = FichiersProjet.lire(racineProjet, relatif);
+            } catch (IOException e) {
+                runOnUiThread(() -> Dialogue.information(
+                        EcranAtelier.this, palette,
+                        getString(R.string.import_echoue_titre),
+                        getString(R.string.lecture_echouee, relatif),
+                        R.string.action_ok));
+                return;
+            }
+            runOnUiThread(() -> {
+                fichierCourant = relatif;
+                dossiersOuverts.addAll(Arborescence.parentsDe(relatif));
+                String uri = racineProjet.resolve(relatif).toString();
+                scene.ouvrir(uri, Arborescence.nomAffiche(relatif),
+                        contenu);
+                etatVidePuits.setVisibility(View.GONE);
+                if (vueEditeur != null) {
+                    vueEditeur.setVisibility(View.VISIBLE);
+                }
+                boolean miseEnPage = FichiersProjet.estMiseEnPage(relatif);
+                etat.surActifEstMiseEnPage(miseEnPage);
+                if (miseEnPage) {
+                    xmlCourant = contenu;
+                    etatApercu.setTheme(configApercuBase.nomTheme());
+                    reconfigurerApercu();
+                    apercu.rendreSansDelai(contenu);
+                }
+                majOnglets();
+                majVolets();
+                majArbre();
+                if (ligne != null) {
+                    scene.allerALigne(ligne);
+                }
+            });
+        });
+    }
+
+    private void fermerOnglet(String relatif) {
+        if (!etat.fermer(relatif)) {
+            return;
+        }
+        ecritures.drainer();
+        fond.execute(this::ecrireEnAttente);
+        String nouveau = etat.actif();
+        if (nouveau != null) {
+            montrerFichier(nouveau, null);
+        } else {
+            fichierCourant = null;
+            xmlCourant = null;
+            etatVidePuits.setVisibility(View.VISIBLE);
+            if (vueEditeur != null) {
+                vueEditeur.setVisibility(View.GONE);
+            }
+            etat.fermerVoletApercu();
+            majOnglets();
+            majVolets();
+            majArbre();
+        }
+    }
+
+    private void majOnglets() {
+        if (onglets == null) {
+            return;
+        }
+        java.util.List<Onglets.Onglet> ouvertures =
+                new java.util.ArrayList<>();
+        for (String chemin : etat.onglets()) {
+            ouvertures.add(new Onglets.Onglet(chemin,
+                    Arborescence.nomAffiche(chemin),
+                    etat.estModifie(chemin)));
+        }
+        onglets.setOnglets(ouvertures, etat.actif());
+    }
+
+    private void ouvrirCible(String cible) {
+        int separation = cible.lastIndexOf(':');
+        if (separation <= 0) {
+            return;
+        }
+        String chemin = cible.substring(0, separation);
+        int ligne;
+        try {
+            ligne = Integer.parseInt(cible.substring(separation + 1));
+        } catch (NumberFormatException e) {
+            ligne = 1;
+        }
+        String prefixe = racineProjet.toString();
+        if (chemin.startsWith(prefixe)) {
+            chemin = chemin.substring(prefixe.length());
+            while (chemin.startsWith("/")) {
+                chemin = chemin.substring(1);
+            }
+        }
+        if (!FichiersProjet.ouvrable(Arborescence.nomAffiche(chemin))
+                || !java.util.Arrays.asList(fichiersArbre.toArray())
+                        .contains(chemin)) {
+            Dialogue.information(this, palette,
+                    getString(R.string.console_probleme_ouvrir),
+                    getString(R.string.console_cible_introuvable, chemin),
+                    R.string.action_ok);
+            return;
+        }
+        ouvrirFichier(chemin, ligne);
+    }
+
+    // ------------------------------------------------------------------
+    // Arborescence et nouveaux fichiers
+    // ------------------------------------------------------------------
+
+    private void rechargerArbre() {
+        if (racineProjet == null) {
+            return;
+        }
+        fond.execute(() -> {
+            try {
+                List<String> fichiers = FichiersProjet.lister(racineProjet);
+                boolean sorties = Files.isDirectory(
+                        racineProjet.resolve(Arborescence.NOM_SORTIES));
+                runOnUiThread(() -> {
+                    fichiersArbre = fichiers;
+                    sortiesPresentes = sorties;
+                    majArbre();
+                });
+            } catch (IOException e) {
+                // l'arbre reste l'état précédent : jamais un arbre vide
+                // muet — le prochain accès le rechargera
+            }
+        });
+    }
+
+    private void majArbre() {
+        if (vueArbre == null || racineProjet == null) {
+            return;
+        }
+        vueArbre.setSortiesEnCours(buildEnCours);
+        vueArbre.setArbre(Arborescence.composer(fichiersArbre,
+                String.valueOf(racineProjet.getFileName()),
+                dossiersOuverts, etat.actif(), sortiesPresentes),
+                String.valueOf(racineProjet.getFileName()));
+    }
+
+    private void proposerNouveau(boolean fichier) {
+        String dossier = etat.actif() == null
+                ? "" : Arborescence.dossierDe(etat.actif());
+        String affichage = dossier.isEmpty()
+                ? String.valueOf(racineProjet.getFileName()) : dossier;
+        android.widget.EditText saisie = new android.widget.EditText(this);
+        saisie.setHint(fichier
+                ? R.string.atelier_nouveau_fichier
+                : R.string.atelier_nouveau_dossier);
+        Dialogue.saisie(this, palette,
+                getString(R.string.atelier_nouveau_dans, affichage),
+                saisie, R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
+                        creerEntree(saisie.getText().toString().trim(),
+                                fichier, dossier);
+                    }
+                });
+    }
+
+    private void creerEntree(String nom, boolean fichier, String dossier) {
+        NouveauNom.Raison raison = NouveauNom.valider(nom);
+        if (raison != null) {
+            Dialogue.information(this, palette,
+                    getString(R.string.atelier_nouveau),
+                    texteRaisonNom(raison), R.string.action_ok);
+            return;
+        }
+        Path cible = racineProjet.resolve(
+                dossier.isEmpty() ? nom : dossier + nom);
+        if (Files.exists(cible)) {
+            Dialogue.information(this, palette,
+                    getString(R.string.atelier_nouveau),
+                    getString(R.string.atelier_existe_deja, nom),
+                    R.string.action_ok);
+            return;
+        }
+        try {
+            if (fichier) {
+                Files.createDirectories(cible.getParent());
+                Files.write(cible, new byte[0]);
+            } else {
+                Files.createDirectories(cible);
+            }
+        } catch (IOException e) {
+            Dialogue.information(this, palette,
+                    getString(R.string.atelier_nouveau),
+                    getString(R.string.atelier_creation_echouee,
+                            String.valueOf(e.getMessage())),
+                    R.string.action_ok);
+            return;
+        }
+        rechargerArbre();
+        if (fichier) {
+            String relatif = racineProjet.relativize(cible)
+                    .toString().replace('\\', '/');
+            ouvrirFichier(relatif, null);
+        }
+    }
+
+    private String texteRaisonNom(NouveauNom.Raison raison) {
+        return switch (raison) {
+            case VIDE -> getString(R.string.atelier_nom_err_vide);
+            case TROP_LONG -> getString(R.string.atelier_nom_err_long);
+            case SEPARATEUR -> getString(
+                    R.string.atelier_nom_err_separateur);
+            case POINT -> getString(R.string.atelier_nom_err_point);
+            case CONTROLE -> getString(R.string.atelier_nom_err_controle);
+            case POINT_FINAL -> getString(
+                    R.string.atelier_nom_err_point_final);
+        };
+    }
+
+    // ------------------------------------------------------------------
+    // Index de noms (pilule honnête)
+    // ------------------------------------------------------------------
+
+    private void majPiluleIndex() {
+        if (piluleIndex == null || moteurs == null) {
+            return;
+        }
+        EtatIndex index = moteurs.etatIndex();
+        piluleIndex.setEtat(getString(R.string.atelier_index,
+                        index.phase()), Pilule.Role.NEUTRE);
+    }
+
+    private void montrerDetailIndex() {
+        if (moteurs == null) {
+            return;
+        }
+        EtatIndex index = moteurs.etatIndex();
+        majPiluleIndex();
+        Dialogue.information(this, palette,
+                getString(R.string.atelier_index, index.phase()),
+                getString(R.string.atelier_index_detail, index.phase(),
+                        index.total(), index.faits(),
+                        index.avertissements().size(),
+                        index.erreurs().size()),
+                R.string.action_ok);
+    }
+
+    private void ouvrirMenu() {
+        String fermer = getString(R.string.atelier_fermer_projet);
+        String enProcessusLibelle = getString(
+                R.string.atelier_menu_en_processus,
+                getString(enProcessus ? R.string.atelier_oui
+                        : R.string.atelier_non));
+        Dialogue.menu(this, palette,
+                racineProjet == null ? ""
+                        : String.valueOf(racineProjet.getFileName()),
+                new CharSequence[]{enProcessusLibelle, fermer},
+                (dialog, lequel) -> {
+                    if (lequel == 0) {
+                        enProcessus = !enProcessus;
+                    } else if (lequel == 1) {
+                        demanderFermeture();
+                    }
+                });
+    }
+
+    // ------------------------------------------------------------------
+    // Retour système : les surcouches une à une (ADR-É5)
+    // ------------------------------------------------------------------
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public void onBackPressed() {
+        switch (etat.surRetour()) {
+            case FERMER_CONSOLE -> {
+                etat.replierConsole();
+                majVolets();
+            }
+            case FERMER_TIROIR -> {
+                etat.fermerTiroir();
+                if (tiroir != null) {
+                    tiroir.fermer();
+                }
+            }
+            case FERMER_APERCU -> {
+                etat.fermerApercuPleinEcran();
+                majVolets();
+            }
+            case DEMANDER_FERMETURE -> demanderFermeture();
+            case QUITTER -> finish();
+            default -> finish();
+        }
+    }
+
+    private void demanderFermeture() {
+        Dialogue.confirmation(this, palette,
+                getString(R.string.atelier_fermer_titre),
+                getString(R.string.atelier_fermer_message,
+                        etat.nombreModifies()),
+                R.string.action_annuler,
+                R.string.atelier_fermer_projet,
+                (dialog, lequel) -> finish());
+    }
+
+    // ------------------------------------------------------------------
+    // Build (lot F repris, pilule et arrêt du lot J/K)
+    // ------------------------------------------------------------------
+
+    private void construire() {
+        if (racineProjet == null || modele == null || buildEnCours) {
+            return;
+        }
+        ExternalResolution externals = sync.derniereResolution()
+                .orElse(ExternalResolution.empty());
+        SpecsBuild.Constitution constitution = SpecsBuild.jvm(modele,
+                externals, racineProjet,
+                racineProjet.resolve("build-joide"),
+                Paths.get(getFilesDir().getAbsolutePath(), "m2"));
+        etatConsole.surEcarts(constitution.ecarts);
+        if (!constitution.constructible()) {
+            etatConsole.surRienAConstruire();
+            etat.deplierConsole();
+            majVolets();
+            majConsole();
+            return;
+        }
+        long numero = numerosBuild.incrementAndGet();
+        etat.commencerBuild(numero);
+        etatConsole.surDemarrage(numero, System.currentTimeMillis());
+        if (enProcessus) {
+            etatConsole.surAnnonceEnProcessus();
+        }
+        etat.deplierConsole();
+        majVolets();
+        majConsole();
+        majFab();
+        majArbre();
+        if (constitution.spec == null) {
+            return;
+        }
+        if (enProcessus) {
+            fond.execute(() -> construireEnProcessus(constitution.spec,
+                    numero));
+        } else {
+            fond.execute(() -> construireParService(constitution.spec,
+                    numero));
+        }
+    }
+
+    private void construireParService(BuildSpec spec, long numero) {
+        startForegroundService(new Intent(this, BuildService.class));
+        int port = -1;
+        long limite = System.currentTimeMillis() + ATTENTE_PORT_MS;
+        while (port < 0 && System.currentTimeMillis() < limite) {
+            port = BuildService.lirePort(getFilesDir());
+            if (port < 0) {
+                try {
+                    Thread.sleep(100L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    runOnUiThread(this::finirBuild);
+                    return;
+                }
+            }
+        }
+        if (port < 0) {
+            runOnUiThread(() -> {
+                etatConsole.surInjoignable();
+                etat.interrompreBuild();
+                majConsole();
+                finirBuild();
+            });
+            return;
+        }
+        try (Socket socket = new Socket("127.0.0.1", port)) {
+            socket.setTcpNoDelay(true);
+            try (DaemonClient client = DaemonClient.over(
+                    socket.getInputStream(),
+                    socket.getOutputStream())) {
+                clientDemon.set(client);
+                DaemonClient.Event salutation =
+                        client.await("hello", 30);
+                evenement(salutation.type, salutation.id,
+                        salutation.body);
+                construireAvecClient(client, spec, numero);
+            }
+        } catch (DaemonClient.DaemonDiedException e) {
+            // §6.7 : la mort du démon est un événement, l'UI survit —
+            // le build suivant relance le service
+            runOnUiThread(() -> {
+                etatConsole.surInterrompu();
+                etat.interrompreBuild();
+                majConsole();
+                majFab();
+            });
+        } catch (IOException e) {
+            runOnUiThread(() -> {
+                etatConsole.surInjoignable();
+                etat.interrompreBuild();
+                majConsole();
+                majFab();
+            });
+        } finally {
+            clientDemon.set(null);
+            runOnUiThread(this::finirBuild);
+        }
+    }
+
+    private void construireAvecClient(DaemonClient client, BuildSpec spec,
+                                      long numero) throws IOException {
+        client.build(numero, spec);
+        while (true) {
+            DaemonClient.Event event = client.next(900);
+            evenement(event.type, event.id, event.body);
+            if ("build-finished".equals(event.type)) {
+                return;
+            }
+        }
+    }
+
+    private void evenement(String type, long id,
+                           jo.joide.deps.json.JsonValue corps) {
+        long maintenant = System.currentTimeMillis();
+        runOnUiThread(() -> {
+            etatConsole.surEvenement(type, id, corps, maintenant);
+            jo.joide.app.android.ConsoleBuild.Phase phase =
+                    etatConsole.phaseCourante();
+            if (phase != null) {
+                etat.phaseBuild(phase.name().toLowerCase(
+                        java.util.Locale.ROOT));
+            }
+            if ("build-finished".equals(type)) {
+                etat.terminerBuild(
+                        corps.member("success").asBoolean());
+                majFab();
+            }
+            majConsole();
+        });
+    }
+
+    private void construireEnProcessus(BuildSpec spec, long numero) {
+        try (BuildRunner runner = new BuildRunner(
+                outDir -> StoreAndroid.open(outDir),
+                SpecsBuild.FILS_PAR_DEFAUT)) {
+            BuildRunner.Outcome resultat = runner.run(spec, null,
+                    (nom, statut) -> runOnUiThread(() -> {
+                        etatConsole.surTache(nom, statut,
+                                System.currentTimeMillis());
+                        jo.joide.app.android.ConsoleBuild.Phase phase =
+                                etatConsole.phaseCourante();
+                        if (phase != null) {
+                            etat.phaseBuild(phase.name().toLowerCase(
+                                    java.util.Locale.ROOT));
+                        }
+                        majConsole();
+                    }), jo.joide.platform.CancelToken.NEVER);
+            runOnUiThread(() -> {
+                etatConsole.surBilanEnProcessus(numero,
+                        resultat.success, resultat.executed,
+                        resultat.fromCache, resultat.upToDate,
+                        resultat.problems, System.currentTimeMillis());
+                etat.terminerBuild(resultat.success);
+                majConsole();
+            });
+        } catch (Exception e) {
+            runOnUiThread(() -> {
+                etatConsole.surTermine(numero, false, 0, 0, 0, -1,
+                        java.util.List.of(String.valueOf(e.getMessage())),
+                        System.currentTimeMillis());
+                etat.terminerBuild(false);
+                majConsole();
+            });
+        } finally {
+            runOnUiThread(this::finirBuild);
+        }
+    }
+
+    /** Arrête le build en cours : la croix de la pilule (critère J). */
+    private void arreterBuild() {
+        DaemonClient client = clientDemon.get();
+        if (client == null || !buildEnCours) {
+            return;
+        }
+        long numero = etat.build() == null ? -1 : etat.build().numero();
+        if (numero < 0) {
+            return;
+        }
+        try {
+            client.cancel(numero);
+        } catch (IOException e) {
+            // le canal vient de mourir : les événements suivants
+            // raconteront l'interruption, jamais un état zombie
+        }
+    }
+
+    private void finirBuild() {
+        buildEnCours = false;
+        vueArbre.setSortiesEnCours(false);
+        majFab();
+        majDock();
+        rechargerArbre();
+    }
+
+    private void confirmerVidage() {
+        Dialogue.confirmation(this, palette,
+                R.string.console_vider_titre,
+                R.string.console_vider_message,
+                R.string.action_annuler,
+                R.string.console_vider,
+                (dialog, lequel) -> {
+                    etatConsole.vider();
+                    majConsole();
+                });
+    }
+
+    // ------------------------------------------------------------------
+    // Volets, pilules, dock, aperçu
+    // ------------------------------------------------------------------
+
+    private void majVolets() {
+        if (dock != null) {
+            dock.setDeplie(etat.consoleDepliee());
+        }
+        if (boutonRailConsole != null) {
+            boutonRailConsole.setCouleur(etat.consoleDepliee()
+                    ? palette.accent : palette.texteSecondaire);
+        }
+        if (voletPleinEcran == null || vueApercu == null) {
+            return;
+        }
+        boolean plein = etat.apercuPleinEcran();
+        boolean miseEnPage = fichierCourant != null
+                && FichiersProjet.estMiseEnPage(fichierCourant);
+        boolean voletDroitVisible = etat.grandEcran()
+                && etat.voletApercu() && miseEnPage && !plein;
+        if (plein) {
+            if (vueApercu.getParent() != voletPleinEcran) {
+                detacher(vueApercu);
+                voletPleinEcran.addView(vueApercu,
+                        new FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT));
+            }
+        } else if (voletDroitVisible && voletDroit != null) {
+            if (vueApercu.getParent() != voletDroit) {
+                detacher(vueApercu);
+                voletDroit.addView(vueApercu,
+                        new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.MATCH_PARENT));
+            }
+        }
+        voletPleinEcran.setVisibility(
+                plein ? View.VISIBLE : View.GONE);
+        if (voletDroit != null) {
+            voletDroit.setVisibility(
+                    voletDroitVisible ? View.VISIBLE : View.GONE);
+        }
+        vueApercu.maj(etatApercu, fichierCourant == null ? null
+                : Arborescence.nomAffiche(fichierCourant));
+    }
+
+    private static void detacher(View vue) {
+        if (vue.getParent() instanceof android.view.ViewGroup parent) {
+            parent.removeView(vue);
+        }
+    }
+
+    private void majFab() {
+        if (fab == null) {
+            return;
+        }
+        fab.setContentDescription(getString(
+                etat.buildEnCours()
+                        ? R.string.atelier_desc_arreter_build
+                        : R.string.atelier_desc_construire));
+        if (etat.buildEnCours() && etat.build() != null) {
+            fab.setEtat(true, getString(R.string.console_etat_encours,
+                    etat.build().phase() == null
+                            ? getString(R.string.console_phase_aucune)
+                            : etat.build().phase()));
+        } else {
+            fab.setEtat(false, null);
+        }
+        buildEnCours = etat.buildEnCours();
+    }
+
+    private void majDock() {
+        if (dock == null) {
+            return;
+        }
+        dock.setTitre(getString(R.string.console_build) + " — "
+                + etatConsole.libelleCourt());
+        dock.setLegende(legendeDernierBilan());
+    }
+
+    private CharSequence legendeDernierBilan() {
+        List<jo.joide.app.android.ConsoleBuild.Ligne> lignes =
+                etatConsole.lignes();
+        for (int i = lignes.size() - 1; i >= 0; i--) {
+            String texte = lignes.get(i).texte();
+            if (texte.startsWith("build #") && texte.contains(" — ")) {
+                return texte.substring(texte.indexOf(" — ") + 3);
+            }
+        }
+        return null;
+    }
+
+    private void majConsole() {
+        if (vueConsole == null) {
+            return;
+        }
+        vueConsole.maj(etatConsole,
+                racineProjet == null ? null
+                        : String.valueOf(racineProjet.getFileName()));
+        majDock();
+    }
+
+    private void reconfigurerApercu() {
+        if (apercu == null || configApercuBase == null) {
+            return;
+        }
+        apercu.configurer(configApercuBase
+                .avecDensite(etatApercu.densite())
+                .avecDimensions(etatApercu.largeurPx(),
+                        etatApercu.hauteurPx())
+                .avecModeNuit(etatApercu.nuit()));
+        vueApercu.maj(etatApercu, fichierCourant == null ? null
+                : Arborescence.nomAffiche(fichierCourant));
+    }
+
+    /** Pose le rendu LayoutLib tel quel, mis à l'échelle du volet. */
+    private void poserRendu(View rendu) {
+        if (vueApercu == null) {
+            return;
+        }
+        FrameLayout perchoir = vueApercu.conteneurRendu();
+        perchoir.removeAllViews();
+        int largeurMesuree = rendu.getMeasuredWidth();
+        int hauteurMesuree = rendu.getMeasuredHeight();
+        final int largeur = largeurMesuree <= 0
+                ? etatApercu.largeurPx() : largeurMesuree;
+        final int hauteur = hauteurMesuree <= 0
+                ? etatApercu.hauteurPx() : hauteurMesuree;
+        perchoir.addView(rendu, new FrameLayout.LayoutParams(largeur,
+                hauteur, Gravity.CENTER));
+        rendu.post(() -> {
+            float echelle = Math.min(1f,
+                    Math.min(perchoir.getWidth() / (float) largeur,
+                            perchoir.getHeight() / (float) hauteur));
+            rendu.setScaleX(echelle);
+            rendu.setScaleY(echelle);
+            rendu.setPivotX(0f);
+            rendu.setPivotY(0f);
+            perchoir.requestLayout();
+        });
+        perchoir.requestLayout();
+    }
+
+    /** Compte les MockView de l'arbre rendu (classes inconnues). */
+    private static int compterMockViews(View racine) {
+        int[] compte = new int[1];
+        parcourir(racine, compte, new int[]{0});
+        return compte[0];
+    }
+
+    private static void parcourir(View vue, int[] compte, int[] garde) {
+        if (garde[0]++ > 2000) {
+            return;
+        }
+        if (vue.getClass().getSimpleName().equals("MockView")) {
+            compte[0]++;
+        }
+        if (vue instanceof android.view.ViewGroup groupe) {
+            for (int i = 0; i < groupe.getChildCount(); i++) {
+                parcourir(groupe.getChildAt(i), compte, garde);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Cycle de vie
+    // ------------------------------------------------------------------
+
+    private void fermerIde() {
+        if (scene != null) {
+            scene.close();
+            scene = null;
+        }
+        if (apercu != null) {
+            apercu.close();
+            apercu = null;
+        }
+        if (moteurs != null) {
+            moteurs.close();
+            moteurs = null;
+        }
+        sync = null;
+        modele = null;
+        fichierCourant = null;
+        if (puits != null && vueEditeur != null) {
+            puits.removeView(vueEditeur);
+        }
+        vueEditeur = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        fermerIde();
+        fond.shutdown();
+        ecrivain.shutdown();
+        super.onDestroy();
+    }
+}

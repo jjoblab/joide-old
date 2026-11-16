@@ -23,13 +23,14 @@
             </intent-filter>
         </activity>
 
-        <!-- Lot H (ADR-É3/ADR-049) : MainActivity est l’accueil « Mes
-             projets » ; l’écran IDE de P8 (lots A-F) vit ici, ouvert
-             sur un projet déjà importé — la racine et la bannière de
-             compatibilité Gradle arrivent par extras. Le lot J
-             (atelier adaptatif) remplacera cet empilement. -->
+        <!-- Lot J (ADR-É5/ADR-051) : l'atelier adaptatif remplace
+             l'empilement programmatique de P8 — barre supérieure
+             exacte, onglets multi-fichiers, tiroir arborescence, dock
+             de console (lot K), FAB Construire, seuil 720 dp, aperçu
+             (lot L). Ouvert sur un projet déjà importé (racine,
+             bannière Gradle, fichier d'entrée par extras). -->
         <activity
-            android:name=".ecrans.ide.EcranIde"
+            android:name=".ecrans.atelier.EcranAtelier"
             android:exported="false" />
 
         <!-- Lot I (ADR-É4/ADR-050) : l’assistant de création en trois

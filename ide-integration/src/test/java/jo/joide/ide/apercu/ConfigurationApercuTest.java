@@ -136,4 +136,26 @@ final class ConfigurationApercuTest {
         assertTrue(base.avecModeNuit(true).modeNuit());
         assertFalse(base.modeNuit());
     }
+
+    @Test
+    void lotLDensiteEtDimensionsSontDesReglesReels() {
+        ConfigurationApercu base = ConfigurationApercu.vide();
+        assertEquals(ConfigurationApercu.DENSITE_CONTEXTE,
+                base.densiteRendu(),
+                "par défaut : la densité du contexte (comportement lot E)");
+        ConfigurationApercu densite2 = base.avecDensite(2f);
+        assertEquals(2f, densite2.densiteRendu());
+        assertEquals(ConfigurationApercu.DENSITE_CONTEXTE,
+                base.densiteRendu(), "la base est inchangée (immuable)");
+        assertEquals(2f, densite2.avecModeNuit(true).densiteRendu(),
+                "les variantes propagent la densité");
+        assertEquals(2f, densite2.avecTheme("T").densiteRendu());
+        assertEquals(ConfigurationApercu.DENSITE_CONTEXTE,
+                base.avecDensite(-1f).densiteRendu(),
+                "une densité négative retombe sur le contexte");
+        ConfigurationApercu dimensions = base.avecDimensions(720, 1280);
+        assertEquals(720, dimensions.largeurCible());
+        assertEquals(1280, dimensions.hauteurCible());
+        assertEquals(1080, base.largeurCible());
+    }
 }

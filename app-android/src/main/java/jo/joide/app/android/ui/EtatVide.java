@@ -20,6 +20,8 @@ public final class EtatVide extends LinearLayout {
     private final Graphite.Palette palette;
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
     private LinearLayout rangeeActions;
+    private TextView vueTitre;
+    private TextView vueAide;
 
     public EtatVide(Context contexte) {
         this(contexte, null);
@@ -48,23 +50,43 @@ public final class EtatVide extends LinearLayout {
 
     /** Le titre de l'état vide, depuis les ressources. */
     public void setTitre(int idRes) {
-        TextView titre = new TextView(getContext());
-        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(palette.texte);
-        titre.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-        addView(titre, apresGlyphe());
-        titre.setText(idRes);
+        setTitre(getContext().getText(idRes));
+    }
+
+    /**
+     * Le titre de l'état vide, texte libre (lot J : l'atelier y raconte
+     * le chargement puis l'erreur) — posé idempotent, jamais empilé.
+     */
+    public void setTitre(CharSequence titre) {
+        if (vueTitre == null) {
+            vueTitre = new TextView(getContext());
+            GraphiteVue.typographie(vueTitre, Graphite.SOUS_TITRE);
+            vueTitre.setTextColor(palette.texte);
+            vueTitre.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+            addView(vueTitre, apresGlyphe());
+        }
+        vueTitre.setText(titre);
     }
 
     /** L'aide de l'état vide, depuis les ressources (260 dp au plus). */
     public void setAide(int idRes) {
-        TextView aide = new TextView(getContext());
-        GraphiteVue.typographie(aide, Graphite.NOTE);
-        aide.setTextColor(palette.texteSecondaire);
-        aide.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
-        aide.setMaxWidth(GraphiteVue.dp(getContext(), 260));
-        addView(aide, apresGlyphe());
-        aide.setText(idRes);
+        setAide(getContext().getText(idRes));
+    }
+
+    /**
+     * L'aide de l'état vide, texte libre (lot J : le détail de
+     * l'erreur) — posée idempotente, jamais empilée.
+     */
+    public void setAide(CharSequence aide) {
+        if (vueAide == null) {
+            vueAide = new TextView(getContext());
+            GraphiteVue.typographie(vueAide, Graphite.NOTE);
+            vueAide.setTextColor(palette.texteSecondaire);
+            vueAide.setGravity(android.view.Gravity.CENTER_HORIZONTAL);
+            vueAide.setMaxWidth(GraphiteVue.dp(getContext(), 260));
+            addView(vueAide, apresGlyphe());
+        }
+        vueAide.setText(aide);
     }
 
     /**

@@ -1,3 +1,33 @@
+
+# Backlog (après le groupe 2 de la V2 — lots J, K, L)
+
+Entrées ouvertes à l'issue du groupe 2 (ADR-051/052/053) :
+
+- [ ] Lot K : le pipeline ne transporte pas la LOCALISATION des
+      problèmes (`Problem.location` est perdue dans
+      `BuildRunner.outcomeOf` — seul `message()` part dans le
+      protocole) ; le parseur de cible de la console est prêt, le
+      bouton « Ouvrir le fichier à la ligne » ne s'active que pour
+      une cible réelle — faire transporter la localisation par le
+      démon/pipeline (hors périmètre du plan UI) l'activera.
+- [ ] Lot L : les replis de ressources signalés par la BRIQUE
+      LayoutLib elle-même (aujourd'hui détectés côté JoIDE sur les
+      références directes du XML ; `@layout/` et les références
+      transitives ne sont pas vérifiées).
+- [ ] Lot L : stats de rendu au fil de l'eau pendant la frappe
+      (aujourd'hui les bannières se rafraîchissent aux événements de
+      l'écouteur).
+- [ ] Lot J : recherche de fichiers de l'atelier (la loupe du rail
+      des maquettes) — rien n'est câblé, aucun bouton mort.
+- [ ] Lot J : l'état d'expansion du tiroir ne survit pas à la
+      rotation (l'activité se recrée ; l'état pur est recréé) —
+      sauvegarder dossiersOuverts dans le savedInstanceState si le
+      besoin se fait sentir sur appareil.
+- [ ] Lot K : compteur de problèmes distinct des erreurs de tâches
+      dans la poignée du dock (« · 0 problème » de la maquette) —
+      l'état honnête du lot K porte le compte d'erreurs du
+      transcript.
+
 # Backlog (après P8)
 
 Entrées ouvertes à l'issue de P8 :

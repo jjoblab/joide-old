@@ -1,3 +1,125 @@
+# CHANGES — Lots J, K et L : l'atelier adaptatif, la console, l'aperçu (groupe 2 de la V2)
+
+Le groupe 2 du plan ADR-É10 se complète : éditer dans l'atelier
+adaptatif, construire, lire la console, voir l'aperçu — exactement ce
+que le propriétaire peut tester au jalon « v2 bêta ». Lot J (ADR-É5,
+ADR-051) : EcranAtelier remplace l'empilement programmatique de P8 —
+barre supérieure exacte (nom du projet, puce « n modules », pilule
+d'état de l'index CIDX avec totaux honnêtes au tap, ⋮ fermer le
+projet avec fichiers modifiés comptés — tout est déjà sur le disque,
+fermer ne perd rien), onglets multi-fichiers À ÉTAT FAIBLE (le texte
+vit sur le disque, écriture fusionnée multi-fichiers par
+EcrituresFusionnees — le dernier texte de CHAQUE fichier gagne,
+retrait conditionné à la valeur lue : aucune pose concomitante n'est
+perdue), plafond 10 avec éviction honnête du plus ancien non modifié
+et refus motivé si tout est modifié, point de modification par onglet,
+tiroir arborescence poussé à 360 dp (« Nouveau » fichier/dossier dans
+le dossier du fichier actif, cible AFFICHÉE, validation NouveauNom :
+jamais un chemin déguisé, un refus ne crée rien), entrée active
+surlignée, sorties build-joide estompées non dépliables avec leur
+raison, affichage plafonné à 400 nœuds ANNOCÉ, FAB Construire qui
+devient pilule d'état « build #n — phase » ouvrant la console avec sa
+croix d'ARRÊT (DaemonClient.cancel — Frames.write synchronisée :
+l'arrêt depuis le fil UI est sûr), retour système qui ferme les
+surcouches une à une (console, tiroir — pas en grand écran où
+l'arborescence amarrée est un réglage —, aperçu plein écran,
+confirmation de fermeture), seuil 720 dp (rail, arborescence amarrée
+240 dp, volet d'aperçu côte à côte 320 dp automatique pour une mise
+en page active, console amarrée en bas) ; les montages des lots B-F
+sont repris tels quels — seul l'habillage change, l'UI reste mince
+(EtatAtelier, Arborescence, NouveauNom, EcrituresFusionnees purs et
+testés JVM ; composants Onglets, Pilule, Fab, glyphes TERMINAL/
+RAFRAICHIR/AGRANDIR). Lot K (ADR-É6, ADR-052) : la console v2 dans le
+Dock du lot G — pilule d'état (en cours avec phase, réussi avec
+durée, échoué, interrompu : la mort du service est un événement,
+jamais un zombie), bande de phases du pipeline déduites des NOMS DE
+TÂCHES réels (préparation/compilation/assemblage) avec durées
+MESURÉES et filtre au tap (retap retire), filtres Tout / Erreurs (n)
+/ Système au compteur exact, transcript en grille deux colonnes
+colorée par nature (système accent, phase bleu fonction, tâche
+premier plan, erreur rouge — chaque ligne reste sélectionnable),
+problèmes en lignes cliquables avec bouton « Ouvrir le fichier à la
+ligne » (SceneEditeur.allerALigne : caret au début de ligne bornée +
+défilement), plafond 400 lignes ANNONCÉ en légende, résumé final
+chiffré « 12 exécutées · 3 du cache · 2 à jour · 6,2 s » — jamais un
+succès sans mesures ; ConsoleBuild gagne Nature/Phase/Ligne/
+structurer (le texte du lot F reste), EtatConsole est LE point
+d'entrée du protocole (surEvenement : l'écran ne formate rien) ; le
+PROTOCOLE DU DÉMON reste inchangé et l'écart est documenté : le
+pipeline ne transporte pas la localisation des problèmes
+(Problem.location perdue dans outcomeOf) — le parseur de cible est
+prêt, les problèmes non localisés s'affichent honnêtement sans lien,
+aucun faux bouton ; les écarts s'affichent AVANT le lancement
+(comportement lot F conservé), « Rien à construire » reste un refus
+motivé, la case « en processus » vit transitoirement dans le menu ⋮
+(le lot M l'emménagera dans Paramètres). Lot L (ADR-É7, ADR-053) :
+le volet d'aperçu — barre de volet (rafraîchir sans délai, plein
+écran, fermer), contrôles RÉELS : la densité de rendu devient un
+composant du ConfigurationApercu (densiteRendu, DENSITE_CONTEXTE
+conserve le comportement du lot E — le DimensionConverter de la
+brique prend la densité choisie, dimensions cibles en pixels =
+dp × densité, l'écran maintient des dp avec presets
+téléphone/grand/tablette), mode nuit (qualificateur -night),
+stats MESURÉES de l'écouteur (« n vues · durée ms · largeur ×
+hauteur · densité »), surface sur damier neutre où le rendu LayoutLib
+— arbre de vues vivant — est posé TEL QUEL dans un perchoir arrondi
+24 dp mis à l'échelle du volet, bannières de franchise par gravité :
+frappe (dernier rendu valide conservé, le volet ne devient jamais
+blanc ni faux), RESSOURCES MANQUANTES détectées pour de vrai
+(ReferencesManquantes : le parseur XML MAISON d'ADR-028 extrait les
+références directes de l'arbre — jamais une regex sur le document,
+risque n° 11 de l'ADR-É9 — et les compare au VRAI résolveur de la
+brique : alias suivis jamais signalés, @android:/@id//?attr/ hors
+juridiction), MockView COMPTÉES dans l'arbre rendu, échec nominal
+(la surface garde le dernier rendu valide), avertissements de
+constitution, thème jamais deviné (« repli hôte » affiché et dit) ;
+reconfiguration au changement de fichier et à chaque réglage,
+debouncé 400 ms conservé. Acceptation : check vert sans SDK
+(politique de langue 0 problème — identifiants ASCII, typographie)
+et avec SDK (lint NewApi bloquant sans baseline), 188 tests
+app-android 0 échec (70 nouveaux : machine à états de l'atelier,
+arbre, éviction, écritures fusionnées, validation des noms,
+bannières d'aperçu, console — formatage, phases mesurées, filtres,
+plafond, cibles —, captures contre les trois maquettes) et 63 tests
+ide-integration 0 échec (7 nouveaux : ressources manquantes sur le
+vrai résolveur, densité/dimensions de la configuration), ADR-051/
+052/053 des décisions nouvelles ; arrêt pour validation du
+propriétaire (D-8 : rythme par groupe, jalon « v2 bêta »).
+
+## Ajoutés
+
+| Zone | Fichiers |
+|---|---|
+| app-android `atelier/` | `EtatAtelier` (onglets, surcouches, retour, 720 dp, pilule), `Arborescence` (arbre, parentsDe, sorties), `NouveauNom` (validation), `EcrituresFusionnees` (écriture multi-fichiers), `EtatApercu` (bannières, contrôles, stats), `VueArbre`, `VueApercu` — purs et vues minces |
+| app-android `console/` | `EtatConsole` (transcript plafonné annoncé, phases mesurées, filtres, états, résumé chiffré), `VueConsole` (grille deux colonnes, bande de phases, problème ouvrable) |
+| app-android `ecrans/` | `atelier/EcranAtelier` (l'atelier adaptatif, remplace EcranIde) |
+| app-android `ui/` | `Onglets`, `Pilule`, `Fab` ; glyphes `TERMINAL`, `RAFRAICHIR`, `AGRANDIR` dans `Icone` |
+| ide-integration `apercu/` | `ReferencesManquantes` (détection des replis, parseur maison, package-private) |
+| app-android `src/test` | `EtatAtelierTest` (17), `ArborescenceTest` (7), `NouveauNomTest` (2), `EcrituresFusionneesTest` (4), `EtatApercuTest` (8), `MaquetteAtelierTest` (6), `MaquetteApercuTest` (6), `EtatConsoleTest` (10), `MaquetteConsoleTest` (6), `ConsoleBuildTest` (+5) |
+| ide-integration `src/test` | `ReferencesManquantesTest` (6, vrai résolveur), `ConfigurationApercuTest` (+1) |
+| docs/adr | `051-lot-j-atelier-adaptatif.md`, `052-lot-k-console-de-build.md`, `053-lot-l-apercu-mise-en-page.md` |
+
+## Modifiés
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| app-android | `ConsoleBuild` | gagne Nature/Phase/Ligne/structurer/cibleDe/tacheDe — le texte du lot F reste |
+| app-android | `SpecsBuild`, `BuildService` | inchangés (le protocole du démon reste intact, critère du lot K) |
+| app-android | `MainActivity`, `ecrans/creation/EcranCreation` | ouverts sur `EcranAtelier` (mêmes extras) |
+| app-android | `ui/Dock` | `setTitre(CharSequence)`, `setLegende`, `setHauteurContenu` (la console s'y monte) |
+| app-android | `ui/Segment` | `setSelection(int)` (l'état revient posé) |
+| app-android | `ui/EtatVide` | `setTitre`/`setAide` à texte libre, idempotents (l'atelier y raconte chargement puis erreur) |
+| app-android | `ui/Dialogue` | `confirmation` à message libre (le compte de fichiers modifiés) |
+| ide-integration `apercu/` | `ConfigurationApercu` | composant `densiteRendu` + `avecDensite`/`avecDimensions` (ADR-053) |
+| ide-integration `apercu/` | `ApercuLayouts` | convertisseur à la densité choisie, `ressourcesManquantes(xml)` |
+| ide-integration `editeur/` | `SceneEditeur` | `allerALigne(int)` (caret borné + défilement, problème ouvrable) |
+| app-android | `AndroidManifest.xml` | `EcranAtelier` déclarée, `EcranIde` retirée |
+| app-android `res` | `values/`, `values-fr/` | chaînes des lots J/K/L (parité 175/175) ; chaînes mortes de l'écran P8 retirées |
+| Racine | `docs/backlog.md` | entrées du groupe 2 |
+| Racine | `ROADMAP.md` | ligne V2 : groupe 2 livré (J+K+L), arrêt pour validation |
+| docs/ecrans | `README.md` | statut : groupe 2 complet, arrêt pour validation (D-8) |
+| app-android | `README.md` | état des lots J/K/L |
+
 # CHANGES — Lots H et I : l'accueil « Mes projets » et la création de projet (groupe 1 de la V2)
 
 Le groupe 1 du plan ADR-É10 se complète : l'application s'ouvre

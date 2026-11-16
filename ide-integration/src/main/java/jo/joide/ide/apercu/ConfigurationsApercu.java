@@ -71,7 +71,8 @@ public final class ConfigurationsApercu {
             avertissements.add("res directory not found: " + res);
             return new ConfigurationApercu(null, null, null, null, null,
                     null, ConfigurationApercu.LARGEUR_DEFAUT,
-                    ConfigurationApercu.HAUTEUR_DEFAUT, false,
+                    ConfigurationApercu.HAUTEUR_DEFAUT,
+                    ConfigurationApercu.DENSITE_CONTEXTE, false,
                     List.copyOf(avertissements));
         }
         String themesJour = lire(res.resolve("values/themes.xml"),
@@ -85,7 +86,8 @@ public final class ConfigurationsApercu {
         return new ConfigurationApercu(res.toString(), null, themesJour,
                 themesNuit, styles, attrs,
                 ConfigurationApercu.LARGEUR_DEFAUT,
-                ConfigurationApercu.HAUTEUR_DEFAUT, false,
+                ConfigurationApercu.HAUTEUR_DEFAUT,
+                ConfigurationApercu.DENSITE_CONTEXTE, false,
                 List.copyOf(avertissements));
     }
 

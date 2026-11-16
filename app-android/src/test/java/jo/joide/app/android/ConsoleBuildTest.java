@@ -74,4 +74,88 @@ class ConsoleBuildTest {
                 ConsoleBuild.ligne("inconnu", 9,
                         corps("{\"type\":\"inconnu\"}")));
     }
+
+    // ------------------------------------------------------------------
+    // Lot K (ADR-É6) : la structure que la console v2 affiche
+    // ------------------------------------------------------------------
+
+    @Test
+    void tachePorteSaPhaseEtTacheEchoueeEstUneErreur() {
+        java.util.List<ConsoleBuild.Ligne> compile =
+                ConsoleBuild.structurer("task", 3, corps(
+                        "{\"type\":\"task\",\"name\":\"app:compileKotlin\","
+                                + "\"status\":\"STARTED\"}"));
+        assertEquals(1, compile.size());
+        assertEquals(ConsoleBuild.Nature.TACHE,
+                compile.get(0).nature());
+        assertEquals(ConsoleBuild.Phase.COMPILATION,
+                compile.get(0).phase());
+        assertEquals("app:compileKotlin", compile.get(0).tache());
+
+        java.util.List<ConsoleBuild.Ligne> echec =
+                ConsoleBuild.structurer("task", 3, corps(
+                        "{\"type\":\"task\",\"name\":\"app:compileJava\","
+                                + "\"status\":\"FAILED\"}"));
+        assertEquals(ConsoleBuild.Nature.ERREUR, echec.get(0).nature());
+        assertEquals(ConsoleBuild.Phase.COMPILATION,
+                echec.get(0).phase(),
+                "l'échec garde sa phase : le filtre par phase le trouve");
+    }
+
+    @Test
+    void phasesDeDUneTacheDuPipeline() {
+        assertEquals(ConsoleBuild.Phase.PREPARATION,
+                ConsoleBuild.phaseDe("app:generateSources"));
+        assertEquals(ConsoleBuild.Phase.PREPARATION,
+                ConsoleBuild.phaseDe(":core:processResources"));
+        assertEquals(ConsoleBuild.Phase.COMPILATION,
+                ConsoleBuild.phaseDe("app:compileKotlin"));
+        assertEquals(ConsoleBuild.Phase.COMPILATION,
+                ConsoleBuild.phaseDe(":app:compileJava"));
+        assertEquals(ConsoleBuild.Phase.ASSEMBLAGE,
+                ConsoleBuild.phaseDe("app:jar"));
+        assertEquals(null, ConsoleBuild.phaseDe("inconnu"));
+        assertEquals(null, ConsoleBuild.phaseDe(null));
+    }
+
+    @Test
+    void bilanPorteSesProblemesEnLignesErreurSeparees() {
+        java.util.List<ConsoleBuild.Ligne> lignes =
+                ConsoleBuild.structurer("build-finished", 4, corps(
+                        "{\"type\":\"build-finished\",\"success\":false,"
+                                + "\"executed\":0,\"fromCache\":0,"
+                                + "\"upToDate\":0,\"problems\":"
+                                + "[\"app:compileJava : unknown type"
+                                + " Foo\",\"app:compileJava : /p/A.java:12:1"
+                                + " : syntax error\"]}"));
+        assertEquals(3, lignes.size(),
+                "le bilan, puis chaque problème en ligne propre");
+        assertEquals(ConsoleBuild.Nature.SYSTEME, lignes.get(0).nature());
+        assertTrue(lignes.get(0).texte().startsWith("build #4 échoué"));
+        assertEquals(ConsoleBuild.Nature.ERREUR, lignes.get(1).nature());
+        assertEquals(null, lignes.get(1).cible(),
+                "problème non localisé : pas de cible, jamais de faux lien");
+        assertEquals("app:compileJava", lignes.get(1).tache());
+        assertEquals("/p/A.java:12", lignes.get(2).cible(),
+                "la localisation transportée devient une cible ouvrable");
+    }
+
+    @Test
+    void cibleExtraitFichierEtLigneUniquement() {
+        assertEquals("src/main/A.java:12",
+                ConsoleBuild.cibleDe("app:compileJava : src/main/A.java:12:3 :"
+                        + " syntax error"));
+        assertEquals("Outil.kt:7",
+                ConsoleBuild.cibleDe("kotlin : file Outil.kt:7 erreur"));
+        assertEquals(null, ConsoleBuild.cibleDe("app:jar : entrée dupliquée"));
+        assertEquals(null, ConsoleBuild.cibleDe(null));
+    }
+
+    @Test
+    void tacheDeProblemeExtraitLaTeteAvantSeparateur() {
+        assertEquals("app:compileJava",
+                ConsoleBuild.tacheDe("app:compileJava : unknown type Foo"));
+        assertEquals(null, ConsoleBuild.tacheDe("sans séparateur"));
+        assertEquals(null, ConsoleBuild.tacheDe(null));
+    }
 }

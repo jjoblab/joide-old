@@ -8,21 +8,15 @@
     <string name="action_ok">OK</string>
 
     <!-- Écran IDE P8 (traduit au lot G, ADR-048 ; déplacé du lanceur
-         vers EcranIde par le lot H) -->
-    <string name="aucun_projet">No project open</string>
-    <string name="retour_accueil">Home</string>
+         vers EcranIde par le lot H ; l'atelier adaptatif du lot J
+         reprend les états de chargement et d'erreur) -->
     <string name="ide_chargement">Loading project…</string>
     <string name="ouvrir_projet">Open a project</string>
     <string name="projet_natif">Native JoIDE project (joide.toml)</string>
     <string name="projet_gradle">Gradle project detected — static import required (compatibility mode)</string>
     <string name="projet_inconnu">No joide.toml or build.gradle at the root — project not recognized</string>
-    <string name="fichiers">Files</string>
-    <string name="apercu">Preview</string>
-    <string name="masquer">Hide</string>
     <string name="construire">Build</string>
     <string name="console_build">Build console</string>
-    <string name="fermer_console">Close</string>
-    <string name="build_en_processus">In-process</string>
     <string name="canal_build">JoIDE build</string>
     <string name="service_build_actif">JoIDE build service active</string>
     <string name="import_en_cours">Importing project…</string>
@@ -31,9 +25,6 @@
     <string name="projet_illisible_sans_detail">Unreadable project</string>
     <string name="import_echoue">Import failed: %1$s</string>
     <string name="import_echoue_titre">Import failed</string>
-    <string name="projet_pret">Project ready — %1$d module(s), %2$d model problem(s)</string>
-    <string name="rendu_ok">Preview rendered: %1$d view(s), %2$d×%3$d px</string>
-    <string name="rendu_echoue">Render failed: %1$s</string>
     <string name="ecriture_echouee">File write failed</string>
     <string name="lecture_echouee">Read failed: %1$s</string>
     <string name="rien_a_construire">Nothing to build (see the gaps above)</string>
@@ -125,4 +116,83 @@
     <string name="creation_recap_minsdk">minSdk</string>
     <string name="creation_recap_arbo">Generated tree</string>
     <string name="creation_echouee">Creation failed: %1$s</string>
+
+    <!-- Lot J : atelier adaptatif (ADR-É5, ADR-051) -->
+    <string name="atelier_desc_retour">Back to projects</string>
+    <string name="atelier_desc_menu">Menu</string>
+    <string name="atelier_desc_construire">Build</string>
+    <string name="atelier_desc_arreter_build">Stop the build</string>
+    <string name="atelier_desc_fichiers">Files</string>
+    <string name="atelier_desc_console">Console</string>
+    <string name="atelier_index">Index · %1$s</string>
+    <string name="atelier_index_detail">Index: %1$s — %2$d entries, %3$d facts, %4$d warning(s), %5$d error(s)</string>
+    <string name="atelier_fermer_projet">Close project</string>
+    <string name="atelier_fermer_titre">Close the project?</string>
+    <string name="atelier_fermer_message">%1$d file(s) edited this session — everything is already written to disk; closing loses nothing.</string>
+    <string name="atelier_menu_en_processus">In-process build: %1$s</string>
+    <string name="atelier_oui">yes</string>
+    <string name="atelier_non">no</string>
+    <string name="atelier_onglets_plafond">%1$d tabs open — close one to open this file</string>
+    <string name="atelier_etat_vide_titre">No file open</string>
+    <string name="atelier_etat_vide_aide">Open the tree drawer and pick a file.</string>
+    <string name="atelier_nouveau">New</string>
+    <string name="atelier_nouveau_fichier">File</string>
+    <string name="atelier_nouveau_dossier">Folder</string>
+    <string name="atelier_nouveau_dans">New in %1$s</string>
+    <string name="atelier_sorties_note">Build outputs — dimmed while they build; never presented as sources.</string>
+    <string name="atelier_arbre_tronque">Display limited to %1$d entries — close folders to see more.</string>
+    <string name="atelier_nom_err_vide">The name is required</string>
+    <string name="atelier_nom_err_long">100 characters at most</string>
+    <string name="atelier_nom_err_separateur">No path separator — the entry lives in the target folder</string>
+    <string name="atelier_nom_err_point">Not “.” or “..”</string>
+    <string name="atelier_nom_err_controle">No control characters</string>
+    <string name="atelier_nom_err_point_final">The name cannot end with a dot</string>
+    <string name="atelier_existe_deja">“%1$s” already exists</string>
+    <string name="atelier_creation_echouee">Creation failed: %1$s</string>
+
+    <!-- Lot K : console de build (ADR-É6, ADR-052) -->
+    <string name="console_filtre_tout">All</string>
+    <string name="console_filtre_erreurs">Errors (%1$d)</string>
+    <string name="console_filtre_systeme">System</string>
+    <string name="console_etat_encours">running · %1$s</string>
+    <string name="console_etat_reussi">succeeded · %1$s</string>
+    <string name="console_etat_echoue">failed</string>
+    <string name="console_etat_interrompu">interrupted</string>
+    <string name="console_etat_vide">no build in this session</string>
+    <string name="console_phase_encours">running…</string>
+    <string name="console_phase_aucune">…</string>
+    <string name="console_phase_preparation">Preparation</string>
+    <string name="console_phase_compilation">Compilation</string>
+    <string name="console_phase_assemblage">Packaging</string>
+    <string name="console_plafond">display capped at %1$d lines — the cap is announced, never silent</string>
+    <string name="console_nature_systeme">system</string>
+    <string name="console_nature_phase">phase</string>
+    <string name="console_nature_tache">task</string>
+    <string name="console_nature_erreur">error</string>
+    <string name="console_nature_avertissement">warning</string>
+    <string name="console_probleme_titre">%1$s — problem</string>
+    <string name="console_probleme_ouvrir">Open the file at the line</string>
+    <string name="console_vider">Clear</string>
+    <string name="console_vider_titre">Clear the console?</string>
+    <string name="console_vider_message">The running build keeps logging — only the transcript is cleared.</string>
+    <string name="console_cible_introuvable">“%1$s” is not in the project</string>
+
+    <!-- Lot L : aperçu de mise en page (ADR-É7, ADR-053) -->
+    <string name="apercu_titre">Preview</string>
+    <string name="apercu_nuit">Night</string>
+    <string name="apercu_stats">%1$d views · %2$d ms · %3$d × %4$d · %5$d×</string>
+    <string name="apercu_stats_attente">no render yet</string>
+    <string name="apercu_theme_hote">theme: host fallback — the model does not name one</string>
+    <string name="apercu_desc_rafraichir">Refresh without delay</string>
+    <string name="apercu_desc_plein_ecran">Toggle full screen</string>
+    <string name="apercu_desc_fermer">Close the preview</string>
+    <string name="apercu_banniere_frappe">XML being typed — last valid render kept (%1$s views). The pane never goes blank or false.</string>
+    <string name="apercu_banniere_ressources">%1$s missing — falling back to native resources. The render continues with the fallback; the banner stays while the resource is missing.</string>
+    <string name="apercu_banniere_mockview">%1$s unknown class(es) — MockView placeholder, not a failure</string>
+    <string name="apercu_banniere_erreur">Render failed: %1$s — the surface keeps the last valid render</string>
+    <string name="apercu_banniere_config">Configuration: %1$s</string>
+    <string name="apercu_dims_titre">Target dimensions</string>
+    <string name="apercu_dims_telephone">360 × 640 (phone)</string>
+    <string name="apercu_dims_grand">412 × 915 (large phone)</string>
+    <string name="apercu_dims_tablette">600 × 1024 (tablet)</string>
 </resources>

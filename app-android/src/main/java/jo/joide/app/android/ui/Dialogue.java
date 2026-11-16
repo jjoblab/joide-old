@@ -37,6 +37,26 @@ public final class Dialogue {
         habiller(constructeur.create(), palette);
     }
 
+    /**
+     * Un dialogue de confirmation à message libre (lot J) : le message
+     * porte un détail nommé — le compte de fichiers modifiés de la
+     * session — jamais un texte générique qui cache.
+     */
+    public static void confirmation(Context contexte,
+                                    Graphite.Palette palette,
+                                    CharSequence titre,
+                                    CharSequence message,
+                                    int idAnnuler, int idValider,
+                                    DialogInterface.OnClickListener valideur) {
+        android.app.AlertDialog.Builder constructeur =
+                new android.app.AlertDialog.Builder(contexte);
+        constructeur.setTitle(titre)
+                .setMessage(message)
+                .setNegativeButton(idAnnuler, null)
+                .setPositiveButton(idValider, valideur);
+        habiller(constructeur.create(), palette);
+    }
+
     /** Un dialogue d'information : titre, message, une action fermante. */
     public static void information(Context contexte,
                                    Graphite.Palette palette,

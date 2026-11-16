@@ -74,6 +74,21 @@ public final class Segment extends LinearLayout {
         return selection;
     }
 
+    /**
+     * Pose la sélection sans prévenir l'auditeur (lot L : l'état
+     * revient posé — densité de l'aperçu — après un changement de
+     * fichier ou un réglage venu d'ailleurs).
+     *
+     * @param selectionnee l'index sélectionné, ou -1
+     */
+    public void setSelection(int selectionnee) {
+        if (selectionnee >= options.size()) {
+            selectionnee = options.isEmpty() ? -1 : options.size() - 1;
+        }
+        selection = selectionnee;
+        majCellules();
+    }
+
     /** L'auditeur des choix utilisateur. */
     public void setAuditeur(AuditeurSegment ecouteur) {
         auditeur = ecouteur;

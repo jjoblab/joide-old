@@ -38,7 +38,13 @@ public final class Icone extends View {
         /** Triangle alerte (franchise). */
         TRIANGLE,
         /** Glyphe dossier (états vides, tuiles). */
-        DOSSIER
+        DOSSIER,
+        /** Terminal (console de build, rail de l'atelier — lot J). */
+        TERMINAL,
+        /** Flèches circulaires (rafraîchir — lot L). */
+        RAFRAICHIR,
+        /** Flèches d'agrandissement (plein écran — lot L). */
+        AGRANDIR
     }
 
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -156,6 +162,41 @@ public final class Icone extends View {
                 canvas.drawPoint(10f * u, 15.8f * u, pinceau);
             }
             case DOSSIER -> Carte.dessinerDossier(canvas, pinceau, u, 0f, 0f);
+            case TERMINAL -> {
+                chemin.moveTo(4f * u, 4f * u);
+                chemin.lineTo(16f * u, 4f * u);
+                chemin.lineTo(16f * u, 16f * u);
+                chemin.lineTo(4f * u, 16f * u);
+                chemin.close();
+                canvas.drawPath(chemin, pinceau);
+                chemin.reset();
+                chemin.moveTo(6.5f * u, 8f * u);
+                chemin.lineTo(8.5f * u, 10f * u);
+                chemin.lineTo(6.5f * u, 12f * u);
+                chemin.moveTo(10.5f * u, 12f * u);
+                chemin.lineTo(13f * u, 12f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case RAFRAICHIR -> {
+                chemin.moveTo(16.5f * u, 10f * u);
+                chemin.arcTo(new android.graphics.RectF(3.5f * u,
+                        3.5f * u, 16.5f * u, 16.5f * u), -30f, 300f);
+                canvas.drawPath(chemin, pinceau);
+                chemin.reset();
+                chemin.moveTo(16.5f * u, 6f * u);
+                chemin.lineTo(16.5f * u, 10.5f * u);
+                chemin.lineTo(12f * u, 10.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case AGRANDIR -> {
+                chemin.moveTo(4.5f * u, 9f * u);
+                chemin.lineTo(4.5f * u, 4.5f * u);
+                chemin.lineTo(9f * u, 4.5f * u);
+                chemin.moveTo(15.5f * u, 15f * u);
+                chemin.lineTo(15.5f * u, 19.5f * u);
+                chemin.lineTo(11f * u, 19.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
             default -> {
             }
         }

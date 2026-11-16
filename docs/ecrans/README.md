@@ -41,3 +41,17 @@ ADR-049) et lot I (assistant de création en trois étapes, modèles
 déclaratifs joide.template/1 en assets, génération atomique, ADR-050).
 Arrêt pour validation du propriétaire (D-8 : rythme par groupe) — la suite
 est le groupe 2 (J atelier, K console, L aperçu).
+
+Livraisons du groupe 2 (2026-11-16) : **groupe 2 complet** — lot J
+(atelier adaptatif : onglets multi-fichiers à état faible, tiroir
+arborescence, FAB/pilule de build avec arrêt, seuil 720 dp, retour
+qui ferme les surcouches une à une, ADR-051), lot K (console de
+build : transcript coloré par nature en grille deux colonnes, phases
+du pipeline cliquables avec durées mesurées, compteur d'erreurs
+exact, problèmes ouvrables jusqu'à la ligne, plafond annoncé — le
+protocole du démon inchangé, ADR-052) et lot L (aperçu de mise en
+page : densité de rendu réelle, dimensions dp, ressources manquantes
+détectées par le parseur maison, MockView comptées, bannières de
+franchise, ADR-053). Arrêt pour validation du propriétaire — la
+suite est le lot M (paramètres) qui complète la v2, puis la piste
+agent (N-R).

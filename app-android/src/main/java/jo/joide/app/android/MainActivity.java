@@ -32,7 +32,7 @@ import jo.joide.app.android.accueil.ProjetsRecents;
 import jo.joide.app.android.accueil.Salutation;
 import jo.joide.app.android.accueil.TypeProjet;
 import jo.joide.app.android.ecrans.creation.EcranCreation;
-import jo.joide.app.android.ecrans.ide.EcranIde;
+import jo.joide.app.android.ecrans.atelier.EcranAtelier;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Carte;
 import jo.joide.app.android.ui.Champ;
@@ -489,10 +489,10 @@ public final class MainActivity extends Activity {
                         entree.nomAffiche(), entree.type(),
                         entree.dossier(), maintenant, entree.nbModules()));
         persister();
-        Intent intention = new Intent(this, EcranIde.class);
-        intention.putExtra(EcranIde.EXTRA_RACINE, racine.toString());
+        Intent intention = new Intent(this, EcranAtelier.class);
+        intention.putExtra(EcranAtelier.EXTRA_RACINE, racine.toString());
         if (entree.type() == TypeProjet.GRADLE) {
-            intention.putExtra(EcranIde.EXTRA_BANNIERE,
+            intention.putExtra(EcranAtelier.EXTRA_BANNIERE,
                     getString(R.string.ide_gradle_banniere));
         }
         startActivity(intention);
@@ -671,10 +671,10 @@ public final class MainActivity extends Activity {
             importEnCours = false;
             ligneProgression.setVisibility(View.GONE);
             rendre();
-            Intent intention = new Intent(this, EcranIde.class);
-            intention.putExtra(EcranIde.EXTRA_RACINE, cible.toString());
+            Intent intention = new Intent(this, EcranAtelier.class);
+            intention.putExtra(EcranAtelier.EXTRA_RACINE, cible.toString());
             if (gradle) {
-                intention.putExtra(EcranIde.EXTRA_BANNIERE,
+                intention.putExtra(EcranAtelier.EXTRA_BANNIERE,
                         getString(R.string.ide_gradle_banniere));
             }
             startActivity(intention);

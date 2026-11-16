@@ -8,21 +8,15 @@
     <string name="action_ok">OK</string>
 
     <!-- Écran IDE P8 (français conservé au lot G, ADR-048 ; déplacé
-         du lanceur vers EcranIde par le lot H) -->
-    <string name="aucun_projet">Aucun projet ouvert</string>
-    <string name="retour_accueil">Accueil</string>
+         du lanceur vers EcranIde par le lot H ; l'atelier adaptatif du
+         lot J reprend les états de chargement et d'erreur) -->
     <string name="ide_chargement">Chargement du projet…</string>
     <string name="ouvrir_projet">Ouvrir un projet</string>
     <string name="projet_natif">Projet JoIDE natif (joide.toml)</string>
     <string name="projet_gradle">Projet Gradle détecté — import statique requis (mode compatibilité)</string>
     <string name="projet_inconnu">Aucun joide.toml ni build.gradle à la racine — projet non reconnu</string>
-    <string name="fichiers">Fichiers</string>
-    <string name="apercu">Aperçu</string>
-    <string name="masquer">Masquer</string>
     <string name="construire">Construire</string>
     <string name="console_build">Console de build</string>
-    <string name="fermer_console">Fermer</string>
-    <string name="build_en_processus">En processus</string>
     <string name="canal_build">Build JoIDE</string>
     <string name="service_build_actif">Service de build JoIDE actif</string>
     <string name="import_en_cours">Import du projet…</string>
@@ -31,9 +25,6 @@
     <string name="projet_illisible_sans_detail">Projet illisible</string>
     <string name="import_echoue">Import échoué : %1$s</string>
     <string name="import_echoue_titre">Import échoué</string>
-    <string name="projet_pret">Projet prêt — %1$d module(s), %2$d problème(s) de modèle</string>
-    <string name="rendu_ok">Aperçu rendu : %1$d vue(s), %2$d×%3$d px</string>
-    <string name="rendu_echoue">Rendu échoué : %1$s</string>
     <string name="ecriture_echouee">Écriture du fichier échouée</string>
     <string name="lecture_echouee">Lecture échouée : %1$s</string>
     <string name="rien_a_construire">Rien à construire (voir les écarts ci-dessus)</string>
@@ -125,4 +116,83 @@
     <string name="creation_recap_minsdk">minSdk</string>
     <string name="creation_recap_arbo">Arborescence générée</string>
     <string name="creation_echouee">Création échouée : %1$s</string>
+
+    <!-- Lot J : atelier adaptatif (ADR-É5, ADR-051) -->
+    <string name="atelier_desc_retour">Retour aux projets</string>
+    <string name="atelier_desc_menu">Menu</string>
+    <string name="atelier_desc_construire">Construire</string>
+    <string name="atelier_desc_arreter_build">Arrêter le build</string>
+    <string name="atelier_desc_fichiers">Fichiers</string>
+    <string name="atelier_desc_console">Console</string>
+    <string name="atelier_index">Index · %1$s</string>
+    <string name="atelier_index_detail">Index : %1$s — %2$d entrées, %3$d faits, %4$d avertissement(s), %5$d erreur(s)</string>
+    <string name="atelier_fermer_projet">Fermer le projet</string>
+    <string name="atelier_fermer_titre">Fermer le projet ?</string>
+    <string name="atelier_fermer_message">%1$d fichier(s) modifié(s) cette session — tout est déjà écrit sur le disque, fermer ne perd rien.</string>
+    <string name="atelier_menu_en_processus">Build en processus : %1$s</string>
+    <string name="atelier_oui">oui</string>
+    <string name="atelier_non">non</string>
+    <string name="atelier_onglets_plafond">%1$d onglets ouverts — fermez-en un pour ouvrir ce fichier</string>
+    <string name="atelier_etat_vide_titre">Aucun fichier ouvert</string>
+    <string name="atelier_etat_vide_aide">Ouvrez le tiroir arborescence et choisissez un fichier.</string>
+    <string name="atelier_nouveau">Nouveau</string>
+    <string name="atelier_nouveau_fichier">Fichier</string>
+    <string name="atelier_nouveau_dossier">Dossier</string>
+    <string name="atelier_nouveau_dans">Nouveau dans %1$s</string>
+    <string name="atelier_sorties_note">Sorties de build — estompées pendant qu\'elles se construisent ; jamais présentées comme sources.</string>
+    <string name="atelier_arbre_tronque">Affichage limité à %1$d entrées — refermez des dossiers pour voir plus.</string>
+    <string name="atelier_nom_err_vide">Le nom est requis</string>
+    <string name="atelier_nom_err_long">100 caractères au plus</string>
+    <string name="atelier_nom_err_separateur">Pas de séparateur de chemin — l\'entrée vit dans le dossier cible</string>
+    <string name="atelier_nom_err_point">Pas « . » ni « .. »</string>
+    <string name="atelier_nom_err_controle">Aucun caractère de contrôle</string>
+    <string name="atelier_nom_err_point_final">Le nom ne peut pas finir par un point</string>
+    <string name="atelier_existe_deja">« %1$s » existe déjà</string>
+    <string name="atelier_creation_echouee">Création échouée : %1$s</string>
+
+    <!-- Lot K : console de build (ADR-É6, ADR-052) -->
+    <string name="console_filtre_tout">Tout</string>
+    <string name="console_filtre_erreurs">Erreurs (%1$d)</string>
+    <string name="console_filtre_systeme">Système</string>
+    <string name="console_etat_encours">en cours · %1$s</string>
+    <string name="console_etat_reussi">réussi · %1$s</string>
+    <string name="console_etat_echoue">échoué</string>
+    <string name="console_etat_interrompu">interrompu</string>
+    <string name="console_etat_vide">aucun build dans cette session</string>
+    <string name="console_phase_encours">en cours…</string>
+    <string name="console_phase_aucune">…</string>
+    <string name="console_phase_preparation">Préparation</string>
+    <string name="console_phase_compilation">Compilation</string>
+    <string name="console_phase_assemblage">Assemblage</string>
+    <string name="console_plafond">affichage plafonné à %1$d lignes — le plafond est annoncé, jamais muet</string>
+    <string name="console_nature_systeme">système</string>
+    <string name="console_nature_phase">phase</string>
+    <string name="console_nature_tache">tâche</string>
+    <string name="console_nature_erreur">erreur</string>
+    <string name="console_nature_avertissement">alerte</string>
+    <string name="console_probleme_titre">%1$s — problème</string>
+    <string name="console_probleme_ouvrir">Ouvrir le fichier à la ligne</string>
+    <string name="console_vider">Vider</string>
+    <string name="console_vider_titre">Vider la console ?</string>
+    <string name="console_vider_message">Le build en cours continue d\'écrire — seul le transcript est vidé.</string>
+    <string name="console_cible_introuvable">« %1$s » n\'est pas dans le projet</string>
+
+    <!-- Lot L : aperçu de mise en page (ADR-É7, ADR-053) -->
+    <string name="apercu_titre">Aperçu</string>
+    <string name="apercu_nuit">Nuit</string>
+    <string name="apercu_stats">%1$d vues · %2$d ms · %3$d × %4$d · %5$d×</string>
+    <string name="apercu_stats_attente">aucun rendu pour l\'instant</string>
+    <string name="apercu_theme_hote">thème : repli hôte — le modèle n\'en nomme aucun</string>
+    <string name="apercu_desc_rafraichir">Rafraîchir sans délai</string>
+    <string name="apercu_desc_plein_ecran">Basculer plein écran</string>
+    <string name="apercu_desc_fermer">Fermer l\'aperçu</string>
+    <string name="apercu_banniere_frappe">XML en frappe — dernier rendu valide conservé (%1$s vues). Le volet ne devient jamais blanc ni faux.</string>
+    <string name="apercu_banniere_ressources">%1$s manquante — repli aux ressources natives. Le rendu continue avec le repli ; la bannière reste tant que la ressource manque.</string>
+    <string name="apercu_banniere_mockview">%1$s classe(s) inconnue(s) — MockView en pointillé, pas un échec</string>
+    <string name="apercu_banniere_erreur">Rendu échoué : %1$s — la surface garde le dernier rendu valide</string>
+    <string name="apercu_banniere_config">Configuration : %1$s</string>
+    <string name="apercu_dims_titre">Dimensions cibles</string>
+    <string name="apercu_dims_telephone">360 × 640 (téléphone)</string>
+    <string name="apercu_dims_grand">412 × 915 (grand téléphone)</string>
+    <string name="apercu_dims_tablette">600 × 1024 (tablette)</string>
 </resources>

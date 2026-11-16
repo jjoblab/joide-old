@@ -2,6 +2,7 @@ package jo.joide.ide.apercu;
 
 import android.content.Context;
 import android.view.View;
+import java.util.List;
 import java.util.Objects;
 import jo.layoutlib.drawables.DrawableResolverImpl;
 import jo.layoutlib.inflater.RenderService;
@@ -71,6 +72,7 @@ public final class ApercuLayouts implements AutoCloseable {
     private final float densite;
     private final float policeEchelle;
     private EcouteurRendu ecouteur;
+    private ResourceResolverImpl ressourcesProjet;
 
     /**
      * @param contexte le contexte Android (l'activité hôte — la densité
@@ -96,13 +98,21 @@ public final class ApercuLayouts implements AutoCloseable {
         Objects.requireNonNull(configuration);
         service.setTargetDimensions(configuration.largeurCible(),
                 configuration.hauteurCible());
-        DimensionConverter convertisseur = new DimensionConverter(densite,
-                policeEchelle, densite * 160f);
+        // lot L (ADR-É7) : la densité de rendu est un réglage réel —
+        // le convertisseur traduit les dp du XML avec la densité
+        // choisie ; DENSITE_CONTEXTE conserve le comportement du lot E
+        float densiteEffective = configuration.densiteRendu() > 0f
+                ? configuration.densiteRendu() : densite;
+        DimensionConverter convertisseur = new DimensionConverter(
+                densiteEffective, policeEchelle,
+                densiteEffective * 160f);
+        ressourcesProjet = null;
         if (configuration.dossierRes() != null) {
             ResourceResolverImpl ressources =
                     new ResourceResolverImpl(configuration.dossierRes());
             ressources.setDimensionConverter(convertisseur);
             ressources.setNightMode(configuration.modeNuit());
+            this.ressourcesProjet = ressources;
             service.setResourceResolver(ressources);
             service.setDrawableResolver(
                     new DrawableResolverImpl(ressources, convertisseur));
@@ -175,6 +185,35 @@ public final class ApercuLayouts implements AutoCloseable {
     /** Vrai dès le premier rendu réussi. */
     public boolean aUnRenduValide() {
         return service.hasValidRender();
+    }
+
+    /**
+     * Les références de ressources DIRECTES du XML que le résolveur
+     * du projet ne résout PAS (lot L, ADR-É7) : ces ressources
+     * manquantes passent au repli natif pendant le rendu — la brique
+     * le fait silencieusement, la façade le DIT. L'analyse est pure
+     * et testée JVM ({@link ReferencesManquantes}, parseur maison
+     * ADR-028) : les références viennent des attributs de l'arbre,
+     * jamais d'une regex sur le document (risque n° 11 de
+     * l'ADR-É9).
+     *
+     * <p>Honnêteté : seules les références directes des types que le
+     * résolveur sait interroger sont vérifiées ; les références
+     * natives ({@code @android:…}), les identifiants et les attributs
+     * de thème ({@code ?attr/…}) ne relèvent pas du résolveur. Sans
+     * dossier {@code res/} de projet (repli natif global) ou sans
+     * document analysable (XML en frappe), la liste est vide : ces
+     * états sont portés par leurs propres bannières.</p>
+     *
+     * @param xml le XML de mise en page courant
+     * @return les références manquantes, dédupliquées et triées
+     */
+    public List<String> ressourcesManquantes(String xml) {
+        ResourceResolverImpl resolveur = this.ressourcesProjet;
+        if (resolveur == null) {
+            return List.of();
+        }
+        return ReferencesManquantes.de(resolveur, xml);
     }
 
     /** Libère le service (idempotent ; les rendus suivants sont ignorés). */

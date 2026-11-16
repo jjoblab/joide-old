@@ -28,7 +28,7 @@ import jo.joide.app.android.creation.EcrireProjet;
 import jo.joide.app.android.creation.EtatCreation;
 import jo.joide.app.android.creation.GenerateurProjet;
 import jo.joide.app.android.creation.ModeleProjet;
-import jo.joide.app.android.ecrans.ide.EcranIde;
+import jo.joide.app.android.ecrans.atelier.EcranAtelier;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Carte;
 import jo.joide.app.android.ui.Champ;
@@ -844,11 +844,11 @@ public final class EcranCreation extends Activity {
             android.util.Log.w("joide.creation",
                     "projets recents non ecrits : " + e.getMessage());
         }
-        Intent intention = new Intent(this, EcranIde.class);
-        intention.putExtra(EcranIde.EXTRA_RACINE,
+        Intent intention = new Intent(this, EcranAtelier.class);
+        intention.putExtra(EcranAtelier.EXTRA_RACINE,
                 resultat.chemin().toString());
         if (generation.fichierEntree() != null) {
-            intention.putExtra(EcranIde.EXTRA_FICHIER,
+            intention.putExtra(EcranAtelier.EXTRA_FICHIER,
                     generation.fichierEntree());
         }
         startActivity(intention);
