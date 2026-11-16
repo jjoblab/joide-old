@@ -17,6 +17,14 @@ import jo.joide.app.android.ui.choix.ChoixMouvement;
  * ({@link ChoixMouvement#composant()}). Aucune navigation d'écran
  * n'est câblée au lot G (ADR-048) ; le bord (gauche/droite) est
  * porté par la vue.
+ *
+ * <p>PIEGE-31, non négociable : le rideau fermé ne porte JAMAIS la
+ * cliquabilité — {@code setOnClickListener} rend la vue cliquable
+ * par effet de bord (contrat Android), et un rideau invisible de
+ * MATCH_PARENT cliquable AVALE toutes les touches de l'écran qu'il
+ * recouvre : l'hôte posé dessous devient sourd (l'écran atelier,
+ * 2026-11-17). La cliquabilité s'allume à l'OUVERTURE et s'éteint à
+ * la fermeture ET au layout fermé — jamais un rideau mort-vivant.
  */
 public final class TiroirPousse extends FrameLayout {
 
@@ -38,8 +46,13 @@ public final class TiroirPousse extends FrameLayout {
         rideau = new View(contexte);
         rideau.setBackgroundColor(palette.rideau);
         rideau.setAlpha(0f);
-        rideau.setClickable(false);
         rideau.setOnClickListener(vue -> fermer());
+        // PIEGE-31 : setOnClickListener vient de rendre le rideau
+        // cliquable par effet de bord — fermé à la construction, il ne
+        // doit JAMAIS le rester : un rideau invisible cliquable avale
+        // toutes les touches de l'écran recouvert (l'atelier devient
+        // sourd, seul le FAB posé après répond).
+        rideau.setClickable(false);
         addView(rideau, new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.MATCH_PARENT));
 
@@ -107,6 +120,8 @@ public final class TiroirPousse extends FrameLayout {
         }
         ouvert = false;
         enMouvement = true;
+        // PIEGE-31 : le rideau rendu muet DÈS le début de la fermeture
+        // — jamais un voile qui descend en avalant les gestes.
         rideau.setClickable(false);
         int duree = ChoixMouvement.composant();
         DecelerateInterpolator ralenti =
@@ -130,6 +145,9 @@ public final class TiroirPousse extends FrameLayout {
         if (!ouvert && !enMouvement) {
             panneau.setTranslationX(fermeeX());
             rideau.setAlpha(0f);
+            // PIEGE-31 : la défense au layout — le rideau fermé se
+            // déclare muet même si un appelant l'a rendu cliquable.
+            rideau.setClickable(false);
         }
     }
 

@@ -1,3 +1,35 @@
+# CHANGES — Correction de l'atelier sourd : le rideau des tiroirs (2026-11-17)
+
+**Le symptôme** (rapport du propriétaire) : l'écran atelier d'un
+projet ouvert ne réagit plus au toucher PARTOUT — onglets, arbre,
+barre supérieure, éditeur — sauf le FAB Construire. « Le focus est
+occupé, repris ailleurs » : en réalité ce n'était pas le focus,
+c'était la DÉLIVRANCE des touches qui était capturée avant l'atelier.
+
+**La cause** (PIEGE-31, `TiroirPousse`) : le rideau du tiroir porte
+`setOnClickListener` (fermeture au toucher du rideau) — or sous
+Android, `setOnClickListener` rend la vue CLIQUABLE par effet de bord
+(contrat `View.setOnClickListener`). Le rideau fermé restait donc
+cliquable, et un rideau invisible (alpha 0) de MATCH_PARENT posé sur
+toute la racine AVALE chaque ACTION_DOWN avant qu'il n'atteigne le
+contenu : la hiérarchie atelier — deux tiroirs plein écran (arbre
+sur téléphone, agent aux deux tailles) posés AVANT le FAB — rendait
+tout l'écran muet, le FAB ajouté APRÈS restant au-dessus de la pile et
+seul vivant. Latent depuis le lot G : l'atelier a toujours été
+sourd avant le premier cycle ouvrir/fermer du tiroir.
+
+**La correction** (`app-android/ui/TiroirPousse.java`) : la
+cliquabilité du rideau suit strictement l'état — muet à la
+construction (l'ordre du code : listener PUIS `setClickable(false)`),
+allumé à l'ouverture, éteint DÈS le début de la fermeture, et
+ré-éteint à chaque layout fermé (défense en profondeur). Aucune API
+changée, aucun appelant retouché.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| app-android | `ui/TiroirPousse.java` | le rideau fermé n'est plus cliquable (PIEGE-31) — l'atelier reçoit ses touches |
+| Racine | `CHANGES.md` | le présent filet |
+
 # CHANGES — Lots Q et R : la robustesse (Gemini, banc de clés, bascule, régulateur) et le MCP (ADR-É10/061/062/063)
 
 Les lots Q et R clôt la piste 2 du plan ADR-É10 : l'agent v1.1 —
