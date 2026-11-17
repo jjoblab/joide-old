@@ -174,6 +174,12 @@ public final class BuildRunner implements AutoCloseable {
          * services Android a avalé les fichiers META-INF, le
          * ServiceLoader les voit ; sinon le constructeur sans
          * argument est chargé par réflexion (embarqué, lot U).
+         *
+         * <p>Lot U/8 — pack DIFFÉRÉ en dernier recours : un APK
+         * allégé (sans les jars des outils) charge l'adaptateur
+         * depuis un pack de dex téléchargé une fois (PacksOutils) —
+         * la version embarquée, quand elle existe, prime
+         * toujours.</p>
          */
         private static <T> T outil(Class<T> type, String nomClasse) {
             try {
@@ -186,14 +192,64 @@ public final class BuildRunner implements AutoCloseable {
                 // la lecture des services peut manquer : la
                 // réflexion reste la route de l'appareil
             }
+            Throwable rupture = null;
             try {
                 Class<?> classe = Class.forName(nomClasse);
                 return type.cast(
                         classe.getDeclaredConstructor().newInstance());
             } catch (Throwable e) {
-                throw new IllegalStateException(
-                        "embedded build tool missing from classpath: "
-                                + nomClasse, e);
+                // APK allégé : l'adaptateur peut être là mais ses
+                // classes d'outil manquent (NoClassDefFoundError) —
+                // le pack différé reste la voie
+                rupture = e;
+            }
+            T duPack = outilDuPack(type, nomClasse);
+            if (duPack != null) {
+                return duPack;
+            }
+            throw new IllegalStateException(
+                    "embedded build tool unavailable: " + nomClasse
+                            + " — jars des outils absents et pack différé "
+                            + jo.joide.build.android.toolchain
+                                    .PacksOutils.packDe(type)
+                            + " indisponible (" + rupture + ")",
+                    rupture);
+        }
+
+        /**
+         * L'adaptateur d'un pack différé : téléchargé une fois puis
+         * chargé PAR NOM dans le chargeur du pack — jamais
+         * ServiceLoader ici : le chargeur PARENT porte aussi les
+         * fichiers de services des adaptateurs embarqués, et son
+         * entrée précéderait celle du pack. Le mur de chargeurs
+         * reste étanche : l'adaptateur n'expose que l'interface SPI
+         * du parent.
+         *
+         * @return l'adaptateur, ou {@code null} si le pack ne
+         *         concerne pas ce service ou qu'aucun pont n'est
+         *         disponible (bureau : les outils restent sur le
+         *         classpath)
+         */
+        private static <T> T outilDuPack(Class<T> type,
+                                          String nomClasse) {
+            jo.joide.build.android.toolchain.PacksOutils.Pack pack =
+                    jo.joide.build.android.toolchain.PacksOutils
+                            .packDe(type);
+            if (pack == null) {
+                return null;
+            }
+            try {
+                ClassLoader chargeur =
+                        jo.joide.build.android.toolchain.PacksOutils
+                                .chargeurDe(pack);
+                Class<?> classe = Class.forName(nomClasse, true,
+                        chargeur);
+                return type.cast(
+                        classe.getDeclaredConstructor().newInstance());
+            } catch (IOException | ReflectiveOperationException e) {
+                System.err.println("joide-build : pack " + pack
+                        + " indisponible : " + e.getMessage());
+                return null;
             }
         }
 
