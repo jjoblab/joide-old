@@ -1,3 +1,33 @@
+# CHANGES — Lot XVI : le JAR réel de la stdlib dans le pack (2026-11-17)
+
+**Le nouveau log** (2026-11-17) : après la pile StAX du lot XV (le
+compilateur charge ses descripteurs), `:core:compileKotlin` sèche sur
+« Cannot access built-in declaration 'kotlin.Any'. Ensure that you
+have a dependency on the Kotlin standard library. », avec le warning
+« Classpath entry points to a non-existent location:
+core/classes-kotlin » et la note « mapped buffer unmapping » (sans
+gravité). Le diagnostic sur les artefacts : `KotlinArgs` pose
+`-no-stdlib` (contrat : le classpath fourni porte la stdlib), mais le
+classpath de compile Android (`upstreamKotlin` : android.jar, sorties
+amont, R.jar, jars externes) ne contient JAMAIS la stdlib — et kotlinc
+résout son classpath avec son JAR FS : des FICHIERS sur disque. Les
+classes de la stdlib dexées dans le pack sont invisibles pour lui ; sur
+l'appareil il n'existe AUCUN `kotlin-stdlib.jar`. `kotlin.Any` est de
+plus une déclaration intrinsèque SANS .class (vérifié : 978 classes
+dans le jar, zéro kotlin/Any.class) — sa métadonnée vit dans
+`META-INF/kotlin-stdlib.kotlin_module`, que seul le jar fournit. La
+manière CodeAssist : leur outil télécharge le jar RÉEL de la stdlib et
+le pose au classpath.
+
+| Étape | Contenu |
+|---|---|
+| XVI/1 | le pack porte le jar ORIGINAL de la stdlib en ressource (`jars/kotlin-stdlib-2.3.0.jar`, +1,68 Mo — le jar Maven RÉSOLU, pas le patché : le compilateur lit du bytecode standard) ; `homeOuvriere` (lot XI) extrait déjà toutes les entrées non-dex du pack dans `kotlin-home/`, garde SHA — le jar arrive gratuitement |
+| XVI/2 | le pilote forké pose le jar EN TÊTE du classpath : `KotlinForkedDriver.compile` assure le pack puis `jarStdlib(homeOuvriere(classpath))` AVANT de bâtir les args, passés à `KotlinArgs.args(request, classpathAvant)` ; hors pack (essais bureau), aucune entrée ajoutée |
+| XVI/3 | les entrées de classpath inexistantes se FILTRENT (`KotlinArgs.classpathEntiere`) — fin du « points to a non-existent location », l'ordre se conserve |
+| XVI/4 | pack vérifié : 265 entrées, le jar stdlib (1 796 996 octets, 978 classes, les 3 `.kotlin_module`), constantes épinglées (`9a9f48fc…`, vérifié par téléchargement retour) ; r8 et bundletool ressortis IDENTIQUES (aucune republication) ; suites build-jvm, build-android, build-daemon vertes ; deux tests nouveaux |
+
+---
+
 # CHANGES — Lot XV : la pile StAX dans le pack, l'analyse complète de CodeAssist (2026-11-17)
 
 **Le mandat du propriétaire** (message du 2026-11-17) : « Cela devient

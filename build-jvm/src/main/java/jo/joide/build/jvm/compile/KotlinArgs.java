@@ -31,9 +31,26 @@ public final class KotlinArgs {
      */
     public static List<String> args(CompileRequest request)
             throws IOException {
+        return args(request, List.of());
+    }
+
+    /**
+     * @param request      demande de compilation
+     * @param classpathAvant entrées posées EN TÊTE du classpath, AVANT
+     *        celles de la demande (lot XVI : la stdlib extraite du
+     *        pack par le pilote forké — {@code -no-stdlib} fait de la
+     *        stdlib une entrée OBLIGATOIRE du classpath fourni, et le
+     *        JAR FS du compilateur ne lit pas les dex du pack)
+     * @return les arguments du compilateur, ordre stable
+     * @throws IOException si une racine Java est illisible
+     */
+    public static List<String> args(CompileRequest request,
+                                    List<Path> classpathAvant)
+            throws IOException {
         List<String> args = new ArrayList<>();
         args.add("-classpath");
-        args.add(joinPaths(request.classpath));
+        args.add(joinPaths(classpathEntiere(request.classpath,
+                classpathAvant)));
         args.add("-d");
         args.add(request.outputDir.toString());
         args.add("-jvm-target");
@@ -69,6 +86,26 @@ public final class KotlinArgs {
             }
         }
         return args;
+    }
+
+    /** Le classpath final (lot XVI) : les entrées en tête (la stdlib
+     *  du pack), puis les entrées demandées — SEULES celles qui
+     *  existent : une entrée fantôme ne produit qu'un « Classpath
+     *  entry points to a non-existent location » et une résolution
+     *  qui sèche (le terrain : {@code core/classes-kotlin} absent au
+     *  premier passage). L'ordre de la demande se conserve. */
+    static List<Path> classpathEntiere(List<Path> demandees,
+                                       List<Path> avant) {
+        List<Path> ordre = new ArrayList<>(avant);
+        for (Path chemin : demandees) {
+            if (Files.isRegularFile(chemin)
+                    || Files.isDirectory(chemin)) {
+                if (!ordre.contains(chemin)) {
+                    ordre.add(chemin);
+                }
+            }
+        }
+        return List.copyOf(ordre);
     }
 
     private static String joinPaths(List<Path> paths) {

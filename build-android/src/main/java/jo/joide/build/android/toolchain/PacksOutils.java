@@ -66,12 +66,14 @@ public final class PacksOutils {
     /** Taille attendue du pack du compilateur Kotlin (octets) —
      *  le pack ART-patché du lot XI, la PILE STAX du lot XV (l'API
      *  javax.xml.stream + aalto unshadé + stax2-api : ART n'en livre
-     *  pas — la manière CodeAssist), régénéré contre android.jar 35. */
-    static final long TAILLE_KOTLIN = 19_311_619L;
+     *  pas), le JAR ORIGINAL de la stdlib en ressource du lot XVI
+     *  (le classpath de compile exige un jar RÉEL — la manière
+     *  CodeAssist), régénéré contre android.jar 35. */
+    static final long TAILLE_KOTLIN = 20_989_461L;
 
     /** SHA-256 attendu du pack du compilateur Kotlin. */
     static final String SHA_KOTLIN
-            = "2fe2467fe2048ace6131c7faa2a0fee30295028cc9d15bfa40de4c3594c814cd";
+            = "9a9f48fce9f7b57e62522ca66312ffc130abc5fe01103149ebac193e3ee24f14";
 
     /** Un pack d'outil : fichier, empreinte et URL épinglées. */
     public static final class Pack {

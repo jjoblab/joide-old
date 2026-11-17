@@ -448,6 +448,33 @@ class KotlinForkedDriverTest {
     }
 
     /**
+     * Lot XVI : le jar ORIGINAL de la stdlib se TROUVE dans le home
+     * extrait du pack (ressource {@code jars/kotlin-stdlib-<v>.jar})
+     * — c'est ce fichier qui ouvre le classpath de compilation de
+     * l'ouvrière ({@code -no-stdlib} le rend obligatoire) ; {@code
+     * null} hors pack (les essais bureau portent la stdlib dans la
+     * demande : {@code joide.kotlinWorkerCp} n'est pas un
+     * {@code .dex.zip}).
+     */
+    @Test
+    void leJarStdlibSeTrouveDansLeHome(@TempDir Path local)
+            throws Exception {
+        assertTrue(KotlinForkedDriver.jarStdlib(null) == null,
+                "hors pack (home null) : pas de stdlib");
+        Path vide = local.resolve("vide");
+        Files.createDirectories(vide);
+        assertTrue(KotlinForkedDriver.jarStdlib(vide) == null,
+                "un home sans jars/ ne porte pas de stdlib");
+        Path jars = local.resolve("home").resolve("jars");
+        Files.createDirectories(jars);
+        Path stdlib = jars.resolve("kotlin-stdlib-2.3.0.jar");
+        Files.writeString(stdlib, "jar");
+        assertEquals(stdlib,
+                KotlinForkedDriver.jarStdlib(local.resolve("home")),
+                "le jar stdlib du home se trouve");
+    }
+
+    /**
      * Le classpath de l'ouvrière : le classpath d'essai ENTIERS porte
      * déjà l'ouvrier (workerKotlin) et la fermeture runtime du
      * compilateur (les dépendances de son POM) — sur l'appareil, le

@@ -220,25 +220,34 @@ public final class KotlinForkedDriver implements CompilerDriver {
     public CompileResult compile(CompileRequest request) {
         Map<String, CompileInventory.SizeAndTime> avant =
                 CompileInventory.of(request.outputDir);
-        List<String> args;
-        try {
-            args = KotlinArgs.args(request);
-        } catch (IOException e) {
-            return new CompileResult(false, List.of(Problem.error(
-                    "java-root-error",
-                    "cannot walk java source root : " + e.getMessage())),
-                    List.of());
-        }
         // le pack peut devoir se télécharger (UNE fois) : le message
-        // d'échec porte l'URL épinglée
+        // d'échec porte l'URL épinglée ; le jar ORIGINAL de la stdlib
+        // (lot XVI) s'extrait des ressources du pack AVANT la
+        // construction des arguments — le classpath de compilation
+        // exige des jar RÉELS (le JAR FS du compilateur ne lit pas
+        // les dex du pack) et {@code -no-stdlib} en fait une entrée
+        // obligatoire (la manière CodeAssist : le jar réel téléchargé
+        // ; ici le pack le porte, épinglé par son SHA)
         String classpath;
+        Path stdlib;
         try {
             classpath = classpathOuvriere();
+            stdlib = jarStdlib(homeOuvriere(classpath));
         } catch (IOException e) {
             return new CompileResult(false, List.of(Problem.error(
                     "kotlin.worker",
                     "compilateur Kotlin différé indisponible : "
                             + e.getMessage())), List.of());
+        }
+        List<String> args;
+        try {
+            args = KotlinArgs.args(request, stdlib == null
+                    ? List.of() : List.of(stdlib));
+        } catch (IOException e) {
+            return new CompileResult(false, List.of(Problem.error(
+                    "java-root-error",
+                    "cannot walk java source root : " + e.getMessage())),
+                    List.of());
         }
         synchronized (verrou) {
             if (raisonAbandon != null) {
@@ -837,6 +846,35 @@ public final class KotlinForkedDriver implements CompilerDriver {
             // valeur par défaut manque de descripteurs) — le lot
             // échouera nommé si le registre en a besoin
             return null;
+        }
+    }
+
+    /** Le jar ORIGINAL de la bibliothèque standard, extrait du pack
+     *  (ressource {@code jars/kotlin-stdlib-<v>.jar}, lot XVI) : le
+     *  classpath de compilation du compilateur exige des jar RÉELS —
+     *  son JAR FS ne lit pas les dex du pack, et sur l'appareil il
+     *  n'existe AUCUN {@code kotlin-stdlib.jar} sur disque (la
+     *  manière CodeAssist : le jar réel téléchargé ; ici le pack le
+     *  porte). {@code null} hors pack (les essais bureau portent la
+     *  stdlib dans le classpath de la demande — {@code
+     *  joide.kotlinWorkerCp} n'est pas un {@code .dex.zip}). */
+    static Path jarStdlib(Path home) throws IOException {
+        if (home == null) {
+            return null;
+        }
+        Path jars = home.resolve("jars");
+        if (!Files.isDirectory(jars)) {
+            return null;
+        }
+        try (var flux = Files.list(jars)) {
+            return flux.filter(p -> {
+                        String nom = p.getFileName().toString();
+                        return nom.startsWith("kotlin-stdlib-")
+                                && nom.endsWith(".jar");
+                    })
+                    .sorted()
+                    .findFirst()
+                    .orElse(null);
         }
     }
 

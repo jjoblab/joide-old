@@ -694,6 +694,26 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
                         }
             }
         }
+        // Lot XVI : le JAR ORIGINAL de la bibliothèque standard part
+        // comme RESSOURCE du pack (« jars/kotlin-stdlib-<v>.jar ») :
+        // le classpath de compilation du compilateur exige des jar
+        // RÉELS (son JAR FS ne lit pas les dex du pack) et sur
+        // l'appareil il n'existe AUCUN kotlin-stdlib.jar sur disque —
+        // le terrain : « Cannot access built-in declaration
+        // 'kotlin.Any' ». homeOuvriere (KotlinForkedDriver) extrait
+        // déjà les ressources non-dex du pack dans kotlin-home/ et le
+        // pilote pose le jar en tête du classpath (-no-stdlib). La
+        // manière CodeAssist : LEUR outil télécharge le jar réel ;
+        // ici le pack le porte, épinglé par son SHA.
+        val stdlibJar = jarsK.first {
+            it.name.startsWith("kotlin-stdlib-")
+                    && !it.name.contains("sources")
+        }
+        val cibleStdlib = dossierRessources.resolve("jars")
+                .resolve(stdlibJar.name)
+        cibleStdlib.parentFile.mkdirs()
+        stdlibJar.copyTo(cibleStdlib, overwrite = true)
+        ressources["jars/" + stdlibJar.name] = cibleStdlib
         // le dexage PAR LOTS (lot VII) : le compilateur Kotlin (60 Mo
         // de bytecode) ne tient pas dans une seule machine virtuelle
         // D8 d'une machine modeste — chaque lot se dexé seul (min-api

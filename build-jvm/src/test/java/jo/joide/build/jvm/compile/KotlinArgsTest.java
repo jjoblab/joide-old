@@ -53,4 +53,49 @@ class KotlinArgsTest {
         assertFalse(KotlinArgs.args(bureau).contains("-no-jdk"),
                 "le bureau garde la détection JDK du compilateur");
     }
+
+    /**
+     * Lot XVI : la stdlib passée « avant » se pose EN TÊTE du
+     * classpath et les entrées inexistantes de la demande se
+     * FILTRENT — le terrain : « Classpath entry points to a
+     * non-existent location: core/classes-kotlin » suivi du
+     * « Cannot access built-in declaration 'kotlin.Any' » (une
+     * entrée fantôme ne résout rien, la stdlib absente tue tout).
+     */
+    @Test
+    void laStdlibPasseEnTeteEtLesFantomesSeFiltrent(@TempDir Path dossier)
+            throws Exception {
+        Path source = dossier.resolve("Salut.kt");
+        Files.writeString(source, "fun salut(): Int = 1");
+        Path sortie = dossier.resolve("sortie");
+        Files.createDirectories(sortie);
+        Path stdlib = dossier.resolve("kotlin-stdlib-2.3.0.jar");
+        Files.writeString(stdlib, "jar");
+        Path fantome = dossier.resolve("classes-kotlin");
+
+        CompileRequest demande = new CompileRequest(List.of(source),
+                List.of(fantome, sortie), List.of(), sortie, "17",
+                "UTF-8", true);
+        List<String> args = KotlinArgs.args(demande, List.of(stdlib));
+        int classpath = args.indexOf("-classpath");
+        assertTrue(classpath >= 0, "le drapeau classpath manque");
+        String valeurs = args.get(classpath + 1);
+        // la stdlib en tête, l'entrée existante ensuite, le fantôme hors
+        assertTrue(valeurs.startsWith(stdlib.toString()),
+                "la stdlib doit ouvrir le classpath : " + valeurs);
+        assertTrue(valeurs.contains(sortie.getFileName().toString()),
+                "l'entrée existante doit rester : " + valeurs);
+        assertFalse(valeurs.contains(fantome.toString()),
+                "l'entrée fantôme doit se filtrer : " + valeurs);
+
+        // sans entrée « avant » (pilote embarqué du bureau), le
+        // comportement historique tient : les fantômes se filtrent
+        // aussi, les existants restent
+        List<String> sansAvant = KotlinArgs.args(demande);
+        String cp = sansAvant.get(sansAvant.indexOf("-classpath") + 1);
+        assertFalse(cp.contains(fantome.toString()),
+                "le fantôme se filtre aussi sans stdlib : " + cp);
+        assertTrue(cp.contains(sortie.getFileName().toString()),
+                "l'entrée existante reste : " + cp);
+    }
 }
