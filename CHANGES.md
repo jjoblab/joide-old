@@ -1,3 +1,32 @@
+# CHANGES — Lot XX/b : le patch ART de SourceVersion — le generateRJar rendu à l'appareil (2026-11-17)
+
+**Le terrain** : « :app:generateRJar : NoSuchMethodError: No static
+method version()Ljava/lang/Runtime$Version; in class Ljava/lang/Runtime;
+(declaration of 'java.lang.Runtime' appears in
+/apex/com.android.art/javalib/core-oj.jar) ». La suite du lot XIX :
+l'API javax.* extraite du JDK 21 embarquait le `<clinit>` de
+`javax/lang/model/SourceVersion`, qui appelle
+`Runtime.version().feature()` — une API JDK 9+ ABSENTE d'ART. ECJ (le
+chemin batch → SourceVersion, déjà vu au lot XIX) déclenchait
+l'initialisation pendant la génération du R.jar et mourait.
+
+**Le correctif** : `SourceVersion` recompilée par
+`javac --patch-module java.compiler` avec la version de feature figée
+à 21 (le jar EST celui du JDK 21 : comportement identique, ART-safe),
+API publique vérifiée IDENTIQUE (javap), ZÉRO invocation de
+`Runtime.version()` dans tout le jar (javap -c, classe par classe), la
+classe s'initialise et répond RELEASE_21. Recette reproduisible dans
+`scripts/javax-art-patch/` (source patchée + `applique.sh`). Noté :
+`javax/tools/ToolProvider` référence aussi `java.lang.Module` (JDK 9+)
+mais n'est jamais appelé — un descripteur seul ne plante pas ART,
+seule une INVOCATION le ferait ; il est laissé tel quel.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| app-android | `libs/java-compiler.jar` | `javax/lang/model/SourceVersion.class` recompilée sans `Runtime.version()` (clinit ART-safe) |
+| scripts | `scripts/javax-art-patch/` | la source patchée + le script d'application (compile `--patch-module`, vérif bytecode/API/jar) |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX : la refonte « tout embarqué » démarre, le pack redevient immuable (2026-11-17)
 
 **La question du propriétaire** : « Est-ce que CodeAssist utilise
