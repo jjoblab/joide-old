@@ -63,6 +63,12 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
 ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
 kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+# Lot XIX : le plugin compilateur Compose, livré avec la distribution
+# du compilateur (même version, Apache-2.0) — dexé dans le pack Kotlin
+# (le registrar se charge dans la VM ouvrière) + jar original dans
+# jars/ du pack et ressource build-jvm (kotlinc y lit le descripteur
+# META-INF/services pour -Xplugin)
+compose-compiler-plugin = { module = "org.jetbrains.kotlin:kotlin-compose-compiler-plugin", version.ref = "kotlin" }
 stax-api = { module = "javax.xml.stream:stax-api", version.ref = "staxApi" }
 stax2-api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "stax2Api" }
 aalto-xml = { module = "com.fasterxml:aalto-xml", version.ref = "aaltoXml" }

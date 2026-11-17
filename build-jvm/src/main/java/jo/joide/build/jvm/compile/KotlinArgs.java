@@ -31,7 +31,7 @@ public final class KotlinArgs {
      */
     public static List<String> args(CompileRequest request)
             throws IOException {
-        return args(request, List.of());
+        return args(request, List.of(), List.of());
     }
 
     /**
@@ -47,7 +47,31 @@ public final class KotlinArgs {
     public static List<String> args(CompileRequest request,
                                     List<Path> classpathAvant)
             throws IOException {
+        return args(request, classpathAvant, List.of());
+    }
+
+    /**
+     * @param request      demande de compilation
+     * @param classpathAvant entrées posées EN TÊTE du classpath (voir
+     *        ci-dessus)
+     * @param pluginJars les jars des plugins compilateur
+     *        ({@code -Xplugin}, un par jar — lot XIX : Compose via la
+     *        sonde de classpath de PluginsKotlin ; ZÉRO option -P,
+     *        la manière CodeAssist)
+     * @return les arguments du compilateur, ordre stable
+     * @throws IOException si une racine Java est illisible
+     */
+    public static List<String> args(CompileRequest request,
+                                    List<Path> classpathAvant,
+                                    List<Path> pluginJars)
+            throws IOException {
         List<String> args = new ArrayList<>();
+        // les plugins d'abord : kotlinc accepte -Xplugin n'importe où,
+        // l'ordre stable garde les builds reproductibles
+        for (Path plugin : pluginJars) {
+            args.add("-Xplugin");
+            args.add(plugin.toString());
+        }
         args.add("-classpath");
         args.add(joinPaths(classpathEntiere(request.classpath,
                 classpathAvant)));

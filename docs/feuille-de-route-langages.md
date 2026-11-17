@@ -11,16 +11,24 @@ console). Chaque chantier cite la pièce CodeAssist à reproduire.*
 | Capacité | État joide | La référence CodeAssist |
 |---|---|---|
 | Kotlin (JVM, appareil) | opérationnel : embarqué ou VM forkée, `-no-stdlib`/`-no-reflect`, `-no-jdk` + android.jar au classpath (routes Android et console, lots XIV et XVIII) | K2 in-process sur ART, mêmes drapeaux (KotlinJvmCompiler.kt) |
-| Java (appareil) | opérationnel : ECJ tolère l'absence de jrt, android.jar au classpath | ECJ batch + `ImageFreeJavaCompiler` pour compliance ≥ 9 |
-| Chaîne Android | opérationnelle jusqu'à l'APK signé et le bundle : aapt2 compile/link (manifeste enrichie, lot XVII), R.jar, dex, package, signature (lots U→XVII) | mergeResources → aapt2 → R.jar ASM → K2 → ecj → D8 → apksigner |
-| Compose | **absent** | plugin `-Xplugin` + sonde de classpath (ComposeCompilerPlugin.kt) |
+| Java (appareil) | opérationnel : ECJ tolère l'absence de jrt, android.jar au classpath, l'API javax.* (SourceVersion) dexée dans l'APK (lot XIX) | ECJ batch + `ImageFreeJavaCompiler` pour compliance ≥ 9 + le même jar API committé |
+| Chaîne Android | opérationnelle jusqu'à l'APK signé et le bundle : aapt2 compile/link (manifeste enrichie, lot XVII), R.jar, dex, package, signature (lots U→XVII) ; aapt2 conscient de l'ABI (lot XIX : binaire Android épinglé sur appareil) | mergeResources → aapt2 → R.jar ASM → K2 → ecj → D8 → apksigner |
+| Compose | **branché (lot XIX)** : sonde `Composable.class` jars+dirs, `-Xplugin` zéro `-P`, plugin dexé dans le pack — reste la résolution des AAR androidx.compose | plugin `-Xplugin` + sonde de classpath (ComposeCompilerPlugin.kt) |
 | Incrémental Kotlin | non : full recompile à chaque build | manifeste texte + ABI maison, PAS l'IC officielle |
 | KMP | absent | compilation « collapsed » unique (commonMain + plateforme) |
 
-## Chantier 1 — le compilateur Compose (priorité haute)
+## Chantier 1 — le compilateur Compose (priorité haute) — FAIT au lot XIX
 
-C'est la demande dominante (Compose est le standard des nouvelles
-applications Android). Le schéma CodeAssist, transposable tel quel :
+Le schéma CodeAssist, transposé tel quel (voir ADR-081) : la sonde
+`androidx/compose/runtime/Composable.class` (jars ET répertoires),
+`-Xplugin` sans AUCUNE option `-P`, le jar du plugin venant du pack
+(appareil) ou des ressources de build-jvm (bureau), le registrar
+DEXÉ dans le pack. **Le reste du chantier** : la résolution des
+AAR androidx.compose (classes.jar — l'extraction AAR partielle de
+SpecsBuild) et leurs transitives, sans lesquelles aucun projet
+Compose réel n'a le runtime au classpath.
+
+Le schéma de référence complet (gardé pour l'historique) :
 
 1. **Le jar du plugin** (`compose-compiler-plugin-for-ide`, version
    VERROUILLÉE sur la version de Kotlin) est bundled comme

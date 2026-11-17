@@ -13,6 +13,28 @@ plugins {
 val workerKotlin by sourceSets.creating
 val packArt by sourceSets.creating
 
+// Lot XIX : le jar du plugin compilateur Compose copié en RESSOURCE
+// du jar build-jvm (PluginsKotlin.jarCompose l'extrait du classpath
+// pour le pilote embarqué du bureau ; l'appareil le prend du pack).
+// Copié au montage depuis le catalogue — jamais committé.
+val composePlugin by configurations.creating {
+    isCanBeConsumed = false
+    // le jar du plugin SEUL — ses transitifs (le compilateur, déjà
+    // là) renommés produiraient une entrée dupliquée
+    isTransitive = false
+}
+dependencies {
+    composePlugin(libs.compose.compiler.plugin)
+}
+val copierPluginCompose = tasks.register<Copy>("copierPluginCompose") {
+    from(composePlugin)
+    rename { "kotlin-compose-compiler-plugin.jar" }
+    into(layout.buildDirectory.dir("ressources-compose"))
+}
+sourceSets.named("main") {
+    resources.srcDir(copierPluginCompose)
+}
+
 dependencies {
     api(project(":core-tasks"))
     implementation(libs.ecj)

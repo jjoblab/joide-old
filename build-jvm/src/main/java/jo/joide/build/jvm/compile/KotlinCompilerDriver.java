@@ -1,6 +1,7 @@
 package jo.joide.build.jvm.compile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +55,18 @@ public final class KotlinCompilerDriver implements CompilerDriver {
     public CompileResult compile(CompileRequest request) {
         Map<String, CompileInventory.SizeAndTime> before =
                 CompileInventory.of(request.outputDir);
+        List<Path> plugins;
+        try {
+            // lot XIX : les plugins par sonde de classpath (Compose) —
+            // bureau : le jar vient des ressources de build-jvm
+            plugins = PluginsKotlin.pluginsPour(request, null);
+        } catch (IOException e) {
+            return new CompileResult(false, List.of(Problem.error(
+                    "kotlin.plugin-error", e.getMessage())), List.of());
+        }
         List<String> args;
         try {
-            args = KotlinArgs.args(request);
+            args = KotlinArgs.args(request, List.of(), plugins);
         } catch (IOException e) {
             return new CompileResult(false, List.of(Problem.error(
                     "java-root-error",

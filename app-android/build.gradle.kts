@@ -359,6 +359,15 @@ dependencies {
     implementation(project(mapOf("path" to ":build-android",
             "configuration" to "signatureApi")))
     implementation(libs.apksig)
+    // Lot XIX (la manière CodeAssist, android/art-compat :
+    // java-compiler.jar committé et dexé dans l'APK) : l'API
+    // javax.lang.model + javax.annotation.processing + javax.tools
+    // — ABSENTE des bibliothèques cœur d'ART, référencée par ecj au
+    // chargement (batch/FileSystem → SourceVersion ; le terrain :
+    // « NoClassDefFoundError: Ljavax/lang/model/SourceVersion; » sur
+    // app:generateRJar). 144 classes extraites du JDK 21 (scripts/
+    // jar-javax-api.sh) ; ART accepte les classes javax.* de l'app.
+    implementation(files("libs/java-compiler.jar"))
 }
 
 // --- les packs d'outils DIFFÉRÉS (chaîne allégée, 2026-11-17) -------------------------
@@ -400,6 +409,12 @@ dependencies {
     // l'OUVRIER (source set workerKotlin de build-jvm) partent
     // ensemble au dexage du pack kotlin-compiler.dex.zip
     jarsKotlin(libs.kotlin.compiler.embeddable)
+    // Lot XIX : le plugin compilateur Compose — dexé dans le pack
+    // (le registrar se charge dans la VM ouvrière ; sur ART, un jar
+    // ne définit pas de classes) et son jar ORIGINAL part comme
+    // ressource jars/ (kotlinc y lit META-INF/services pour
+    // -Xplugin, la sonde de PluginsKotlin l'active)
+    jarsKotlin(libs.compose.compiler.plugin)
     // Lot XV — la manière CodeAssist (« StAX on ART (which ships
     // none) ») : l'API StAX (javax.xml.stream, le compilateur la
     // référence mais le shade de l'embeddable ne l'embarque PAS — le
@@ -714,6 +729,20 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         cibleStdlib.parentFile.mkdirs()
         stdlibJar.copyTo(cibleStdlib, overwrite = true)
         ressources["jars/" + stdlibJar.name] = cibleStdlib
+        // Lot XIX : le JAR ORIGINAL du plugin Compose part comme
+        // RESSOURCE du pack (« jars/kotlin-compose-compiler-plugin-<v>
+        // .jar »), même mécanique que la stdlib : kotlinc y lit le
+        // descripteur META-INF/services du registrar (-Xplugin) — les
+        // CLASSES, elles, sont dexées via jarsKotlin (sur ART, un jar
+        // ne définit pas de classes ; la VM ouvrière les charge du dex)
+        val composeJar = jarsK.first {
+            it.name.startsWith("kotlin-compose-compiler-plugin-")
+        }
+        val cibleCompose = dossierRessources.resolve("jars")
+                .resolve(composeJar.name)
+        cibleCompose.parentFile.mkdirs()
+        composeJar.copyTo(cibleCompose, overwrite = true)
+        ressources["jars/" + composeJar.name] = cibleCompose
         // le dexage PAR LOTS (lot VII) : le compilateur Kotlin (60 Mo
         // de bytecode) ne tient pas dans une seule machine virtuelle
         // D8 d'une machine modeste — chaque lot se dexé seul (min-api

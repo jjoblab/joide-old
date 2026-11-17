@@ -1,3 +1,33 @@
+# CHANGES — Lot XIX : aapt2 conscient de l'ABI, l'API javax.* dans l'APK, Compose par sonde (2026-11-17)
+
+**Le build console JVM est PASSÉ sur l'appareil** (le lot XVIII
+tient). La troisième vague de terrain : `app:processAndroidResources
+: aapt2 failed: …/aapt2[74]: syntax error: unexpected '('` et
+`app:generateRJar : NoClassDefFoundError:
+Ljavax/lang/model/SourceVersion;`. Analyses expertes : une source
+d'aapt2 Android VÉRIFIÉE par téléchargement (ReVanced v1.1.0, ELF
+AArch64 statique, 16 Ko aligné, SHA-256 épinglés) ; la recette
+CodeAssist pour javax.lang.model (un jar API committé et dexé dans
+l'APK — ecj 3.40 référence SourceVersion au chargement du batch, 53
+classes touchées) et pour le plugin Compose (sonde de classpath,
+-Xplugin, ZÉRO -P, registrar dexé là où kotlinc charge).
+
+| Étape | Contenu |
+|---|---|
+| XIX/1 | ToolchainLocator conscient de l'ABI : varianteAapt2 (android-arm64-v8a / android-x86_64 / linux) ; sur appareil, le repli télécharge le binaire ANDROID de ReVanced épinglé (la même source que les jniLibs de l'APK) — JAMAIS le jar linux (l'ELF x86_64 filé au shell par bionic était le « syntax error ») |
+| XIX/2 | app-android/libs/java-compiler.jar (144 classes javax.lang.model + javax.annotation.processing + javax.tools, extraites du JDK 21 par scripts/jar-javax-api.sh), dexé dans l'APK — ecj charge sur ART (generateRJar d'abord, les modules Java ensuite) |
+| XIX/3 | Compose : PluginsKotlin (sonde androidx/compose/runtime/Composable.class dans jars ET dirs ; jar du plugin : pack jars/ sur appareil, ressources build-jvm au bureau ; échec NOMMÉ si sonde allumée et jar absent) ; KotlinArgs pluginJars → -Xplugin ; les deux pilotes branchés ; ZÉRO option -P |
+| XIX/4 | Le plugin Compose (kotlin-compose-compiler-plugin 2.3.0, version du compilateur du pack) : dexé dans le pack Kotlin (jarsKotlin, passage par le patcheur ART) + jar original en ressource jars/ ; PacksOutils taille/SHA à recalculer au regen |
+| XIX/5 | Suites build-jvm + build-android vertes ; cinq tests nouveaux |
+
+Le pack Kotlin change : le nouveau kotlin-compiler-2.3.0.dex.zip est
+à publier sur la release toolchain-v1 (les empreintes épinglées de
+PacksOutils suivent). Reste hors lot (écarts honnêtes) : la
+résolution des AAR androidx.compose (classes.jar) et le bouton
+Exécuter console.
+
+---
+
 # CHANGES — Lot XVIII : l'arête du R.jar pour Kotlin et le plateau d'appareil de la route console (2026-11-17)
 
 **Les nouveaux logs** (2026-11-17) : `:app:compileKotlin :

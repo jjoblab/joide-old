@@ -35,6 +35,23 @@ public final class ToolchainLocator {
     /** Taille attendue du jar d'aapt2 linux. */
     public static final long AAPT2_SIZE = 2_451_278L;
 
+    // lot XIX : les binaires aapt2 ANDROID (ReVanced v1.1.0, la même
+    // source que les jniLibs de l'APK — ELF statique bionic, segments
+    // alignés 16 Ko, empreintes vérifiées par téléchargement dans le
+    // sandbox le 2026-11-17) : le repli quand l'aapt2 embarqué manque
+    private static final String AAPT2_ANDROID_BASE_URL
+            = "https://github.com/ReVanced/aapt2/releases/download/v1.1.0";
+    /** SHA-256 du binaire aapt2 Android ARM64 (binaire nu). */
+    public static final String AAPT2_ANDROID_ARM64_SHA256
+            = "7e5ae2e1f62fc24cab14072555ffd0a1a7e1ce27e82cc1008967b835b6d8df5b";
+    /** Taille attendue du binaire aapt2 Android ARM64. */
+    public static final long AAPT2_ANDROID_ARM64_SIZE = 4_693_752L;
+    /** SHA-256 du binaire aapt2 Android x86_64 (émulateurs). */
+    public static final String AAPT2_ANDROID_X86_64_SHA256
+            = "46d2244c3c574979ecae452c8a32e0a25ac0184bfe29a3d805821e36401ecdcb";
+    /** Taille attendue du binaire aapt2 Android x86_64. */
+    public static final long AAPT2_ANDROID_X86_64_SIZE = 4_993_552L;
+
     /** Révision de plateforme téléchargée (android.jar + AIDL). */
     public static final String PLATFORM_REVISION = "35_r02";
     /** SHA-256 de l'archive de plateforme (contrôle du téléchargement). */
@@ -116,9 +133,10 @@ public final class ToolchainLocator {
             r8 = r8FromClasspath();
         }
         if (aapt2 == null) {
-            // lot U : sur appareil, aapt2 est EMBARQUÉ (jniLibs) —
-            // jamais téléchargé (un binaire natif Android n'existe
-            // pas chez Google, l'exec depuis le cache est refusé)
+            // lot U : sur appareil, aapt2 est EMBARQUÉ (jniLibs) ;
+            // lot XIX : sinon la VARIANTE d'android (ReVanced épinglé,
+            // téléchargée par ensureAapt2 si absente du cache) — le
+            // jar linux de Google Maven ne sert plus qu'au bureau
             aapt2 = aapt2Embarque();
         }
         if (aapt2 == null) {
@@ -165,6 +183,16 @@ public final class ToolchainLocator {
         if (cached != null) {
             return cached;
         }
+        // lot XIX : sur APPAREIL, le binaire ANDROID (ReVanced, la
+        // même source que les jniLibs de l'APK, épinglé) — JAMAIS le
+        // jar linux : son ELF x86_64 est inexecutable sur un
+        // téléphone ARM64, et bionic (execvp) retombe sur le shell
+        // qui le parse : « syntax error: unexpected '(' » (terrain
+        // du 2026-11-17, APK reconstruit sans libaapt2.so embarqué)
+        if (!"linux".equals(varianteAapt2(System.getProperty("os.arch"),
+                surAppareil()))) {
+            return assureAapt2Android();
+        }
         Path jar = cacheDir.resolve("aapt2-" + AAPT2_VERSION + "-linux.jar");
         String coordinate = "com/android/tools/build/aapt2/" + AAPT2_VERSION
                 + "/aapt2-" + AAPT2_VERSION + "-linux.jar";
@@ -174,6 +202,29 @@ public final class ToolchainLocator {
         Path exe = binary.resolve("aapt2");
         if (!Files.isRegularFile(exe)) {
             throw new IOException("aapt2 binary missing from archive");
+        }
+        if (!exe.toFile().setExecutable(true)) {
+            throw new IOException("cannot make aapt2 executable: " + exe);
+        }
+        return exe;
+    }
+
+    /**
+     * Le binaire aapt2 ANDROID pour l'ABI de cette machine (ReVanced
+     * v1.1.0, épinglé) : ELF statique bionic, segments alignés 16 Ko.
+     * Le binaire nu se pose directement au cache — pas d'archive à
+     * extraire.
+     */
+    private Path assureAapt2Android() throws IOException {
+        String variante = varianteAapt2(System.getProperty("os.arch"),
+                true);
+        boolean arm64 = variante.endsWith("arm64-v8a");
+        String abi = arm64 ? "arm64-v8a" : "x86_64";
+        Path exe = cacheDir.resolve("aapt2-" + variante);
+        if (!Files.isRegularFile(exe)) {
+            downloadPinned(AAPT2_ANDROID_BASE_URL + "/aapt2-" + abi, exe,
+                    arm64 ? AAPT2_ANDROID_ARM64_SHA256
+                            : AAPT2_ANDROID_X86_64_SHA256);
         }
         if (!exe.toFile().setExecutable(true)) {
             throw new IOException("cannot make aapt2 executable: " + exe);
@@ -247,9 +298,52 @@ public final class ToolchainLocator {
     }
 
     private Path cachedAapt2() {
+        // lot XIX : la variante d'abord (android-arm64-v8a,
+        // android-x86_64), puis le binaire linux extrait du jar — le
+        // bureau garde le chemin historique, l'appareil ne retombe
+        // JAMAIS dessus (varianteAapt2)
+        Path android = cacheDir.resolve("aapt2-" + varianteAapt2(
+                System.getProperty("os.arch"), true));
+        if (Files.isRegularFile(android) && android.toFile().canExecute()) {
+            return android;
+        }
+        if (!"linux".equals(varianteAapt2(System.getProperty("os.arch"),
+                surAppareil()))) {
+            return null;
+        }
         Path exe = cacheDir.resolve("aapt2-" + AAPT2_VERSION).resolve("aapt2");
         return Files.isRegularFile(exe) && exe.toFile().canExecute()
                 ? exe : null;
+    }
+
+    /**
+     * La variante d'aapt2 pour cette machine : {@code android-arm64-v8a}
+     * (téléphone ARM64), {@code android-x86_64} (émulateur) ou
+     * {@code linux} (bureau, ou ABI Android inconnue — aucun binaire
+     * Android publié pour elle). Le jeu d'instructions décide, pas le
+     * système : la détection d'ART d'abord (BuildRunner.surAppareil),
+     * l'architecture ensuite.
+     */
+    static String varianteAapt2(String osArch, boolean appareil) {
+        if (!appareil) {
+            return "linux";
+        }
+        String arch = osArch == null ? "" : osArch.toLowerCase();
+        if (arch.contains("aarch64") || arch.contains("arm64")) {
+            return "android-arm64-v8a";
+        }
+        if (arch.contains("x86_64") || arch.contains("amd64")) {
+            return "android-x86_64";
+        }
+        return "linux";
+    }
+
+    /** Vrai si la VM hôte est ART (appareil) : le vendeur « Android »
+     *  ou un java.home sous /apex — la même sonde que BuildRunner. */
+    static boolean surAppareil() {
+        String vendeur = System.getProperty("java.vendor", "");
+        String home = System.getProperty("java.home", "");
+        return vendeur.contains("Android") || home.startsWith("/apex/");
     }
 
     private Path cachedPlatform() {

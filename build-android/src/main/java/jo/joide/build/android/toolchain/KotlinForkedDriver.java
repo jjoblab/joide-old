@@ -230,19 +230,33 @@ public final class KotlinForkedDriver implements CompilerDriver {
         // ; ici le pack le porte, épinglé par son SHA)
         String classpath;
         Path stdlib;
+        Path home;
         try {
             classpath = classpathOuvriere();
-            stdlib = jarStdlib(homeOuvriere(classpath));
+            home = homeOuvriere(classpath);
+            stdlib = jarStdlib(home);
         } catch (IOException e) {
             return new CompileResult(false, List.of(Problem.error(
                     "kotlin.worker",
                     "compilateur Kotlin différé indisponible : "
                             + e.getMessage())), List.of());
         }
+        List<Path> plugins;
+        try {
+            // lot XIX : les plugins par sonde de classpath (Compose) —
+            // le jar du plugin sort du pack comme la stdlib (jars/) ;
+            // le registrar est DEXÉ dans le pack, la VM ouvrière le
+            // charge (sur ART, un jar ne définit pas de classes)
+            plugins = jo.joide.build.jvm.compile.PluginsKotlin
+                    .pluginsPour(request, home);
+        } catch (IOException e) {
+            return new CompileResult(false, List.of(Problem.error(
+                    "kotlin.plugin-error", e.getMessage())), List.of());
+        }
         List<String> args;
         try {
             args = KotlinArgs.args(request, stdlib == null
-                    ? List.of() : List.of(stdlib));
+                    ? List.of() : List.of(stdlib), plugins);
         } catch (IOException e) {
             return new CompileResult(false, List.of(Problem.error(
                     "java-root-error",
