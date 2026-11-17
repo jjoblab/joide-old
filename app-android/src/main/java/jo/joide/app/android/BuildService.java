@@ -51,6 +51,21 @@ public final class BuildService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        // lot U/8 : les propriétés d'outillage vivent AUSSI dans le
+        // processus :build — une propriété système ne TRAVERSE PAS
+        // les processus, et le démon (moteur par défaut) localise
+        // l'outillage dans SON propre processus (BuildRunner →
+        // ToolchainLocator.defaultCacheDir / aapt2Embarque). Sans ces
+        // deux lignes, le démon cherchait « user.home » (absent sur
+        // ART : Path.of(null,…) tue le démarrage) et ne voyait PAS
+        // l'aapt2 embarqué — tout build Android via le service
+        // échouait (rapporté le 2026-11-17 : « le build ne
+        // fonctionne pas »).
+        System.setProperty("joide.toolchain.dir",
+                Paths.get(getFilesDir().getAbsolutePath(),
+                        "toolchain").toString());
+        System.setProperty("joide.native.dir",
+                getApplicationInfo().nativeLibraryDir);
         NotificationManager gestionnaire =
                 getSystemService(NotificationManager.class);
         if (gestionnaire != null
