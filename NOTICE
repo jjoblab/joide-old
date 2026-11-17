@@ -1,0 +1,49 @@
+# NOTICE — JoIDE
+
+Ce produit inclut du logiciel développé par le projet JoIDE
+(https://github.com/jjoblab/joide), concédé sous licence Apache 2.0
+(voir `LICENSE`).
+
+## Dépendances et apports tiers
+
+| Élément | Version | Licence | Usage | Vérification |
+| --- | --- | --- | --- | --- |
+| Gradle (wrapper, distribution épinglée par somme de contrôle) | 9.8.2 | Apache-2.0 | système de build de JoIDE lui-même (D13) | `gradle/wrapper/gradle-wrapper.properties` |
+| JUnit Jupiter | 5.14.4 | EPL-2.0 | tests uniquement, aucun artefact runtime |
+| kxml2 (net.sf.kxml) | 2.3.0 | MIT (style BSD) | tests JVM uniquement des résolveurs LayoutLib (lot E) — sur appareil le framework fournit l'implémentation XmlPull ; aucun artefact runtime | `gradle/libs.versions.toml` | `gradle/libs.versions.toml` |
+| sqlite-jdbc (org.xerial) | 3.49.1.0 | Apache-2.0 (pilote) ; SQLite dans le domaine public (bibliothèque C embarquée) | implémentation de bureau du store (source set `jvm` de core-store), jamais exécutée sur Android | `gradle/libs.versions.toml` ; Maven Central |
+| Script `scripts/check-language-policy` | adapté de jjoblab/celeris@f9001fc | Apache-2.0 | contrôle de la politique de langue (D3, ADR-012) | en-tête du script |
+| Signatures d'API Android 28 (`gradle/api28-signatures.txt.gz`) | platform-28_r06 | données factuelles d'API Google (liste de signatures générée par `scripts/generate_api28_signatures.py`) | contrôle de compatibilité API 28 (D4, ADR-013) | `docs/toolchain.md` |
+| ecj (org.eclipse.jdt) | 3.40.0 | EPL-2.0 | compilateur Java du pipeline JVM (build-jvm) | `gradle/libs.versions.toml` |
+| kotlin-compiler-embeddable, kotlin-metadata-jvm, kotlin-stdlib | 2.3.0 | Apache-2.0 | compilateur Kotlin embarqué et lecture des métadonnées (build-jvm) | `gradle/libs.versions.toml` |
+| R8/D8 (com.android.tools:r8) | 9.5.32 | BSD-3-Clause | dexage, fusion et rétrécissement (build-android, source set `tools`) | `gradle/libs.versions.toml` ; POM Google Maven |
+| apksig (com.android.tools.build:apksig) | 9.5.1 | Apache-2.0 | signature et vérification d'APK (build-android, source set `tools`) | `gradle/libs.versions.toml` ; POM Google Maven |
+| bundletool (com.android.tools.build:bundletool) | 1.18.3 | Apache-2.0 | assemblage et validation de bundles (build-android, source set `tools`) ; guava (Apache-2.0) requise à la compilation | `gradle/libs.versions.toml` ; POM Google Maven |
+| aapt2 (binaire natif, artifact Maven `com.android.tools.build:aapt2`) | 9.5.1-16666295 | Apache-2.0 (outils de la plateforme Android) | compilation et liaison des ressources (processus externe, téléchargement épinglé par SHA-256) | `jo.joide.build.android.toolchain.ToolchainLocator` |
+| android.jar de plateforme (platform-35_r02) | Android 35 révision 02 | code de la plateforme Android sous Apache-2.0 ; distribution par les dépôts du SDK | bibliothèque de compilation et de dexage (téléchargement épinglé par SHA-256, jamais redistribuée par JoIDE) | `jo.joide.build.android.toolchain.ToolchainLocator` |
+| celeris (jo.celeris : android-host, android-view, android-widgets, lsp-protocole, core-text, core-syntax, core-language, core-lsp, core-syntax-grammars) | 1.1.0 (f9001fc) | Apache-2.0 (NOTICE de la brique : joni 2.2.9 + jcodings 1.0.64 MIT ; lsp4j 1.0.0 + jsonrpc 1.0.0 EPL-2.0 OU BSD-3-Clause ; Gson 2.10.1 Apache-2.0) | éditeur embarqué de l'application Android (P8, ide-integration) — redistribué dans l'APK | `docs/integration/celeris.md` ; Maven Local depuis le checkout épinglé |
+| code-lsp (jo.codeide.lsp : moteurs java, kotlin, xml ; socle model, index) | 1.15.0 (657d787) | Apache-2.0 (NOTICE de la brique : lsp4j 0.21.2 EPL-2.0 ; syntax-api 0.3.340 Apache-2.0 ; kotlin-metadata-jvm Apache-2.0 ; kotlinx-coroutines/serialization Apache-2.0) | moteurs de langage Java/Kotlin/XML de l'IDE (P8, ide-integration) — redistribués dans l'APK | `docs/integration/code-lsp.md` ; Maven Local depuis le checkout épinglé |
+| Compagnon ecj patché ART (jo.codeide.lsp.java : jo-codeide-lsp-java-ecj-art) | 1.15.0 (ecj 3.40.0) | EPL-2.0 modifié — modifications décrites et rejouables par la brique (`META-INF/ECJ-ART-MODIFICATIONS.txt`, patcheur `:ecj-art`) ; JoIDE redistribue le compagnon TEL QUEL, classpath runtime uniquement | compilateur du moteur Java de code-lsp (P8) — distinct de l'ecj vanille du pipeline JVM ci-dessus | `docs/integration/code-lsp.md` |
+| java-syntax (org.jetbrains, dépôt intellij-dependencies) | 0.3.381 | « JetBrains Open-Source Build Terms » — redistribution dans l'APK à confirmer (DEMANDES D-3, en attente du propriétaire) | analyse syntaxique Java du moteur code-lsp (transitive) | `docs/integration/DEMANDES.md` D-3 |
+| LayoutLib (com.github.jjoblab.LayoutLib : module-inflater et ses 5 modules api) | 3.7.0 (720e85d) | redistribution autorisée par déclaration écrite du titulaire des droits du 2026-11-16 (D-1 close pour JoIDE — le dépôt n'a pas de fichier LICENSE ; « aucun droit accordé sans autorisation explicite », autorisation explicite donnée) | aperçu de layouts XML de l'IDE (P8, ide-integration) — redistribué dans l'APK | `docs/integration/layoutlib.md` ; `docs/integration/DEMANDES.md` D-1 |
+
+## Dépendances et apports tiers (V2, lot N)
+
+- OkHttp 5.5.1 (com.squareup.okhttp3, Apache-2.0) et son transitif
+  kotlin-stdlib (Apache-2.0) : transport HTTP/SSE du module agent
+  (décision D-5 du propriétaire, ADR-056). Le transport HTTPS du
+  résolveur de dépendances (ADR-031) reste l'implémentation maison.
+
+## Obligations EPL-2.0 (JUnit)
+
+JUnit n'est utilisé qu'en dépendance de test, jamais lié aux artefacts
+publiés de JoIDE ; la mention ci-dessus satisfait l'obligation de notice.
+
+## Dépendances runtime
+
+- P1 : sqlite-jdbc, implémentation de bureau du
+  store (voir le tableau ci-dessus et `docs/third-party.md`).
+- P8 : les trois briques (celeris, code-lsp avec son compagnon ecj
+  patché, LayoutLib) et leurs dépendances transitives listées
+  ci-dessus — embarquées dans l'APK de l'application Android via
+  ide-integration (`docs/integration/`).

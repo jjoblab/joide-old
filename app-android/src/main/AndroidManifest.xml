@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Le résolveur P4 télécharge les dépendances (transport HTTPS
+         vérifié, ADR-031) ; le démon de build écoute sur le rebouclage
+         uniquement — jamais exposé au réseau. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:allowBackup="true"
+        android:largeHeap="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lot J (ADR-É5/ADR-051) : l'atelier adaptatif remplace
+             l'empilement programmatique de P8 — barre supérieure
+             exacte, onglets multi-fichiers, tiroir arborescence, dock
+             de console (lot K), FAB Construire, seuil 720 dp, aperçu
+             (lot L). Ouvert sur un projet déjà importé (racine,
+             bannière Gradle, fichier d'entrée par extras). -->
+        <activity
+            android:name=".ecrans.atelier.EcranAtelier"
+            android:exported="false" />
+
+        <!-- Lot U (ADR-066) : le rappel OAuth du parcours MCP —
+             le navigateur revient à joide://mcp/oauth ; l'écran
+             exporté SEULEMENT pour ce filtre, le rappel porte le
+             code et l'état au service de l'agent. -->
+        <activity
+            android:name=".ecrans.mcp.EcranCallbackMcp"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="joide" />
+                <data android:host="mcp" />
+                <data android:pathPrefix="/oauth" />
+            </intent-filter>
+        </activity>
+
+        <!-- Lot I (ADR-É4/ADR-050) : l’assistant de création en trois
+             étapes, non exporté, rien n’est créé avant « Créer le
+             projet ». -->
+        <activity
+            android:name=".ecrans.creation.EcranCreation"
+            android:label="@string/accueil_nouveau_projet"
+            android:exported="false" />
+
+
+        <!-- Lot M (ADR-É8/054) : l'écran de paramètres, non exporté —
+             réglages réels seulement, mesures au disque, actions
+             destructrices à conséquence nominée. Atteint depuis
+             l'accueil (⋮) et l'atelier (⋮). -->
+        <activity
+            android:name=".ecrans.parametres.EcranParametres"
+            android:label="@string/parametres_titre"
+            android:exported="false" />
+
+        <!-- Démon de build en processus séparé (§6.7, ADR-043) :
+             service de premier plan, socket locale sur le rebouclage,
+             store persistant sur la base système. La mort du service
+             est un événement de flux pour l'UI, jamais un état
+             zombie. -->
+        <service
+            android:name=".BuildService"
+            android:process=":build"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Lot P (ADR-É11 point 8) : le service de premier plan de
+             l'agent — le tour survit au changement d'écran ;
+             notification silencieuse à bouton Arrêter (pattern
+             ADR-043). Même processus : le binder local partage
+             l'espace de travail de l'atelier. -->
+        <service
+            android:name=".AgentService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Lot S (ADR-064) : la cible caméra de l'agent —
+             ACTION_IMAGE_CAPTURE avec EXTRA_OUTPUT exige une URI
+             content:// sur API 28 ; zéro AndroidX (ADR-É2), le
+             fournisseur sert UN fichier de cache, non exporté,
+             l'accès passe par la permission URI de l'intent. -->
+        <provider
+            android:name=".atelier.agent.FournisseurCameraAgent"
+            android:authorities="joide.agent.camera"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

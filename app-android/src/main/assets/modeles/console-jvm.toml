@@ -1,0 +1,31 @@
+# Console JVM — modèle JoIDE (joide.template/1, ADR-050).
+# Entièrement constructible sur l'appareil : le module compile et
+# se met en jar par le démon local (l'exécution du main attend le
+# câblage du bouton Exécuter, backlog — la note reste honnête).
+schema = "joide.template/1"
+id = "console-jvm"
+nom = "Console JVM"
+description = "Un module :console, un main Kotlin"
+categorie = "bibliotheques"
+tuile = "console"
+note = "constructible sur l'appareil"
+fichier-entree = "console/src/main/kotlin/jo/exemple/console/Main.kt"
+
+[[modules]]
+id = "console"
+type = "jvm-library"
+defaut = true
+source = ["src/main/kotlin"]
+main-class = "jo.exemple.console.MainKt"
+
+[[fichiers]]
+module = "console"
+chemin = "console/src/main/kotlin/jo/exemple/console/Main.kt"
+lignes = [
+  'package jo.exemple.console',
+  '',
+  "/** Le point d'entrée : affiche un message sur la sortie standard. */",
+  'fun main() {',
+  '    println("Bonjour depuis {nom} !")',
+  '}',
+]

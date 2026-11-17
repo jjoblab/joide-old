@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Console de build (maquette)</title>
+<!--
+  Maquette ADR-É6 — Console de build (panneau de l'atelier,
+  plein écran sur téléphone). Fichier autonome, jetons ADR-É2.
+  Le formatage des lignes reste ConsoleBuild (pur, lot F) ;
+  seule la présentation change.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --synCommentaire:#7C8695;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .entete-page{max-width:1180px;margin:0 auto 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .nav-page{max-width:1180px;margin:0 auto 34px;display:flex;gap:8px;flex-wrap:wrap}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  .scène{max-width:1180px;margin:0 auto;display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start}
+  figure{margin:0}
+  figure figcaption{max-width:390px;margin-top:18px}
+  figure figcaption h2{font-size:15px;font-weight:600;margin-bottom:3px}
+  figure figcaption p{font-size:13px;color:var(--texte2)}
+  figure figcaption p a{color:var(--accent);text-decoration:none}
+  .étiquette{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .ic-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none}
+  /* ---- en-tête console ---- */
+  .sous-barre{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
+  .sous-barre .retour{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2)}
+  .sous-barre .titre{font-size:17px;font-weight:600}
+  .sous-barre .projet{font-size:13px;color:var(--texte2)}
+  .etat-pill{display:flex;align-items:center;gap:7px;margin-left:auto;font-size:12px;font-weight:700;color:var(--reussite);background:rgba(61,220,132,.12);border:1px solid rgba(61,220,132,.4);border-radius:999px;padding:5px 12px}
+  .etat-pill i{width:8px;height:8px;border-radius:50%;background:var(--reussite)}
+  .etat-pill.echec{color:var(--erreur);background:rgba(224,108,117,.10);border-color:rgba(224,108,117,.4)}
+  .etat-pill.echec i{background:var(--erreur)}
+  .etat-pill.encours{color:var(--accent);background:rgba(130,170,255,.12);border-color:rgba(130,170,255,.4)}
+  .etat-pill.encours i{background:var(--accent);animation:pulse 1.2s infinite alternate}
+  @keyframes pulse{from{opacity:.4}to{opacity:1}}
+  .actions-console{display:flex;gap:4px;padding:0 12px 8px;align-items:center}
+  .phases{display:flex;gap:8px;padding:0 20px 10px;flex-wrap:wrap}
+  .phase{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--texte2);background:var(--surface);border:1px solid var(--bordFin);border-radius:999px;padding:6px 12px}
+  .phase .coche{width:15px;height:15px;border-radius:50%;background:rgba(61,220,132,.18);color:var(--reussite);display:flex;align-items:center;justify-content:center}
+  .phase .durée{color:var(--texte3)}
+  .filtres{display:flex;gap:8px;padding:0 20px 12px}
+  .puce{font-size:13px;padding:7px 14px;border-radius:999px;background:var(--surfaceHaute);color:var(--texte2);border:1px solid var(--bordFin)}
+  .puce.on{background:rgba(130,170,255,.16);color:var(--accent);border-color:rgba(130,170,255,.45);font-weight:600}
+  .puce.erreurs{color:var(--erreur);border-color:rgba(224,108,117,.4)}
+  /* ---- transcript ---- */
+  .transcript{flex:1;background:var(--puits);border-top:1px solid var(--bordFin);overflow:hidden;font-family:var(--mono);font-size:12px;line-height:19px;padding:10px 14px;color:var(--texte2)}
+  .tr{display:grid;grid-template-columns:52px 1fr;column-gap:8px;align-items:baseline}
+  .tr .t{color:var(--texte)}
+  .tr .sys{color:var(--accent)}
+  .tr .phase-mot{color:#61AFEF}
+  .tr .err{color:var(--erreur)}
+  .tr .tach{color:var(--texte2)}
+  .tr .durée{color:var(--texte3)}
+  .plafond{padding:10px 18px 0;font-family:var(--mono);font-size:10.5px;color:var(--texte3);background:var(--puits)}
+  /* ---- problème ---- */
+  .probleme{margin:12px 20px 6px;background:rgba(224,108,117,.08);border:1px solid rgba(224,108,117,.4);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+  .probleme .pastille{width:22px;height:22px;border-radius:50%;background:rgba(224,108,117,.16);color:var(--erreur);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+  .probleme .corps{flex:1;min-width:0}
+  .probleme .titre-pb{font-size:13.5px;font-weight:600;color:var(--texte)}
+  .probleme .titre-pb .mono{font-family:var(--mono);font-size:12px;color:var(--erreur)}
+  .probleme .detail{font-size:12.5px;color:var(--texte2);margin-top:3px}
+  .btn-ouvrir{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--accent);background:rgba(130,170,255,.13);border:1px solid rgba(130,170,255,.45);border-radius:999px;padding:7px 14px;margin-top:10px;width:max-content}
+  .pied{max-width:1180px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
+  .pied a{color:var(--texte2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<header class="entete-page">
+  <h1>Console de build</h1>
+  <span class="fil">JoIDE · écrans v2 · ADR-É6 · panneau de l'atelier</span>
+</header>
+<nav class="nav-page">
+  <a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a href="atelier.html">Atelier</a><a class="ic" href="#">Console</a><a href="apercu.html">Aperçu</a><a href="parametres.html">Paramètres</a><a href="agent.html">Agent</a><a href="index.html">Index général</a>
+</nav>
+
+<main class="scène">
+
+  <!-- ============ ÉTAT ÉCHOUÉ AVEC PROBLÈME CLIQUABLE ============ -->
+  <figure>
+    <span class="étiquette">Après un build — problème cliquable</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="sous-barre">
+          <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span>
+            <span class="titre">Console</span>
+            <span class="projet"> · mon-application</span>
+          </span>
+          <span class="etat-pill echec"><i></i>échoué · 6,2 s</span>
+        </div>
+        <div class="actions-console">
+          <span class="ic-btn" style="color:var(--texte3)"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="6" y="6" width="8" height="8" rx="1.5"/></svg></span>
+          <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a6.5 6.5 0 0 1 12 0c.6 1.6.9 3.3 1 5H3c.1-1.7.4-3.4 1-5Z"/><path d="M8 13h4" transform="translate(0,1)"/></svg></span>
+        </div>
+        <div class="phases">
+          <span class="phase"><span class="coche"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.4 4 7.4 8 3"/></svg></span>Résolution <span class="durée">0,8 s</span></span>
+          <span class="phase"><span class="coche"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.4 4 7.4 8 3"/></svg></span>Compilation <span class="durée">4,1 s</span></span>
+          <span class="phase"><span class="coche"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.4 4 7.4 8 3"/></svg></span>JAR <span class="durée">1,3 s</span></span>
+        </div>
+        <div class="filtres">
+          <span class="puce on">Tout</span>
+          <span class="puce erreurs">Erreurs (1)</span>
+          <span class="puce">Système</span>
+        </div>
+        <div class="transcript">
+<div class="tr"><span class="sys">système</span><span><span class="t">build #4 démarré — jvm, service :build</span></span></div>
+<div class="tr"><span class="sys">système</span><span>écarts : <span class="t">modules Android non construits sur appareil (P8)</span></span></div>
+<div class="tr"><span class="phase-mot">phase</span><span>compilation : 14 sources <span class="durée">(4,1 s)</span></span></div>
+<div class="tr"><span class="err">erreur</span><span><span class="t">MainActivity.kt:12</span> — symbole introuvable : R.layout.activity_main</span></div>
+<div class="tr"><span class="phase-mot">phase</span><span>jar : dist/mon-application.jar <span class="durée">(1,3 s)</span></span></div>
+<div class="tr"><span class="sys">système</span><span>build #4 <span class="err">échoué</span> — 12 exécutées · 3 du cache · 2 à jour</span></div>
+        </div>
+        <div class="plafond">affichage plafonné à 400 lignes — le plafond est annoncé, jamais muet</div>
+        <div class="probleme">
+          <span class="pastille"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 3.5v5"/><circle cx="8" cy="11.5" r=".5" fill="currentColor"/><path d="M8 2 14 13H2Z" stroke-linejoin="round"/></svg></span>
+          <span class="corps">
+            <span class="titre-pb"><span class="mono">MainActivity.kt:12</span> — symbole introuvable</span>
+            <span class="detail">L'index CIDX est en reconstruction — le diagnostic se rafraîchira à la prochaine synchronisation. Aucun re-build nécessaire.</span>
+            <span class="btn-ouvrir">
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h9M9.5 4.5 14 9l-4.5 4.5"/></svg>
+              Ouvrir le fichier à la ligne
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>Colorée par nature, cliquable jusqu'au fichier</h2>
+      <p>Phases avec durée (tap = filtre), compteur d'erreurs exact, transcript sélectionnable : système en accent, phases en bleu fonction, erreur en rouge. Les écarts s'affichent AVANT le lancement — jamais d'omission muette (conservation intégrale du lot F). Le résumé final est chiffré. Spécification : <a href="../006-console-build.md">ADR-É6</a>.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ ÉTAT EN COURS ============ -->
+  <figure>
+    <span class="étiquette">Pendant un build — phases actives</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M1.5 4.5a10 10 0 0 1 13 0"/><path d="M4 7a6.5 6.5 0 0 1 8 0"/><circle cx="8" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="ecran">
+        <div class="sous-barre">
+          <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+          <span>
+            <span class="titre">Console</span>
+            <span class="projet"> · mon-application</span>
+          </span>
+          <span class="etat-pill encours"><i></i>en cours · compilation</span>
+        </div>
+        <div class="actions-console">
+          <span class="ic-btn" style="color:var(--erreur)"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="8" height="8" rx="1.5"/></svg></span>
+          <span class="ic-btn"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a6.5 6.5 0 0 1 12 0c.6 1.6.9 3.3 1 5H3c.1-1.7.4-3.4 1-5Z"/><path d="M8 13h4" transform="translate(0,1)"/></svg></span>
+        </div>
+        <div class="phases">
+          <span class="phase"><span class="coche"><svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.4 4 7.4 8 3"/></svg></span>Résolution <span class="durée">0,8 s</span></span>
+          <span class="phase" style="color:var(--accent);border-color:rgba(130,170,255,.4)">● Compilation <span class="durée">en cours…</span></span>
+          <span class="phase" style="color:var(--texte3)">JAR <span class="durée">—</span></span>
+        </div>
+        <div class="filtres">
+          <span class="puce on">Tout</span>
+          <span class="puce">Erreurs (0)</span>
+          <span class="puce">Système</span>
+        </div>
+        <div class="transcript">
+<div class="tr"><span class="sys">système</span><span><span class="t">build #5 démarré — jvm, service :build</span></span></div>
+<div class="tr"><span class="sys">système</span><span>écarts : <span class="t">modules Android non construits sur appareil (P8)</span></span></div>
+<div class="tr"><span class="phase-mot">phase</span><span>résolution : 12 exigences <span class="durée">(0,8 s)</span></span></div>
+<div class="tr"><span class="phase-mot">phase</span><span>compilation : 14 sources… <span class="durée">(en cours)</span></span></div>
+        </div>
+        <div class="plafond">le build tourne en tâche de fond — la pilule de l'atelier y ramène, la mort du service est un événement, jamais un zombie</div>
+      </div>
+      <div class="geste"><i></i></div>
+    </div>
+    <figcaption>
+      <h2>En cours — honnête jusque dans la pilule</h2>
+      <p>Phases actives (réussies cochées, en cours en accent, à venir grisée), arrêt possible, compte d'erreurs exact (0). Le build tourne en tâche de fond : la pilule de l'atelier y ramène sans quitter l'éditeur. Spécification : <a href="../006-console-build.md">ADR-É6</a>.</p>
+    </figcaption>
+  </figure>
+
+</main>
+
+<footer class="pied">
+  JoIDE — maquettes des écrans v2 · 2026-11-16 · fichiers HTML autonomes (aucune ressource externe) · jetons <a href="../002-systeme-design.md">ADR-É2</a>.
+</footer>
+
+</body>
+</html>

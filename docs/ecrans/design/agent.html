@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Agent (maquette)</title>
+<!--
+  Maquette ADR-É11 — L'écran de l'agent : tiroir chat dans
+  l'atelier, cartes d'outils pliables, dialogue de permission sur
+  diff déplié, cartes de questions, usage par tour, erreurs
+  actionnables. Fichier autonome, jetons ADR-É2.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --synCommentaire:#7C8695;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .entete-page{max-width:1280px;margin:0 auto 6px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .nav-page{max-width:1280px;margin:0 auto 34px;display:flex;gap:8px;flex-wrap:wrap}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  .scène{max-width:1280px;margin:0 auto;display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start}
+  figure{margin:0}
+  figure figcaption{max-width:390px;margin-top:18px}
+  figure figcaption h2{font-size:15px;font-weight:600;margin-bottom:3px}
+  figure figcaption p{font-size:13px;color:var(--texte2)}
+  .étiquette{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 10px;margin-bottom:8px}
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;
+    box-shadow:0 34px 90px rgba(0,0,0,.55);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  /* ---- atelier derrière le tiroir ---- */
+  .atelier-fond{flex:1;display:flex;flex-direction:column;position:relative}
+  .barre-atelier{flex:none;height:54px;background:var(--surface);border-bottom:1px solid var(--bordFin);display:flex;align-items:center;gap:10px;padding:0 8px 0 14px}
+  .barre-atelier .nom{font-size:15px;font-weight:600}
+  .puce-modules{font-size:11.5px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px 9px}
+  .barre-atelier .epacer{flex:1}
+  .ic-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none;position:relative}
+  .ic-btn.actif{color:var(--accent);background:rgba(130,170,255,.12)}
+  .point-activite{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface)}
+  .onglets{flex:none;height:40px;display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--bordFin)}
+  .onglet{display:flex;align-items:center;gap:7px;padding:0 15px;font-size:13px;color:var(--texte2);border-right:1px solid var(--bordFin)}
+  .onglet.on{color:var(--texte);box-shadow:inset 0 -2px 0 var(--accent)}
+  .code-derriere{flex:1;background:var(--puits);font-family:var(--mono);font-size:11.5px;line-height:18px;color:var(--synCommentaire);padding:12px 16px;filter:brightness(.55)}
+  /* ---- le tiroir agent ---- */
+  .tiroir{position:absolute;inset:0;background:rgba(4,6,9,.44)}
+  .agent{position:absolute;top:0;right:0;bottom:0;width:342px;background:var(--fond);border-left:1px solid var(--bord);display:flex;flex-direction:column}
+  .agent-tete{flex:none;padding:12px 12px 10px;border-bottom:1px solid var(--bordFin);display:flex;align-items:center;gap:8px}
+  .agent-tete .titre{font-size:16px;font-weight:600}
+  .agent-tete .epacer{flex:1}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:4px 10px;max-width:118px;white-space:nowrap;overflow:hidden}
+  .chip .fleche{color:var(--texte3);font-size:9px}
+  .chip.mode{color:var(--alerte);border-color:rgba(229,192,123,.35)}
+  .transcript{flex:1;overflow:hidden;padding:12px 12px 6px;display:flex;flex-direction:column;gap:10px}
+  /* messages */
+  .msg-util{align-self:flex-end;max-width:86%;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:14px 14px 4px 14px;padding:9px 12px;font-size:13.5px;line-height:19px}
+  .msg-agent{align-self:flex-start;max-width:92%;font-size:13.5px;line-height:19.5px;color:var(--texte)}
+  .curseur-flux{display:inline-block;width:7px;height:14px;background:var(--accent);border-radius:1.5px;vertical-align:-2px;animation:pulse 1s infinite alternate;margin-left:2px}
+  .raisonnement{align-self:flex-start;width:100%;background:var(--surface);border:1px solid var(--bordFin);border-radius:12px;overflow:hidden}
+  .raisonnement .plis{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:var(--texte3)}
+  .raisonnement .chevron{font-size:9px}
+  .raisonnement .lignes{color:var(--texte3)}
+  /* cartes d'outils */
+  .carte-outil{align-self:flex-start;width:100%;background:var(--surface);border:1px solid var(--bordFin);border-radius:12px;overflow:hidden}
+  .carte-outil .plis{display:flex;align-items:center;gap:9px;padding:9px 12px}
+  .carte-outil .point{width:9px;height:9px;border-radius:50%;flex:none}
+  .carte-outil .point.cours{background:var(--accent);animation:pulse 1.1s infinite alternate}
+  .carte-outil .point.fait{background:var(--reussite)}
+  .carte-outil .point.refuse{background:var(--erreur)}
+  .carte-outil .nom-outil{font-family:var(--mono);font-size:12px;color:var(--texte)}
+  .carte-outil .cible{font-family:var(--mono);font-size:11.5px;color:var(--texte3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .carte-outil .epacer{flex:1}
+  .carte-outil .resume{font-size:11.5px;color:var(--texte3)}
+  .carte-outil .chevron{font-size:9px;color:var(--texte3)}
+  .carte-outil .corps{display:none;border-top:1px solid var(--bordFin);background:var(--puits);padding:10px 12px;font-family:var(--mono);font-size:11px;line-height:17px;color:var(--texte2);white-space:pre-wrap}
+  .carte-outil.depliee .corps{display:block}
+  .carte-outil.refusee .plis .nom-outil{color:var(--erreur)}
+  .ligne-tonale{align-self:flex-start;font-size:11.5px;color:var(--texte3);font-family:var(--mono);padding:1px 4px}
+  .ligne-tonale .ok{color:var(--reussite)}
+  .attente{align-self:flex-start;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--alerte);font-family:var(--mono);background:rgba(229,192,123,.08);border:1px solid rgba(229,192,123,.3);border-radius:999px;padding:5px 12px}
+  .attente i{width:8px;height:8px;border-radius:50%;background:var(--alerte);animation:pulse 1.1s infinite alternate}
+  /* carte de question */
+  .carte-question{align-self:flex-start;width:100%;background:var(--surface);border:1px solid rgba(130,170,255,.4);border-radius:12px;padding:11px 12px}
+  .carte-question .q{font-size:13.5px;font-weight:600;margin-bottom:9px}
+  .carte-question .q .num{color:var(--accent);font-family:var(--mono);font-size:11px;margin-right:6px}
+  .options{display:flex;flex-wrap:wrap;gap:7px}
+  .option{font-size:12.5px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bord);border-radius:999px;padding:6px 13px}
+  .option.on{color:var(--accent);border-color:rgba(130,170,255,.5);background:rgba(130,170,255,.13);font-weight:600}
+  .option.autre{color:var(--texte3);border-style:dashed}
+  .option.passer{color:var(--texte3)}
+  .repondu{margin-top:8px;font-size:11.5px;color:var(--texte3);font-family:var(--mono)}
+  /* usage / fin de tour */
+  .ligne-usage{align-self:flex-start;font-family:var(--mono);font-size:11px;color:var(--texte3);padding:1px 4px}
+  .ligne-usage b{color:var(--texte2);font-weight:600}
+  /* carte d'erreur */
+  .carte-erreur{align-self:flex-start;width:100%;background:rgba(224,108,117,.07);border:1px solid rgba(224,108,117,.4);border-radius:12px;padding:11px 12px}
+  .carte-erreur .titre-err{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;color:var(--erreur)}
+  .carte-erreur .titre-err .pastille{width:20px;height:20px;border-radius:50%;background:rgba(224,108,117,.16);display:flex;align-items:center;justify-content:center;font-size:11px;flex:none}
+  .carte-erreur .detail-err{font-size:12.5px;color:var(--texte2);margin-top:5px}
+  .btn-action{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--accent);background:rgba(130,170,255,.13);border:1px solid rgba(130,170,255,.45);border-radius:999px;padding:7px 14px;margin-top:10px}
+  /* composeur */
+  .composeur{flex:none;border-top:1px solid var(--bordFin);padding:10px 12px 14px;display:flex;flex-direction:column;gap:8px}
+  .composeur .rangée{display:flex;gap:8px;align-items:flex-end}
+  .saisie{flex:1;min-height:40px;max-height:96px;background:var(--surfaceHaute);border:1px solid var(--bord);border-radius:12px;padding:9px 12px;font-size:13.5px;color:var(--texte);display:flex;align-items:center}
+  .saisie .texte{color:var(--texte3)}
+  .btn-envoyer{width:40px;height:40px;border-radius:12px;background:var(--accent);color:#0B0E12;display:flex;align-items:center;justify-content:center;flex:none}
+  .btn-envoyer.desactive{background:var(--surfaceHaute);color:var(--texte3)}
+  .btn-arreter{flex:1;height:40px;border-radius:12px;background:rgba(224,108,117,.12);border:1px solid rgba(224,108,117,.5);color:var(--erreur);font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn-arreter .carre{width:10px;height:10px;border-radius:2.5px;background:var(--erreur)}
+  /* ---- dialogue de permission (plein écran) ---- */
+  .voile-perm{position:absolute;inset:0;background:rgba(4,6,9,.6);display:flex;flex-direction:column;justify-content:flex-end}
+  .dialogue-perm{background:var(--fond);border:1px solid var(--bord);border-radius:20px 20px 0 0;margin:14px;max-height:92%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -18px 50px rgba(0,0,0,.5)}
+  .perm-tete{flex:none;padding:16px 16px 10px}
+  .perm-tete .sur-titre{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--alerte);margin-bottom:4px}
+  .perm-tete h3{font-size:16.5px;font-weight:600}
+  .perm-tete .cible{font-family:var(--mono);font-size:12px;color:var(--texte2);margin-top:3px}
+  .perm-diff{flex:1;overflow:hidden;background:var(--puits);border-top:1px solid var(--bordFin);border-bottom:1px solid var(--bordFin);font-family:var(--mono);font-size:11.5px;line-height:18px;padding:12px 14px}
+  .perm-diff .d{display:grid;grid-template-columns:26px 1fr;column-gap:10px}
+  .perm-diff .n{color:var(--texte3);text-align:right;user-select:none}
+  .perm-diff .moins{background:rgba(224,108,117,.10);color:#E8A0A6}
+  .perm-diff .plus{background:rgba(61,220,132,.10);color:#8FE6B4}
+  .perm-diff .contexte{color:var(--texte2)}
+  .perm-borne{flex:none;font-family:var(--mono);font-size:10.5px;color:var(--texte3);padding:7px 16px;background:var(--puits)}
+  .perm-actions{flex:none;display:flex;gap:10px;padding:12px 16px 18px}
+  .btn-appliquer{flex:1;height:46px;border-radius:14px;background:var(--reussite);color:#06220F;font-size:14.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .btn-refuser{flex:1;height:46px;border-radius:14px;background:var(--surfaceHaute);border:1px solid var(--bord);color:var(--texte2);font-size:14.5px;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .perm-note{flex:none;text-align:center;font-size:11.5px;color:var(--texte3);padding:0 16px 12px}
+  .pied{max-width:1280px;margin:48px auto 0;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:16px}
+  .pied a{color:var(--texte2);text-decoration:none}
+  @keyframes pulse{from{opacity:.4}to{opacity:1}}
+  /* ---- lot T : les popups ancrés, la réflexion vivante, les compteurs ---- */
+  .popup{position:absolute;background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;box-shadow:0 18px 44px rgba(0,0,0,.5);padding:8px;z-index:5}
+  .popup .ligne{display:flex;align-items:center;padding:11px 14px;border-radius:9px;font-size:13.5px;color:var(--texte)}
+  .popup .ligne:nth-child(2n){background:var(--surfaceHaute)}
+  .ligne-activite{flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px 0;font-size:12px;color:var(--texte)}
+  .ligne-activite .point{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite alternate}
+  .ligne-activite .epacer{flex:1}
+  .ligne-activite .ecart{color:var(--texte3)}
+  .raisonnement.vivant{border-color:rgba(130,170,255,.4)}
+  .raisonnement.vivant .plis{color:var(--accent)}
+  .compteur{padding:8px 14px 2px}
+  .compteur .nom{display:flex;justify-content:space-between;font-size:12px;color:var(--texte2);margin-bottom:5px}
+  .compteur .piste{height:6px;border-radius:999px;background:var(--surfaceHaute);overflow:hidden;display:flex}
+  .compteur .rempli{height:100%}
+  .popup .pied{display:flex;justify-content:space-between;align-items:center;padding:8px 6px 2px 6px}
+  .popup .pied .icone{width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:var(--texte2);border-radius:50%}
+  .popup .titre-pop{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 4px 8px;font-size:14px;font-weight:600}
+  .puce-mod{display:inline-flex;align-items:center;font-size:11.5px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:4px 10px}
+  .puce-mod.on{color:var(--accent);border-color:rgba(130,170,255,.4)}
+  .recherche{margin:8px 6px 2px;background:var(--fond);border:1px solid var(--bordFin);border-radius:18px;padding:8px 12px;font-size:13px;color:var(--texte3)}
+  .mod-ligne{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:var(--texte)}
+  .mod-ligne .etoile{color:var(--alerte);margin-left:auto}
+  .mod-ligne .coche{color:var(--accent)}
+  .sec{font-size:11px;color:var(--texte3);padding:10px 14px 2px}
+</style>
+</head>
+<body>
+
+<header class="entete-page">
+  <h1>Agent</h1>
+  <span class="fil">JoIDE · écrans v2 · ADR-É11 · tiroir chat de l'atelier · lot S (ADR-064)</span>
+</header>
+<nav class="nav-page">
+  <a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a href="atelier.html">Atelier</a><a href="console.html">Console</a><a href="apercu.html">Aperçu</a><a href="parametres.html">Paramètres</a><a class="ic" href="#">Agent</a><a href="index.html">Index général</a>
+</nav>
+
+<main class="scène">
+
+  <!-- ============ VUE 1 : CONVERSATION EN COURS ============ -->
+  <figure>
+    <span class="étiquette">Tiroir ouvert — tour en cours</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <span style="font-size:11px;color:var(--reussite)">●&nbsp;agent</span>
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier">
+            <span class="ic-btn" style="color:var(--texte2)">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+            </span>
+            <span class="nom">MonApp</span>
+            <span class="puce-modules">2 modules</span>
+            <span class="epacer"></span>
+            <span class="ic-btn actif"><span class="point-activite"></span>
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-1L3 21l1.5-5.5a8.5 8.5 0 1 1 16.5-3.5z"/></svg>
+            </span>
+            <span class="ic-btn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="4.2" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="10" cy="15.8" r="1.7"/></svg>
+            </span>
+          </div>
+          <div class="onglets">
+            <span class="onglet">MainActivity.java</span>
+            <span class="onglet on">build.gradle.kts</span>
+          </div>
+          <div class="code-derriere">
+            plugins&nbsp;{<br>
+            &nbsp;&nbsp;id("joide.application")<br>
+            }<br>
+            <br>
+            android&nbsp;{<br>
+            &nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br>
+            &nbsp;&nbsp;defaultConfig&nbsp;{<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;applicationId&nbsp;=&nbsp;"com.exemple"<br>
+          </div>
+          <!-- le tiroir agent, poussé depuis la droite -->
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">claude-sonnet-4-5 <span class="fleche">▾</span></span>
+              <span class="chip mode">Demander à chaque <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3.2" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="8" cy="12.8" r="1.6"/></svg>
+              </span>
+              <span class="ic-btn" style="width:32px;height:32px">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+              </span>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Ajoute la dépendance Gson au build.gradle et corrige l'erreur de compilation dans MainActivity.</div>
+              <div class="raisonnement">
+                <div class="plis">
+                  <span class="chevron">▸</span> Raisonnement
+                  <span class="epacer" style="flex:1"></span>
+                  <span class="lignes">18 lignes</span>
+                </div>
+              </div>
+              <div class="msg-agent">Je regarde d'abord l'état du fichier de build et les diagnostics du module.<span class="curseur-flux"></span></div>
+              <div class="carte-outil">
+                <div class="plis">
+                  <span class="point fait"></span>
+                  <span class="nom-outil">read_file</span>
+                  <span class="cible">app/build.gradle.kts</span>
+                  <span class="epacer"></span>
+                  <span class="resume">42 lignes</span>
+                  <span class="chevron">▾</span>
+                </div>
+              </div>
+              <div class="carte-outil depliee">
+                <div class="plis">
+                  <span class="point fait"></span>
+                  <span class="nom-outil">get_diagnostics</span>
+                  <span class="cible">MainActivity.java</span>
+                  <span class="epacer"></span>
+                  <span class="resume">1 erreur</span>
+                  <span class="chevron">▴</span>
+                </div>
+                <div class="corps">MainActivity.java:31 — ERROR
+cannot find symbol: class Gson
+  symbol:   class Gson
+  location: class com.exemple.MainActivity</div>
+              </div>
+              <div class="ligne-tonale"><span class="ok">✓</span> add_dependency com.google.code.gson:gson:2.10.1 — appliqué (acceptation auto pour ce tour)</div>
+              <div class="carte-outil refusee">
+                <div class="plis">
+                  <span class="point refuse"></span>
+                  <span class="nom-outil">edit_file</span>
+                  <span class="cible">MainActivity.java</span>
+                  <span class="epacer"></span>
+                  <span class="resume">refusé par l'utilisateur</span>
+                  <span class="chevron">▾</span>
+                </div>
+              </div>
+              <div class="carte-outil">
+                <div class="plis">
+                  <span class="point cours"></span>
+                  <span class="nom-outil">run_task</span>
+                  <span class="cible">:app:compileJava</span>
+                  <span class="epacer"></span>
+                  <span class="resume">en cours…</span>
+                </div>
+              </div>
+              <div class="attente"><i></i> Limite de débit — reprise dans 12 s</div>
+              <div class="carte-question">
+                <div class="q"><span class="num">1/2</span>Le parseur JSON maison suffit-il, ou tu préfères Gson ?</div>
+                <div class="options">
+                  <span class="option on">Gson (déjà ajouté)</span>
+                  <span class="option">Parseur maison</span>
+                  <span class="option autre">Autre…</span>
+                  <span class="option passer">Passer</span>
+                </div>
+                <div class="q" style="margin-top:12px"><span class="num">2/2</span>Reformuler le message d'erreur utilisateur ?</div>
+                <div class="options">
+                  <span class="option">Oui</span>
+                  <span class="option">Non</span>
+                  <span class="option autre">Autre…</span>
+                  <span class="option passer">Passer</span>
+                </div>
+              </div>
+            </div>
+            <div class="composeur">
+              <div class="rangée" style="gap:6px;margin-bottom:6px">
+                <span class="chip">capture.png ×</span>
+                <span class="chip">build.gradle.kts ×</span>
+                <span class="chip">projet ×</span>
+              </div>
+              <div class="rangée">
+                <span class="ic-btn" style="width:32px;height:32px;flex:none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                </span>
+                <div class="saisie"><span class="texte">Écrire à l'agent…</span></div>
+                <div class="btn-envoyer desactive">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+              <div class="rangée">
+                <div class="btn-arreter"><span class="carre"></span> Arrêter le tour</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Conversation en cours</h2>
+      <p>Le tiroir (360 dp) recouvre l'éditeur sur téléphone ; le glyphe de la barre supérieure porte le point d'activité. Cartes d'outils pliées par défaut — le refus dit son motif, l'attente de débit est visible et annulable, la question arrive par la carte (jamais en fin de message). Composeur désactivé pendant le tour : l'arrêt est l'action disponible. Lot S (ADR-064) : le menu ⋯ (nouvelle conversation, historique, fournisseur et modèle, connexions MCP, usages), le bouton + (image, photo, fichier courant, arbre du projet) et les puces de pièces jointes au-dessus de la saisie.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ VUE 2 : DIALOGUE DE PERMISSION SUR DIFF ============ -->
+  <figure>
+    <span class="étiquette">Permission — diff déplié, fermer = refuser</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier">
+            <span class="ic-btn" style="color:var(--texte2)">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+            </span>
+            <span class="nom">MonApp</span>
+            <span class="puce-modules">2 modules</span>
+          </div>
+          <div class="code-derriere">
+            android&nbsp;{<br>
+            &nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br>
+          </div>
+          <div class="voile-perm">
+            <div class="dialogue-perm">
+              <div class="perm-tete">
+                <div class="sur-titre">Écriture — confirmation requise</div>
+                <h3>edit_file</h3>
+                <div class="cible">app/src/main/java/com/exemple/MainActivity.java</div>
+              </div>
+              <div class="perm-diff">
+<div class="d contexte"><span class="n">28</span><span>&nbsp;&nbsp;&nbsp;&nbsp;private void charger() {</span></div>
+<div class="d moins"><span class="n">29</span><span>-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ObjectMapper m = new ObjectMapper();</span></div>
+<div class="d moins"><span class="n">30</span><span>-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return m.read(source);</span></div>
+<div class="d plus"><span class="n">29</span><span>+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Gson gson = new Gson();</span></div>
+<div class="d plus"><span class="n">30</span><span>+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return gson.fromJson(source, Config.class);</span></div>
+<div class="d contexte"><span class="n">31</span><span>&nbsp;&nbsp;&nbsp;&nbsp;}</span></div>
+<div class="d contexte"><span class="n">32</span><span></span></div>
+<div class="d contexte"><span class="n">33</span><span>&nbsp;&nbsp;&nbsp;&nbsp;private static class Config {</span></div>
+              </div>
+              <div class="perm-borne">Diff borné à 400 lignes · 20 000 caractères — 2 lignes de contexte autour de chaque hunk</div>
+              <div class="perm-actions">
+                <div class="btn-refuser">Refuser</div>
+                <div class="btn-appliquer">Appliquer</div>
+              </div>
+              <div class="perm-note">Fermer ce dialogue équivaut à refuser — l'outil recevra « refusé par l'utilisateur ».</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Permission sur le diff déplié</h2>
+      <p>Mode « Demander à chaque » : l'approbation porte sur l'édition réelle (diff Myers unifié, borné, amputation annoncée), pas sur un nom de fichier. Acceptation auto : pas de dialogue, la carte porte « appliqué » ; plan seul : refus motivé au modèle.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ VUE 3 : FIN DE TOUR, USAGE, ERREUR ACTIONNABLE ============ -->
+  <figure>
+    <span class="étiquette">Fin de tour — usage et erreur actionnable</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:11px;border:1.5px solid currentColor;border-radius:3px;position:relative"><i style="position:absolute;inset:1.5px;right:5px;background:currentColor;border-radius:1.5px"></i></span><i style="width:1.5px;height:4px;background:currentColor;border-radius:0 1px 1px 0"></i></span>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier">
+            <span class="ic-btn" style="color:var(--texte2)">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+            </span>
+            <span class="nom">MonApp</span>
+            <span class="puce-modules">2 modules</span>
+            <span class="epacer"></span>
+            <span class="ic-btn">
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-8.5 8.5c-1.4 0-2.8-.3-4-1L3 21l1.5-5.5a8.5 8.5 0 1 1 16.5-3.5z"/></svg>
+            </span>
+          </div>
+          <div class="code-derriere">
+            android&nbsp;{<br>
+            &nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br>
+          </div>
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">gpt-5.2 · passerelle <span class="fleche">▾</span></span>
+              <span class="chip mode">Plan seul <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+              </span>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Pourquoi le build échoue encore ?</div>
+              <div class="msg-agent">La dépendance Gson est résolue (lockfile écrit), mais la compilation bloque sur un symbole manquant : la classe Config n'expose pas encore de constructeur sans argument — Gson en exige un pour la désérialisation. Voici le changement que je proposerais (mode plan seul : rien n'est écrit).</div>
+              <div class="ligne-tonale">Historique compacté : 128 400 → 61 200 caractères (permanent)</div>
+              <div class="carte-outil">
+                <div class="plis">
+                  <span class="point fait"></span>
+                  <span class="nom-outil">search_text</span>
+                  <span class="cible">"class Config"</span>
+                  <span class="epacer"></span>
+                  <span class="resume">3 occurrences</span>
+                  <span class="chevron">▾</span>
+                </div>
+              </div>
+              <div class="ligne-usage">Tour terminé · <b>14 120 in · 903 out · 11 240 cached</b> · 6 requêtes</div>
+              <div class="ligne-usage" style="color:var(--alerte)">Passation — plafond d'itérations atteint : l'agent a rendu son état (changé, vérifié, restant)</div>
+              <div class="carte-erreur">
+                <div class="titre-err"><span class="pastille">!</span> Clé absente pour ce fournisseur</div>
+                <div class="detail-err">La requête suivante attend la clé de la passerelle OpenAI-compatible — la clé n'apparaît jamais dans le dépôt ni dans les journaux.</div>
+                <div class="btn-action">Ouvrir les réglages IA</div>
+              </div>
+            </div>
+            <div class="composeur">
+              <div class="rangée">
+                <div class="saisie">Ajoute le constructeur manquant puis relance le build.</div>
+                <div class="btn-envoyer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Fin de tour</h2>
+      <p>La ligne d'usage somme les requêtes du tour (entrées, sorties ET lectures de cache — le pied « cached » qui régresse est le symptôme d'un préfixe qui a dérivé). La compaction s'annonce, la passation au plafond rend un état exploitable, et chaque genre d'erreur a son verbe : ici « Ouvrir les réglages IA », ailleurs « changer de modèle », « reprise dans 12 s »…</p>
+    </figcaption>
+  </figure>
+
+
+  <!-- ============ VUE 4 (lot T) : LE MENU ⋯ ANCRÉ, LA RÉFLEXION VIVANTE ============ -->
+  <figure>
+    <span class="étiquette">Lot T — le menu ⋯ ancré, la réflexion vivante</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut">
+        <span>9:41</span>
+        <span class="droite">
+          <span style="font-size:11px;color:var(--reussite)">●&nbsp;agent</span>
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier">
+            <span class="nom">MonApp</span><span class="puce-modules">2 modules</span><span class="epacer"></span>
+          </div>
+          <div class="code-derriere">android&nbsp;{<br>&nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br></div>
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">claude-sonnet-4-5 <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px;color:var(--accent);background:rgba(130,170,255,.12)">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3.5" r="1.6"/><circle cx="8" cy="8" r="1.6"/><circle cx="8" cy="12.5" r="1.6"/></svg>
+              </span>
+            </div>
+            <div class="popup" style="top:52px;right:10px;width:210px">
+              <div class="ligne">Nouvelle conversation</div>
+              <div class="ligne">Historique</div>
+              <div class="ligne">Fournisseur et modèle</div>
+              <div class="ligne">Connexions MCP</div>
+              <div class="ligne">Usages</div>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Ajoute un constructeur sans argument à Config et relance.</div>
+              <div class="raisonnement vivant">
+                <div class="plis"><span style="color:var(--accent)">●</span> Réflexion… <span class="lignes" style="margin-left:auto">▾</span></div>
+                <div style="padding:0 12px 9px;font-size:12px;color:var(--texte2)">La classe Config est désérialisée par Gson — un constructeur sans argument suffit ; j'ouvre le fichier et j'ajoute le constructeur avant le build.</div>
+              </div>
+            </div>
+            <div class="ligne-activite"><span class="point"></span> Réflexion <span class="epacer"></span><span class="ecart">12&nbsp;s</span></div>
+            <div class="composeur">
+              <div class="rangée">
+                <span class="ic-btn" style="width:32px;height:32px;flex:none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                </span>
+                <div class="saisie"><span class="texte">Écrire à l'agent…</span></div>
+                <div class="btn-envoyer desactive">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+              <div class="rangée">
+                <div class="btn-arreter"><span class="carre"></span> Arrêter le tour</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>Le menu ⋯ vit près de son icône (lot T)</h2>
+      <p>Les cinq entrées ouvrent en POPUP ANCRÉE qui tombe de l'icône — jamais un dialogue centré qui coupe la conversation. Pendant le tour, la réflexion reste OUVERTE (point accent, « Réflexion… »), se replie à la fin du tour, se rouvre au tap ; la ligne d'activité au-dessus du composeur dit ce que le tour fait et depuis combien de temps.</p>
+    </figcaption>
+  </figure>
+
+  <!-- ============ VUE 5 (lot T) : L'ÉCRAN USAGES ANCRÉ, COMPTEURS ET BANDES ============ -->
+  <figure>
+    <span class="étiquette">Lot T — l'écran Usages de la manière CodeAssist</span>
+    <div class="cadre">
+      <div class="trou"></div>
+      <div class="statut"><span>9:41</span>
+        <span class="droite">
+          <span style="font-size:11px;color:var(--reussite)">●&nbsp;agent</span>
+          <svg width="22" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        </span>
+      </div>
+      <div class="geste"><i></i></div>
+      <div class="ecran">
+        <div class="atelier-fond">
+          <div class="barre-atelier"><span class="nom">MonApp</span><span class="puce-modules">2 modules</span><span class="epacer"></span></div>
+          <div class="code-derriere">android&nbsp;{<br>&nbsp;&nbsp;compileSdk&nbsp;=&nbsp;34<br></div>
+          <div class="tiroir"></div>
+          <div class="agent">
+            <div class="agent-tete">
+              <span class="titre">Agent</span>
+              <span class="epacer"></span>
+              <span class="chip">claude-sonnet-4-5 <span class="fleche">▾</span></span>
+              <span class="ic-btn" style="width:32px;height:32px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></span>
+            </div>
+            <div class="popup" style="top:52px;right:10px;width:270px">
+              <div class="titre-pop">Usages <span style="display:flex;gap:6px"><span class="icone"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 10a7.5 7.5 0 1 1-2.2-5.3"/><path d="M17.5 3v4h-4"/></svg></span><span class="icone"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg></span></span></div>
+              <div class="compteur"><div class="nom"><span>Requêtes / min</span><span style="color:var(--alerte)">72%</span></div><div class="piste"><span class="rempli" style="width:72%;background:var(--alerte)"></span></div></div>
+              <div class="compteur"><div class="nom"><span>Jetons / min</span><span>18%</span></div><div class="piste"><span class="rempli" style="width:18%;background:var(--accent)"></span></div></div>
+              <div style="padding:10px 14px 2px;font-size:12.5px;color:var(--texte)">Cette conversation — 12.4k entrées · 3.1k sorties · 8.9k cache</div>
+              <div style="padding:6px 14px 2px;font-size:12.5px;color:var(--texte)">Banc de clés — 3 clé(s)</div>
+              <div style="padding:2px 14px 8px;font-size:11.5px;color:var(--texte3)">1 au banc — limite de débit</div>
+            </div>
+            <div class="transcript">
+              <div class="msg-util">Ajoute un constructeur sans argument à Config et relance.</div>
+              <div class="msg-agent">C'est fait — le constructeur est ajouté et le build repasse (12.4k in · 3.1k out · 8.9k cached · 2 requêtes).</div>
+              <div class="ligne-tonale">edit_file — app/src/main/java/com/exemple/Config.java</div>
+            </div>
+            <div class="composeur">
+              <div class="rangée">
+                <span class="ic-btn" style="width:32px;height:32px;flex:none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                </span>
+                <div class="saisie"><span class="texte">Écrire à l'agent…</span></div>
+                <div class="btn-envoyer">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>
+      <h2>L'écran Usages : un compteur par fenêtre plafonnée</h2>
+      <p>Un COMPTEUR (requêtes / min, jetons / min) porte sa bande colorée — accent sous 70 %, alerte 70–90 %, erreur au-delà : l'alerte précède le 429. Les trois pieds de la conversation en jetons compacts, le banc de clés par raison d'assise, l'Actualiser qui relit sans rouvrir, la Fermeture au tap. Sans plafond appris, l'écran le dit honnêtement. Le sélecteur de modèles (puce ▾) ouvre en popup ancrée : fournisseurs pointés, recherche, favoris à l'étoile, récents, la coche du courant.</p>
+    </figcaption>
+  </figure>
+
+</main>
+
+<footer class="pied">
+  Maquettes de la série ADR-É — <a href="index.html">index général</a> · jetons ADR-É2 (Graphite) · l'implémentation arrive au lot P du plan ADR-É10.
+</footer>
+
+</body>
+</html>

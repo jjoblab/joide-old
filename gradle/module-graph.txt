@@ -1,0 +1,45 @@
+# Graphe de modules JoIDE autorisé (§5.1 du prompt, ADR-011).
+# Format : un module par ligne, dépendances autorisées après « -> ».
+# Règles : dépendances uniquement descendantes (ce fichier définit l'ordre),
+# jamais remontante, jamais latérale, jamais cyclique — le plugin
+# joide.dependency-rules (build-logic) rejette toute arête hors liste,
+# et tools-test valide ce fichier (acyclicité, ordre descendant).
+# V2 lot O (ADR-059) : ide-integration implémente le port de l'agent
+# sur les vraies briques (moteurs, VFS, build) — l'arête descendante
+# agent -> core-platform core-deps précède, l'ordre reste descendant.
+# L'arête tools-bench -> core-model est une arête de TEST : le banc
+# vérifie que ses projets synthétiques sont lisibles par le modèle ;
+# le code principal du banc ne dépend d'aucun module.
+core-platform ->
+core-store -> core-platform
+core-vfs -> core-platform core-store
+core-model -> core-platform core-vfs
+core-tasks -> core-model core-store core-vfs
+core-deps -> core-platform core-store
+# V2 lot N (ADR-055) : le noyau agent, module pur pair de
+# core-tasks — core-platform (exécuteurs, CancelToken, AtomicFiles)
+# et core-deps (parseur JSON maison) ; jamais Android, jamais
+# les briques (le port EspaceTravailAgent vit côté ide-integration).
+agent -> core-platform core-deps
+build-jvm -> core-tasks core-deps
+build-android -> build-jvm core-deps
+build-daemon -> build-android core-store
+import-gradle -> core-model core-deps
+tools-bench -> core-model
+tools-test ->
+# P8 (ADR-045) : l'arête app-android -> ide-integration est un
+# changement explicite du contrat (ADR-011) — l'application hôte monte
+# l'IDE derrière les interfaces JoIDE d'ide-integration, jamais les
+# briques directement. Ordre descendant respecté : ide-integration
+# avant app-android.
+# Lot U (ADR-066) : l'arête app-android -> build-android porte UNIQUEMENT
+# les outils embarqués (configuration toolsApi) — D8/R8, apksig et
+# bundletool vivent DANS l'APK pour que le build Android tourne sur
+# l'appareil (« d8 et autre non embarqué » ne se dit plus). Arête
+# descendante : build-android précède app-android. Aucune autre brique
+# n'est autorisée côté app-android.
+# L'arête core-store est une arête de TEST (store journal de bureau,
+# configuration jvmApi — le VRAI moteur de build tourne dans les
+# tests de l'espace de travail agent, comme les tests du démon).
+ide-integration -> core-model build-daemon agent core-store
+app-android -> build-daemon ide-integration build-android

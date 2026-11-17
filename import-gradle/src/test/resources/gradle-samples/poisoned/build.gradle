@@ -1,0 +1,60 @@
+// Root build full of constructs JoIDE does not map, plus poison that
+// proves nothing is ever executed.
+plugins {
+    id 'base'
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+    }
+}
+
+apply from: 'gradle/other.gradle'
+
+allprojects {
+    repositories {
+        maven {
+            url 'https://example.invalid/repo'
+            credentials {
+                username 'secret-user'
+                password 'secret-pass'
+            }
+        }
+    }
+}
+
+subprojects {
+    afterEvaluate {
+        println "evaluated $name"
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        failOnVersionConflict()
+    }
+}
+
+task generateSources(type: Exec) {
+    commandLine 'touch', 'build-exec-marker'
+}
+
+tasks.register('boom') {
+    doLast {
+        throw new GradleException('BUILD SCRIPT WAS EXECUTED')
+    }
+}
+
+def generated = new File(rootDir, 'build-poison-marker.txt')
+generated.text = 'root build executed'
+
+System.setProperty('poisoned.import', 'yes')
+
+// The poison continues in the module.
+ext {
+    exitCode = System.exit(43)
+}

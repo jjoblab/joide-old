@@ -1,0 +1,42 @@
+#!/bin/sh
+# pre-push — vérification d'identité exigée par le propriétaire :
+# tout push doit partir de user.name=jjoblab et
+# user.email=olson12jb@gmail.com, et chaque commit poussé doit
+# porter cette identité comme auteur ET comme compositeur.
+# Activation dans un clone : git config core.hooksPath .githooks
+
+EXPECTED_NAME="jjoblab"
+EXPECTED_EMAIL="olson12jb@gmail.com"
+
+refus() {
+    echo "REFUS (pre-push) : $1" >&2
+    echo "Corrigez : git config user.name $EXPECTED_NAME && git config user.email $EXPECTED_EMAIL" >&2
+    exit 1
+}
+
+# 1. Identité de la configuration du clone.
+NAME=$(git config user.name)
+EMAIL=$(git config user.email)
+if [ "$NAME" != "$EXPECTED_NAME" ] || [ "$EMAIL" != "$EXPECTED_EMAIL" ]; then
+    refus "git config user.name='$NAME' user.email='$EMAIL' attendu '$EXPECTED_NAME' <$EXPECTED_EMAIL>"
+fi
+
+# 2. Identité portée par chaque commit poussé (auteur et compositeur).
+while read -r local_ref local_sha remote_ref remote_sha; do
+    [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+    bad=$(git log "$range" --format='%an|%ae|%cn|%ce' \
+        | awk -F'|' -v n="$EXPECTED_NAME" -v e="$EXPECTED_EMAIL" \
+            '$1!=n || $2!=e || $3!=n || $4!=e')
+    if [ -n "$bad" ]; then
+        echo "REFUS (pre-push) : commits d'identité étrangère dans $local_ref :" >&2
+        git log "$range" --format='  %h auteur=%an <%ae> compositeur=%cn <%ce>' >&2
+        exit 1
+    fi
+done
+
+exit 0

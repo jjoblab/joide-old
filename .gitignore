@@ -1,0 +1,43 @@
+.gradle/
+# Répertoires de sortie Gradle, ancrés à la racine : le paquet source
+# jo/joide/build/jvm (module build-jvm) ne doit jamais être ignoré.
+/build/
+core-platform/build/
+core-store/build/
+core-vfs/build/
+core-model/build/
+core-tasks/build/
+core-deps/build/
+build-jvm/build/
+build-android/build/
+build-daemon/build/
+import-gradle/build/
+tools-bench/build/
+tools-test/build/
+# Lot N : le module agent a été ajouté au graphe après la liste des
+# répertoires de sortie — ses builds se committaient (268 fichiers
+# de classes et de rapports suivis). Corrigé au lot Q.
+agent/build/
+app-android/build/
+ide-integration/build/
+build-logic/build/
+local.properties
+# Bac à sable de développement P8 (ADR-045) : SDK Android reconstruit
+# à la main (docs/dev.md, notes P8) et JDK de secours — jamais commis.
+/work/
+*.iml
+*.hprof
+.DS_Store
+.idea/
+.kotlin/
+.cxx/
+# Répertoire de sortie du module de conventions (build-logic est une construction Gradle separee)
+/build-logic/convention/build/
+# Lot U (ADR-066) : les binaires aapt2 préconstruits (fetchAapt2) sont
+# téléchargés À LA CONSTRUCTION dans src/main/jniLibs — jamais commis.
+/app-android/src/main/jniLibs/
+# Lot U/8 (2026-11-17) : le keystore de débogage des projets
+# UTILISATEUR est généré à la construction par genererKeystoreDebug
+# (keytool, jamais commis — convention docs/dev.md « aucun keystore
+# dans le dépôt »).
+/app-android/src/main/assets/toolchain/

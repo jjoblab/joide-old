@@ -1,0 +1,45 @@
+// Module with a mix of mappable content and unmappable poison.
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.example.poisoned'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.example.poisoned'
+        minSdk 24
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    packagingOptions {
+        excludes += '/META-INF/{AL2.0,LGPL2.1}'
+    }
+}
+
+tasks.register('appPoison') {
+    doLast {
+        new File(projectDir, 'app-poison-marker.txt').text = 'executed'
+    }
+}
+
+android.applicationVariants.all { variant ->
+    println "variant $variant.name"
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation files('libs/local.jar')
+    implementation fileTree(dir: 'libs', include: '*.aar')
+    implementation platform('com.example:missing-bom:1.0')
+    testFixtures(project(':other'))
+    kapt 'org.projectlombok:lombok:1.18.36'
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.12.0'
+    implementation 'com.google.dagger:dagger:2.52' {
+        exclude group: 'javax.inject'
+    }
+}

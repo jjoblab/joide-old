@@ -1,0 +1,53 @@
+# Bibliothèque JVM — modèle JoIDE (joide.template/1, ADR-050).
+# Un module :socle avec tests JUnit 5 : la première résolution des
+# dépendances exige le réseau (Maven Central), puis le cache local
+# reprend (ADR-033).
+schema = "joide.template/1"
+id = "bibliotheque-jvm"
+nom = "Bibliothèque JVM"
+description = "Un module :socle, tests JUnit 5"
+categorie = "bibliotheques"
+tuile = "bibliotheque"
+note = "constructible sur l'appareil"
+fichier-entree = "socle/src/main/kotlin/jo/exemple/socle/Socle.kt"
+
+[[modules]]
+id = "socle"
+type = "jvm-library"
+defaut = true
+source = ["src/main/kotlin"]
+test = ["src/test/kotlin"]
+
+[[dependances]]
+module = "socle"
+coordonnees = "org.junit.jupiter:junit-jupiter:5.10.2"
+portee = "test_implementation"
+
+[[fichiers]]
+module = "socle"
+chemin = "socle/src/main/kotlin/jo/exemple/socle/Socle.kt"
+lignes = [
+  'package jo.exemple.socle',
+  '',
+  '/** Une fonction pure du socle, avec son test. */',
+  'object Socle {',
+  '    fun addition(a: Int, b: Int): Int = a + b',
+  '}',
+]
+
+[[fichiers]]
+module = "socle"
+chemin = "socle/src/test/kotlin/jo/exemple/socle/SocleTest.kt"
+lignes = [
+  'package jo.exemple.socle',
+  '',
+  'import org.junit.jupiter.api.Assertions.assertEquals',
+  'import org.junit.jupiter.api.Test',
+  '',
+  'class SocleTest {',
+  '    @Test',
+  '    fun additionEstCommutative() {',
+  '        assertEquals(4, Socle.addition(2, 2))',
+  '    }',
+  '}',
+]

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JoIDE — Écrans v2 · preview principal</title>
+<!--
+  Preview principal des maquettes JoIDE (série docs/ecrans) :
+  parcours, galerie des six écrans en cadres réduits, jetons du
+  système de design (ADR-É2), principes de franchise. Fichier
+  autonome : aucune ressource externe. Les autres fichiers de ce
+  dossier sont les previews plein cadre écran par écran.
+-->
+<style>
+  :root{
+    --fond:#0E1116; --surface:#151920; --surfaceHaute:#1B212A; --puits:#0B0E12;
+    --bord:#262D38; --bordFin:#1D232C;
+    --texte:#E7ECF3; --texte2:#9AA6B5; --texte3:#64707F;
+    --accent:#82AAFF; --reussite:#3DDC84; --alerte:#E5C07B; --erreur:#E06C75; --violet:#C678DD;
+    --synMot:#C678DD; --synType:#E5C07B; --synFonction:#61AFEF; --synChaine:#98C379;
+    --synNombre:#D19A66; --synCommentaire:#7C8695; --synDefaut:#D6DAE3;
+    --mono:"JetBrains Mono","Fira Code","Cascadia Code",Consolas,"Roboto Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0A0C10;color:var(--texte);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-size:15px;line-height:22px;padding:28px 24px 64px}
+  .page{max-width:1280px;margin:0 auto}
+  .entete-page{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .entete-page h1{font-size:17px;font-weight:600}
+  .entete-page .fil{color:var(--texte3);font-size:13px}
+  .entete-page .statut{font-size:12px;color:var(--alerte);border:1px solid rgba(229,192,123,.4);border-radius:999px;padding:3px 12px}
+  .nav-page{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:36px}
+  .nav-page a{color:var(--texte2);text-decoration:none;font-size:13px;padding:7px 14px;border:1px solid var(--bordFin);border-radius:999px}
+  .nav-page a:hover{color:var(--texte);border-color:var(--bord)}
+  .nav-page a.ic{color:var(--texte);border-color:var(--accent);background:rgba(130,170,255,.12)}
+  h2.section{font-size:13px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--texte3);margin:44px 0 18px}
+  /* ---- parcours ---- */
+  .parcours{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .parcours .etape-chip{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;background:var(--surface);border:1px solid var(--bordFin);border-radius:999px;padding:9px 16px;color:var(--texte)}
+  .parcours .etape-chip .num{width:20px;height:20px;border-radius:50%;background:rgba(130,170,255,.16);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+  .parcours .flèche{color:var(--texte3)}
+  .parcours .note-après{width:100%;font-size:12.5px;color:var(--texte3);margin-top:4px}
+  /* ---- galerie ---- */
+  .galerie{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+  figure.vignette{margin:0;width:226px}
+  .mini{width:226px;height:478px;overflow:hidden;position:relative}
+  .cadre{width:390px;height:844px;background:var(--fond);border:10px solid #1A1E24;border-radius:54px;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;display:flex;flex-direction:column;transform:scale(.55);transform-origin:top left}
+  .statut{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;color:var(--texte);font-size:13px;font-weight:600}
+  .statut .droite{display:flex;align-items:center;gap:7px}
+  .trou{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:#05070A;box-shadow:inset 0 0 0 1px #12161C;z-index:9}
+  .geste{flex:none;height:26px;display:flex;align-items:center;justify-content:center}
+  .geste i{width:120px;height:4px;border-radius:4px;background:var(--texte);opacity:.35}
+  .ecran{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  figure.vignette figcaption{margin-top:14px}
+  figure.vignette h3{font-size:14px;font-weight:700;margin-bottom:2px}
+  figure.vignette h3 a{color:var(--texte);text-decoration:none}
+  figure.vignette h3 a:hover{color:var(--accent)}
+  figure.vignette p{font-size:12px;color:var(--texte2)}
+  figure.vignette p a{color:var(--accent);text-decoration:none}
+  .adr-lien{display:inline-block;margin-top:6px;font-size:11px;color:var(--texte3);border:1px dashed var(--bord);border-radius:999px;padding:2px 9px;text-decoration:none}
+  .adr-lien:hover{color:var(--texte2);border-color:var(--bord)}
+  /* ---- composants communs des minis ---- */
+  .ic-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2);flex:none}
+  .barre-app{padding:10px 20px 2px}
+  .barre-app .titre{font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .barre-app .sous{font-size:13px;color:var(--texte2);margin-top:1px}
+  .contenu{flex:1;overflow:hidden;padding:12px 20px 8px;display:flex;flex-direction:column;gap:10px}
+  .carte{background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;padding:14px;display:flex;align-items:center;gap:14px}
+  .carte.reprise{border-color:rgba(130,170,255,.35)}
+  .tuile{width:46px;height:46px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center}
+  .tuile.android{background:rgba(61,220,132,.14);color:var(--reussite)}
+  .tuile.console{background:rgba(130,170,255,.14);color:var(--accent)}
+  .carte .corps{flex:1;min-width:0}
+  .carte .lég{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--texte3);margin-bottom:2px}
+  .carte .nom{display:block;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .carte .méta{display:block;font-size:12.5px;color:var(--texte2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rang-actions{display:flex;gap:10px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;height:52px;border-radius:14px;font-size:15px;font-weight:600;border:none}
+  .btn.primaire{flex:1;background:var(--accent);color:#0B1524}
+  .btn.tonal{background:var(--surfaceHaute);color:var(--texte);border:1px solid var(--bordFin);padding:0 18px}
+  .sect{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .sect .nom-sect{font-size:13px;font-weight:600;color:var(--texte2)}
+  .sect .compte{font-size:11px;color:var(--texte2);background:var(--surfaceHaute);border-radius:999px;padding:1px 8px}
+  .etapes{display:flex;align-items:center;padding:2px 20px 10px;gap:8px}
+  .etape{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--texte3)}
+  .etape .num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1.5px solid var(--bord)}
+  .etape.faite .num{background:var(--reussite);border-color:var(--reussite);color:#07130C}
+  .etape.faite{color:var(--texte2)}
+  .etape.active .num{background:var(--accent);border-color:var(--accent);color:#0B1524}
+  .etape.active{color:var(--texte);font-weight:600}
+  .jalon{flex:1;height:2px;border-radius:2px;background:var(--bord)}
+  .jalon.faite{background:var(--reussite)}
+  .sous-barre{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
+  .sous-barre .retour{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--texte2)}
+  .sous-barre .titre{font-size:17px;font-weight:600;flex:1}
+  .pilule{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--surfaceHaute);color:var(--texte2);border:1px solid var(--bordFin);white-space:nowrap;flex:none}
+  .barre-sup{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 8px}
+  .barre-sup .nom-projet{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .onglets{flex:none;display:flex;gap:2px;padding:0 8px;border-bottom:1px solid var(--bordFin);overflow:hidden}
+  .onglet{display:flex;align-items:center;gap:7px;padding:8px 11px 6px;font-size:12.5px;color:var(--texte2);border-bottom:2px solid transparent;white-space:nowrap;overflow:hidden}
+  .onglet.actif{color:var(--texte);border-bottom-color:var(--accent);background:var(--puits)}
+  .onglet .sale{width:7px;height:7px;border-radius:50%;background:var(--alerte)}
+  .editeur{flex:1;background:var(--puits);overflow:hidden;font-family:var(--mono);font-size:12px;line-height:19px;display:flex}
+  .numeros{flex:none;width:36px;text-align:right;padding:12px 8px 0 0;color:#3E4A59}
+  .code{flex:1;padding:12px 0 60px 8px;white-space:pre;color:var(--synDefaut);overflow:hidden}
+  .code .ligne-active{display:block;margin:0 -8px 0 -8px;padding:0 8px;background:rgba(130,170,255,.08);box-shadow:inset 2px 0 0 var(--accent)}
+  .k{color:var(--synMot)} .t{color:var(--synType)} .f{color:var(--synFonction)} .c{color:var(--synCommentaire)} .s{color:var(--synChaine)}
+  .dock{flex:none;display:flex;align-items:center;gap:10px;padding:0 18px;height:48px;background:var(--surface);border-top:1px solid var(--bordFin);color:var(--texte2);font-size:13px}
+  .dock .etat{color:var(--reussite);font-weight:600}
+  .fab{position:absolute;right:16px;bottom:64px;width:58px;height:58px;border-radius:18px;background:var(--reussite);color:#07130C;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 0 6px rgba(61,220,132,.16)}
+  .phases{display:flex;gap:8px;padding:0 20px 10px;flex-wrap:wrap}
+  .phase{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--texte2);background:var(--surface);border:1px solid var(--bordFin);border-radius:999px;padding:6px 12px}
+  .filtres{display:flex;gap:8px;padding:0 20px 12px}
+  .puce{font-size:13px;padding:7px 14px;border-radius:999px;background:var(--surfaceHaute);color:var(--texte2);border:1px solid var(--bordFin)}
+  .puce.on{background:rgba(130,170,255,.16);color:var(--accent);border-color:rgba(130,170,255,.45);font-weight:600}
+  .transcript{flex:1;background:var(--puits);border-top:1px solid var(--bordFin);overflow:hidden;font-family:var(--mono);font-size:12px;line-height:20px;padding:14px 18px;color:var(--texte2)}
+  .tr{display:grid;grid-template-columns:52px 1fr;column-gap:8px;align-items:baseline}
+  .tr .sys{color:var(--accent)} .tr .phase-mot{color:#61AFEF} .tr .err{color:var(--erreur)} .tr .t{color:var(--texte)}
+  .probleme{margin:12px 20px 6px;background:rgba(224,108,117,.08);border:1px solid rgba(224,108,117,.4);border-radius:14px;padding:14px}
+  .probleme .titre-pb{font-size:13.5px;font-weight:600}
+  .probleme .titre-pb .mono{font-family:var(--mono);font-size:12px;color:var(--erreur)}
+  .btn-ouvrir{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--accent);background:rgba(130,170,255,.13);border:1px solid rgba(130,170,255,.45);border-radius:999px;padding:7px 14px;margin-top:10px;width:max-content}
+  .surface{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 24px 6px;background:repeating-conic-gradient(#12151B 0% 25%, #0F1218 0% 50%) 50%/22px 22px}
+  .perchoir{width:200px;height:350px;background:#FAFAFA;border-radius:24px;border:1px solid #D8DCE2;box-shadow:0 20px 50px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;font-size:12px;color:#1B1F26}
+  .barre-perchoir{height:28px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:7px 16px 0;font-size:10px;font-weight:700;color:#3C4048}
+  .corps-perchoir{flex:1;padding:22px 18px;display:flex;flex-direction:column;gap:12px}
+  .perchoir h3{font-size:17px}
+  .perchoir .champ-ui{border:1px solid #C9CED6;border-radius:11px;height:40px;display:flex;align-items:center;padding:0 13px;color:#7A8290}
+  .perchoir .btn-ui{background:#2E5B41;color:#EAF6EF;border-radius:11px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .stats{flex:none;padding:10px 20px 4px;font-size:11.5px;color:var(--texte3)}
+  .stats .mesures{color:var(--texte2)}
+  .banniere{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;border-radius:12px;padding:11px 13px;margin:6px 20px}
+  .banniere.info{background:rgba(130,170,255,.10);border:1px solid rgba(130,170,255,.35);color:#AFC6F0}
+  .recherche{display:flex;align-items:center;gap:10px;height:44px;border:1.5px solid var(--bord);border-radius:14px;padding:0 14px;color:var(--texte3);background:var(--surface);margin:0 20px 14px;font-size:14px}
+  .corps-reglages{flex:1;overflow:hidden;padding:0 20px 10px;display:flex;flex-direction:column;gap:16px}
+  .sect-regl .nom-sect{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--texte3);margin:0 14px 8px}
+  .groupe{background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;padding:0 14px}
+  .rangée{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bordFin);font-size:14px}
+  .rangée:last-child{border-bottom:none}
+  .rangée .clé{color:var(--texte)}
+  .rangée .valeur{margin-left:auto;color:var(--texte2);font-size:13px;display:flex;align-items:center;gap:8px}
+  .segment{display:flex;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px;gap:3px}
+  .segment span{font-size:12px;padding:6px 12px;border-radius:999px;color:var(--texte3)}
+  .segment span.on{background:rgba(130,170,255,.2);color:var(--accent);font-weight:700}
+  .segment span.grise{color:var(--texte3)}
+  .interrupteur{width:46px;height:27px;border-radius:999px;background:var(--surfaceHaute);border:1px solid var(--bord);position:relative}
+  .interrupteur i{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:var(--texte3)}
+  .interrupteur.on{background:rgba(61,220,132,.25);border-color:rgba(61,220,132,.6)}
+  .interrupteur.on i{left:23px;background:var(--reussite)}
+  .stepper{display:flex;align-items:center;gap:2px;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:3px}
+  .stepper button{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--texte2);font-size:15px}
+  .stepper .val{min-width:48px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--texte)}
+  .rangée-envers{display:flex;flex-direction:column;padding:12px 0;border-bottom:1px solid var(--bordFin)}
+  .rangée-envers:last-child{border-bottom:none}
+  .rangée-envers .haut{display:flex;align-items:center;gap:12px;font-size:14px;width:100%}
+  .rangée-envers .haut .segment{margin-left:auto}
+  .rangée-envers .légende{font-size:11.5px;color:var(--texte3);margin-top:5px}
+  .nuancier{display:flex;gap:8px;margin-left:auto}
+  .nuancier i{width:22px;height:22px;border-radius:50%;border:2px solid transparent}
+  .nuancier i.choisi{border-color:var(--texte)}
+  .action-texte{margin-left:auto;font-size:12.5px;color:var(--accent);font-weight:700}
+  .action-texte.rouge{color:var(--erreur)}
+  /* ---- jetons ---- */
+  .jetons{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .jeton{background:var(--surface);border:1px solid var(--bordFin);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center}
+  .jeton .pastille{width:34px;height:34px;border-radius:10px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07)}
+  .jeton .desc{min-width:0}
+  .jeton .desc b{display:block;font-size:12.5px;font-weight:700}
+  .jeton .desc span{display:block;font-family:var(--mono);font-size:11px;color:var(--texte2)}
+  .deux-colonnes{display:flex;gap:28px;flex-wrap:wrap}
+  .deux-colonnes .bloc{flex:1;min-width:320px;background:var(--surface);border:1px solid var(--bordFin);border-radius:16px;padding:20px}
+  .deux-colonnes .bloc h3{font-size:13px;font-weight:700;color:var(--texte2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+  .éch-typos{display:flex;flex-direction:column;gap:12px}
+  .éch-typos .ligne-éch{display:flex;align-items:baseline;gap:14px}
+  .éch-typos .ligne-éch .étiquette-éch{font-family:var(--mono);font-size:10.5px;color:var(--texte3);width:150px;flex:none}
+  .rayons{display:flex;gap:14px;flex-wrap:wrap}
+  .rayon-item{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rayon-item .forme{width:74px;height:56px;background:var(--surfaceHaute);border:1.5px solid var(--bord)}
+  .rayon-item span{font-size:11.5px;color:var(--texte2)}
+  .rayon-item .desc-éch{font-family:var(--mono);font-size:10.5px;color:var(--texte3)}
+  .code-éch{background:var(--puits);border:1px solid var(--bordFin);border-radius:14px;padding:16px;font-family:var(--mono);font-size:13.5px;line-height:22px;color:var(--synDefaut);white-space:pre}
+  /* ---- franchise ---- */
+  .franchise-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .franchise-item{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--bordFin);border-radius:14px;padding:16px;font-size:13.5px;color:var(--texte2)}
+  .franchise-item .gly{flex:none;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+  .franchise-item b{color:var(--texte)}
+  .pied{margin-top:56px;color:var(--texte3);font-size:12px;border-top:1px solid var(--bordFin);padding-top:18px}
+  .pied a{color:var(--texte2);text-decoration:none}
+  .pied a:hover{color:var(--accent)}
+  .pied .adr-index{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="entete-page">
+    <h1>JoIDE — écrans v2</h1>
+    <span class="fil">docs/ecrans/design · preview principal</span>
+    <span class="statut">proposé — implémentation en lots futurs</span>
+  </header>
+  <nav class="nav-page">
+    <a class="ic" href="#">Index</a><a href="accueil-projets.html">Accueil</a><a href="creation-projet.html">Création</a><a href="atelier.html">Atelier</a><a href="console.html">Console</a><a href="apercu.html">Aperçu</a><a href="parametres.html">Paramètres</a><a href="agent.html">Agent</a>
+  </nav>
+
+  <!-- ================= PARCOURS ================= -->
+  <h2 class="section">Parcours</h2>
+  <div class="parcours">
+    <span class="etape-chip"><span class="num">1</span>Accueil « Mes projets »</span>
+    <span class="flèche">→</span>
+    <span class="etape-chip"><span class="num">2</span>Création (assistant)</span>
+    <span class="flèche">→</span>
+    <span class="etape-chip"><span class="num">3</span>Atelier</span>
+    <span class="flèche">→</span>
+    <span class="etape-chip">Console · Aperçu <span style="font-weight:400;color:var(--texte2)">(panneaux)</span></span>
+    <span class="etape-chip" style="margin-left:18px">Paramètres <span style="font-weight:400;color:var(--texte2)">— depuis l'accueil (⋮) et l'atelier (⋮)</span></span>
+    <span class="note-après">L'import SAF reste l'entrée secondaire de l'accueil ; les projets Gradle restent en mode compatibilité avec bannière d'écart (échappatoire : export P7). Seuil adaptatif : 720 dp.</span>
+  </div>
+
+  <!-- ================= GALERIE ================= -->
+  <h2 class="section">Les six écrans</h2>
+  <div class="galerie">
+
+    <!-- Accueil -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="barre-app">
+            <div class="titre">Mes projets</div>
+            <div class="sous">Bonjour — lundi 16 novembre</div>
+          </div>
+          <div class="contenu">
+            <div class="carte reprise">
+              <span class="tuile android"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a2 2 0 0 1 2 2v9H3V6a2 2 0 0 1 2-2Z"/><path d="M3 15l2.2-4.5a1.5 1.5 0 0 1 2.7 0L10 15"/><path d="M9 19h13M14 19l-1.5-4M20 19l-1.5-4"/></svg></span>
+              <span class="corps"><span class="lég">Reprendre</span><span class="nom">mon-application</span><span class="méta">Application Android · 3 modules · il y a 2 h</span></span>
+            </div>
+            <div class="rang-actions">
+              <button class="btn primaire">＋ Nouveau projet</button>
+              <button class="btn tonal">Importer</button>
+            </div>
+            <div class="sect"><span class="nom-sect">Projets</span><span class="compte">3</span></div>
+            <div class="carte">
+              <span class="tuile console"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m7.5 10 2.5 2.5L7.5 15M12.5 15h4"/></svg></span>
+              <span class="corps"><span class="nom">protocole-p8</span><span class="méta">Console JVM · 1 module · hier</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="accueil-projets.html">Accueil « Mes projets »</a></h3>
+        <p>Hub de projets : création au premier plan, import SAF secondaire, état vide de première classe.</p>
+        <a class="adr-lien" href="../003-accueil-mes-projets.md">ADR-É3 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Création -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="sous-barre"><span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span><span class="titre" style="font-size:16px">Nouveau projet</span><span class="pilule" style="margin-left:auto">1/3</span></div>
+          <div class="etapes" style="padding-top:4px">
+            <span class="etape active"><span class="num">1</span>Modèle</span><span class="jalon"></span>
+            <span class="etape"><span class="num">2</span>Identité</span><span class="jalon"></span>
+            <span class="etape"><span class="num">3</span>Récap.</span>
+          </div>
+          <div class="contenu">
+            <div class="recherche" style="margin:0"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 17 17"/></svg>Rechercher un modèle…</div>
+            <div class="carte" style="border-color:var(--accent)">
+              <span class="tuile android"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14a2 2 0 0 1 2 2v9H3V6a2 2 0 0 1 2-2Z"/><path d="M3 15l2.2-4.5a1.5 1.5 0 0 1 2.7 0L10 15"/><path d="M9 19h13M14 19l-1.5-4M20 19l-1.5-4"/></svg></span>
+              <span class="corps"><span class="nom">Application Android</span><span class="méta" style="color:var(--alerte)">⚠ JVM sur l'appareil ; APK au bureau (P8)</span></span>
+            </div>
+            <div class="carte">
+              <span class="tuile console"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m7.5 10 2.5 2.5L7.5 15M12.5 15h4"/></svg></span>
+              <span class="corps"><span class="nom">Console JVM</span><span class="méta">Un module :console, tests sur l'appareil.</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="creation-projet.html">Création de projet</a></h3>
+        <p>Galerie de modèles avec franchise sur la carte, formulaire piloté par le modèle, récapitulatif avant création atomique.</p>
+        <a class="adr-lien" href="../004-creation-projet.md">ADR-É4 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Atelier -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="barre-sup">
+            <span class="ic-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+            <span class="nom-projet">mon-application</span>
+            <span class="pilule" style="margin-left:auto">Index · PRÊT</span>
+          </div>
+          <div class="onglets">
+            <span class="onglet actif">MainActivity.kt</span>
+            <span class="onglet">activity_main.xml <span class="sale"></span></span>
+            <span class="onglet">joide.toml</span>
+          </div>
+          <div class="editeur">
+            <div class="numeros">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</div>
+            <div class="code"><span class="k">package</span> jo.exemple.monapplication
+
+<span class="k">import</span> android.os.Bundle
+<span class="k">import</span> android.app.Activity
+
+<span class="c">/** Écran principal. */</span>
+<span class="k">class</span> <span class="t">MainActivity</span> : <span class="t">Activity</span>() {
+
+    <span class="k">override fun</span> onCreate(etat: <span class="t">Bundle</span>?) {
+        <span class="k">super</span>.<span class="f">onCreate</span>(etat)
+        <span class="ligne-active">        <span class="f">setContentView</span>(R.layout.activity_main)</span>
+    }
+}</div>
+          </div>
+          <div class="dock">Console — <span class="etat">prêt</span> · 0 problème</div>
+          <div class="fab"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg></div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="atelier.html">Atelier</a></h3>
+        <p>Écran principal adaptatif (720 dp) : tiroir arborescence, onglets multi-fichiers, FAB Construire — et la variante grand écran amarrée.</p>
+        <a class="adr-lien" href="../005-atelier.md">ADR-É5 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Console -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="sous-barre">
+            <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+            <span class="titre">Console</span>
+            <span class="pilule" style="margin-left:auto;color:var(--erreur);border-color:rgba(224,108,117,.4)">échoué · 6,2 s</span>
+          </div>
+          <div class="phases" style="padding-bottom:6px">
+            <span class="phase">✓ Résolution 0,8 s</span>
+            <span class="phase">✓ Compilation 4,1 s</span>
+          </div>
+          <div class="filtres" style="padding-bottom:8px">
+            <span class="puce on">Tout</span><span class="puce" style="color:var(--erreur);border-color:rgba(224,108,117,.4)">Erreurs (1)</span><span class="puce">Système</span>
+          </div>
+          <div class="transcript">
+<div class="tr"><span class="sys">système</span><span><span class="t">build #4 démarré — mon-application (jvm)</span></span></div>
+<div class="tr"><span class="sys">système</span><span>écarts : <span class="t">modules Android non construits sur appareil (P8)</span></span></div>
+<div class="tr"><span class="phase-mot">phase</span><span>compilation : 14 sources <span style="color:var(--texte3)">(4,1 s)</span></span></div>
+<div class="tr"><span class="err">erreur</span><span><span class="t">MainActivity.kt:12</span> — symbole introuvable</span></div>
+<div class="tr"><span class="sys">système</span><span>build #4 <span class="err">échoué</span> — 12 exécutées · 3 du cache · 2 à jour</span></div>
+          </div>
+          <div class="probleme">
+            <div class="titre-pb"><span class="mono">MainActivity.kt:12</span> — symbole introuvable</div>
+            <div style="font-size:12px;color:var(--texte2);margin-top:4px">L'index CIDX est en reconstruction — le diagnostic se rafraîchira.</div>
+            <div class="btn-ouvrir">Ouvrir le fichier à la ligne</div>
+          </div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="console.html">Console de build</a></h3>
+        <p>Colorée par nature, phases cliquables, problème ouvrable jusqu'à la ligne. Les écarts avant lancement, jamais muets.</p>
+        <a class="adr-lien" href="../006-console-build.md">ADR-É6 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Aperçu -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="sous-barre">
+            <span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span>
+            <span class="titre">Aperçu</span><span style="font-family:var(--mono);font-size:12px;color:var(--texte2)"> · activity_main.xml</span>
+          </div>
+          <div class="filtres" style="padding:6px 20px 10px">
+            <span class="puce on">2×</span><span class="puce">Nuit</span><span class="puce">360 × 640</span>
+          </div>
+          <div class="surface">
+            <div class="perchoir">
+              <div class="barre-perchoir"><span>9:41</span><span>▪ ▪ ▪</span></div>
+              <div class="corps-perchoir">
+                <h3>Bienvenue</h3>
+                <div class="champ-ui">Identifiant</div>
+                <div class="champ-ui">Mot de passe</div>
+                <div class="btn-ui">Continuer</div>
+              </div>
+            </div>
+          </div>
+          <div class="stats"><span class="mesures">42 vues · 38 ms · 360 × 640</span> · densité 2×</div>
+          <div class="banniere info" style="margin:6px 20px 14px">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" style="flex:none;margin-top:2px"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.5v3.6"/><circle cx="8" cy="5.2" r=".5" fill="currentColor"/></svg>
+            XML en frappe — dernier rendu valide conservé.
+          </div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="apercu.html">Aperçu de mise en page</a></h3>
+        <p>Le rendu LayoutLib tel quel, sur damier ; stats réelles de l'écouteur ; bannières de franchise (frappe, repli natif, MockView).</p>
+        <a class="adr-lien" href="../007-apercu-mise-en-page.md">ADR-É7 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Paramètres -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran">
+          <div class="sous-barre"><span class="retour"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg></span><span class="titre">Paramètres</span></div>
+          <div class="recherche"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="6"/><path d="M13.5 13.5 17 17"/></svg>Rechercher…</div>
+          <div class="corps-reglages">
+            <div class="sect-regl">
+              <div class="nom-sect">Apparence</div>
+              <div class="groupe">
+                <div class="rangée-envers">
+                  <div class="haut"><span class="clé">Thème</span><span class="segment" style="margin-left:auto"><span class="on">Sombre</span><span class="grise">Système</span><span class="grise">Clair</span></span></div>
+                </div>
+                <div class="rangée"><span class="clé">Accent</span><span class="nuancier"><i class="choisi" style="background:#82AAFF"></i><i style="background:#3DDC84"></i><i style="background:#E5C07B"></i><i style="background:#E06C75"></i></span></div>
+              </div>
+            </div>
+            <div class="sect-regl">
+              <div class="nom-sect">Éditeur</div>
+              <div class="groupe">
+                <div class="rangée"><span class="clé">Taille</span><span class="valeur" style="margin-left:auto"><span class="stepper"><button>−</button><span class="val">13,5</span><button>+</button></span></span></div>
+                <div class="rangée"><span class="clé">Numéros de ligne</span><span class="valeur" style="margin-left:auto"><span class="interrupteur on"><i></i></span></span></div>
+              </div>
+            </div>
+            <div class="sect-regl">
+              <div class="nom-sect">Build</div>
+              <div class="groupe">
+                <div class="rangée-envers">
+                  <div class="haut"><span class="clé">Moteur par défaut</span><span class="segment" style="margin-left:auto"><span class="on">Service :build</span><span>En processus</span></span></div>
+                  <span class="légende">La mort du service interrompt le build, jamais l'IDE.</span>
+                </div>
+              </div>
+            </div>
+            <div class="sect-regl">
+              <div class="nom-sect">Stockage</div>
+              <div class="groupe">
+                <div class="rangée"><span class="clé">Cache CIDX</span><span class="valeur" style="margin-left:auto">42 Mo <span class="action-texte">Vider</span></span></div>
+                <div class="rangée"><span class="clé">Dépendances (m2)</span><span class="valeur" style="margin-left:auto">240 Mo <span class="action-texte rouge">Vider</span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="geste"><i></i></div>
+      </div></div>
+      <figcaption>
+        <h3><a href="parametres.html">Paramètres</a></h3>
+        <p>Réglages réels seulement : chaque valeur vient du disque, chaque action destructive confirme sa conséquence.</p>
+        <a class="adr-lien" href="../008-parametres.md">ADR-É8 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+    <!-- Agent -->
+    <figure class="vignette">
+      <div class="mini"><div class="cadre">
+        <div class="trou"></div>
+        <div class="statut"><span>9:41</span><span class="droite"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg></span></div>
+        <div class="ecran" style="position:relative;justify-content:flex-end">
+          <div style="position:absolute;inset:0;background:var(--puits);font-family:var(--mono);font-size:12px;line-height:19px;color:var(--synCommentaire);padding:14px;filter:brightness(.5)">android&nbsp;{<br>compileSdk&nbsp;=&nbsp;34<br>defaultConfig&nbsp;{<br>applicationId&nbsp;=<br>"com.exemple"<br>}</div>
+          <div style="position:absolute;inset:0;background:rgba(4,6,9,.4)"></div>
+          <div style="position:relative;margin:10px;background:var(--fond);border:1px solid var(--bord);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:13px;font-weight:600">Agent</span>
+              <span style="flex:1"></span>
+              <span style="font-size:9px;color:var(--texte2);background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:999px;padding:2px 7px">claude-sonnet-4-5 ▾</span>
+            </div>
+            <div style="align-self:flex-end;max-width:88%;background:var(--surfaceHaute);border:1px solid var(--bordFin);border-radius:10px 10px 3px 10px;padding:6px 9px;font-size:10.5px;line-height:15px">Corrige l'erreur de compilation.</div>
+            <div style="background:var(--surface);border:1px solid var(--bordFin);border-radius:9px;padding:6px 9px">
+              <div style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span><span style="font-family:var(--mono);font-size:9.5px">edit_file</span><span style="font-family:var(--mono);font-size:9px;color:var(--texte3)">MainActivity.java</span></div>
+              <div style="font-family:var(--mono);font-size:8.5px;line-height:13px;margin-top:4px"><span style="color:#E06C75">-&nbsp;&nbsp;ObjectMapper m = new ObjectMapper();</span><br><span style="color:#3DDC84">+&nbsp;&nbsp;Gson gson = new Gson();</span></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid rgba(130,170,255,.4);border-radius:9px;padding:6px 9px">
+              <div style="font-size:10px;font-weight:600">Parser JSON ou Gson ?</div>
+              <div style="display:flex;gap:4px;margin-top:4px"><span style="font-size:8.5px;color:#82AAFF;border:1px solid rgba(130,170,255,.5);border-radius:999px;padding:2px 7px">Gson</span><span style="font-size:8.5px;color:var(--texte2);border:1px solid var(--bord);border-radius:999px;padding:2px 7px">Maison</span></div>
+            </div>
+            <div style="font-family:var(--mono);font-size:8.5px;color:var(--texte3);padding:0 2px">14 120 in · 903 out · 11 240 cached · 6 req.</div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption>
+        <h3><a href="agent.html">Agent</a></h3>
+        <p>Tiroir chat de l'atelier : cartes d'outils pliables, permission sur diff déplié (fermer = refuser), questions par cartes, usage par tour, erreurs actionnables.</p>
+        <a class="adr-lien" href="../011-agent-ecran.md">ADR-É11 · ouvrir</a>
+      </figcaption>
+    </figure>
+
+  </div>
+
+  <!-- ================= JETONS ================= -->
+  <h2 class="section">Jetons — palette « Graphite » (ADR-É2)</h2>
+  <div class="jetons">
+    <div class="jeton"><span class="pastille" style="background:#0E1116"></span><span class="desc"><b>fond</b><span>#0E1116</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#151920"></span><span class="desc"><b>surface</b><span>#151920</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#1B212A"></span><span class="desc"><b>surfaceHaute</b><span>#1B212A</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#0B0E12"></span><span class="desc"><b>puits (code)</b><span>#0B0E12</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#262D38"></span><span class="desc"><b>bord</b><span>#262D38</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#E7ECF3"></span><span class="desc"><b>texte</b><span>#E7ECF3</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#9AA6B5"></span><span class="desc"><b>secondaire</b><span>#9AA6B5</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#82AAFF"></span><span class="desc"><b>accent</b><span>#82AAFF</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#3DDC84"></span><span class="desc"><b>réussite</b><span>#3DDC84 · construire</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#E5C07B"></span><span class="desc"><b>alerte</b><span>#E5C07B</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#E06C75"></span><span class="desc"><b>erreur</b><span>#E06C75</span></span></div>
+    <div class="jeton"><span class="pastille" style="background:#C678DD"></span><span class="desc"><b>bibliothèque</b><span>#C678DD · tuile</span></span></div>
+  </div>
+
+  <h2 class="section">Jetons — typographie, rayons, mouvement</h2>
+  <div class="deux-colonnes">
+    <div class="bloc">
+      <h3>Typographie</h3>
+      <div class="éch-typos">
+        <div class="ligne-éch"><span class="étiquette-éch">titre écran · 28/34 gras</span><span style="font-size:28px;font-weight:700;letter-spacing:-.02em">Mes projets</span></div>
+        <div class="ligne-éch"><span class="étiquette-éch">titre · 17/22 demi-gras</span><span style="font-size:17px;font-weight:600">Console de build</span></div>
+        <div class="ligne-éch"><span class="étiquette-éch">sous-titre · 16/22</span><span style="font-size:16px">mon-application</span></div>
+        <div class="ligne-éch"><span class="étiquette-éch">corps · 15/22</span><span style="font-size:15px">La création passe première ; l'import SAF devient secondaire.</span></div>
+        <div class="ligne-éch"><span class="étiquette-éch">légende · 12/16</span><span style="font-size:12px;color:var(--texte2)">Console JVM · 1 module · hier</span></div>
+      </div>
+      <div class="code-éch" style="margin-top:18px"><span class="c">// code · 13,5/22 — deux familles, jamais l'une pour l'autre</span>
+<span class="k">override fun</span> <span class="f">onCreate</span>(etat: <span class="t">Bundle</span>?) {
+    <span class="f">setContentView</span>(R.layout.<span class="s">activity_main</span>)  <span class="c">// 42 vues · 38 ms</span>
+}</div>
+    </div>
+    <div class="bloc">
+      <h3>Rayons</h3>
+      <div class="rayons">
+        <div class="rayon-item"><span class="forme" style="border-radius:16px"></span><span>cartes · <span class="desc-éch">16</span></span></div>
+        <div class="rayon-item"><span class="forme" style="border-radius:12px"></span><span>tuiles/boutons · <span class="desc-éch">12</span></span></div>
+        <div class="rayon-item"><span class="forme" style="border-radius:28px"></span><span>état vide · <span class="desc-éch">28</span></span></div>
+        <div class="rayon-item"><span class="forme" style="border-radius:999px"></span><span>puces · <span class="desc-éch">999</span></span></div>
+      </div>
+      <h3 style="margin-top:26px">Mouvement</h3>
+      <p style="font-size:13.5px;color:var(--texte2)">180 ms standard, 240 ms entre écrans ; entrées latérales directionnelles sur téléphone (axe X partagé), fondu discret sur grand écran — la distinction <span style="font-family:var(--mono);font-size:12px">ScreenTransition</span> de CodeAssist (ADR-É1, leçon 6). Élévation en sombre : liseré supérieur clair + ombre douce, jamais d'ombre dure.</p>
+    </div>
+  </div>
+
+  <!-- ================= FRANCHISE ================= -->
+  <h2 class="section">Franchise — le motif d'UI de JoIDE</h2>
+  <div class="franchise-liste">
+    <div class="franchise-item"><span class="gly" style="background:rgba(229,192,123,.14);color:var(--alerte)"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 14.5 13.5H1.5Z"/><path d="M8 6.5v3.2"/><circle cx="8" cy="11.8" r=".4" fill="currentColor"/></svg></span><span><b>Les écarts s'affichent avant le lancement.</b> Modules Android non construits sur appareil, dépendances non résolues : la console les dit AVANT, jamais après (« jamais d'omission muette », lot F).</span></div>
+    <div class="franchise-item"><span class="gly" style="background:rgba(130,170,255,.14);color:var(--accent)"><svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.5v3.6"/><circle cx="8" cy="5.2" r=".5" fill="currentColor"/></svg></span><span><b>L'aperçu ne ment jamais.</b> XML en frappe = dernier rendu valide conservé ; ressource manquante = repli natif annoncé ; classe inconnue = MockView (contrat lot E porté à l'écran, ADR-É7).</span></div>
+    <div class="franchise-item"><span class="gly" style="background:rgba(154,166,181,.14);color:var(--texte2)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2.5h6a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12.5 11.5v5M10 14h5"/></svg></span><span><b>Les sorties de build s'affichent estompées.</b> Pendant qu'elles se construisent, le nœud build-joide est visible, grisé, avec sa raison — jamais présenté comme source, jamais caché.</span></div>
+    <div class="franchise-item"><span class="gly" style="background:rgba(61,220,132,.14);color:var(--reussite)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="none"><path d="M4 12h4l2-5 3 10 2-5h5"/></svg></span><span><b>La mort du service est un événement, pas un état zombie.</b> « Build interrompu : l'IDE survit ; le prochain build le relance » — l'UI ne meurt jamais avec le :build (ADR-043, lot F).</span></div>
+  </div>
+
+  <footer class="pied">
+    JoIDE — écrans v2 · 2026-11-16 · maquettes HTML autonomes (aucune ressource externe, police système, SVG inline).
+    Référence analysée : CodeAssist de tyron12233 (sources, GPL-3.0, lecture seule — <a href="../001-analyse-codeassist.md">ADR-É1</a>).
+    <span class="adr-index">
+      <a href="../README.md">Série</a><a href="../001-analyse-codeassist.md">ADR-É1 Analyse</a><a href="../002-systeme-design.md">ADR-É2 Système</a><a href="../003-accueil-mes-projets.md">ADR-É3 Accueil</a><a href="../004-creation-projet.md">ADR-É4 Création</a><a href="../005-atelier.md">ADR-É5 Atelier</a><a href="../006-console-build.md">ADR-É6 Console</a><a href="../007-apercu-mise-en-page.md">ADR-É7 Aperçu</a><a href="../008-parametres.md">ADR-É8 Paramètres</a><a href="../011-agent-ecran.md">ADR-É11 Agent</a>
+    </span>
+  </footer>
+
+</div>
+</body>
+</html>
