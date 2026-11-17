@@ -156,6 +156,12 @@ final class IncrementalJvmCompile {
         return out.toString();
     }
 
+    /** @return vrai si la compilation Kotlin porte -no-jdk (le
+     *  plateau d'appareil fournit java.* du classpath — lot XVIII) */
+    boolean noJdk() {
+        return noJdk;
+    }
+
     /**
      * Exécute la compilation incrémentale.
      *

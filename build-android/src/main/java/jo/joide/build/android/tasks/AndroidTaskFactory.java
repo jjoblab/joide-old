@@ -390,6 +390,16 @@ public final class AndroidTaskFactory {
         }
         if (modulesAvecR.contains(spec.name)) {
             graph.dependsOn(compileJava, spec.name + ":generateRJar");
+            // lot XVIII : la MÊME arête pour Kotlin — l'entrée R.jar
+            // (avec r.abi.manifest en FileInput) sert aux DEUX tâches
+            // de compilation (upstreamKotlin) ; sans l'arête, le
+            // scheduler parallèle démarrait compileKotlin avant
+            // generateRJar : « cannot read input file: r.abi.manifest »
+            // (terrain du 2026-11-17)
+            if (hasKotlin) {
+                graph.dependsOn(compileKotlin,
+                        spec.name + ":generateRJar");
+            }
         }
         RootedPath javaStateFile = RootedPath.of(RootName.OUT, "jvm")
                 .resolve(spec.name).resolve("classes-java")

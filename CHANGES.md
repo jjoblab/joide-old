@@ -1,3 +1,38 @@
+# CHANGES — Lot XVIII : l'arête du R.jar pour Kotlin et le plateau d'appareil de la route console (2026-11-17)
+
+**Les nouveaux logs** (2026-11-17) : `:app:compileKotlin :
+cannot read input file: $OUT/android/:app/r.abi.manifest` et
+`console:compileKotlin : No class roots are found in the JDK path:
+/apex/com.android.art`. Deux analyses expertes en parallèle (le
+moteur CodeAssist, référence de terrain ; le moteur joide) se
+recoupent : (A) l'entrée R.jar (avec r.abi.manifest en FileInput,
+déclaré par upstreamJava ET upstreamKotlin) n'avait son arête
+producteur que sur compileJava — le scheduler PARALLÈLE démarrait
+compileKotlin avant generateRJar et le moteur échouait AVANT
+l'exécution (ensureInputHashes) ; RJarTask est irréprochable (il
+écrit TOUJOURS le manifeste en cas de succès). (B) la route console
+JVM créait la tâche Kotlin avec sansJdk=false (« bureau : le JDK
+réel fournit les racines ») — sur appareil java.home =
+/apex/com.android.art (ART, aucune racine), kotlinc échoue ; et
+AUCUN jar ne jouait java.* sur cette route (kotlinc a toujours
+-no-stdlib : il lui faut un plateau au classpath).
+
+| Étape | Contenu |
+|---|---|
+| XVIII/1 | AndroidTaskFactory : l'arête jumelle compileKotlin → `<mod>:generateRJar` (conditionnée hasKotlin) à côté de l'historique compileJava |
+| XVIII/2 | BuildRunner : surAppareil() (vendor Android ou java.home /apex — la sonde de CodeAssist), ancre $SDK pour la route JVM sur appareil, plateau via ToolchainLocator.locate() (téléchargement épinglé SHA-256 à la demande) |
+| XVIII/3 | JvmTaskFactory.withPlateauAppareil : android.jar entre dans le classpath des DEUX langages (kotlinc ET ecj lisent java.* du classpath, manifeste ABI au schéma des jars externes) et la tâche Kotlin porte -no-jdk ; le bureau reste ENTIER (pas de plateau, pas de -no-jdk) |
+| XVIII/4 | Suites build-jvm, build-daemon, build-android vertes ; trois tests nouveaux (le graphe des deux arêtes ; plateau + -no-jdk + les deux classpaths ; le bureau inchangé) |
+
+La feuille de route langages (Java, Kotlin Compose, KMP — la parité
+CodeAssist) est posée : `docs/feuille-de-route-langages.md`
+(Compose : plugin -Xplugin + sonde de classpath + registrar dexé
+dans l'app hôte ; incrémental Kotlin maison car l'IC officielle
+mmap casse sur ART ; KMP collapsed via -Xcommon-sources ; R.jar ASM ;
+INameEnvironment ecj si besoin).
+
+---
+
 # CHANGES — Lot XVII : le manifeste enrichie — aapt2 exige l'attribut package (2026-11-17)
 
 **Le nouveau log** (2026-11-17) : « build #1 échoué — 5 exécutées ·

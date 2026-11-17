@@ -493,10 +493,27 @@ public final class BuildRunner implements AutoCloseable {
                 .normalize());
         anchors.put(RootName.M2, Path.of(spec.m2).toAbsolutePath()
                 .normalize());
-        if (spec.kind == BuildSpec.Kind.ANDROID) {
+        // lot XVIII : la route console JVM sur APPAREIL consomme
+        // android.jar (le plateau compile-time ancré $SDK — kotlinc
+        // avec -no-jdk et ecj lisent java.* du classpath) ; le bureau
+        // s'en passe (le JDK réel fournit les racines)
+        if (spec.kind == BuildSpec.Kind.ANDROID
+                || (spec.kind == BuildSpec.Kind.JVM && surAppareil())) {
             anchors.put(RootName.SDK, ToolchainLocator.defaultCacheDir());
         }
         return RootSet.of(anchors);
+    }
+
+    /**
+     * Vrai si la VM hôte est ART (appareil Android) : le vendeur
+     * « Android » ou un {@code java.home} sous {@code /apex} — la
+     * détection de CodeAssist (le vendor Dalvik/Android). Au bureau,
+     * la JVM hôte EST le JDK : les racines java.* y vivent.
+     */
+    private static boolean surAppareil() {
+        String vendeur = System.getProperty("java.vendor", "");
+        String home = System.getProperty("java.home", "");
+        return vendeur.contains("Android") || home.startsWith("/apex/");
     }
 
     /**
@@ -562,6 +579,21 @@ public final class BuildRunner implements AutoCloseable {
         JvmTaskFactory factory = jvmHolder.factoryFor(spec)
                 .withKotlinDriver(kotlinDriver())
                 .withSourceAnchors(roots);
+        // lot XVIII : sur APPAREIL, la route console JVM n'a ni JDK
+        // ni racines java.* — la manière CodeAssist : -no-jdk et
+        // android.jar DU CLASSPATH (le plateau compile-time du cache
+        // SDK, le même que la route Android ; locate() télécharge les
+        // pièces manquantes, épinglées par SHA-256). Au bureau, le
+        // JDK réel fournit les racines : le plateau reste absent.
+        if (surAppareil()) {
+            Toolchain plateau = new ToolchainLocator(
+                    ToolchainLocator.defaultCacheDir()).locate();
+            Path jar = plateau.platformJar.toAbsolutePath().normalize();
+            factory.withPlateauAppareil(jo.joide.platform.RootedPath.of(
+                    RootName.SDK,
+                    ToolchainLocator.defaultCacheDir().toAbsolutePath()
+                            .normalize().relativize(jar).toString()), jar);
+        }
         for (BuildSpec.ModuleSpec module : spec.modules) {
             JvmTaskFactory.ModuleSpec jvm = new JvmTaskFactory.ModuleSpec(
                     module.name);

@@ -40,6 +40,14 @@ public final class JvmTaskFactory {
     private final CompilerDriver javaDriver;
     // lot VII : injectable (withKotlinDriver) — embarqué ou VM forkée
     private CompilerDriver kotlinDriver;
+    // lot XVIII : le plateau compile-time de l'appareil (android.jar,
+    // ancre $SDK + jar local), ou null (bureau) — présent, la tâche
+    // Kotlin porte -no-jdk et le plateau entre dans le classpath des
+    // DEUX langages ; la manière CodeAssist (le terrain du
+    // 2026-11-17 : « No class roots are found in the JDK path:
+    // /apex/com.android.art » sur la route console)
+    private RootedPath plateauAppareil;
+    private Path plateauJar;
     private final String sourceLevel;
     private final Map<String, Boolean> kotlinPresence = new LinkedHashMap<>();
     private RootSet sourceAnchors;
@@ -98,6 +106,20 @@ public final class JvmTaskFactory {
      */
     public JvmTaskFactory withKotlinDriver(CompilerDriver kotlinDriver) {
         this.kotlinDriver = kotlinDriver;
+        return this;
+    }
+
+    /**
+     * @param ancre le plateau compile-time ancré (android.jar sous
+     *              l'ancre $SDK) sur appareil, ou {@code null}
+     *              (bureau : le JDK réel fournit les racines java.*)
+     * @param jar   le plateau sur le disque (le manifeste ABI suit le
+     *              schéma des jars externes)
+     * @return cette fabrique
+     */
+    public JvmTaskFactory withPlateauAppareil(RootedPath ancre, Path jar) {
+        this.plateauAppareil = ancre;
+        this.plateauJar = jar;
         return this;
     }
 
@@ -237,6 +259,21 @@ public final class JvmTaskFactory {
             upstreamJava.add(entry);
             upstreamKotlin.add(entry);
         }
+        if (plateauAppareil != null && plateauJar != null) {
+            // lot XVIII : le plateau d'appareil (android.jar) entre
+            // dans le classpath des DEUX langages — kotlinc avec
+            // -no-jdk et ecj lisent java.* DU CLASSPATH ; le
+            // manifeste ABI suit le schéma des jars externes
+            AbiManifest manifest = abiCache.manifestOf(plateauJar);
+            ClasspathEntry plateau = new ClasspathEntry(
+                    ClasspathEntry.Kind.EXTERNAL,
+                    "platform:android.jar", plateauAppareil,
+                    RootedPath.of(outRoot, "jvm/abi-cache")
+                            .resolve(manifest.digest() + ".manifest"),
+                    null);
+            upstreamJava.add(plateau);
+            upstreamKotlin.add(plateau);
+        }
 
         RootedPath javaStateFile = RootedPath.of(outRoot, "jvm")
                 .resolve(spec.name).resolve("classes-java")
@@ -248,13 +285,14 @@ public final class JvmTaskFactory {
                     ClasspathEntry.Kind.MODULE_KOTLIN,
                     spec.name + ":kotlin", classesKotlin,
                     abiKotlin.resolve("current"), abiKotlin));
-            // bureau : le JDK réel fournit les racines java.* —
-            // PAS de -no-jdk (la manière CodeAssist ne concerne que
-            // la compilation Android, lot XIV)
+            // sur APPAREIL (plateau présent) : la manière CodeAssist —
+            // -no-jdk, java.* se lit DU CLASSPATH (le plateau posé
+            // plus haut) ; au bureau le JDK réel fournit les racines
             graph.register(JvmCompileTask.create(spec.name, "kotlin",
                     spec.sourceRoots, upstreamKotlin, kotlinDriver(),
                     spec.sourceRoots, classesKotlin, abiKotlin,
-                    javaStateFile, sourceLevel, false));
+                    javaStateFile, sourceLevel,
+                    plateauAppareil != null));
             graph.register(JvmCompileTask.create(spec.name, "java",
                     spec.sourceRoots, javaWithOwnKotlin, javaDriver,
                     List.of(), classesJava, abiJava, null, sourceLevel,
