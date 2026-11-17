@@ -50,27 +50,28 @@ public final class PacksOutils {
                     + "/toolchain-v1";
 
     /** Taille attendue du pack D8/R8 (octets). */
-    static final long TAILLE_R8 = 4_810_697L;
+    static final long TAILLE_R8 = 4_810_650L;
 
     /** SHA-256 attendu du pack D8/R8. */
     static final String SHA_R8
-            = "381fab0e5ec0e8b60e3aed3e656b53ce677f90c905691f7e4fe423fbe5ee5ccf";
+            = "756614a3cca7c9b34894fe802bb14edbc4b67dfc170ee90f682ea752d98cb18a";
 
     /** Taille attendue du pack bundletool+guava (octets). */
-    static final long TAILLE_BUNDLETOOL = 5_039_954L;
+    static final long TAILLE_BUNDLETOOL = 5_039_808L;
 
     /** SHA-256 attendu du pack bundletool+guava. */
     static final String SHA_BUNDLETOOL
-            = "f02b5d5ccbad6d01725a69e288ed5407b48814c65d2b1bfac9c47c8dd69162e8";
+            = "6106e065272fb8d675e5fa681e640287e89ccaaca3dcb4c73a4172afe03a67b3";
 
     /** Taille attendue du pack du compilateur Kotlin (octets) —
-     *  le pack ART-patché du lot XI (les passes du patcheur + les
-     *  shims dexés dedans), régénéré contre android.jar 37.2. */
-    static final long TAILLE_KOTLIN = 19_220_849L;
+     *  le pack ART-patché du lot XI, la PILE STAX du lot XV (l'API
+     *  javax.xml.stream + aalto unshadé + stax2-api : ART n'en livre
+     *  pas — la manière CodeAssist), régénéré contre android.jar 35. */
+    static final long TAILLE_KOTLIN = 19_311_619L;
 
     /** SHA-256 attendu du pack du compilateur Kotlin. */
     static final String SHA_KOTLIN
-            = "e7760a8eaff856ab0a5a987544088838d51ba88638c786c4fe3495b3ef53602a";
+            = "2fe2467fe2048ace6131c7faa2a0fee30295028cc9d15bfa40de4c3594c814cd";
 
     /** Un pack d'outil : fichier, empreinte et URL épinglées. */
     public static final class Pack {

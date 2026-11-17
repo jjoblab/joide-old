@@ -400,6 +400,19 @@ dependencies {
     // l'OUVRIER (source set workerKotlin de build-jvm) partent
     // ensemble au dexage du pack kotlin-compiler.dex.zip
     jarsKotlin(libs.kotlin.compiler.embeddable)
+    // Lot XV — la manière CodeAssist (« StAX on ART (which ships
+    // none) ») : l'API StAX (javax.xml.stream, le compilateur la
+    // référence mais le shade de l'embeddable ne l'embarque PAS — le
+    // bureau la reçoit du JDK, ART n'a rien), aalto comme
+    // implémentation COMPLÈTE unshadée (la copie shadée de
+    // l'embeddable n'a ni usines ni fichier de services) et
+    // stax2-api pour aalto. Les META-INF/services d'aalto (les
+    // usines XMLInputFactory/XMLOutputFactory/XMLEventFactory) partent
+    // avec les ressources non-class du pack : ServiceLoader de la VM
+    // ouvrière les trouve dans l'archive du pack.
+    jarsKotlin(libs.stax.api)
+    jarsKotlin(libs.stax2.api)
+    jarsKotlin(libs.aalto.xml)
     jarKotlinWorker(project(mapOf("path" to ":build-android",
             "configuration" to "kotlinWorkerApi")))
     // Lot XI : le patcheur ART et sa fermeture ASM, les shims ART —

@@ -12,6 +12,16 @@ sqliteJdbc = "3.49.1.0"
 # lecture des métadonnées Kotlin (Apache-2.0 — NOTICE)
 ecj = "3.40.0"
 kotlin = "2.3.0"
+# Lot XV — StAX sur ART (qui n'en livre pas) : l'API JSR-173 autonome,
+# aalto comme implémentation complète, stax2-api pour aalto. La manière
+# CodeAssist (« StAX on ART (which ships none): the standalone JSR-173
+# API, and aalto as its implementation. Used by the on-device Kotlin
+# compiler (IntelliJ-core's descriptor parsing) ») — sans eux, le
+# chargeur de descripteurs du compilateur (PluginDescriptorLoader)
+# échoue en NoClassDefFoundError TypedXMLStreamReader sur l'appareil
+staxApi = "1.0-2"
+stax2Api = "4.2.1"
+aaltoXml = "1.3.0"
 # Pipeline Android (P5) : dexeur et rétrécisseur D8/R8, signature APK,
 # assemblage de bundles (Google, Apache-2.0 — NOTICE) ; aapt2 est un
 # binaire natif téléchargé à la demande (pas une dépendance de compilation)
@@ -53,6 +63,9 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
 ecj = { module = "org.eclipse.jdt:ecj", version.ref = "ecj" }
 kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+stax-api = { module = "javax.xml.stream:stax-api", version.ref = "staxApi" }
+stax2-api = { module = "org.codehaus.woodstox:stax2-api", version.ref = "stax2Api" }
+aalto-xml = { module = "com.fasterxml:aalto-xml", version.ref = "aaltoXml" }
 kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }

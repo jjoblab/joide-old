@@ -1,3 +1,36 @@
+# CHANGES — Lot XV : la pile StAX dans le pack, l'analyse complète de CodeAssist (2026-11-17)
+
+**Le mandat du propriétaire** (message du 2026-11-17) : « Cela devient
+frustrant, fait une analyse plus approfondie pour comment exactement
+CodeAssist fait avec son moteur de build, tous les outils nécessaires
+… s'il faut une refonte totale, fais-la, fais tous les tests possibles
+» — et le nouveau log : `NoClassDefFoundError: Failed resolution of:
+Lorg/jetbrains/kotlin/org/codehaus/stax2/typed/TypedXMLStreamReader`
+depuis `PluginDescriptorLoader.loadDescriptorFromDir` à
+:core:compileKotlin. L'analyse faite sur les ARTEFACTS (pas sur des
+hypothèses) : le pack contient bien `TypedXMLStreamReader` et les 18
+classes stax2 shadées, mais AUCUNE classe `javax.xml.stream` définie,
+AUCUN fichier de services, et l'aalto shadé de l'embeddable est
+partiel (pas d'usines). Au bureau, le JDK fournit l'API StAX ET son
+parseur par défaut ; sur ART, `javax.xml.stream` n'existe pas — la
+vérification de classe échoue sur sa hiérarchie. CodeAssist le dit
+dans son propre catalogue (`libs.versions.toml`) : « StAX on ART
+(which ships none): the standalone JSR-173 API, and aalto as its
+implementation. Used by the on-device Kotlin compiler (IntelliJ-core's
+descriptor parsing) and by R8's resource shrinker » — ils embarquent
+`stax-api:1.0-2` + `aalto-xml:1.3.0` + `stax2-api:4.2.1`. L'ADR-077
+documente le moteur de CodeAssist en entier (compilateur -for-ide
+unshadé fusionné EN PROCESSUS, StAX, -no-jdk + android.jar, args CLI,
+VM forkée sondée, W^X, aapt2/bundletool/apksig/d8/desugar/bouncycastle).
+
+| Étape | Contenu |
+|---|---|
+| XV/1 | les trois jars StAX de CodeAssist (mêmes versions) dans la fermeture `jarsKotlin` du pack : API + impl complète unshadée (les usines que la copie shadée n'a pas) + stax2-api ; ils traversent la pipeline existante (patcheur ART → assainir → dexage par lots → ressources), les `META-INF/services` d'aalto partent avec les usines qu'ils désignent |
+| XV/2 | le pack se RÉGÉNÈRE réellement (`:app-android:dexPacksOutils` contre android.jar 35) ; les constantes épinglées se reportent pour les TROIS packs (le marqueur D8/javac de la machine fait dériver r8/bundletool de quelques octets ; les trois assets de la release toolchain-v1 sont remplacés ensemble) |
+| XV/3 | vérification matérielle du pack nouveau : 37 descripteurs `javax.xml.stream` définis (dont `XMLStreamReader`), les trois usines aalto (`InputFactoryImpl`, `OutputFactoryImpl`, `EventFactoryImpl`), les trois services corrects, 264 entrées (contre 253) ; SHA-256 recalculé indépendamment = constantes ; suites build-jvm, build-android, build-daemon au vert |
+
+---
+
 # CHANGES — Lot XIV : -no-jdk, la manière CodeAssist (2026-11-17)
 
 **Le mandat du propriétaire** (message du 2026-11-17) : nouveau
