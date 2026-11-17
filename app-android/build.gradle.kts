@@ -164,6 +164,8 @@ val genererKeystoreDebug = tasks.register("genererKeystoreDebug") {
 tasks.named("preBuild") {
     dependsOn(fetchAapt2)
     dependsOn(genererKeystoreDebug)
+    // lot XX : l'asset du jar du plugin Compose, avant tout empaquetage
+    dependsOn(stagerPluginCompose)
 }
 
 // Licences et NOTICE empaquetées (lot M, ADR-É8 « écran texte ») :
@@ -390,25 +392,19 @@ val composePluginAsset = configurations.create("composePluginAsset") {
 dependencies {
     composePluginAsset(libs.compose.compiler.plugin)
 }
-val stagerPluginCompose = tasks.register("stagerPluginCompose") {
+// lot XX : le JAR ORIGINAL du plugin Compose en ASSET — résolu du
+// catalogue, copié dans src/main/assets/toolchain/ (jamais committé,
+// même règle que le jniLibs). Tâche Copy NATIVE : la configuration
+// cache refuse les références d'objets de script dans les actions
+// (le terrain CI du 2026-11-17 : « cannot serialize Gradle script
+// object references » sur la tâche doLast d'origine) — from/into,
+// eux, s'enregistrent comme ENTRÉES de la tâche.
+val stagerPluginCompose = tasks.register<Copy>("stagerPluginCompose") {
     description = "Copie le jar du plugin Compose en asset de l'APK (src/main/assets/toolchain)."
     group = "build setup"
-    val cible = layout.projectDirectory
-            .dir("src/main/assets/toolchain")
-            .file("kotlin-compose-compiler-plugin.jar").asFile
-    doLast {
-        val source = composePluginAsset.resolve().single()
-        val memeContenu = cible.exists()
-                && cible.length() == source.length()
-                && cible.readBytes().contentEquals(source.readBytes())
-        if (!memeContenu) {
-            cible.parentFile.mkdirs()
-            source.copyTo(cible, overwrite = true)
-        }
-    }
-}
-tasks.named("preBuild") {
-    dependsOn(stagerPluginCompose)
+    from(composePluginAsset)
+    rename { "kotlin-compose-compiler-plugin.jar" }
+    into(layout.projectDirectory.dir("src/main/assets/toolchain"))
 }
 
 // --- les packs d'outils DIFFÉRÉS (chaîne allégée, 2026-11-17) -------------------------

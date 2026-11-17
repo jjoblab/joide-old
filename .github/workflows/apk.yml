@@ -90,8 +90,13 @@ jobs:
           PAT_BRIQUES: ${{ secrets.JOIDE_BRIQUES_PAT }}
         run: |
           set -euo pipefail
-          git config --global \
-            url."https://x-access-token:${PAT_BRIQUES}@github.com/".insteadOf "https://github.com/"
+          # Les briques sont PUBLIQUES (précision du propriétaire du
+          # 2026-11-17) : le PAT est un REPLI, pas une exigence — un
+          # secret absent ne doit plus faire tomber le clonage.
+          if [ -n "${PAT_BRIQUES:-}" ]; then
+            git config --global \
+              url."https://x-access-token:${PAT_BRIQUES}@github.com/".insteadOf "https://github.com/"
+          fi
           mkdir -p "$RUNNER_TEMP/briques"
           cd "$RUNNER_TEMP/briques"
           git clone --quiet https://github.com/jjoblab/celeris.git
