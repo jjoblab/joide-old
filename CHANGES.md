@@ -1,3 +1,35 @@
+# CHANGES — Lot XVII : le manifeste enrichie — aapt2 exige l'attribut package (2026-11-17)
+
+**Le nouveau log** (2026-11-17) : « build #1 échoué — 5 exécutées ·
+0 du cache · 0 à jour · 104,4 s » et `:app:linkAndroidResources :
+link failed: <manifest> must have a 'package' attribute`. La
+progression est franche : les murs d'environnement (W^X, JDK, StAX,
+stdlib) sont franchis — la chaîne de build TOURNE sur l'appareil et
+l'échec est devenu MÉTIER. Diagnostic sur les artefacts : le gabarit
+du projet démo (`assets/modeles/application-android.toml`) écrit un
+manifeste SANS `package` (style AGP 8 : le package vit dans
+`namespace`) alors que le paquet saisi à la création ne va que dans
+`MainActivity.kt` ; `Aapt2LinkTask` passait le manifeste SOURCE brut
+à aapt2 ; aapt2 est une couche basse qui exige l'attribut ; et
+`Aapt2.LinkOptions.packageName` est `--rename-manifest-package`
+(l'identifiant FINAL de l'APK) — il ne remplace pas l'attribut que R
+et la table de ressources exigent. La manière AGP : le manifeste
+MERGÉ porte l'attribut synthétisé.
+
+| Étape | Contenu |
+|---|---|
+| XVII/1 | `Aapt2LinkTask` écrit TOUJOURS un manifeste enrichie (`$OUT/android/<module>/manifest-enrichi.xml`, JAMAIS dans les sources) : copie du manifeste source avec `package="…"` injecté s'il manque ; les DEUX liens (APK et proto) le consomment ; il est déclaré en sortie |
+| XVII/2 | la chaîne de secours : manifeste `package=` → identifiant d'application de la variante (`identifiantPaquet` — l'application en a toujours un) → dérivation du nom du module, EXACTEMENT la règle d'`identifiantPaquet` (« : » → « _ ») ; une synthèse émet un WARN qui nomme le paquet et le correctif recommandé |
+| XVII/3 | le gabarit est corrigé : `package="{paquet}"` dans le manifeste du modèle — le paquet saisi à la création arrive enfin dans le manifeste (nouveaux projets droits) |
+| XVII/4 | suites build-jvm, build-android, build-daemon vertes ; cinq tests nouveaux (synthèse, dérivation, manifeste avec paquet intact, balise multiligne, règle EXACTE) |
+
+Le projet DÉJÀ créé du terrain : la synthèse fait passer le lien ; le
+WARN recommande d'écrire le paquet dans le manifeste — le paquet
+choisi à la création (première ligne de MainActivity.kt, ex. `jo.exemple.monapplication`) est la bonne valeur : R.java se
+génère sous ce paquet et l'activité voit `R` sans import.
+
+---
+
 # CHANGES — Lot XVI : le JAR réel de la stdlib dans le pack (2026-11-17)
 
 **Le nouveau log** (2026-11-17) : après la pile StAX du lot XV (le

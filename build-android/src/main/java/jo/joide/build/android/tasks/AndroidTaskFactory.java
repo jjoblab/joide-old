@@ -252,7 +252,9 @@ public final class AndroidTaskFactory {
             flatDirs.addAll(libFlats);
         }
         graph.register(new Aapt2LinkTask(spec.name,
-                anchored(spec.manifest), flatDirs,
+                anchored(spec.manifest),
+                androidDir.resolve("manifest-enrichi.xml"),
+                flatDirs,
                 androidDir.resolve("linked.apk"),
                 androidDir.resolve("gen"),
                 androidDir.resolve("R.txt"),

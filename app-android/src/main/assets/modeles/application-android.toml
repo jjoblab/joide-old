@@ -31,7 +31,8 @@ module = "app"
 chemin = "app/src/main/AndroidManifest.xml"
 lignes = [
   '<?xml version="1.0" encoding="utf-8"?>',
-  '<manifest xmlns:android="http://schemas.android.com/apk/res/android">',
+  '<manifest xmlns:android="http://schemas.android.com/apk/res/android"',
+  '    package="{paquet}">',
   '    <application',
   '        android:label="@string/app_name"',
   '        android:theme="@android:style/Theme.Material.NoActionBar">',
