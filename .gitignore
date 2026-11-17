@@ -36,3 +36,8 @@ local.properties
 # Lot U (ADR-066) : les binaires aapt2 préconstruits (fetchAapt2) sont
 # téléchargés À LA CONSTRUCTION dans src/main/jniLibs — jamais commis.
 /app-android/src/main/jniLibs/
+# Lot U/8 (2026-11-17) : le keystore de débogage des projets
+# UTILISATEUR est généré à la construction par genererKeystoreDebug
+# (keytool, jamais commis — convention docs/dev.md « aucun keystore
+# dans le dépôt »).
+/app-android/src/main/assets/toolchain/

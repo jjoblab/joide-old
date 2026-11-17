@@ -88,6 +88,32 @@ public final class SpecsBuild {
                                           ExternalResolution externals,
                                           Path projet, Path sorties,
                                           Path m2) {
+        return constituer(workspace, externals, projet, sorties, m2,
+                null);
+    }
+
+    /**
+     * Constitue la description du build du workspace, keystore de
+     * débogage compris — LOT U/8 : la variante debug porte un
+     * keystore quand l'application en a préparé un (PreparationChaine
+     * copie l'asset de l'APK vers filesDir/toolchain) : sans lui, la
+     * tâche de signature ne s'enregistrait pas et l'APK produit
+     * restait non signé, donc ininstallable.
+     *
+     * @param workspace      modèle du workspace (core-model)
+     * @param externals      dépendances externes résolues (sync)
+     * @param projet         racine du projet sur le disque
+     * @param sorties        répertoire des sorties du build
+     * @param m2             racine du cache des externes (jars)
+     * @param keystoreDebug  keystore de débogage prêt sur le disque,
+     *                       ou {@code null} (variante non signée,
+     *                       écart honnête)
+     * @return la constitution (spec ou écarts, jamais null)
+     */
+    public static Constitution constituer(Workspace workspace,
+                                          ExternalResolution externals,
+                                          Path projet, Path sorties,
+                                          Path m2, Path keystoreDebug) {
         boolean android = false;
         for (Module module : workspace.allModules().values()) {
             String type = module.type().id();
@@ -98,7 +124,8 @@ public final class SpecsBuild {
             }
         }
         return android
-                ? android(workspace, externals, projet, sorties, m2)
+                ? android(workspace, externals, projet, sorties, m2,
+                        keystoreDebug)
                 : jvm(workspace, externals, projet, sorties, m2);
     }
 
@@ -163,6 +190,23 @@ public final class SpecsBuild {
                                        ExternalResolution externals,
                                        Path projet, Path sorties,
                                        Path m2) {
+        return android(workspace, externals, projet, sorties, m2,
+                null);
+    }
+
+    /**
+     * La route ANDROID avec keystore de débogage (lot U/8) : chaque
+     * variante debug d'application porte le keystore prêt par
+     * l'application — la signature v1/v2 s'enregistre, l'APK
+     * s'installe directement sur l'appareil.
+     *
+     * @param keystoreDebug keystore prêt sur le disque, ou
+     *                      {@code null} (variante non signée)
+     */
+    public static Constitution android(Workspace workspace,
+                                       ExternalResolution externals,
+                                       Path projet, Path sorties,
+                                       Path m2, Path keystoreDebug) {
         List<String> ecarts = new ArrayList<>();
         List<BuildSpec.ModuleSpec> modules = new ArrayList<>();
         for (Module module : workspace.allModules().values()) {
@@ -185,18 +229,30 @@ public final class SpecsBuild {
         }
         // la variante : UNE debug par application du graphe —
         // identifiant lu du manifeste (package=), sinon dérivé du nom
+        // lot U/8 : le keystore de débogage prêt par l'application
+        // entre dans la variante — la tâche de signature s'enregistre
+        // (rapport du 2026-11-17 : l'APK produit n'était pas signé)
+        boolean signer = keystoreDebug != null
+                && Files.isRegularFile(keystoreDebug);
         List<Map<String, Object>> variantes = new ArrayList<>();
         for (BuildSpec.ModuleSpec module : modules) {
             if (!module.application) {
                 continue;
             }
-            variantes.add(Map.of(
-                    "applicationId",
-                    identifiantPaquet(projet, module),
-                    "buildType", "debug",
-                    "versionCode", 1,
-                    "minSdk", 28,
-                    "v2Signing", true));
+            Map<String, Object> variante = new LinkedHashMap<>();
+            variante.put("applicationId",
+                    identifiantPaquet(projet, module));
+            variante.put("buildType", "debug");
+            variante.put("versionCode", 1);
+            variante.put("minSdk", 28);
+            variante.put("v2Signing", true);
+            if (signer) {
+                variante.put("keystoreFile",
+                        keystoreDebug.toAbsolutePath().normalize()
+                                .toString());
+                variante.put("keystoreAlias", "joide");
+            }
+            variantes.add(Map.copyOf(variante));
         }
         BuildSpec spec = new BuildSpec(BuildSpec.Kind.ANDROID,
                 projet.toString(), sorties.toString(), m2.toString(),

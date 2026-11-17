@@ -217,4 +217,67 @@ class SpecsBuildTest {
         assertEquals("appli/src/main/AndroidManifest.xml",
                 constitution.spec.modules.get(0).manifest);
     }
+
+    /**
+     * Lot U/8 (fix du 2026-11-17) : un keystore de débogage PRÉSENT
+     * sur le disque entre dans la variante debug — la tâche de
+     * signature s'enregistre et l'APK produit s'installe. Sans
+     * keystore, la variante reste non signée (comportement d'avant,
+     * écart honnête).
+     */
+    @Test
+    void keystoreDebugPresentLaVarianteSigne() throws Exception {
+        Path racine = Files.createDirectories(temp.resolve("signe"));
+        Files.writeString(racine.resolve("joide.toml"), """
+                schema = "joide.workspace/1"
+
+                name = "essai"
+
+                [modules]
+                include = ["appli"]
+                """);
+        Files.createDirectories(
+                racine.resolve("appli/src/main/java"));
+        Files.writeString(
+                racine.resolve("appli/src/main/AndroidManifest.xml"), """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <manifest package="demo.appli" />
+                        """);
+        Files.writeString(
+                racine.resolve("appli/joide-module.toml"), """
+                        schema = "joide.module/1"
+                        name = "appli"
+                        type = "android-application"
+
+                        [[sources]]
+                        name = "main"
+                        source = ["src/main/java"]
+                        """);
+
+        Workspace workspace = WorkspaceLoader.load(racine)
+                .workspace().orElseThrow();
+
+        // PAS de keystore : la variante reste non signée (l'ancien
+        // comportement, jamais une régression silencieuse)
+        SpecsBuild.Constitution sansKeystore = SpecsBuild.android(
+                workspace, ExternalResolution.empty(), racine,
+                temp.resolve("out"), temp.resolve("m2"));
+        assertTrue(sansKeystore.constructible());
+        assertFalse(sansKeystore.spec.variants.get(0)
+                .containsKey("keystoreFile"));
+
+        // keystore posé : la variante porte le fichier ET l'alias,
+        // en chemin ABSOLU normalisé (le démon résout tel quel)
+        Path keystore = temp.resolve("toolchain/debug.keystore");
+        Files.createDirectories(keystore.getParent());
+        Files.write(keystore, new byte[]{1, 2, 3, 4});
+        SpecsBuild.Constitution avecKeystore = SpecsBuild.android(
+                workspace, ExternalResolution.empty(), racine,
+                temp.resolve("out"), temp.resolve("m2"), keystore);
+        assertTrue(avecKeystore.constructible());
+        assertEquals(keystore.toAbsolutePath().normalize().toString(),
+                avecKeystore.spec.variants.get(0).get("keystoreFile"));
+        assertEquals("joide",
+                avecKeystore.spec.variants.get(0).get("keystoreAlias"));
+    }
 }
