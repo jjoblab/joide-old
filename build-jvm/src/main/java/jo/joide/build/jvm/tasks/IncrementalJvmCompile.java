@@ -62,6 +62,7 @@ final class IncrementalJvmCompile {
     private final String encoding;
     private final double maxRecompiledFraction;
     private final boolean aggregatingProcessor;
+    private final boolean noJdk;
 
     private Map<String, String> previousAbisSnapshot = new HashMap<>();
 
@@ -74,7 +75,7 @@ final class IncrementalJvmCompile {
                           RootedPath outputDir, RootedPath abiDir,
                           RootedPath javaStateFile, String sourceLevel,
                           String encoding, double maxRecompiledFraction,
-                          boolean aggregatingProcessor) {
+                          boolean aggregatingProcessor, boolean noJdk) {
         this.moduleName = moduleName;
         this.language = language;
         this.fileExtension = fileExtension;
@@ -90,6 +91,7 @@ final class IncrementalJvmCompile {
         this.encoding = encoding;
         this.maxRecompiledFraction = maxRecompiledFraction;
         this.aggregatingProcessor = aggregatingProcessor;
+        this.noJdk = noJdk;
     }
 
     /** @return les racines de sources de la tâche */
@@ -142,7 +144,8 @@ final class IncrementalJvmCompile {
                 .append('|').append(sourceLevel)
                 .append('|').append(encoding)
                 .append('|').append(maxRecompiledFraction)
-                .append('|').append(aggregatingProcessor);
+                .append('|').append(aggregatingProcessor)
+                .append('|').append(noJdk);
         for (RootedPath root : sourceRoots) {
             out.append("|src=").append(root);
         }
@@ -335,6 +338,7 @@ final class IncrementalJvmCompile {
         builder.classpath(outDir);
         builder.outputDir(outDir);
         builder.sourceLevel(sourceLevel);
+        builder.noJdk(noJdk);
         return builder.build();
     }
 

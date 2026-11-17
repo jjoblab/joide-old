@@ -1,3 +1,29 @@
+# CHANGES — Lot XIV : -no-jdk, la manière CodeAssist (2026-11-17)
+
+**Le mandat du propriétaire** (message du 2026-11-17) : nouveau
+logcat après le lot XIII — DEUX progrès visibles : `dalvikvm64`
+démarre (« Using generational CollectorTypeCMC GC », plus aucun
+« Writable dex file », plus de 134 : le W^X du lot XIII est levé),
+le compilateur Kotlin se charge — puis refuse d'aller plus loin :
+**« No class roots are found in the JDK path: /apex/com.android.art »**.
+Cause : `KotlinArgs` posait `-no-stdlib` et `-no-reflect` mais jamais
+`-no-jdk` ; sans ce drapeau, `K2JVMCompiler` cherche les racines JDK
+sous `java.home` — au bureau, un vrai JDK, ça passe sans bruit ; sur
+l'appareil, ce chemin est ART (`/apex/com.android.art`, aucun jar) et
+la détection échoue avant toute compilation. Le lot XIV (ADR-076)
+porte la forme complète de CodeAssist (`ForkedKotlincArtSpike.kt` :
+« -no-jdk, -no-stdlib, -no-reflect » + android.jar au classpath) sur
+la chaîne des demandes de compilation :
+
+| Étape | Contenu |
+|---|---|
+| XIV/1 | `CompileRequest.noJdk` (champ explicite + bâtisseur) ; `KotlinArgs.args()` pose `-no-jdk` quand la demande le réclame — la même fabrique alimente le pilote embarqué (bureau) et la VM forkée (appareil), les deux routes le reçoivent |
+| XIV/2 | `IncrementalJvmCompile`/`JvmCompileTask` transportent l'option et l'incluent dans l'empreinte d'options (`spec()`) — une bascule invalide l'incrémental correctement |
+| XIV/3 | `AndroidTaskFactory` : `-no-jdk` pour KOTLIN (son classpath porte déjà android.jar, « bibliothèque de plateforme » — la moitié de la forme CodeAssist était en place) ; `JvmTaskFactory` (bureau, modules JVM purs) : faux — le JDK réel fournit les racines, le comportement desktop ne change pas |
+| XIV/4 | l'essai `KotlinArgsTest` prouve les deux chemins : la demande Android contient `-no-jdk` (+ `-no-stdlib`, `-no-reflect`), la demande bureau pas de drapeau — suites build-jvm, build-daemon et build-android au vert |
+
+---
+
 # CHANGES — Lot XIII : le pack en lecture seule, la cause racine du 134 (2026-11-17)
 
 **Le mandat du propriétaire** (message du 2026-11-17) : « Toujours la

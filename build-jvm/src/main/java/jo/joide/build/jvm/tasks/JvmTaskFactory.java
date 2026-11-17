@@ -248,18 +248,23 @@ public final class JvmTaskFactory {
                     ClasspathEntry.Kind.MODULE_KOTLIN,
                     spec.name + ":kotlin", classesKotlin,
                     abiKotlin.resolve("current"), abiKotlin));
+            // bureau : le JDK réel fournit les racines java.* —
+            // PAS de -no-jdk (la manière CodeAssist ne concerne que
+            // la compilation Android, lot XIV)
             graph.register(JvmCompileTask.create(spec.name, "kotlin",
                     spec.sourceRoots, upstreamKotlin, kotlinDriver(),
                     spec.sourceRoots, classesKotlin, abiKotlin,
-                    javaStateFile, sourceLevel));
+                    javaStateFile, sourceLevel, false));
             graph.register(JvmCompileTask.create(spec.name, "java",
                     spec.sourceRoots, javaWithOwnKotlin, javaDriver,
-                    List.of(), classesJava, abiJava, null, sourceLevel));
+                    List.of(), classesJava, abiJava, null, sourceLevel,
+                    false));
             graph.dependsOn(compileJava, compileKotlin);
         } else {
             graph.register(JvmCompileTask.create(spec.name, "java",
                     spec.sourceRoots, upstreamJava, javaDriver,
-                    List.of(), classesJava, abiJava, null, sourceLevel));
+                    List.of(), classesJava, abiJava, null, sourceLevel,
+                    false));
         }
         if (!spec.generators.isEmpty()) {
             graph.register(new GenerateSourcesTask(spec.name,

@@ -90,7 +90,7 @@ class KotlinForkedDriverTest {
         CompileResult deuxieme = pilote.compile(new CompileRequest(
                 List.of(second),
                 List.of(jarDe(kotlin.KotlinVersion.class), sortie),
-                List.of(), sortie, "17", "UTF-8"));
+                List.of(), sortie, "17", "UTF-8", false));
         assertTrue(deuxieme.success,
                 () -> "échec inattendu : " + deuxieme.diagnostics);
         assertTrue(Files.isRegularFile(sortie.resolve("demo/Salut2Kt.class")),
@@ -444,7 +444,7 @@ class KotlinForkedDriverTest {
             throws Exception {
         return new CompileRequest(List.of(source),
                 List.of(jarDe(kotlin.KotlinVersion.class)), List.of(),
-                sortie, "17", "UTF-8");
+                sortie, "17", "UTF-8", false);
     }
 
     /**

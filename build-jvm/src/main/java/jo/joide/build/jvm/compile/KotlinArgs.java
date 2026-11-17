@@ -41,6 +41,15 @@ public final class KotlinArgs {
         // la bibliothèque standard vient du classpath fourni
         args.add("-no-stdlib");
         args.add("-no-reflect");
+        // la manière CodeAssist (ForkedKotlincArtSpike) : -no-jdk —
+        // le compilateur ne cherche JAMAIS de racines JDK sous
+        // java.home (sur l'appareil ce chemin est
+        // /apex/com.android.art : ART, aucun jar — « No class roots
+        // are found in the JDK path ») ; java.* se résout depuis le
+        // classpath fourni, qui porte android.jar
+        if (request.noJdk) {
+            args.add("-no-jdk");
+        }
         for (Path source : request.sources) {
             args.add(source.toString());
         }

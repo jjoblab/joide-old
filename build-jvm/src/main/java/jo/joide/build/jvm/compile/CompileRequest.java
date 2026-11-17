@@ -30,6 +30,17 @@ public final class CompileRequest {
     public final String sourceLevel;
     /** Encodage des sources. */
     public final String encoding;
+    /** Compilateur SANS JDK (lot XIV — la manière CodeAssist,
+     *  {@code ForkedKotlincArtSpike} : « -no-jdk » avec
+     *  {@code android.jar} au classpath fourni) : le compilateur ne
+     *  cherche JAMAIS de racines JDK sous {@code java.home} — sur
+     *  l'appareil ce chemin est {@code /apex/com.android.art} (ART,
+     *  aucun jar) et la détection échoue en « No class roots are
+     *  found in the JDK path ». Les classes {@code java.*} se
+     *  résolvent alors depuis le classpath fourni, qui porte
+     *  android.jar. Au bureau (modules JVM purs) : faux — le JDK
+     *  réel fournit les racines, le comportement ne change pas. */
+    public final boolean noJdk;
 
     /**
      * @param sources                   sources à compiler
@@ -38,11 +49,13 @@ public final class CompileRequest {
      * @param outputDir                 répertoire de sortie
      * @param sourceLevel               niveau de source/cible
      * @param encoding                  encodage des sources
+     * @param noJdk                     vrai : -no-jdk (compilation
+     *                                  Android, java.* du classpath)
      */
     public CompileRequest(List<Path> sources, List<Path> classpath,
                           List<Path> javaSourceRootsForResolution,
                           Path outputDir, String sourceLevel,
-                          String encoding) {
+                          String encoding, boolean noJdk) {
         this.sources = List.copyOf(Objects.requireNonNull(sources,
                 "sources"));
         this.classpath = List.copyOf(Objects.requireNonNull(classpath,
@@ -54,6 +67,7 @@ public final class CompileRequest {
         this.sourceLevel = Objects.requireNonNull(sourceLevel,
                 "sourceLevel");
         this.encoding = Objects.requireNonNull(encoding, "encoding");
+        this.noJdk = noJdk;
         if (!StandardCharsets.UTF_8.name().equalsIgnoreCase(encoding)
                 && !"UTF-8".equalsIgnoreCase(encoding)) {
             // les sources du pipeline sont toujours UTF-8 (D10) ;
@@ -76,6 +90,7 @@ public final class CompileRequest {
         private Path outputDir;
         private String sourceLevel = "17";
         private String encoding = StandardCharsets.UTF_8.name();
+        private boolean noJdk;
 
         /** @param source source à compiler @return ce bâtisseur */
         public Builder source(Path source) {
@@ -107,10 +122,18 @@ public final class CompileRequest {
             return this;
         }
 
+        /** @param sansJdk vrai : -no-jdk (java.* du classpath —
+         *  la manière CodeAssist, compilation Android)
+         *  @return ce bâtisseur */
+        public Builder noJdk(boolean sansJdk) {
+            this.noJdk = sansJdk;
+            return this;
+        }
+
         /** @return la demande construite */
         public CompileRequest build() {
             return new CompileRequest(sources, classpath, javaRoots,
-                    outputDir, sourceLevel, encoding);
+                    outputDir, sourceLevel, encoding, noJdk);
         }
     }
 }

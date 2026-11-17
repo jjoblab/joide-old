@@ -399,18 +399,26 @@ public final class AndroidTaskFactory {
                     ClasspathEntry.Kind.MODULE_KOTLIN,
                     spec.name + ":kotlin", classesKotlin,
                     abiKotlin.resolve("current"), abiKotlin));
+            // la manière CodeAssist (lot XIV) : -no-jdk — java.*
+            // se résout depuis android.jar DU CLASSPATH (posé plus
+            // haut, « bibliothèque de plateforme ») ; sans cela la
+            // détection JDK consulte java.home (/apex/com.android.art
+            // sur l'appareil) et échoue en « No class roots are found
+            // in the JDK path »
             graph.register(JvmCompileTask.create(spec.name, "kotlin",
                     sourceRoots(spec), upstreamKotlin, kotlinDriver(),
                     sourceRoots(spec), classesKotlin, abiKotlin,
-                    javaStateFile, sourceLevel));
+                    javaStateFile, sourceLevel, true));
             graph.register(JvmCompileTask.create(spec.name, "java",
                     sourceRoots(spec), javaWithOwnKotlin, javaDriver,
-                    List.of(), classesJava, abiJava, null, sourceLevel));
+                    List.of(), classesJava, abiJava, null, sourceLevel,
+                    false));
             graph.dependsOn(compileJava, compileKotlin);
         } else {
             graph.register(JvmCompileTask.create(spec.name, "java",
                     sourceRoots(spec), upstreamJava, javaDriver,
-                    List.of(), classesJava, abiJava, null, sourceLevel));
+                    List.of(), classesJava, abiJava, null, sourceLevel,
+                    false));
         }
         List<RootedPath> jarClasses = new ArrayList<>();
         jarClasses.add(classesJava);

@@ -44,6 +44,10 @@ public final class JvmCompileTask implements TaskDefinition {
      * @param abiDir        répertoire des manifestes ABI
      * @param javaStateFile état Java du même module (compilation jointe)
      * @param sourceLevel   niveau de source/cible
+     * @param sansJdk       vrai : -no-jdk pour Kotlin (compilation
+     *                      Android — la manière CodeAssist, java.*
+     *                      se résout depuis android.jar du classpath ;
+     *                      au bureau, le JDK réel fournit les racines)
      * @return la tâche construite
      */
     public static JvmCompileTask create(String moduleName, String language,
@@ -54,14 +58,15 @@ public final class JvmCompileTask implements TaskDefinition {
                                         RootedPath outputDir,
                                         RootedPath abiDir,
                                         RootedPath javaStateFile,
-                                        String sourceLevel) {
+                                        String sourceLevel,
+                                        boolean sansJdk) {
         boolean kotlin = "kotlin".equals(language);
         IncrementalJvmCompile core = new IncrementalJvmCompile(
                 moduleName, language, kotlin ? "kt" : "java",
                 sourceRoots, classpath, driver,
                 kotlin ? javaRoots : List.of(),
                 outputDir, abiDir, javaStateFile, sourceLevel, "UTF-8",
-                0.30, false);
+                0.30, false, sansJdk);
         return new JvmCompileTask(core,
                 moduleName + ":compile" + (kotlin ? "Kotlin" : "Java"),
                 "compile");
