@@ -79,6 +79,8 @@
     <string name="mcp_rappel_service">Le service de l\'agent n\'a pas répondu. Ouvrez l\'atelier et réessayez.</string>
     <string name="agent_cle_posee">clé posée</string>
     <string name="agent_cle_absente">clé absente</string>
+    <string name="agent_cle_etat_posee">Clé API %1$s posée — toucher pour gérer</string>
+    <string name="agent_cle_etat_absente">Clé API %1$s absente — toucher pour la poser</string>
     <string name="agent_cles_gerer">Gérer les clés…</string>
     <string name="agent_usages_titre">Usages</string>
     <string name="agent_usages_conversation">Cette conversation — %1$d entrées · %2$d sorties · %3$d lectures cache</string>

@@ -729,9 +729,11 @@ public final class EcranParametres extends Activity {
                 getString(
                         FOURNISSEUR_ANTHROPIC.equals(fournisseur)
                                 ? R.string.parametres_cle_anthropic
-                                : FOURNISSEUR_OPENROUTER.equals(fournisseur)
-                                        ? R.string.parametres_cle_openrouter
-                                        : R.string.parametres_cle_openai),
+                                : FOURNISSEUR_GEMINI.equals(fournisseur)
+                                        ? R.string.parametres_cle_gemini
+                                        : FOURNISSEUR_OPENROUTER.equals(fournisseur)
+                                                ? R.string.parametres_cle_openrouter
+                                                : R.string.parametres_cle_openai),
                 saisie, R.string.action_annuler, R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel == DialogInterface.BUTTON_POSITIVE) {

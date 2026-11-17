@@ -214,6 +214,17 @@ public final class EcranAtelier extends Activity {
     private EtatAgentChat etatAgent = new EtatAgentChat();
     private final List<PieceJointe> piecesAgent = new ArrayList<>();
 
+    /** Le message parti avant la liaison du service (fix du
+     *  2026-11-17) : un premier message envoyé pendant le bind
+     *  ASYNCHRONE se perdait silencieusement — il part dès que le
+     *  binder est là, même après un tour en cours. */
+    private String messageEnAttenteAgent;
+
+    /** Les pièces du message en attente (mêmes règles que le
+     *  composeur : fondues au moment du départ). */
+    private final List<PieceJointe> piecesEnAttenteAgent =
+            new ArrayList<>();
+
     /** Le code de requête du choix d'image (SAF). */
     private static final int REQUETE_IMAGE = 47_101;
 
@@ -792,6 +803,14 @@ public final class EcranAtelier extends Activity {
                 .repository(new Repository.Remote("central",
                         "https://repo.maven.apache.org/maven2",
                         new HttpTransport()))
+                // fix du 2026-11-17 : Google Maven manquait — toute
+                // dépendance AndroidX (com.android.*, androidx.*)
+                // restait « non résolue, absente du classpath de
+                // build » et la compilation échouait ; CodeAssist
+                // sert central + google par défaut
+                .repository(new Repository.Remote("google",
+                        "https://dl.google.com/android/maven2",
+                        new HttpTransport()))
                 .cache(cache)
                 .build();
         LanguageModelSync syncLocal = new LanguageModelSync(racine,
@@ -1292,6 +1311,8 @@ public final class EcranAtelier extends Activity {
                 agent.poserEcouteur(VueAgentEntree -> runOnUiThread(
                         () -> surEntreeAgent(VueAgentEntree)));
                 rejouerJournalAgent();
+                // le message parti pendant le bind s'en va MAINTENANT
+                runOnUiThread(() -> depecherAttenteAgent());
             }
 
             @Override
@@ -1365,6 +1386,12 @@ public final class EcranAtelier extends Activity {
         }
         majQuestionsAgent();
         vueAgent.poserEtat(etatAgent);
+        // la fin d'un tour libère le message retenu pendant le bind
+        // (session revenue sur un tour vivant)
+        if (messageEnAttenteAgent != null
+                && etatAgent.etat() != EtatAgentChat.TourEtat.EN_COURS) {
+            depecherAttenteAgent();
+        }
         if (pointAgent != null) {
             pointAgent.setVisibility(
                     etatAgent.etat()
@@ -1426,6 +1453,16 @@ public final class EcranAtelier extends Activity {
             ouvrirAgent();
         }
         if (agent == null) {
+            // le bind est ASYNCHRONE : le message part dès la liaison
+            // (onServiceConnected) — plus jamais perdu silencieusement
+            // (fix du 2026-11-17 : le premier message d'une session
+            // disparaissait quand le service n'était pas encore lié)
+            messageEnAttenteAgent =
+                    PieceJointe.fondre(message, piecesAgent);
+            piecesEnAttenteAgent.clear();
+            piecesEnAttenteAgent.addAll(piecesAgent);
+            piecesAgent.clear();
+            vueAgent.poserPieces(List.of());
             return;
         }
         if (agent.tourEnCours()) {
@@ -1439,6 +1476,20 @@ public final class EcranAtelier extends Activity {
         agent.envoyer(fondu, List.copyOf(piecesAgent));
         piecesAgent.clear();
         vueAgent.poserPieces(List.of());
+    }
+
+    /** Le départ du message retenu : la liaison du service est là
+     *  (ou le tour en cours vient de finir). */
+    private void depecherAttenteAgent() {
+        if (agent == null || messageEnAttenteAgent == null
+                || agent.tourEnCours()) {
+            return;
+        }
+        String message = messageEnAttenteAgent;
+        List<PieceJointe> pieces = List.copyOf(piecesEnAttenteAgent);
+        messageEnAttenteAgent = null;
+        piecesEnAttenteAgent.clear();
+        agent.envoyer(message, pieces);
     }
 
     // ------------------------------------------------------------------
@@ -2000,7 +2051,12 @@ public final class EcranAtelier extends Activity {
         colonne.addView(tete);
 
         // ---- la rangée des fournisseurs : une puce pointée dit le
-        // choix, l'état de clé reste lu du stockage chiffré ----
+        // choix — le TAP PERSISTE le fournisseur (fix du 2026-11-17 :
+        // avant, seule la puce bougeait, le fournisseur des réglages
+        // restait ANTHROPIC et la requête partait chez Anthropic —
+        // « no key for anthropic » quel que soit le fournisseur
+        // choisi) ; l'état de clé se lit du stockage chiffré et se
+        // voit sous la rangée ----
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
         // lot U : quatre fournisseurs dépassent la largeur posée — la
@@ -2011,6 +2067,46 @@ public final class EcranAtelier extends Activity {
         defileFournisseurs.setClipToPadding(false);
         LinearLayout rangeeFournisseurs = new LinearLayout(this);
         rangeeFournisseurs.setOrientation(LinearLayout.HORIZONTAL);
+
+        // l'état de clé du fournisseur pointé (fix du 2026-11-17 :
+        // les chaînes agent_cle_posee/absente existaient mais ne se
+        // voyaient NULLE PART — l'utilisateur ne savait pas que SA
+        // clé n'était pas celle du fournisseur choisi). Un tap ouvre
+        // les réglages IA.
+        TextView etatCles = new TextView(this);
+        GraphiteVue.typographie(etatCles, Graphite.LEGENDE);
+        etatCles.setPadding(GraphiteVue.dp(this, 14),
+                GraphiteVue.dp(this, 4), GraphiteVue.dp(this, 14), 0);
+        etatCles.setOnClickListener(vue -> {
+            try {
+                startActivity(new Intent(this,
+                        jo.joide.app.android.ecrans.parametres
+                                .EcranParametres.class));
+            } catch (RuntimeException e) {
+                // les réglages restent atteignables par le menu
+            }
+        });
+        final Runnable[] majEtatCles = new Runnable[1];
+        majEtatCles[0] = () -> {
+            Reglages.FournisseurIa courant =
+                    fournisseurs[fournisseurIndex[0]];
+            boolean posee = false;
+            try {
+                posee = jo.joide.app.android.parametres.KeystoreCles
+                        .sur(this).estPosee(
+                                nomStockageCle(courant));
+            } catch (RuntimeException e) {
+                // Keystore cassé : l'état reste « absente », jamais
+                // un crash du sélecteur
+            }
+            etatCles.setTextColor(posee ? palette.texteSecondaire
+                    : palette.alerte);
+            etatCles.setText(getString(
+                    posee ? R.string.agent_cle_etat_posee
+                            : R.string.agent_cle_etat_absente,
+                    nomFournisseur(courant)));
+        };
+
         Puce[] puces = new Puce[fournisseurs.length];
         for (int i = 0; i < fournisseurs.length; i++) {
             final int index = i;
@@ -2022,6 +2118,10 @@ public final class EcranAtelier extends Activity {
                 for (int j = 0; j < puces.length; j++) {
                     puces[j].setPointee(j == index);
                 }
+                // fix 2026-11-17 : le fournisseur se PERSISTE au tap —
+                // puce seule ne suffisait pas (voir choisirFournisseur)
+                choisirFournisseur(fournisseurs[index]);
+                majEtatCles[0].run();
                 rafraichir[0].run();
             });
             puces[i] = puce;
@@ -2043,6 +2143,11 @@ public final class EcranAtelier extends Activity {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+        colonne.addView(etatCles,
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT));
+        majEtatCles[0].run();
 
         // ---- la recherche : le filtre des listes longues ----
         android.widget.EditText recherche =
@@ -2294,6 +2399,63 @@ public final class EcranAtelier extends Activity {
         etatAgent.poserModele(modele);
         vueAgent.rafraichir();
         pousserRecent(fournisseurIndex, modele);
+    }
+
+    /**
+     * Le choix d'un fournisseur SEUL (tap de puce, fix du
+     * 2026-11-17) : le fournisseur se PERSISTE à l'instant du choix —
+     * avant, seuls le choix d'un MODÈLE ou le dialogue personnalisé
+     * écrivaient le fournisseur : une puce tapée puis le popup fermé
+     * laissait le fournisseur des réglages (ANTHROPIC par défaut) et
+     * la requête partait chez Anthropic avec une clé absente
+     * (« no key for anthropic », quel que soit le fournisseur choisi).
+     *
+     * <p>Le modèle suit, à la manière de choisirModele : le modèle
+     * posé POUR CE fournisseur d'abord, le modèle partagé s'il lui
+     * APPARTIENT, sinon la première suggestion du catalogue — le
+     * garde d'appartenance ({@link Reglages#modeleAppartient})
+     * empêche « claude-sonnet-4-5 » de partir chez OpenRouter.</p>
+     */
+    private void choisirFournisseur(Reglages.FournisseurIa choisi) {
+        Reglages.ecrireFournisseurIa(sourceReglages, choisi);
+        String modele = Reglages.lireModelePour(sourceReglages, choisi);
+        if (modele.isEmpty()) {
+            String partage = Reglages.lire(sourceReglages).modeleIa;
+            if (partage != null
+                    && Reglages.modeleAppartient(partage, choisi)) {
+                modele = partage;
+            }
+        }
+        if (!Reglages.modeleAppartient(modele, choisi)) {
+            String[] catalogue = catalogueModele(choisi.ordinal());
+            modele = catalogue.length > 0 ? catalogue[0] : "";
+        }
+        if (modele.isEmpty()) {
+            // aucun modèle plausible pour ce fournisseur : le
+            // fournisseur est déjà persisté, le modèle reste celui
+            // des réglages — le garde du service refusera proprement
+            return;
+        }
+        Reglages.ecrireModeleIa(sourceReglages, modele);
+        Reglages.ecrireModelePour(sourceReglages, choisi, modele);
+        if (agent != null) {
+            agent.poserModele(choisi, modele);
+        }
+        etatAgent.poserModele(modele);
+        vueAgent.rafraichir();
+    }
+
+    /** L'identifiant de stockage chiffré d'un fournisseur (mêmes
+     *  noms qu'AgentService et Paramètres : anthropic, openai,
+     *  gemini, openrouter). */
+    private static String nomStockageCle(
+            Reglages.FournisseurIa fournisseur) {
+        return switch (fournisseur) {
+            case ANTHROPIC -> "anthropic";
+            case GEMINI -> "gemini";
+            case OPENROUTER -> "openrouter";
+            default -> "openai";
+        };
     }
 
     /** L'étoile : basculer un favori (devant les suggestions). */
@@ -2939,11 +3101,18 @@ public final class EcranAtelier extends Activity {
         ExternalResolution externals = sync.derniereResolution()
                 .orElse(ExternalResolution.empty());
         fond.execute(() -> {
+            // lot U/8 : le keystore de débogage se prépare AVANT la
+            // constitution — l'asset de l'APK se copie UNE fois vers
+            // filesDir/toolchain, la variante debug signée suit
+            // (avant : APK produit non signé, ininstallable)
+            java.nio.file.Path keystoreDebug =
+                    jo.joide.app.android.PreparationChaine
+                            .assurerKeystoreDebug(this);
             SpecsBuild.Constitution constitution = SpecsBuild
                     .constituer(modele, externals, racineProjet,
                             racineProjet.resolve("build-joide"),
                             Paths.get(getFilesDir().getAbsolutePath(),
-                                    "m2"));
+                                    "m2"), keystoreDebug);
             runOnUiThread(() -> {
                 etatConsole.surEcarts(constitution.ecarts);
                 if (!constitution.constructible()) {

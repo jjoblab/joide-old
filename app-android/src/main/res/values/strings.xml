@@ -79,6 +79,8 @@
     <string name="mcp_rappel_service">The agent service did not come up. Open the workshop and try again.</string>
     <string name="agent_cle_posee">key set</string>
     <string name="agent_cle_absente">no key</string>
+    <string name="agent_cle_etat_posee">API key for %1$s set — tap to manage</string>
+    <string name="agent_cle_etat_absente">No API key for %1$s — tap to set one</string>
     <string name="agent_cles_gerer">Manage keys…</string>
     <string name="agent_usages_titre">Usage</string>
     <string name="agent_usages_conversation">This conversation — %1$d in · %2$d out · %3$d cached</string>

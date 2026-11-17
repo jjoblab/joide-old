@@ -1032,7 +1032,16 @@ public final class AgentService extends Service {
     private FournisseurLlm bascule(String nomFournisseur,
                                    String cle) {
         List<String> cles = separerCles(cle);
-        String signature = nomFournisseur + "|" + cles;
+        // fix du 2026-11-17 : l'URL libre du fournisseur openai entre
+        // dans la signature — la bascule mémoïse par CLÉ, un simple
+        // changement d'URL laissait l'ANCIENNE passerelle en place
+        // jusqu'au redémarrage du processus
+        String urlIa = "openai".equals(nomFournisseur)
+                ? jo.joide.app.android.parametres.Reglages.lire(
+                        jo.joide.app.android.parametres.PreferencesAndroid
+                                .source(this)).urlIa
+                : "";
+        String signature = nomFournisseur + "|" + cles + "|" + urlIa;
         if (fournisseurBascule == null
                 || !signature.equals(bancSignature)) {
             bancCles = new BancCles(cles, null);
