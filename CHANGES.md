@@ -1,3 +1,33 @@
+# CHANGES — Lot V : le build qui part, le fournisseur qui persiste, l'APK qui maigrit (2026-11-17)
+
+**Le mandat du propriétaire** (message du 2026-11-17) : « le build
+ne fonctionne pas, j'ai des erreurs, peut-être que je n'utilise pas
+la bonne approche et qu'il manque d'autres outils. Il y a aussi un
+problème avec les fonctionnalités d'ia, j'ai choisi openrouter,
+j'ai mis l'api key, je n'ai pas l'impression que la clé est
+sauvegardée […] peu importe le provider choisi la carte erreur
+affiche requête échoué no anthropic key. Pour l'abi, je veux
+seulement arm64. L'apk mesure à peu près 150mb, j'aimerais savoir
+qui est ce qui gonfle l'apk ainsi. Et aussi étudier un moyen pour
+le rendre plus petit et l'application pourra télécharger ce qu'il
+a besoin une seule fois à la première installation ». Le lot V
+(ADR-067) répond point par point — le démon `:build` connaît enfin
+son outillage, l'aapt2 s'extrait, la variante debug se signe,
+AndroidX se résout, le fournisseur IA persiste au tap de puce,
+l'ABI est arm64 seul, et la chaîne différée (packs de dex
+téléchargeables une fois, la manière CodeAssist) est prête.
+
+| Étape | Contenu |
+|---|---|
+| V/1 | `BuildService.onCreate()` pose `joide.toolchain.dir` et `joide.native.dir` DANS le processus `:build` — les propriétés système ne traversent pas les processus, le démon (moteur PAR DÉFAUT) cherchait `user.home` (absent sur ART) et ne voyait pas l'aapt2 embarqué : tout build Android via le service échouait |
+| V/2 | `jniLibs.useLegacyPackaging = true` : `libaapt2.so` s'EXTRAIT vers `nativeLibraryDir` (seul répertoire où ART exécute — sans extraction le binaire n'existe jamais sur le disque) ; `abiFilters` = arm64-v8a seul, `fetchAapt2` purge les ABI retirées (~16 Mo gagnés sur l'APK 4-ABI) |
+| V/3 | la variante debug SIGNE : `genererKeystoreDebug` (keytool, jamais commis) embarque l'asset `toolchain/debug.keystore`, `PreparationChaine` le copie vers `filesDir/toolchain`, `SpecsBuild.android()` le porte dans la variante — l'APK utilisateur s'installe directement (avant : `unsigned.apk`, ininstallable) |
+| V/4 | Google Maven rejoint Maven Central dans le résolveur de l'app (`dl.google.com/android/maven2`) — AndroidX et `com.android.*` se résolvent, plus d'écart « non résolu, absent du classpath » |
+| V/5 | le fournisseur IA PERSISTE au tap de puce (`choisirFournisseur` : modèle posé pour lui, partagé si le garde l'accepte, sinon première suggestion — jamais « claude-sonnet-4-5 » chez OpenRouter) ; l'état de clé se voit sous la rangée (tap → réglages) ; titre Gemini du dialogue de saisie ; URL libre dans la signature de la bascule ; le message parti pendant le bind asynchrone se retient et part à la liaison |
+| V/6 | la chaîne DIFFÉRÉE : `PacksOutils` (packs de dex épinglés taille+SHA-256, téléchargés UNE fois), pont `ChargeurClassesOutil` (`DexClassLoader` dans app-android, ServiceLoader), repli de `BuildRunner.outil()` embarqué d'abord pack ensuite ; `:app-android:dexPacksOutils` génère les packs DÉTERMINISTES (r8 4,8 Mo, bundletool+guava 5,0 Mo) et échoue sur divergence des constantes — la publication dans la release `toolchain-v1` + le retrait des trois `implementation` de jars allègent l'APK de ~25 Mo (les étapes dans le commentaire du build.gradle.kts) |
+
+---
+
 # CHANGES — Lot U : le parcours complet (2026-11-17)
 
 **Le mandat du propriétaire** (message du 2026-11-17) : « Oui pour
