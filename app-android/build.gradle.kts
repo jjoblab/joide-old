@@ -368,6 +368,47 @@ dependencies {
     // app:generateRJar). 144 classes extraites du JDK 21 (scripts/
     // jar-javax-api.sh) ; ART accepte les classes javax.* de l'app.
     implementation(files("libs/java-compiler.jar"))
+    // Lot XX (la manière CodeAssist) : le plugin compilateur Compose
+    // vit dans l'APK — ses CLASSES sont dexées par AGP comme tout le
+    // reste, le classpath du fork Kotlin porte l'APK lui-même (le
+    // registrar se charge dans la VM ouvrière), et le JAR ORIGINAL
+    // part en asset (stagerPluginCompose) pour le -Xplugin de kotlinc
+    // (META-INF/services). Le pack de la release reste immuable.
+    implementation(libs.compose.compiler.plugin) {
+        // la stdlib est déjà embarquée — ne rien tirer d'autre
+        exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
+    }
+}
+
+// lot XX : le JAR ORIGINAL du plugin Compose en ASSET — résolu du
+// catalogue, copié dans src/main/assets/toolchain/ (jamais committé,
+// même règle que le jniLibs), la fraîcheur tenant au contenu
+val composePluginAsset = configurations.create("composePluginAsset") {
+    isCanBeConsumed = false
+    isTransitive = false
+}
+dependencies {
+    composePluginAsset(libs.compose.compiler.plugin)
+}
+val stagerPluginCompose = tasks.register("stagerPluginCompose") {
+    description = "Copie le jar du plugin Compose en asset de l'APK (src/main/assets/toolchain)."
+    group = "build setup"
+    val cible = layout.projectDirectory
+            .dir("src/main/assets/toolchain")
+            .file("kotlin-compose-compiler-plugin.jar").asFile
+    doLast {
+        val source = composePluginAsset.resolve().single()
+        val memeContenu = cible.exists()
+                && cible.length() == source.length()
+                && cible.readBytes().contentEquals(source.readBytes())
+        if (!memeContenu) {
+            cible.parentFile.mkdirs()
+            source.copyTo(cible, overwrite = true)
+        }
+    }
+}
+tasks.named("preBuild") {
+    dependsOn(stagerPluginCompose)
 }
 
 // --- les packs d'outils DIFFÉRÉS (chaîne allégée, 2026-11-17) -------------------------
@@ -409,12 +450,12 @@ dependencies {
     // l'OUVRIER (source set workerKotlin de build-jvm) partent
     // ensemble au dexage du pack kotlin-compiler.dex.zip
     jarsKotlin(libs.kotlin.compiler.embeddable)
-    // Lot XIX : le plugin compilateur Compose — dexé dans le pack
-    // (le registrar se charge dans la VM ouvrière ; sur ART, un jar
-    // ne définit pas de classes) et son jar ORIGINAL part comme
-    // ressource jars/ (kotlinc y lit META-INF/services pour
-    // -Xplugin, la sonde de PluginsKotlin l'active)
-    jarsKotlin(libs.compose.compiler.plugin)
+    // lot XX : le plugin Compose ne vit PLUS dans le pack — le pack
+    // de la release est IMMUTABLE (le terrain du 2026-11-17 : une
+    // empreinte mutée sans remplacement du fichier publié =
+    // « pack size mismatch » sur l'appareil). Les CLASSES du plugin
+    // sont dexées dans l'APK (implementation ci-dessous) et son jar
+    // ORIGINAL part en ASSET — la manière CodeAssist.
     // Lot XV — la manière CodeAssist (« StAX on ART (which ships
     // none) ») : l'API StAX (javax.xml.stream, le compilateur la
     // référence mais le shade de l'embeddable ne l'embarque PAS — le
@@ -729,20 +770,8 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         cibleStdlib.parentFile.mkdirs()
         stdlibJar.copyTo(cibleStdlib, overwrite = true)
         ressources["jars/" + stdlibJar.name] = cibleStdlib
-        // Lot XIX : le JAR ORIGINAL du plugin Compose part comme
-        // RESSOURCE du pack (« jars/kotlin-compose-compiler-plugin-<v>
-        // .jar »), même mécanique que la stdlib : kotlinc y lit le
-        // descripteur META-INF/services du registrar (-Xplugin) — les
-        // CLASSES, elles, sont dexées via jarsKotlin (sur ART, un jar
-        // ne définit pas de classes ; la VM ouvrière les charge du dex)
-        val composeJar = jarsK.first {
-            it.name.startsWith("kotlin-compose-compiler-plugin-")
-        }
-        val cibleCompose = dossierRessources.resolve("jars")
-                .resolve(composeJar.name)
-        cibleCompose.parentFile.mkdirs()
-        composeJar.copyTo(cibleCompose, overwrite = true)
-        ressources["jars/" + composeJar.name] = cibleCompose
+        // lot XX : le jar du plugin Compose ne part PLUS dans le pack
+        // (pack immuable — voir le commentaire jarsKotlin ci-dessus)
         // le dexage PAR LOTS (lot VII) : le compilateur Kotlin (60 Mo
         // de bytecode) ne tient pas dans une seule machine virtuelle
         // D8 d'une machine modeste — chaque lot se dexé seul (min-api

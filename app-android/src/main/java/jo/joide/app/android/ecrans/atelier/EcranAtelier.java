@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import jo.joide.app.android.ProprietesConstruction;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -236,12 +237,11 @@ public final class EcranAtelier extends Activity {
         super.onCreate(state);
         // lot U : l'outillage de build vit ICI — le cache dans les
         // fichiers privés (jamais user.home, absent sur Android) et
-        // nativeLibraryDir où ART seul exécute les binaires
-        System.setProperty("joide.toolchain.dir",
-                Paths.get(getFilesDir().getAbsolutePath(),
-                        "toolchain").toString());
-        System.setProperty("joide.native.dir",
-                getApplicationInfo().nativeLibraryDir);
+        // nativeLibraryDir où ART seul exécute les binaires.
+        // lot XX : ProprietesConstruction, UNE vérité pour les deux
+        // processus (l'écran atelier, le service) — l'APK du fork
+        // (registrar Compose dexé) et le jar du plugin extrait en plus
+        ProprietesConstruction.poser(this);
         palette = GraphiteVue.palette(this);
         GraphiteVue.fondEcran(this, palette);
         sourceReglages = PreferencesAndroid.source(this);

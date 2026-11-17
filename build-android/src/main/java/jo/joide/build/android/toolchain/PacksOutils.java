@@ -68,14 +68,18 @@ public final class PacksOutils {
      *  javax.xml.stream + aalto unshadé + stax2-api : ART n'en livre
      *  pas), le JAR ORIGINAL de la stdlib en ressource du lot XVI
      *  (le classpath de compile exige un jar RÉEL — la manière
-     *  CodeAssist), le PLUGIN COMPOSE du lot XIX (dexé pour la VM
-     *  ouvrière + jar original en jars/ pour -Xplugin), régénéré
-     *  contre android.jar 35. */
-    static final long TAILLE_KOTLIN = 22_198_577L;
+     *  CodeAssist), régénéré contre android.jar 35. LOT XX : ce pack
+     *  est IMMUTABLE — le lot XIX l'avait muté (plugin Compose dexé)
+     *  sans que le fichier de la release fût remplacé : « pack size
+     *  mismatch » sur l'appareil. Règle dorée (CodeAssist ne publie
+     *  RIEN — audit du 2026-11-17) : un artefact publié ne change
+     *  JAMAIS — tout ajout vit dans l'APK ou dans un NOUVEAU fichier
+     *  versionné. */
+    static final long TAILLE_KOTLIN = 20_989_461L;
 
     /** SHA-256 attendu du pack du compilateur Kotlin. */
     static final String SHA_KOTLIN
-            = "d704d1bf4e33d84ea3ad7b761d63d5a7c7bac1ddb7227df896d5ad92d1206279";
+            = "9a9f48fce9f7b57e62522ca66312ffc130abc5fe01103149ebac193e3ee24f14";
 
     /** Un pack d'outil : fichier, empreinte et URL épinglées. */
     public static final class Pack {

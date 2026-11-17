@@ -1,3 +1,38 @@
+# CHANGES — Lot XX : la refonte « tout embarqué » démarre, le pack redevient immuable (2026-11-17)
+
+**La question du propriétaire** : « Est-ce que CodeAssist utilise
+toutes ces opérations et modifications ? » **L'audit du dépôt de
+référence répond : NON** — aucun téléchargement d'outillage à
+l'exécution (décision explicite dans AndroidSdkInstaller.kt:26-27),
+aucun épinglage taille/SHA sur l'outillage, aucune re-publication ;
+le compilateur Kotlin est dexé par AGP dans l'APK et la VM forkée
+prend pour classpath l'APK lui-même (ForkedKotlinCompiler.kt:67-76).
+Coût assumé : APK ~180 Mo. Le propriétaire avait tranché en session
+antérieure : refonte pour reproduire CodeAssist. Le programme est
+posé (ADR-082, cinq étapes).
+
+**Le terrain** : « pack size mismatch for kotlin : 20989461 octets,
+attendus 22198577 » — la faute du lot XIX : un artefact PUBLIÉ avait
+été muté (plugin Compose dexé dans le pack) sans remplacer le
+fichier de la release. Règle dorée désormais gravée dans ADR-082 :
+un artefact publié ne change JAMAIS — tout ajout vit dans l'APK ou
+dans un NOUVEAU fichier versionné.
+
+| Étape | Contenu |
+|---|---|
+| XX/1 | Revert de la mutation : recette du pack reprise à l'identique du lot XVI (sans Compose), empreintes anciennes restaurées, regen vérifié ÉGAL au SHA publié (9a9f48fc…) — l'appareil se remet à marcher sans AUCUNE action sur la release |
+| XX/2 | Compose dans l'APK (S1 de la refonte, ~2 Mo) : classes dexées par AGP (implementation), jar original en asset toolchain/ (stagerPluginCompose, jamais committé), extraction UNE fois par ProprietesConstruction (UNE vérité pour les deux processus, qui remplace les blocs dupliqués de BuildService et EcranAtelier) |
+| XX/3 | La VM ouvrière porte l'APK au classpath (joide.app.apk, la manière CodeAssist) — le registrar Compose se charge du dex de l'APK ; homeOuvriere extrait les ressources de la PREMIÈRE entrée .dex.zip ; PluginsKotlin lit joide.compose.plugin.jar d'abord ; bureau inchangé (ressource build-jvm) |
+| XX/4 | ADR-082 : l'audit CodeAssist + la règle d'immutabilité + le programme de refonte en cinq étapes (S2 r8/bundletool ~14 Mo, S3 le compilateur ~45 Mo avec patcheur ART en tâche Gradle, S4 android.jar en asset, S5 suppression de la mécanique) |
+| XX/5 | Tests nouveaux : la propriété d'abord (build-jvm), l'extraction multi-entrées (build-android) |
+
+Le propriétaire n'a PLUS RIEN à publier : rebuild APK depuis ce lot,
+rebuild projet sur l'appareil. Compose s'activera par la sonde dès
+qu'un jar androidx.compose.runtime est au classpath (la résolution
+des AAR compose reste le lot suivant, inchangé).
+
+---
+
 # CHANGES — Lot XIX : aapt2 conscient de l'ABI, l'API javax.* dans l'APK, Compose par sonde (2026-11-17)
 
 **Le build console JVM est PASSÉ sur l'appareil** (le lot XVIII

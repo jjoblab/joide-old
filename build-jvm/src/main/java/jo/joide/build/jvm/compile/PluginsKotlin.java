@@ -108,18 +108,21 @@ public final class PluginsKotlin {
         if (jar == null) {
             throw new IOException("sonde Compose allumée ("
                     + ENTREE_COMPOSABLE + " au classpath) mais le jar "
-                    + "du plugin est introuvable : le pack Kotlin "
-                    + "doit porter jars/" + PREFIXE_JAR_COMPOSE
-                    + "<version>.jar, ou le bureau la ressource "
-                    + RESSOURCE_JAR_COMPOSE);
+                    + "du plugin est introuvable : sur l'appareil, "
+                    + "l'APK doit porter l'asset toolchain/"
+                    + "kotlin-compose-compiler-plugin.jar (lot XX, "
+                    + "la propriété joide.compose.plugin.jar) ; au "
+                    + "bureau, la ressource " + RESSOURCE_JAR_COMPOSE);
         }
         return List.of(jar);
     }
 
     /**
-     * Le jar du plugin Compose : le pack d'abord ({@code jars/} du
-     * home ouvrière — le fichier Y EST déjà, pas d'extraction), la
-     * ressource du classpath ensuite (bureau : extraite vers le
+     * Le jar du plugin Compose : la propriété {@code
+     * joide.compose.plugin.jar} d'abord (appareil : l'APK l'extrait
+     * de ses assets — lot XX, la manière CodeAssist), le pack ensuite
+     * (repli historique, le pack étant immuable il ne le porte plus),
+     * la ressource du classpath enfin (bureau : extraite vers le
      * cache du tmpdir, réutilisée si présente).
      *
      * @param homePack le home du pack (appareil) ou {@code null}
@@ -127,6 +130,12 @@ public final class PluginsKotlin {
      * @throws IOException si l'extraction de la ressource échoue
      */
     public static Path jarCompose(Path homePack) throws IOException {
+        String propriete = System
+                .getProperty("joide.compose.plugin.jar");
+        if (propriete != null && !propriete.isBlank()
+                && Files.isRegularFile(Path.of(propriete.trim()))) {
+            return Path.of(propriete.trim());
+        }
         if (homePack != null) {
             Path jars = homePack.resolve("jars");
             if (Files.isDirectory(jars)) {

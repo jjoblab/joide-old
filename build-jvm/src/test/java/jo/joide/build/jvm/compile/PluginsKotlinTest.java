@@ -111,4 +111,36 @@ class PluginsKotlinTest {
         assertFalse(args.contains("-P"),
                 "ZÉRO option -P pour Compose (la manière CodeAssist)");
     }
+
+    @Test
+    void leJarDuPluginVientDeLaProprieteDabord(@TempDir Path dossier)
+            throws IOException {
+        Path plugin = dossier.resolve("kotlin-compose-compiler-plugin.jar");
+        Files.writeString(plugin, "jar extrait des assets de l'APK");
+        System.setProperty("joide.compose.plugin.jar", plugin.toString());
+        try {
+            assertEquals(plugin, PluginsKotlin.jarCompose(null),
+                    "la propriété de l'APK gagne (lot XX, la manière "
+                            + "CodeAssist — jar extrait des assets)");
+        } finally {
+            System.clearProperty("joide.compose.plugin.jar");
+        }
+    }
+
+    @Test
+    void uneProprieteVideOuMorteEstIgnoree(@TempDir Path dossier)
+            throws IOException {
+        System.setProperty("joide.compose.plugin.jar",
+                dossier.resolve("absent.jar").toString());
+        try {
+            Path jar = PluginsKotlin.jarCompose(null);
+            // la propriété morte est écartée : le repli ressource du
+            // bureau (présent dans les ressources de build-jvm) ou
+            // l'échec nommé — jamais un fichier inexistant
+            assertTrue(jar == null || Files.isRegularFile(jar),
+                    "le jar rendu EXISTE, ou null (échec nommé)");
+        } finally {
+            System.clearProperty("joide.compose.plugin.jar");
+        }
+    }
 }

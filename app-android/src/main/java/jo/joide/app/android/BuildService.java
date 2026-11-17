@@ -86,11 +86,12 @@ public final class BuildService extends Service {
         // Désormais TOUT échec de démarrage écrit SA cause dans le
         // canal d'erreur — le client la montre au lieu d'attendre.
         try {
-            System.setProperty("joide.toolchain.dir",
-                    Paths.get(getFilesDir().getAbsolutePath(),
-                            "toolchain").toString());
-            System.setProperty("joide.native.dir",
-                    getApplicationInfo().nativeLibraryDir);
+            // lot XX : les propriétés d'outillage vivent dans
+            // ProprietesConstruction — UNE vérité pour les deux
+            // processus (le service, l'écran atelier) ; le lot XX y
+            // ajoute l'APK du fork (registrar Compose dexé) et le jar
+            // du plugin extrait des assets
+            ProprietesConstruction.poser(this);
             NotificationManager gestionnaire =
                     getSystemService(NotificationManager.class);
             if (gestionnaire != null

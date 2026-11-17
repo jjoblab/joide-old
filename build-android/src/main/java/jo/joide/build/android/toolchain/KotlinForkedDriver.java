@@ -814,9 +814,13 @@ public final class KotlinForkedDriver implements CompilerDriver {
      *  du pack (tout sauf les dex) extraites UNE fois dans {@code
      *  kotlin-home} du répertoire d'outillage, la garde étant le
      *  SHA-256 épinglé du pack — null pour l'essai bureau (les jars
-     *  portent leurs ressources par classloader). */
+     *  portent leurs ressources par classloader). Lot XX : le
+     *  classpath peut porter PLUSIEURS entrées (le pack, puis l'APK
+     *  de l'app depuis lot XX) — l'extraction lit la PREMIÈRE entrée
+     *  {@code .dex.zip}. */
     static Path homeOuvriere(String classpath) {
-        if (!classpath.endsWith(".dex.zip")) {
+        String pack = entreePack(classpath);
+        if (pack == null) {
             return null;
         }
         Path home = ToolchainLocator.defaultCacheDir()
@@ -831,9 +835,9 @@ public final class KotlinForkedDriver implements CompilerDriver {
                 return home;
             }
             Files.createDirectories(home);
-            try (java.util.zip.ZipFile pack = new java.util.zip.ZipFile(
-                    Path.of(classpath).toFile())) {
-                var entrées = pack.entries();
+            try (java.util.zip.ZipFile archive = new java.util.zip.ZipFile(
+                    Path.of(pack).toFile())) {
+                var entrées = archive.entries();
                 while (entrées.hasMoreElements()) {
                     java.util.zip.ZipEntry entrée = entrées
                             .nextElement();
@@ -846,7 +850,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
                         continue;   // slip de zip : entrée rejetée
                     }
                     Files.createDirectories(cible.getParent());
-                    try (var source = pack.getInputStream(entrée)) {
+                    try (var source = archive.getInputStream(entrée)) {
                         Files.copy(source, cible,
                                 java.nio.file.StandardCopyOption
                                         .REPLACE_EXISTING);
@@ -861,6 +865,22 @@ public final class KotlinForkedDriver implements CompilerDriver {
             // échouera nommé si le registre en a besoin
             return null;
         }
+    }
+
+    /** La première entrée {@code .dex.zip} d'un classpath d'ouvrière
+     *  (lot XX : le pack, puis l'APK de l'app) — {@code null} si le
+     *  classpath n'en porte pas (essai bureau : les jars portent
+     *  leurs ressources par classloader). */
+    static String entreePack(String classpath) {
+        if (classpath == null || classpath.isBlank()) {
+            return null;
+        }
+        for (String entree : classpath.split(":")) {
+            if (entree.endsWith(".dex.zip")) {
+                return entree;
+            }
+        }
+        return null;
     }
 
     /** Le jar ORIGINAL de la bibliothèque standard, extrait du pack
@@ -915,13 +935,25 @@ public final class KotlinForkedDriver implements CompilerDriver {
     }
 
     /** Le classpath de l'ouvrière : surcharge d'essai, sinon le pack
-     *  différé épinglé (téléchargé une première fois si absent). */
+     *  différé épinglé (téléchargé une première fois si absent).
+     *  Lot XX (la manière CodeAssist, ForkedKotlinCompiler.kt:67-76) :
+     *  l'APK de l'app est APPORTÉ au classpath quand la propriété
+     *  {@code joide.app.apk} est posée — le registrar du plugin
+     *  Compose y est dexé (sur ART, un jar ne définit pas de classes,
+     *  et le pack de la release est immuable : le plugin ne peut pas y
+     *  entrer). L'ordre garde le pack EN TÊTE : ses classes de
+     *  compilateur gagnent, la stdlib de l'app (même version) n'est
+     *  qu'un doublon inerte. */
     private static String classpathOuvriere() throws IOException {
         String surcharge = System.getProperty("joide.kotlinWorkerCp");
-        if (surcharge != null && !surcharge.isBlank()) {
-            return surcharge;
+        String base = surcharge != null && !surcharge.isBlank()
+                ? surcharge
+                : PacksOutils.fichierAssure(PacksOutils.KOTLIN).toString();
+        String apk = System.getProperty("joide.app.apk");
+        if (apk != null && !apk.isBlank()) {
+            return base + ":" + apk;
         }
-        return PacksOutils.fichierAssure(PacksOutils.KOTLIN).toString();
+        return base;
     }
 
     private static Problem echecNomme(String motif) {
