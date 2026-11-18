@@ -533,6 +533,11 @@ public final class EcranAtelier extends ActiviteJoide {
             public void dupliquerLigne() {
                 dupliquerLigneCourante();
             }
+
+            @Override
+            public void deplacerCurseur(int delta) {
+                scene.deplacerCurseur(delta);
+            }
         });
         colonne.addView(barreSymboles, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,

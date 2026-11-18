@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L6 — le sélecteur de modèle (la manière CodeAssist, §3.9) : la
+  coque du popup ancré à la puce du tiroir — titre + fermer, la
+  rangée des fournisseurs qui défile (les puces restent posées par
+  code : elles portent l'état pointé), l'état de clé du fournisseur
+  pointé, la recherche en pilule discrète, la liste (favoris, récents,
+  suggestions — remplie par code). Aucune décision ici : le contenu
+  vient de Reglages et du stockage chiffré.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/agent_modele_titre"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/btn_fermer_modeles"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/action_annuler" />
+    </LinearLayout>
+
+    <HorizontalScrollView
+        android:id="@+id/defile_fournisseurs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:id="@+id/rangee_fournisseurs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/etat_cles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="4dp"
+        android:textSize="11sp"
+        android:textColor="?attr/jo_texte_secondaire" />
+
+    <EditText
+        android:id="@+id/recherche_modeles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/agent_composeur_fond"
+        android:hint="@string/agent_modeles_recherche"
+        android:textSize="14sp"
+        android:inputType="text"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:importantForAutofill="no" />
+
+    <LinearLayout
+        android:id="@+id/liste_modeles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+</LinearLayout>

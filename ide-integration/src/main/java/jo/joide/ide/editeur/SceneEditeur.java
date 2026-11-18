@@ -165,6 +165,34 @@ public final class SceneEditeur implements AutoCloseable {
      *
      * @param ligne la ligne visée, numérotée depuis 1
      */
+    /**
+     * Le déplacement du curseur (le trackpad de la barre de
+     * symboles, §3.5) : le caret bouge de delta caractères, borné au
+     * document — le geste du clavier reste intact.
+     *
+     * @param delta le déplacement en caractères (négatif = gauche)
+     */
+    public void deplacerCurseur(int delta) {
+        jo.celeris.core.text.Document document = session.document();
+        java.util.List<Integer> carets =
+                session.selection().carets();
+        int caret = carets.isEmpty() ? 0 : carets.get(0);
+        int cible = Math.max(0,
+                Math.min(document.length(), caret + delta));
+        if (cible == caret) {
+            return;
+        }
+        session.setSelection(
+                jo.celeris.core.text.MultiSelection.caretsAt(cible));
+        editeur.post(() -> {
+            android.graphics.Rect bornes = editeur.caretBounds();
+            if (bornes != null) {
+                editeur.requestRectangleOnScreen(bornes);
+            }
+            editeur.invalidate();
+        });
+    }
+
     public void allerALigne(int ligne) {
         jo.celeris.core.text.Document document = session.document();
         int bornee = Math.max(1, Math.min(ligne,

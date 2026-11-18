@@ -3,6 +3,7 @@ package jo.joide.app.android.ui.atelier;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -32,6 +33,9 @@ public final class BarreSymboles extends FrameLayout {
     public interface Auditeur {
         /** Le texte demandé s'insère à la position du curseur. */
         void inserer(String texte);
+
+        /** Le curseur bouge de delta caractères (le trackpad). */
+        void deplacerCurseur(int delta);
 
         /** La ligne courante est commentée (« // » en tête). */
         void commenterLigne();
@@ -118,8 +122,74 @@ public final class BarreSymboles extends FrameLayout {
                     .getString(R.string.atelier_desc_touche_symbole,
                             touche.glyphe));
         }
+        // le geste de la touche : flick HAUT = la variante (( → )),
+        // appui LONG puis glisser = le trackpad du curseur (§3.5) —
+        // le toucher simple garde l'insertion intelligente
         toucheVue.setOnClickListener(vue -> insererTouche(touche));
+        toucheVue.setOnLongClickListener(vue -> {
+            trackpad = true;
+            return true;
+        });
+        toucheVue.setOnTouchListener((vue, evenement) -> {
+            switch (evenement.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN -> {
+                    doigtY = evenement.getY();
+                    doigtX = evenement.getX();
+                    doigtInstant = android.os.SystemClock
+                            .uptimeMillis();
+                    trackpad = false;
+                    pasTrackpad = 0f;
+                    return false;
+                }
+                case MotionEvent.ACTION_MOVE -> {
+                    float dx = evenement.getX() - doigtX;
+                    if (trackpad && auditeur != null) {
+                        // un pas de 14 dp déplace d'un caractère
+                        pasTrackpad += dx;
+                        float pas = GraphiteVue.dp(getContext(), 14f);
+                        while (Math.abs(pasTrackpad) >= pas) {
+                            auditeur.deplacerCurseur(
+                                    pasTrackpad > 0 ? 1 : -1);
+                            pasTrackpad -= pas
+                                    * Math.signum(pasTrackpad);
+                        }
+                        return true;
+                    }
+                    return false;
+                }
+                case MotionEvent.ACTION_UP,
+                     MotionEvent.ACTION_CANCEL -> {
+                    if (trackpad) {
+                        trackpad = false;
+                        return true;
+                    }
+                    long duree = android.os.SystemClock.uptimeMillis()
+                            - doigtInstant;
+                    float dy = evenement.getY() - doigtY;
+                    float dx2 = evenement.getX() - doigtX;
+                    boolean flickHaut = dy
+                            < -GraphiteVue.dp(getContext(), 22f)
+                            && Math.abs(dx2)
+                            < GraphiteVue.dp(getContext(), 40f)
+                            && duree < 400;
+                    if (flickHaut) {
+                        String variante =
+                                ModeleBarreSymboles.varianteDe(touche);
+                        if (variante != null && auditeur != null) {
+                            auditeur.inserer(variante);
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                default -> {
+                }
+            }
+            return false;
+        });
     }
+
+
 
     /** Une touche verbe de la rangée d'actions (texte sans mono). */
     private void ajouterToucheAction(LinearLayout rangee,
@@ -138,6 +208,13 @@ public final class BarreSymboles extends FrameLayout {
         toucheVue.setTag("action");
         toucheVue.setVisibility(View.GONE);
     }
+
+    // ---- le geste des touches (flick variante + trackpad) ----
+    private float doigtX;
+    private float doigtY;
+    private long doigtInstant;
+    private boolean trackpad;
+    private float pasTrackpad;
 
     /** La bascule symboles ↔ actions : UNE rangée, deux contenus —
      *  les verbes d'actions remplacent les touches, jamais les deux

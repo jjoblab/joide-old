@@ -1,6 +1,7 @@
 package jo.joide.app.android.ecrans.atelier;
 
 import android.content.Context;
+import android.view.LayoutInflater;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.view.Gravity;
@@ -31,6 +32,7 @@ import jo.joide.app.android.parametres.Reglages;
 import jo.joide.app.android.atelier.agent.EtatAgentChat;
 import jo.joide.app.android.atelier.agent.ConversationsAgent;
 import jo.joide.app.android.atelier.agent.PieceJointe;
+import jo.joide.app.android.databinding.PopupModelesBinding;
 import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
@@ -826,10 +828,6 @@ final class ControleurAgent {
             return;
         }
         Reglages reglages = Reglages.lire(atelier.sourceReglages);
-        int marge = GraphiteVue.dp(atelier, 8);
-        LinearLayout colonne = new LinearLayout(atelier);
-        colonne.setOrientation(LinearLayout.VERTICAL);
-        colonne.setPadding(marge, marge, marge, marge);
         android.widget.PopupWindow[] fenetre =
                 new android.widget.PopupWindow[1];
         Runnable fermer = () -> {
@@ -840,55 +838,34 @@ final class ControleurAgent {
         Runnable[] rafraichir = new Runnable[1];
         int[] fournisseurIndex = {reglages.fournisseurIa.ordinal()};
 
-        // ---- l'en-tête : titre et fermer ----
-        LinearLayout tete = new LinearLayout(atelier);
-        tete.setOrientation(LinearLayout.HORIZONTAL);
-        tete.setGravity(Gravity.CENTER_VERTICAL);
-        TextView titre = new TextView(atelier);
-        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(atelier.palette.texte);
-        titre.setText(R.string.agent_modele_titre);
-        tete.addView(titre, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        Icone fermerIcone = new Icone(atelier);
-        fermerIcone.setGlyphe(Icone.Glyphe.CROIX);
+        // ---- la coque du XML (lot L6) : titre, fermer, la rangée
+        // des fournisseurs, l'état de clé, la recherche, la liste —
+        // les puces (état pointé) et les lignes de modèles restent
+        // posées par code, la vérité reste dans les réglages
+        PopupModelesBinding coque = PopupModelesBinding.inflate(
+                LayoutInflater.from(atelier));
+        LinearLayout colonne = coque.getRoot();
+        Icone fermerIcone = coque.btnFermerModeles;
         fermerIcone.setCouleur(atelier.palette.texteSecondaire);
-        fermerIcone.setClickable(true);
-        fermerIcone.setContentDescription(
-                atelier.getString(R.string.action_annuler));
         fermerIcone.setOnClickListener(vue -> fermer.run());
-        tete.addView(fermerIcone, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(atelier, 30),
-                GraphiteVue.dp(atelier, 30)));
-        colonne.addView(tete);
 
-        // ---- la rangée des fournisseurs : une puce pointée dit le
+        // la rangée des fournisseurs : une puce pointée dit le
         // choix — le TAP PERSISTE le fournisseur (fix du 2026-11-17 :
         // avant, seule la puce bougeait, le fournisseur des réglages
         // restait ANTHROPIC et la requête partait chez Anthropic —
         // « no key for anthropic » quel que soit le fournisseur
         // choisi) ; l'état de clé se lit du stockage chiffré et se
-        // voit sous la rangée ----
+        // voit sous la rangée
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
-        // lot U : quatre fournisseurs dépassent la largeur posée — la
-        // rangée DÉFILE horizontalement, jamais une puce coupée
-        android.widget.HorizontalScrollView defileFournisseurs =
-                new android.widget.HorizontalScrollView(atelier);
-        defileFournisseurs.setHorizontalScrollBarEnabled(false);
-        defileFournisseurs.setClipToPadding(false);
-        LinearLayout rangeeFournisseurs = new LinearLayout(atelier);
-        rangeeFournisseurs.setOrientation(LinearLayout.HORIZONTAL);
 
         // l'état de clé du fournisseur pointé (fix du 2026-11-17 :
         // les chaînes agent_cle_posee/absente existaient mais ne se
         // voyaient NULLE PART — l'utilisateur ne savait pas que SA
         // clé n'était pas celle du fournisseur choisi). Un tap ouvre
         // les réglages IA.
-        TextView etatCles = new TextView(atelier);
+        TextView etatCles = coque.etatCles;
         GraphiteVue.typographie(etatCles, Graphite.LEGENDE);
-        etatCles.setPadding(GraphiteVue.dp(atelier, 14),
-                GraphiteVue.dp(atelier, 4), GraphiteVue.dp(atelier, 14), 0);
         etatCles.setOnClickListener(vue -> {
             try {
                 atelier.startActivity(new Intent(atelier,
@@ -919,77 +896,15 @@ final class ControleurAgent {
                     nomFournisseur(courant)));
         };
 
-        Puce[] puces = new Puce[fournisseurs.length];
-        for (int i = 0; i < fournisseurs.length; i++) {
-            final int index = i;
-            Puce puce = new Puce(atelier);
-            puce.setText(nomFournisseur(fournisseurs[i]));
-            puce.setPointee(i == fournisseurIndex[0]);
-            puce.setOnClickListener(vue -> {
-                fournisseurIndex[0] = index;
-                for (int j = 0; j < puces.length; j++) {
-                    puces[j].setPointee(j == index);
-                }
-                // fix 2026-11-17 : le fournisseur se PERSISTE au tap —
-                // puce seule ne suffisait pas (voir choisirFournisseur)
-                choisirFournisseur(fournisseurs[index]);
-                majEtatCles[0].run();
-                rafraichir[0].run();
-            });
-            puces[i] = puce;
-            LinearLayout.LayoutParams paramsPuce =
-                    new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            paramsPuce.rightMargin = GraphiteVue.dp(atelier, 6);
-            paramsPuce.topMargin = GraphiteVue.dp(atelier, 8);
-            rangeeFournisseurs.addView(puce, paramsPuce);
-        }
-        defileFournisseurs.addView(rangeeFournisseurs,
-                new android.widget.HorizontalScrollView.LayoutParams(
-                        android.widget.HorizontalScrollView.LayoutParams
-                                .WRAP_CONTENT,
-                        android.widget.HorizontalScrollView.LayoutParams
-                                .WRAP_CONTENT));
-        colonne.addView(defileFournisseurs,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
-        colonne.addView(etatCles,
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
-        majEtatCles[0].run();
+        LinearLayout rangeeFournisseurs = coque.rangeeFournisseurs;
 
-        // ---- la recherche : le filtre des listes longues ----
-        android.widget.EditText recherche =
-                new android.widget.EditText(atelier);
-        recherche.setHint(R.string.agent_modeles_recherche);
-        recherche.setSingleLine(true);
-        recherche.setTextSize(14f);
+        // la recherche : le filtre des listes longues
+        android.widget.EditText recherche = coque.rechercheModeles;
         recherche.setTextColor(atelier.palette.texte);
         recherche.setHintTextColor(atelier.palette.texteEstompe);
         recherche.setTypeface(GraphiteVue.police(atelier, 400, false));
-        android.graphics.drawable.GradientDrawable pilule =
-                new android.graphics.drawable.GradientDrawable();
-        pilule.setColor(atelier.palette.fond);
-        pilule.setCornerRadius(GraphiteVue.dp(atelier, 18));
-        pilule.setStroke(GraphiteVue.dp(atelier, 1), atelier.palette.bordFin);
-        recherche.setBackground(pilule);
-        recherche.setPadding(GraphiteVue.dp(atelier, 12),
-                GraphiteVue.dp(atelier, 8), GraphiteVue.dp(atelier, 12),
-                GraphiteVue.dp(atelier, 8));
-        LinearLayout.LayoutParams paramsRecherche =
-                new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        paramsRecherche.topMargin = GraphiteVue.dp(atelier, 8);
-        colonne.addView(recherche, paramsRecherche);
 
-        // ---- la liste : Favoris, Récents, Suggestions ----
-        LinearLayout liste = new LinearLayout(atelier);
-        liste.setOrientation(LinearLayout.VERTICAL);
-        colonne.addView(liste);
+        LinearLayout liste = coque.listeModeles;
 
         rafraichir[0] = () -> {
             liste.removeAllViews();
