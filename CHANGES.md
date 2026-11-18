@@ -1,3 +1,140 @@
+# CHANGES — Atelier v2, lots L3 et L4 : FeuilleBasse + sections + tiroir fichiers (2026-11-18)
+
+**Lot L3 — la feuille basse et ses quatre sections** (§3.6) :
+1. **`EtatFeuille`** (pur + `EtatFeuilleTest`) : les trois détentes
+   (replié 72 dp = poignée 20 + en-tête 52 · mi 55 % · plein 90 %),
+   le cycle au toucher de poignée, l'ancrage à la détente la plus
+   proche, le fling > 1 200 dp/s vers la détente suivante dans le sens
+   du geste, la SECTION ACTIVE avec bouclage (console → problèmes →
+   journal → logcat → console), `poserDetente` pour l'écran.
+2. **`FeuilleBasse`** (vue liée, `atelier_feuille` +
+   `feuille_entete`) REMPLACE le Dock au câblage (le retrait de la
+   classe morte reste au L6) : poignée (cycle, glissement suivi et
+   ancré, fling), rail de 4 boutons avec badge d'erreurs LSP sur ⚠,
+   en-tête UNIQUE à zone vivante (4 variantes, une visible — pas de
+   barre de navigation repliée ni de puces de section, doublons
+   interdits), tap zone = barre ↔ mi, glissement horizontal > 40 dp =
+   section suivante/précédente avec entrée glissée 14 dp + fondu
+   (220 ms), corps (barre d'outils + contenu posé par l'écran).
+3. **États purs des sections** : `EtatProblemes` (groupes par fichier,
+   compteurs ✕/▲, première erreur du fichier ACTIF, saut « problème
+   suivant » avec bouclage et erreurs seules), `EtatJournal` (sources
+   INDEX/SYNC/AGENT/MCP/BUILD, plafond 400 ANNONCÉ, filtres de
+   niveau), `EtatLogcat` (plafond 400, pause, filtre tag/texte,
+   HISTOGRAMME du débit 9 barres avec barres d'erreur) — chacun avec
+   ses tests (`SectionsFeuilleTest`).
+4. **Vues de sections** : `ListeProblemes` (items `item_probleme`,
+   groupées par fichier, tap = ouvrir à la ligne + replier),
+   `ListeJournal` (`item_ligne_journal`, source accent/MCP alerte/
+   erreur rouge), `ListeLogcat` (`item_ligne_logcat`, colorée par
+   niveau, scrolle en bas). La CONSOLE reste la VueConsole existante.
+5. **La source LSP** : `SceneEditeur` expose ses diagnostics BRUTS
+   (`poserAuditeurDiagnosticsEcran`) — l'atelier alimente
+   `EtatProblemes`, le badge du rail et la zone vivante (✕ n ▲ n ou
+   « Aucun problème », franchement).
+6. **Le journal de l'IDE** reçoit des événements RÉELS : INDEX au
+   montage du projet, BUILD au démarrage du service — la zone vivante
+   suit (heure, chiffres).
+7. **FAB réancré** (§3.7) : bas = 84 dp (feuille repliée 72 + 12) ;
+   il disparaît dès que la feuille dépasse la barre OU que le clavier
+   sort (insets du cadre).
+8. **Écart écrit** : le relais de journal pour le Logcat (l'appli de
+   l'utilisateur est un autre UID — fournisseur de contenu ou socket
+   local, §3.6 « à trancher dans l'ADR ») est SON lot : la section
+   porte d'ores et déjà ses états honnêtes (« Application non lancée »)
+   et l'état pur est complet ; le flick haut et le trackpad de curseur
+   de la barre de symboles restent à câbler.
+
+**Lot L4 — le tiroir fichiers** (§3.8) :
+1. **`tiroir_fichiers.xml`** + vue liée `ui/atelier/TiroirFichiers` :
+   PAS de rangée projet (le nom vit dans la barre supérieure — aucun
+   doublon) ; le sélecteur attend qu'une deuxième section soit réelle
+   (franchise §3.8 : un simple titre « Fichiers ») ; actions 34×34
+   RÉELLES — nouveau fichier/dossier (dialogues existants), tout
+   réduire (les dossiers ouverts se ferment), localiser le fichier
+   actif (les ancêtres s'ouvrent, le filtre se lève) ; champ de
+   filtre 36 dp rayon 12.
+2. **Le filtre est PUR** : `Arborescence.cheminsFiltres` (nom contient
+   le filtre, insensible à la casse) + `ancetresDe` —
+   `SectionsFeuilleTest` le couvre ; l'arbre filtré se montre déplié.
+3. **Les lignes de l'arbre se gonflent depuis `item_noeud.xml`**
+   (§2 : plus de construction programmatique dans les listes) —
+   pastilles de type v2 (J ambre / K violet / ‹› réussite / ⚙
+   accent / dossier glyphe texte2), barre active 3 dp accent inset 9,
+   puce « build #… en cours » sur les sorties en construction.
+4. **Le menu contextuel** (appui long, §3.8) porte des VERBES RÉELS :
+   nouveau fichier/dossier ici, dupliquer (« (copie) » via
+   Files.copy), renommer (Files.move + validation NouveauNom),
+   supprimer (confirmation, suppression récursive, l'onglet ouvert se
+   ferme) — PopupAncre.ligneMenu, jamais un item mort.
+
+**Commit unique L2+L3+L4** : le câblage d'EcranAtelier est entrelacé
+(les mêmes blocs portent les migrations des trois lots) — un commit
+par lot casserait la compilation intermédiaire ; les trois lots
+arrivent ensemble, vérifiés ensemble.
+
+# CHANGES — Atelier v2, lot L2 : barre supérieure, onglets, fil d'Ariane, barre de symboles — XML + ViewBinding (2026-11-18)
+
+**Ce que le lot migre** (§3.1-3.5 du prompt, maquette
+`docs/ecrans/design/atelier-v2.html` — 1 px = 1 dp) :
+
+1. **Barre supérieure** (52 dp) : `res/layout/atelier_barre_haut.xml`
+   + vue liée `ui/atelier/BarreHaut` — ☰ ouvre le tiroir fichiers
+   (le bouton dossier de l'ancien code disparaît, l'ordre ADR-É5
+   garde le retour système), identité au centre (nom 16/20 + puce « n
+   modules » + pilule d'index), bouton agent sur fond accent tonal
+   avec point d'activité 8 dp (visible UNIQUEMENT pendant un tour,
+   §3.1), ⋮ ouvre le menu. « Retour accueil » passe dans ⋮ (§3.1) —
+   l'écran continue de le servir par le menu existant.
+2. **Onglets** (bande 40 dp) : `atelier_onglets.xml` + `item_onglet.xml`
+   + vue liée `ui/atelier/BarreOnglets` — pastilles de type tonales
+   (J ambre / K violet / ‹› réussite / ⚙ accent), point d'état
+   7 dp (erreur prioritaire), indicateur 2 dp accent inset 10 dp,
+   fermeture × sur l'actif, défilement horizontal centré sur l'actif,
+   bouton d'aperçu à droite (téléphone). L'état des onglets quitte le
+   widget `Onglets` pour le modèle PUR `atelier/ModeleOnglets`
+   (ouvrir/activer/fermer avec report au voisin de gauche/
+   fermerAutres) ; `EtatAtelier` reste le propriétaire, la vue lit.
+3. **Fil d'Ariane** (28 dp) : `atelier_fil_ariane.xml` +
+   `ui/atelier/FilAriane` — segments texte2 séparés par « › », le
+   dernier en couleur fonction. Le découpage chemin→segments est PUR
+   (`FormateurFilAriane.segmentsDepuisChemin` : module › paquet ›
+   classe) ; le symbole du curseur arrivera au lot L3 avec la source
+   LSP (absent aujourd'hui : le fil s'arrête à la classe, franchement).
+4. **Barre de symboles** (42 dp) : `atelier_barre_symboles.xml` +
+   `item_touche.xml` + `ui/atelier/BarreSymboles` — VISIBLE seulement
+   quand le clavier est affiché (détecteur d'insets du CADRE, pas
+   d'AndroidX) ; touches gonflées depuis le modèle PUR
+   `ModeleBarreSymboles` (Tab poids 1,6 accent, paires fermées
+   automatiquement par insertion intelligente) ; l'insertion passe par
+   l'InputConnection RÉELLE du EditorView celéris
+   (`onCreateInputConnection`, fabrique légitime de la vue). Le « ⋯ »
+   bascule vers la rangée d'actions à VERBES RÉELS : « Commenter »
+   (// en tête de ligne) et « Dupliquer la ligne » via batch
+   InputConnection ; « problème suivant » rejoindra au lot L3 avec la
+   source LSP (franchise : jamais un bouton mort). Le flick haut et
+   le trackpad de curseur restent à câbler (L3-L4, §3.5).
+5. **Kit en XML** : `Icone` lit `jo_icone_glyphe` (nouveau glyphe
+   `menu`) et `jo_icone_couleur` (`?attr/jo_*` exclusivement, défaut
+   texte2) dans son constructeur `(Context, AttributeSet)` ;
+   `Puce`/`Pilule`/`Fab` déjà conformes.
+6. **Jetons** : les 4 teintes de pastilles (16 % ambre/violet,
+   14 % réussite, 12 % accent sur le puits) entrent dans
+   `colors.xml` + `attrs.xml` + les deux thèmes (clair compris) ;
+   `JetonsXmlTest` vérifie les mélanges recalculés.
+
+**Tests JVM** : `ModelesAtelierV2Test` (badges, ouverture/fermeture
+avec report d'actif, fermerAutres, points d'état, découpage du fil
+d'Ariane, ordre des touches, insertion intelligente, variantes flick).
+
+**Écarts écrits** (critères §5) : le symbole du curseur du fil
+d'Ariane et « problème suivant » attendent la source LSP (L3) ; les
+gestes flick/trackpad de la barre de symboles sont câblés aux lots
+suivants ; les écrans RESTANTS (`puitsCompact`, `Dock`, tiroirs) se
+migrent aux lots L3-L6 — le critère « zéro new LinearLayout » porte
+sur les zones migrées de ce lot (fait : `barreSuperieure()` et la
+bande d'onglets programmatiques sont SUPPRIMÉES d'EcranAtelier).
+
 # CHANGES — Lot XXI/b : le pack bundletool est AUTOSUFFISANT — protobuf et guava dans le pack versionné (2026-11-18)
 
 **Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed

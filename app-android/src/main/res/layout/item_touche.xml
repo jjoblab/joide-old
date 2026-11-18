@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L2 (ADR-083) — une touche de la barre de symboles
+  (§3.5) : hauteur 32, rayon 9, fond surface, mono 14 semi-gras.
+  La PREMIÈRE touche (Tab) reçoit par code le poids 1,6, la couleur
+  accent et 12 sp. touchable → jamais focusable (le clavier système
+  reste affiché).
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/touche"
+    android:layout_width="0dp"
+    android:layout_height="32dp"
+    android:layout_weight="1"
+    android:layout_marginStart="4dp"
+    android:background="@drawable/touche_symbole"
+    android:gravity="center"
+    android:textSize="14sp"
+    android:textStyle="bold"
+    android:textColor="?attr/jo_texte"
+    android:fontFamily="monospace"
+    android:clickable="true"
+    android:focusable="false"
+    android:singleLine="true" />

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L2 : une touche de la barre de symboles — surface, rayon 9. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface" />
+    <corners android:radius="9dp" />
+</shape>

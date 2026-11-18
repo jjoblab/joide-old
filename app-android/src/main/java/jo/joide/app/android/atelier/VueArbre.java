@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
+import android.util.TypedValue;
+import android.view.LayoutInflater;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -38,6 +40,8 @@ public final class VueArbre extends LinearLayout {
 
     /** L'auditeur des actions du tiroir. */
     public interface AuditeurArbre {
+        /** L'appui long demande le menu contextuel du nœud (§3.8). */
+        void surMenuContextuel(String chemin, boolean dossier);
         /** Un dossier est plié/déplié. */
         void surDossier(String chemin, boolean ouvrir);
 
@@ -145,68 +149,19 @@ public final class VueArbre extends LinearLayout {
 
     private View ligne(Noeud noeud) {
         Context contexte = getContext();
-        LinearLayout rangee = new LinearLayout(contexte);
-        rangee.setOrientation(HORIZONTAL);
-        rangee.setGravity(Gravity.CENTER_VERTICAL);
+        // lot L4 (ADR-083) : la rangée se gonfle depuis item_noeud —
+        // plus de construction programmatique dans les listes (§2)
+        jo.joide.app.android.databinding.ItemNoeudBinding item =
+                jo.joide.app.android.databinding.ItemNoeudBinding
+                        .inflate(LayoutInflater.from(contexte), colonne,
+                                false);
+        LinearLayout rangee = (LinearLayout) item.getRoot()
+                .getChildAt(0);
         int retrait = GraphiteVue.dp(contexte,
-                Math.min(6 + noeud.profondeur() * 14, 62));
-        rangee.setPadding(retrait, GraphiteVue.dp(contexte, 1),
-                GraphiteVue.dp(contexte, 12), GraphiteVue.dp(contexte, 1));
-        rangee.setMinimumHeight(GraphiteVue.dp(contexte, 36));
-        rangee.setClickable(true);
-
-        if (noeud.actif()) {
-            GradientDrawable fond = new GradientDrawable();
-            fond.setColor(Graphite.melange(palette.accent, 0.14f,
-                    palette.surface));
-            fond.setCornerRadius(GraphiteVue.dp(contexte, 9));
-            rangee.setBackground(fond);
-        }
-
-        if (noeud.dossier() && !noeud.sorties()) {
-            TextView chevron = new TextView(contexte);
-            GraphiteVue.typographie(chevron, Graphite.NOTE);
-            chevron.setTextColor(noeud.ouvert() ? palette.texteSecondaire
-                    : palette.texteEstompe);
-            chevron.setText(noeud.ouvert() ? "▾" : "▸");
-            chevron.setPadding(0, 0, GraphiteVue.dp(contexte, 6), 0);
-            rangee.addView(chevron, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
-        } else {
-            View puce = new View(contexte);
-            GradientDrawable rond = new GradientDrawable();
-            rond.setShape(GradientDrawable.OVAL);
-            rond.setColor(noeud.sorties() ? palette.texteEstompe
-                    : Graphite.tuileTonale(palette.accent, palette.surface));
-            puce.setBackground(rond);
-            LinearLayout.LayoutParams puceParams = new LinearLayout.LayoutParams(
-                    GraphiteVue.dp(contexte, 5), GraphiteVue.dp(contexte, 5));
-            puceParams.rightMargin = GraphiteVue.dp(contexte, 9);
-            puceParams.leftMargin = GraphiteVue.dp(contexte, 1);
-            rangee.addView(puce, puceParams);
-        }
-
-        TextView libelle = new TextView(contexte);
-        GraphiteVue.typographie(libelle, Graphite.NOTE);
-        libelle.setSingleLine(true);
-        libelle.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-        if (noeud.actif()) {
-            libelle.setTextColor(palette.accent);
-            libelle.setTypeface(GraphiteVue.police(contexte, 600, false));
-        } else if (noeud.sorties()) {
-            libelle.setTextColor(palette.texteEstompe);
-            libelle.setTypeface(Typeface.create("monospace",
-                    Typeface.NORMAL));
-        } else {
-            libelle.setTextColor(noeud.dossier() ? palette.texte
-                    : palette.texteSecondaire);
-        }
-        libelle.setText(noeud.nom());
-        rangee.addView(libelle, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-        rangee.setOnClickListener(vue -> {
+                Math.min(6 + noeud.profondeur() * 16, 70));
+        rangee.setPadding(retrait, 0, GraphiteVue.dp(contexte, 8), 0);
+        boolean actif = noeud.actif();
+        item.getRoot().setOnClickListener(vue -> {
             if (auditeur == null) {
                 return;
             }
@@ -220,10 +175,119 @@ public final class VueArbre extends LinearLayout {
                 auditeur.surFichier(noeud.chemin());
             }
         });
-        if (sortiesEnCours && noeud.sorties()) {
-            rangee.setAlpha(0.5f);
+        item.getRoot().setOnLongClickListener(vue -> {
+            if (auditeur == null || noeud.sorties()) {
+                return false;
+            }
+            auditeur.surMenuContextuel(noeud.chemin(), noeud.dossier());
+            return true;
+        });
+
+        // le chevron : dossiers OUVRABLES seulement (les sorties et
+        // les fichiers portent la pastille de type)
+        if (noeud.dossier() && !noeud.sorties()) {
+            item.chevronNoeud.setVisibility(View.VISIBLE);
+            item.chevronNoeud.setCouleur(noeud.ouvert()
+                    ? palette.texteSecondaire : palette.texteEstompe);
+            item.chevronNoeud.setRotation(noeud.ouvert() ? 90f : 0f);
+        } else {
+            item.chevronNoeud.setVisibility(View.GONE);
         }
-        return rangee;
+
+        // la pastille de type (§3.8) : J ambre / ‹› réussite /
+        // ⚙ accent / dossier glyphe texte2 — tout vient des jetons
+        String badge;
+        int fondPastille;
+        int textePastille;
+        if (noeud.dossier()) {
+            badge = "▤";
+            fondPastille = 0x00000000;
+            textePastille = palette.texteSecondaire;
+        } else if (noeud.sorties()) {
+            badge = "⚙";
+            fondPastille = 0x00000000;
+            textePastille = palette.texteEstompe;
+        } else {
+            String bas = noeud.nom().toLowerCase();
+            if (bas.endsWith(".java")) {
+                badge = "J";
+                fondPastille = resoudre(R.attr.jo_pastille_ambre);
+                textePastille = palette.texte;
+            } else if (bas.endsWith(".kt") || bas.endsWith(".kts")) {
+                badge = "K";
+                fondPastille = resoudre(R.attr.jo_pastille_violet);
+                textePastille = palette.texte;
+            } else if (bas.endsWith(".xml")) {
+                badge = "‹›";
+                fondPastille = resoudre(R.attr.jo_pastille_reussite);
+                textePastille = palette.texte;
+            } else {
+                badge = "⚙";
+                fondPastille = resoudre(R.attr.jo_pastille_accent);
+                textePastille = palette.texte;
+            }
+        }
+        item.pastilleNoeud.setText(badge);
+        item.pastilleNoeud.setTextColor(textePastille);
+        GradientDrawable fondBadge = new GradientDrawable();
+        fondBadge.setCornerRadius(GraphiteVue.dp(contexte, 6f));
+        if (fondPastille != 0x00000000) {
+            fondBadge.setColor(fondPastille);
+        }
+        item.pastilleNoeud.setBackground(fondBadge);
+
+        // le nom : actif accent semi-gras, sorties estompées mono
+        item.nomNoeud.setText(noeud.nom());
+        if (actif) {
+            item.nomNoeud.setTextColor(palette.accent);
+            item.nomNoeud.setTypeface(GraphiteVue.police(contexte,
+                    600, false));
+        } else if (noeud.sorties()) {
+            item.nomNoeud.setTextColor(palette.texteEstompe);
+            item.nomNoeud.setTypeface(Typeface.create("monospace",
+                    Typeface.NORMAL));
+        } else {
+            item.nomNoeud.setTextColor(noeud.dossier()
+                    ? palette.texte : palette.texteSecondaire);
+        }
+
+        // la puce « build #n… » sur les sorties en cours (§3.8)
+        if (noeud.sorties() && sortiesEnCours) {
+            item.puceSorties.setText(getContext().getString(
+                    R.string.atelier_sorties_en_cours));
+            item.puceSorties.setVisibility(View.VISIBLE);
+            rangee.setAlpha(0.5f);
+        } else {
+            item.puceSorties.setVisibility(View.GONE);
+        }
+
+        // la barre active : 3 dp accent (inset 9, §3.8)
+        item.barreNoeud.setVisibility(actif ? View.VISIBLE
+                : View.GONE);
+        if (actif) {
+            GradientDrawable fondActif = new GradientDrawable();
+            fondActif.setColor(Graphite.melange(palette.accent, 0.14f,
+                    palette.surface));
+            fondActif.setCornerRadius(GraphiteVue.dp(contexte, 10));
+            item.getRoot().setBackground(fondActif);
+        }
+        return item.getRoot();
+    }
+
+    /** Résout un attribut de thème en couleur (jamais une valeur
+     *  codée en dur, franchise §0.4). */
+    private int resoudre(int attribut) {
+        TypedValue valeur = new TypedValue();
+        getContext().getTheme().resolveAttribute(attribut, valeur,
+                true);
+        if (valeur.type == TypedValue.TYPE_ATTRIBUTE) {
+            android.content.res.TypedArray suivant = getContext()
+                    .obtainStyledAttributes(new int[]{valeur.data});
+            int couleur = suivant.getColor(0, 0);
+            suivant.recycle();
+            return couleur;
+        }
+        return valeur.data;
     }
 
     private View noteSorties() {

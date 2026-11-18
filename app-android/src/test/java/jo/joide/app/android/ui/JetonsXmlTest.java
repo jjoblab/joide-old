@@ -129,10 +129,39 @@ class JetonsXmlTest {
     }
 
     @Test
+    void lesPastillesSontLesMelangesAnnonces() throws Exception {
+        Map<String, String> xml = couleursXml();
+        Graphite.Palette s = Graphite.sombre();
+        Graphite.Palette c = Graphite.clair();
+        assertEquals(hex(t(s.syntaxe.type, s.puits, 0.16)),
+                xml.get("jo_pastille_ambre"));
+        assertEquals(hex(t(s.violet, s.puits, 0.16)),
+                xml.get("jo_pastille_violet"));
+        assertEquals(hex(t(s.reussite, s.puits, 0.14)),
+                xml.get("jo_pastille_reussite"));
+        assertEquals(hex(t(s.accent, s.puits, 0.12)),
+                xml.get("jo_pastille_accent"));
+        assertEquals(hex(t(c.syntaxe.type, c.puits, 0.16)),
+                xml.get("jo_pastille_ambre_clair"));
+        assertEquals(hex(t(c.violet, c.puits, 0.16)),
+                xml.get("jo_pastille_violet_clair"));
+        assertEquals(hex(t(c.reussite, c.puits, 0.14)),
+                xml.get("jo_pastille_reussite_clair"));
+        assertEquals(hex(t(c.accent, c.puits, 0.12)),
+                xml.get("jo_pastille_accent_clair"));
+    }
+
+    @Test
     void lesThemesPosentChaqueAttributEtChaqueCouleurExiste()
             throws Exception {
         Map<String, String> couleurs = couleursXml();
         Map<String, String> attributs = attributsXml();
+        // les attributs de VUE (declare-styleable du kit, lot L2)
+        // ne sont PAS des jetons de thème : le test de complétude
+        // ne porte que les ?attr/jo_* de couleur réellement posés
+        // par les thèmes
+        attributs.keySet().removeIf(nom -> nom.startsWith(
+                "jo_icone_"));
         Document themes = document(RES.resolve("themes.xml").toFile());
         NodeList styles = themes.getElementsByTagName("style");
         assertTrue(styles.getLength() >= 2,

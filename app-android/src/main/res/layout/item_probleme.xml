@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L3 (ADR-083) — une ligne de la section Problèmes
+  (§3.6) : glyphe ✕/▲ (couleur posée par code), message 13/18 texte,
+  sous-ligne « ligne 19 » mono 11,5 texte2 ; séparateur bordFin ;
+  tap → ouvre le fichier à la ligne et replie la feuille.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/glyphe_probleme"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="?attr/jo_erreur" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="10dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/message_probleme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:lineHeight="18sp"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/ligne_probleme"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="11.5sp"
+            android:textColor="?attr/jo_texte2"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+</LinearLayout>

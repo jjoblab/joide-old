@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L3 (ADR-083) — une ligne du Logcat (§3.6) :
+  « D/Tag  message » colorée par NIVEAU (D réussite, I défaut, W
+  alerte, E erreur — la couleur se pose par code depuis les jetons) ;
+  mono 12/19, sélectionnable.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ligne_logcat"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textSize="12sp"
+    android:lineHeight="19sp"
+    android:textColor="?attr/jo_texte2"
+    android:fontFamily="monospace"
+    android:textIsSelectable="true" />

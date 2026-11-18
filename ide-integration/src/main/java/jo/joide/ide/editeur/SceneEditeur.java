@@ -204,8 +204,37 @@ public final class SceneEditeur implements AutoCloseable {
     // Internes
     // ------------------------------------------------------------------
 
+    /** Un diagnostic vu par l'ÉCRAN (le type de l'hôte, sans les
+     *  classes celéris — la section Problèmes de la feuille, lot L3
+     *  de l'atelier v2). */
+    public record ProblemeEcran(String chemin, int ligne,
+                                String message, boolean erreur) {
+    }
+
+    /** L'auditeur écran des diagnostics (l'éditeur les pousse déjà
+     *  sur le fil UI : l'écran les reçoit au même moment). */
+    private java.util.function.BiConsumer<String,
+            List<ProblemeEcran>> auditeurDiagnosticsEcran;
+
+    /** Pose l'auditeur écran (l'atelier alimente EtatProblemes). */
+    public void poserAuditeurDiagnosticsEcran(
+            java.util.function.BiConsumer<String, List<ProblemeEcran>>
+                    auditeur) {
+        auditeurDiagnosticsEcran = auditeur;
+    }
+
     /** Diagnostics poussés par le pont (déjà sur le fil UI). */
     private void surDiagnostics(String uri, List<DiagnosticLsp> bruts) {
+        if (auditeurDiagnosticsEcran != null) {
+            List<ProblemeEcran> ecran = new ArrayList<>();
+            for (DiagnosticLsp brut : bruts) {
+                ecran.add(new ProblemeEcran(uri,
+                        brut.plage().debut().ligne() + 1,
+                        brut.message(),
+                        brut.gravite() == DiagnosticLsp.ERREUR));
+            }
+            auditeurDiagnosticsEcran.accept(uri, ecran);
+        }
         PopupsEditeur present = popups;
         if (present == null || !uri.equals(uriOuvert)) {
             return;

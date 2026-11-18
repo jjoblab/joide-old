@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L4 (ADR-083) — une ligne de l'arbre (§3.8) : 38 dp,
+  rayon 10, retrait 16 dp par niveau (posé par code), chevron 14,
+  pastille de type 20×20 rayon 6 (J ambre / ‹› réussite / ⚙ accent /
+  dossier glyphe texte2 — teintes posées par code depuis les jetons),
+  nom 14 ; ligne ACTIVE : fond accent 12 % + barre 3 dp accent
+  (inset 9) ; puce « build #n… » sur les sorties tant qu'elles se
+  construisent, jamais présentées comme sources.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="38dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/chevron_noeud"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            app:jo_icone_glyphe="chevron"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <TextView
+            android:id="@+id/pastille_noeud"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="4dp"
+            android:gravity="center"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/nom_noeud"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textSize="14sp"
+            android:textColor="?attr/jo_texte"
+            android:ellipsize="middle"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/puce_sorties"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/chip_neutre"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:textSize="12sp"
+            android:lineHeight="18sp"
+            android:textColor="?attr/jo_texte2"
+            android:singleLine="true"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/barre_noeud"
+        android:layout_width="3dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="9dp"
+        android:layout_marginTop="9dp"
+        android:layout_marginBottom="9dp"
+        android:background="@drawable/indicateur_onglet"
+        android:visibility="gone" />
+</FrameLayout>

@@ -32,6 +32,51 @@ public final class Arborescence {
                         boolean sorties) {
     }
 
+    /**
+     * Lot L4 (ADR-083) — le filtre du tiroir (§3.8, « champ de
+     * filtre ») : les chemins RETENUS quand un filtre texte est
+     * actif — un fichier reste si son NOM contient le filtre
+     * (insensible à la casse), et les dossiers ancêtres de tout
+     * fichier retenu restent présents. La vue re-compose l'arbre
+     * depuis cette liste avec les dossiers ouverts (le résultat du
+     * filtre se montre déplié). Filtre vide → la liste complète.
+     */
+    public static List<String> cheminsFiltres(List<String> chemins,
+                                              String filtre) {
+        if (filtre == null || filtre.isBlank()) {
+            return chemins;
+        }
+        String bas = filtre.toLowerCase();
+        List<String> retenus = new ArrayList<>();
+        for (String chemin : chemins) {
+            String nom = chemin.substring(
+                    chemin.lastIndexOf('/') + 1).toLowerCase();
+            if (nom.contains(bas)) {
+                retenus.add(chemin);
+            }
+        }
+        return retenus;
+    }
+
+    /** Les dossiers ancêtres d'une liste de chemins (le filtre les
+     * montre dépliés). */
+    public static Set<String> ancetresDe(List<String> chemins) {
+        Set<String> ancetres = new java.util.TreeSet<>();
+        for (String chemin : chemins) {
+            String dossier = "";
+            String[] parties = chemin.split("/");
+            for (int i = 0; i < parties.length - 1; i++) {
+                if (dossier.isEmpty()) {
+                    dossier = parties[i] + "/";
+                } else {
+                    dossier = dossier + parties[i] + "/";
+                }
+                ancetres.add(dossier);
+            }
+        }
+        return ancetres;
+    }
+
     private Arborescence() {
     }
 

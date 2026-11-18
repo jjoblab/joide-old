@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L3 : la poignée de la feuille — 38×4 rayon 4, texte3 (la
+     nuance 70 % se pose par code sur le même jeton du thème). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_texte3" />
+    <corners android:radius="4dp" />
+</shape>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L2 (atelier v2) : fond du bouton agent — accent 12 %, rayon 12. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_accent_tonal" />
+    <corners android:radius="12dp" />
+</shape>

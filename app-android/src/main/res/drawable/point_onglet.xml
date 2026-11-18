@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L2 : le point d'état d'un onglet (7 dp ; erreur ou alerte,
+     la couleur se re-teinte par code depuis le thème). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="?attr/jo_alerte" />
+</shape>

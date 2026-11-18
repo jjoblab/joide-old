@@ -31,7 +31,12 @@
         <item name="jo_alerte_tonal">@color/jo_alerte_tonal</item>
         <item name="jo_erreur_tonal">@color/jo_erreur_tonal</item>
         <item name="jo_violet_tonal">@color/jo_violet_tonal</item>
-        <item name="jo_accent_ligne">@color/jo_accent_ligne</item>
+                <item name="jo_accent_ligne">@color/jo_accent_ligne</item>
+
+        <item name="jo_pastille_ambre">@color/jo_pastille_ambre</item>
+        <item name="jo_pastille_violet">@color/jo_pastille_violet</item>
+        <item name="jo_pastille_reussite">@color/jo_pastille_reussite</item>
+        <item name="jo_pastille_accent">@color/jo_pastille_accent</item>
 
         <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle</item>
         <item name="jo_syntaxe_type">@color/jo_syntaxe_type</item>
@@ -70,7 +75,12 @@
         <item name="jo_alerte_tonal">@color/jo_alerte_tonal_clair</item>
         <item name="jo_erreur_tonal">@color/jo_erreur_tonal_clair</item>
         <item name="jo_violet_tonal">@color/jo_violet_tonal_clair</item>
-        <item name="jo_accent_ligne">@color/jo_accent_ligne_clair</item>
+                <item name="jo_accent_ligne">@color/jo_accent_ligne_clair</item>
+
+        <item name="jo_pastille_ambre">@color/jo_pastille_ambre_clair</item>
+        <item name="jo_pastille_violet">@color/jo_pastille_violet_clair</item>
+        <item name="jo_pastille_reussite">@color/jo_pastille_reussite_clair</item>
+        <item name="jo_pastille_accent">@color/jo_pastille_accent_clair</item>
 
         <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle_clair</item>
         <item name="jo_syntaxe_type">@color/jo_syntaxe_type_clair</item>

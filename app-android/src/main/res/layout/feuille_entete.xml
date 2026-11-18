@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L3 (ADR-083) — l'EN-TÊTE de la feuille basse (§3.6)
+  : UN SEUL en-tête de 52 dp, identique replié et déplié, qui change
+  selon la section active (pas de barre de navigation repliée, pas de
+  puces de section — doublons interdits). À gauche le RAIL de
+  sections (pilule fond, 4 boutons 32×32 rayon 11, badge erreur LSP
+  sur ⚠) ; à droite la ZONE VIVANTE (poids 1) propre à la section :
+  ligne 1 en 13/17 semi-gras, ligne 2 en mono 11,5/15 texte2.
+  Toucher la zone : barre ↔ mi-hauteur ; glisser horizontalement :
+  section suivante/précédente.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/entete_feuille"
+    android:layout_width="match_parent"
+    android:layout_height="52dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp">
+
+    <LinearLayout
+        android:id="@+id/rail_sections"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@drawable/rail_sections_fond"
+        android:padding="3dp">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/rail_console"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            app:jo_icone_glyphe="terminal"
+            android:background="@drawable/rail_item_actif_fond"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/atelier_desc_console" />
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/rail_problemes"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                app:jo_icone_glyphe="triangle"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/atelier_desc_problemes" />
+
+            <TextView
+                android:id="@+id/badge_problemes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:background="@drawable/badge_erreur"
+                android:minWidth="17dp"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:gravity="center"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:singleLine="true"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/rail_journal"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            app:jo_icone_glyphe="journal"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/atelier_desc_journal" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/rail_logcat"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            app:jo_icone_glyphe="logcat"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/atelier_desc_logcat" />
+    </LinearLayout>
+
+    <!-- la zone vivante : quatre en-têtes, un seul visible -->
+    <FrameLayout
+        android:id="@+id/zone_vivante"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="8dp">
+
+        <!-- Console : verdict + première erreur / tâche courante +
+             le pipeline de 3 segments (visible replié seulement) -->
+        <LinearLayout
+            android:id="@+id/zone_console"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/console_verdict"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:lineHeight="17sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_texte"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/console_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="11.5sp"
+                    android:lineHeight="15sp"
+                    android:textColor="?attr/jo_texte2"
+                    android:fontFamily="monospace"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/console_pipeline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <View
+                    android:id="@+id/pipe_resolution"
+                    android:layout_width="14dp"
+                    android:layout_height="5dp"
+                    android:background="@drawable/segment_pipe" />
+
+                <View
+                    android:id="@+id/pipe_compilation"
+                    android:layout_width="14dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="3dp"
+                    android:background="@drawable/segment_pipe" />
+
+                <View
+                    android:id="@+id/pipe_assemblage"
+                    android:layout_width="14dp"
+                    android:layout_height="5dp"
+                    android:layout_marginStart="3dp"
+                    android:background="@drawable/segment_pipe" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Problèmes : compteurs ✕/▲ + première erreur du fichier
+             actif (tap = ouvre à la ligne) + bouton ↓ problème
+             suivant SANS déplier -->
+        <LinearLayout
+            android:id="@+id/zone_problemes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/problemes_cible"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:id="@+id/problemes_verdict"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:lineHeight="17sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_texte"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/problemes_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="11.5sp"
+                    android:lineHeight="15sp"
+                    android:textColor="?attr/jo_texte2"
+                    android:fontFamily="monospace"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/btn_probleme_suivant"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                app:jo_icone_glyphe="chevron"
+                app:jo_icone_couleur="?attr/jo_texte2"
+                android:rotation="90"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/atelier_desc_probleme_suivant" />
+        </LinearLayout>
+
+        <!-- Journal : dernier événement de l'IDE avec heure -->
+        <LinearLayout
+            android:id="@+id/zone_journal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/journal_verdict"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:lineHeight="17sp"
+                android:textStyle="bold"
+                android:textColor="?attr/jo_texte"
+                android:singleLine="true" />
+
+            <TextView
+                android:id="@+id/journal_detail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11.5sp"
+                android:lineHeight="15sp"
+                android:textColor="?attr/jo_texte2"
+                android:fontFamily="monospace"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <!-- Logcat : état du flux + dernière ligne colorée par niveau
+             + mini-histogramme du débit (9 barres 3 dp) -->
+        <LinearLayout
+            android:id="@+id/zone_logcat"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/logcat_verdict"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:lineHeight="17sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_texte"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/logcat_detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="11.5sp"
+                    android:lineHeight="15sp"
+                    android:textColor="?attr/jo_texte2"
+                    android:fontFamily="monospace"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/logcat_histogramme"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:orientation="horizontal"
+                android:gravity="bottom" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

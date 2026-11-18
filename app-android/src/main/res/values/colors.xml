@@ -22,7 +22,7 @@
     <color name="jo_alerte">#E5C07B</color>
     <color name="jo_erreur">#E06C75</color>
     <color name="jo_violet">#C678DD</color>
-    <color name="jo_texte_sur_accent">#0B1424</color>
+    <color name="jo_texte_sur_accent">#0B1524</color>
     <color name="jo_texte_sur_reussite">#07130C</color>
     <!-- rideau/voile au-dessus du contenu poussé (Graphite.rideau) -->
     <color name="jo_rideau">#7A0B0E12</color>
@@ -35,6 +35,18 @@
     <color name="jo_violet_tonal">#2A2437</color>
     <!-- ligne courante de l'éditeur : accent 7 % sur le puits -->
     <color name="jo_accent_ligne">#131923</color>
+
+    <!-- pastilles de type des onglets (§3.2 de la maquette v2) :
+         la couleur du badge à 16 % (14 % réussite, 12 % accent) sur
+         le puits — hors Graphite, ancrées par JetonsXmlTest -->
+    <color name="jo_pastille_ambre">#2E2A23</color>
+    <color name="jo_pastille_violet">#291F32</color>
+    <color name="jo_pastille_reussite">#122B22</color>
+    <color name="jo_pastille_accent">#19212E</color>
+    <color name="jo_pastille_ambre_clair">#F3E3D8</color>
+    <color name="jo_pastille_violet_clair">#F0DCF1</color>
+    <color name="jo_pastille_reussite_clair">#DDEDE5</color>
+    <color name="jo_pastille_accent_clair">#E6ECFA</color>
 
     <!-- syntaxe (Graphite.SOMBRE.syntaxe) -->
     <color name="jo_syntaxe_mot_cle">#C678DD</color>

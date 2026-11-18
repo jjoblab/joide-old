@@ -31,6 +31,10 @@
     <attr name="jo_erreur_tonal" format="color" />
     <attr name="jo_violet_tonal" format="color" />
     <attr name="jo_accent_ligne" format="color" />
+    <attr name="jo_pastille_ambre" format="color" />
+    <attr name="jo_pastille_violet" format="color" />
+    <attr name="jo_pastille_reussite" format="color" />
+    <attr name="jo_pastille_accent" format="color" />
 
     <attr name="jo_syntaxe_mot_cle" format="color" />
     <attr name="jo_syntaxe_type" format="color" />
@@ -39,4 +43,30 @@
     <attr name="jo_syntaxe_nombre" format="color" />
     <attr name="jo_syntaxe_commentaire" format="color" />
     <attr name="jo_syntaxe_defaut" format="color" />
+
+    <!-- Le kit en XML (lot L2 de l'atelier v2, ADR-083) : constructeur
+         (Context, AttributeSet) obligatoire — Icone se pose depuis le
+         XML, la couleur par ?attr/jo_* exclusivement. -->
+    <declare-styleable name="JoIcone">
+        <attr name="jo_icone_glyphe" format="enum">
+            <enum name="recherche" value="0" />
+            <enum name="points" value="1" />
+            <enum name="chevron" value="2" />
+            <enum name="retour" value="3" />
+            <enum name="plus" value="4" />
+            <enum name="croix" value="5" />
+            <enum name="coche" value="6" />
+            <enum name="triangle" value="7" />
+            <enum name="dossier" value="8" />
+            <enum name="terminal" value="9" />
+            <enum name="rafraichir" value="10" />
+            <enum name="agrandir" value="11" />
+            <enum name="bulle" value="12" />
+            <enum name="etoile" value="13" />
+            <enum name="menu" value="14" />
+            <enum name="journal" value="15" />
+            <enum name="logcat" value="16" />
+        </attr>
+        <attr name="jo_icone_couleur" format="reference|color" />
+    </declare-styleable>
 </resources>

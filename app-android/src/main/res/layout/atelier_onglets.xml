@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L2 (ADR-083) — la bande d'onglets (§3.2) : 40 dp,
+  padding 0 8, espacement 3 (les marges des items). Les onglets se
+  gonflent depuis item_onglet ; le bouton d'aperçu (téléphone, onglet
+  actif mis en page) vit à droite de la bande.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:orientation="horizontal">
+
+    <HorizontalScrollView
+        android:id="@+id/defilement_onglets"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:clipToPadding="false"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/rangee_onglets"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/bouton_apercu"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="6dp"
+        app:jo_icone_glyphe="agrandir"
+        app:jo_icone_couleur="?attr/jo_texte2"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        android:contentDescription="@string/apercu_desc_plein_ecran" />
+</LinearLayout>

@@ -56,13 +56,25 @@ import jo.joide.app.android.console.EtatConsole;
 import jo.joide.app.android.console.VueConsole;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Dialogue;
-import jo.joide.app.android.ui.Dock;
 import jo.joide.app.android.ui.EtatVide;
 import jo.joide.app.android.ui.Fab;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Icone;
-import jo.joide.app.android.ui.Onglets;
+import jo.joide.app.android.atelier.ModeleOnglets;
+import jo.joide.app.android.atelier.EtatFeuille;
+import jo.joide.app.android.atelier.EtatJournal;
+import jo.joide.app.android.atelier.EtatLogcat;
+import jo.joide.app.android.atelier.EtatProblemes;
+import jo.joide.app.android.ui.atelier.BarreHaut;
+import jo.joide.app.android.ui.atelier.BarreOnglets;
+import jo.joide.app.android.ui.atelier.BarreSymboles;
+import jo.joide.app.android.ui.atelier.FilAriane;
+import jo.joide.app.android.ui.atelier.FeuilleBasse;
+import jo.joide.app.android.ui.atelier.ListeJournal;
+import jo.joide.app.android.ui.atelier.ListeLogcat;
+import jo.joide.app.android.ui.atelier.ListeProblemes;
+import jo.joide.app.android.ui.atelier.TiroirFichiers;
 import jo.joide.app.android.ui.Pilule;
 import jo.joide.app.android.ui.PopupAncre;
 import jo.joide.app.android.ui.Puce;
@@ -172,11 +184,10 @@ public final class EcranAtelier extends Activity {
     private TextView nomProjet;
     private Puce puceModules;
     private Pilule piluleIndex;
-    private Onglets onglets;
     private VueArbre vueArbre;
     private VueConsole vueConsole;
     private VueApercu vueApercu;
-    private Dock dock;
+    private FeuilleBasse feuille;
     private Fab fab;
     private TiroirPousse tiroir;
     private FrameLayout puits;
@@ -189,6 +200,24 @@ public final class EcranAtelier extends Activity {
     private Icone boutonApercuOnglets;
     private TextView banniereCompat;
     private View vueEditeur;
+
+    // ---- les états purs des sections de la feuille (lot L3, ADR-083)
+    private final EtatProblemes etatProblemes = new EtatProblemes();
+    private final EtatJournal etatJournal = new EtatJournal();
+    private final EtatLogcat etatLogcat = new EtatLogcat();
+    private ListeProblemes listeProblemes;
+    private ListeJournal listeJournal;
+    private ListeLogcat listeLogcat;
+    private TiroirFichiers tiroirFichiers;
+    private String filtreTiroir = "";
+
+    // ---- les zones migrées en XML + ViewBinding (lot L2, ADR-083) :
+    // barre supérieure, onglets, fil d'Ariane, barre de symboles —
+    // les vues sont MINCES, l'état reste EtatAtelier ----
+    private BarreHaut barreHaut;
+    private BarreOnglets barreOnglets;
+    private FilAriane filAriane;
+    private BarreSymboles barreSymboles;
 
     /** IDE monté (null tant qu'aucun projet natif n'est chargé). */
     private MoteursLangage moteurs;
@@ -293,6 +322,11 @@ public final class EcranAtelier extends Activity {
             public void surNouveau(boolean fichier) {
                 proposerNouveau(fichier);
             }
+
+            @Override
+            public void surMenuContextuel(String chemin, boolean dossier) {
+                montrerMenuContextuel(chemin, dossier);
+            }
         });
         vueConsole = new VueConsole(this);
         vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
@@ -373,7 +407,27 @@ public final class EcranAtelier extends Activity {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
-        colonne.addView(ui.barreSuperieure(), new LinearLayout.LayoutParams(
+        // ---- lot L2 (ADR-083) : la barre supérieure est un layout
+        // XML + ViewBinding (atelier_barre_haut) — la vue est mince,
+        // les auditeurs restent ici, l'état reste EtatAtelier ----
+        barreHaut = new BarreHaut(this);
+        nomProjet = barreHaut.binding.nomProjet;
+        puceModules = barreHaut.binding.puceModules;
+        piluleIndex = barreHaut.binding.piluleIndex;
+        boutonAgent = barreHaut.binding.boutonAgent;
+        pointAgent = barreHaut.binding.pointAgent;
+        barreHaut.binding.btnTiroirFichiers.setOnClickListener(vue -> {
+            etat.ouvrirTiroir();
+            if (tiroir != null) {
+                tiroir.ouvrir();
+            }
+        });
+        piluleIndex.setOnClickListener(vue -> montrerDetailIndex());
+        barreHaut.binding.cadreBoutonAgent.setOnClickListener(
+                vue -> ouvrirAgent());
+        barreHaut.binding.boutonOptions.setOnClickListener(
+                vue -> ouvrirMenu());
+        colonne.addView(barreHaut, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 GraphiteVue.dp(this, 52)));
 
@@ -389,8 +443,11 @@ public final class EcranAtelier extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        onglets = new Onglets(this);
-        onglets.setAuditeur(new Onglets.AuditeurOnglets() {
+        // ---- lot L2 (ADR-083) : la bande d'onglets est un layout
+        // XML + ViewBinding (atelier_onglets + item_onglet), dessiné
+        // depuis le modèle pur ModeleOnglets ----
+        barreOnglets = new BarreOnglets(this);
+        barreOnglets.setAuditeur(new BarreOnglets.Auditeur() {
             @Override
             public void surActivation(String chemin) {
                 etat.activer(chemin);
@@ -401,41 +458,30 @@ public final class EcranAtelier extends Activity {
             public void surFermeture(String chemin) {
                 fermerOnglet(chemin);
             }
-        });
-        LinearLayout barreOnglets = new LinearLayout(this);
-        barreOnglets.setOrientation(LinearLayout.HORIZONTAL);
-        barreOnglets.setBackgroundColor(palette.fond);
-        barreOnglets.addView(onglets, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.MATCH_PARENT, 1f));
-        if (!etat.grandEcran()) {
-            // téléphone : le volet d'aperçu se propose quand l'onglet
-            // actif est une mise en page (ADR-É7) — bouton de la barre
-            boutonApercuOnglets = new Icone(this);
-            boutonApercuOnglets.setGlyphe(Icone.Glyphe.AGRANDIR);
-            boutonApercuOnglets.setCouleur(palette.texteSecondaire);
-            boutonApercuOnglets.setClickable(true);
-            boutonApercuOnglets.setContentDescription(
-                    getString(R.string.apercu_desc_plein_ecran));
-            boutonApercuOnglets.setOnClickListener(vue -> {
+
+            @Override
+            public void surApercu() {
                 etat.basculerApercuPleinEcran();
                 majVolets();
                 if (apercu != null && scene != null
                         && FichiersProjet.estMiseEnPage(fichierCourant)) {
                     apercu.rendreSansDelai(scene.texte());
                 }
-            });
+            }
+        });
+        boutonApercuOnglets = barreOnglets.binding.boutonApercu;
+        if (etat.grandEcran()) {
             boutonApercuOnglets.setVisibility(View.GONE);
-            LinearLayout.LayoutParams paramsApercu =
-                    new LinearLayout.LayoutParams(
-                            GraphiteVue.dp(this, 42),
-                            GraphiteVue.dp(this, 42));
-            paramsApercu.gravity = Gravity.CENTER_VERTICAL;
-            paramsApercu.rightMargin = GraphiteVue.dp(this, 6);
-            barreOnglets.addView(boutonApercuOnglets, paramsApercu);
         }
         colonne.addView(barreOnglets, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                GraphiteVue.dp(this, 42)));  
+                GraphiteVue.dp(this, 40)));
+
+        // ---- lot L2 (ADR-083) : le fil d'Ariane (28 dp, §3.3) ----
+        filAriane = new FilAriane(this);
+        colonne.addView(filAriane, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                GraphiteVue.dp(this, 28)));
 
         FrameLayout corps = new FrameLayout(this);
         if (etat.grandEcran()) {
@@ -452,17 +498,137 @@ public final class EcranAtelier extends Activity {
         colonne.addView(corps, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        dock = new Dock(this);
-        dock.setTitre(R.string.console_build);
-        dock.setHauteurContenu(HAUTEUR_CONSOLE_DP);
-        dock.setContenu(vueConsole);
-        colonne.addView(dock, new LinearLayout.LayoutParams(
+        // ---- lot L2 (ADR-083) : la barre de symboles (42 dp, §3.5)
+        // sous le corps — VISIBLE seulement quand le clavier est
+        // affiché (détecteur d'insets du cadre) ----
+        barreSymboles = new BarreSymboles(this);
+        barreSymboles.setAuditeur(new BarreSymboles.Auditeur() {
+            @Override
+            public void inserer(String texte) {
+                insererSymbole(texte);
+            }
+
+            @Override
+            public void commenterLigne() {
+                commenterLigneCourante();
+            }
+
+            @Override
+            public void dupliquerLigne() {
+                dupliquerLigneCourante();
+            }
+        });
+        colonne.addView(barreSymboles, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                GraphiteVue.dp(this, 42)));
+        // le détecteur d'insets du CADRE (pas d'AndroidX) : le clavier
+        // affiché montre la barre, le cache sinon (§3.5)
+        racineVue.setOnApplyWindowInsetsListener((vue, insets) -> {
+            android.graphics.Insets ime = insets
+                    .getInsets(android.view.WindowInsets.Type.ime());
+            boolean clavier = ime.bottom > 0;
+            if (barreSymboles != null) {
+                barreSymboles.poserVisible(clavier);
+            }
+            if (fab != null) {
+                fab.setVisibility(clavier ? View.GONE
+                        : View.VISIBLE);
+            }
+            return insets;
+        });
+
+        // ---- lot L3 (ADR-083) : la feuille basse REMPLACE le Dock
+        // au câblage (le retrait de la classe morte reste au lot L6).
+        // Le rail, les zones vivantes et les détentes vivent dans la
+        // vue ; le contenu CONSOLE reste la VueConsole existante.
+        feuille = new FeuilleBasse(this);
+        feuille.setAuditeur(new FeuilleBasse.Auditeur() {
+            @Override
+            public void surOuvrirProbleme(String chemin, int ligne) {
+                ouvrirFichier(chemin, ligne);
+            }
+
+            @Override
+            public void surPipeline() {
+                etat.deplierConsole();
+                majVolets();
+            }
+
+            @Override
+            public void surLogcat(boolean actif) {
+                // le relais de journal se tranche dans l'ADR dédié ;
+                // la section porte d'ores et déjà son état honnête
+                // (« Application non lancée »)
+            }
+        });
+        feuille.poserContenu(EtatFeuille.Section.CONSOLE, vueConsole);
+        listeProblemes = new ListeProblemes(this);
+        listeProblemes.setAuditeur(new ListeProblemes.Auditeur() {
+            @Override
+            public void surOuvrir(String chemin, int ligne) {
+                ouvrirFichier(chemin, ligne);
+            }
+        });
+        feuille.poserContenu(EtatFeuille.Section.PROBLEMES,
+                listeProblemes);
+        listeJournal = new ListeJournal(this);
+        feuille.poserContenu(EtatFeuille.Section.JOURNAL, listeJournal);
+        listeLogcat = new ListeLogcat(this);
+        feuille.poserContenu(EtatFeuille.Section.LOGCAT, listeLogcat);
+        feuille.boutonProblemeSuivant().setOnClickListener(vue -> {
+            // §3.6 : le ↓ saute à l'erreur suivante SANS déplier
+            EtatProblemes.Probleme suivant = etatProblemes.suivant(
+                    fichierCourant == null ? "" : fichierCourant,
+                    ligneCourante());
+            if (suivant != null) {
+                ouvrirFichier(suivant.chemin(), suivant.ligne());
+            }
+        });
+        feuille.cibleProblemes().setOnClickListener(vue -> {
+            EtatProblemes.Probleme premier =
+                    etatProblemes.premierDuFichier(
+                            fichierCourant == null ? "" : fichierCourant);
+            if (premier != null) {
+                ouvrirFichier(premier.chemin(), premier.ligne());
+            }
+        });
+        colonne.addView(feuille, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         if (!etat.grandEcran()) {
+            // lot L4 (ADR-083) : le tiroir porte la vue liée
+            // tiroir_fichiers — titre, actions réelles, filtre, arbre
             tiroir = new TiroirPousse(this);
             tiroir.setBordDroit(false);
-            tiroir.setPanneau(vueArbre);
+            tiroirFichiers = new TiroirFichiers(this);
+            tiroirFichiers.cadreArbre().addView(vueArbre,
+                    new FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT));
+            tiroirFichiers.setAuditeur(new TiroirFichiers.Auditeur() {
+                @Override
+                public void surNouveau(boolean fichier) {
+                    proposerNouveau(fichier);
+                }
+
+                @Override
+                public void surToutReduire() {
+                    dossiersOuverts.clear();
+                    majArbre();
+                }
+
+                @Override
+                public void surLocaliser() {
+                    localiserFichierActif();
+                }
+
+                @Override
+                public void surFiltre(String texte) {
+                    filtreTiroir = texte;
+                    majArbre();
+                }
+            });
+            tiroir.setPanneau(tiroirFichiers);
             racineVue.addView(tiroir, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.MATCH_PARENT));
@@ -556,7 +722,8 @@ public final class EcranAtelier extends Activity {
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.END);
-        fabParams.bottomMargin = GraphiteVue.dp(this, 64);
+        // §3.7 : bas = 84 dp (feuille repliée 72 + 12)
+        fabParams.bottomMargin = GraphiteVue.dp(this, 84);
         fabParams.rightMargin = GraphiteVue.dp(this, 20);
         racineVue.addView(fab, fabParams);
         return racineVue;
@@ -564,97 +731,6 @@ public final class EcranAtelier extends Activity {
 
     /** Les sous-constructions de l'atelier (méthodes à usage local). */
     private final class ContexteUi {
-
-        private View barreSuperieure() {
-            LinearLayout barre = new LinearLayout(EcranAtelier.this);
-            barre.setOrientation(LinearLayout.HORIZONTAL);
-            barre.setGravity(Gravity.CENTER_VERTICAL);
-            barre.setBackgroundColor(palette.surface);
-            int marge = GraphiteVue.dp(EcranAtelier.this, 8);
-            barre.setPadding(marge, 0, marge, 0);
-
-            Icone retour = new Icone(EcranAtelier.this);
-            retour.setGlyphe(Icone.Glyphe.RETOUR);
-            retour.setCouleur(palette.texte);
-            retour.setClickable(true);
-            retour.setContentDescription(getString(
-                    R.string.atelier_desc_retour));
-            retour.setOnClickListener(vue -> onBackPressed());
-            barre.addView(retour, clicParams());
-
-            // lot U : le tiroir de l'arborescence a son point d'entrée
-            // VISIBLE sur téléphone — le dossier pousse l'arbre, le
-            // retour système le referme (l'ordre ADR-É5 y veille)
-            if (!etat.grandEcran()) {
-                Icone dossier = new Icone(EcranAtelier.this);
-                dossier.setGlyphe(Icone.Glyphe.DOSSIER);
-                dossier.setCouleur(palette.texte);
-                dossier.setClickable(true);
-                dossier.setContentDescription(getString(
-                        R.string.atelier_desc_fichiers));
-                dossier.setOnClickListener(vue -> {
-                    etat.ouvrirTiroir();
-                    if (tiroir != null) {
-                        tiroir.ouvrir();
-                    }
-                });
-                barre.addView(dossier, clicParams());
-            }
-
-            LinearLayout identite = new LinearLayout(EcranAtelier.this);
-            identite.setOrientation(LinearLayout.HORIZONTAL);
-            identite.setGravity(Gravity.CENTER_VERTICAL);
-            nomProjet = new TextView(EcranAtelier.this);
-            GraphiteVue.typographie(nomProjet, Graphite.SOUS_TITRE);
-            nomProjet.setTextColor(palette.texte);
-            nomProjet.setSingleLine(true);
-            identite.addView(nomProjet, new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT));
-            puceModules = new Puce(EcranAtelier.this);
-            identite.addView(puceModules, margeGauche());
-            barre.addView(identite, new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-            piluleIndex = new Pilule(EcranAtelier.this);
-            piluleIndex.setOnClickListener(vue -> montrerDetailIndex());
-            barre.addView(piluleIndex);
-
-            boutonAgent = new Icone(EcranAtelier.this);
-            boutonAgent.setGlyphe(Icone.Glyphe.BULLE);
-            boutonAgent.setCouleur(palette.texte);
-            boutonAgent.setClickable(true);
-            boutonAgent.setContentDescription(getString(
-                    R.string.agent_titre));
-            boutonAgent.setOnClickListener(vue -> ouvrirAgent());
-            pointAgent = new View(EcranAtelier.this);
-            pointAgent.setBackground(pointActivite());
-            pointAgent.setVisibility(View.GONE);
-            FrameLayout agentBouton = new FrameLayout(EcranAtelier.this);
-            agentBouton.addView(boutonAgent, new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT));
-            FrameLayout.LayoutParams paramsPoint =
-                    new FrameLayout.LayoutParams(
-                            GraphiteVue.dp(EcranAtelier.this, 8),
-                            GraphiteVue.dp(EcranAtelier.this, 8));
-            paramsPoint.topMargin = GraphiteVue.dp(EcranAtelier.this, 7);
-            paramsPoint.rightMargin =
-                    GraphiteVue.dp(EcranAtelier.this, 7);
-            paramsPoint.gravity = Gravity.TOP | Gravity.END;
-            agentBouton.addView(pointAgent, paramsPoint);
-            barre.addView(agentBouton, clicParams());
-
-            Icone menu = new Icone(EcranAtelier.this);
-            menu.setGlyphe(Icone.Glyphe.POINTS);
-            menu.setCouleur(palette.texte);
-            menu.setClickable(true);
-            menu.setContentDescription(getString(
-                    R.string.atelier_desc_menu));
-            menu.setOnClickListener(vue -> ouvrirMenu());
-            barre.addView(menu, clicParams());
-            return barre;
-        }
 
         private View puitsCompact() {
             puits = cadrePuits();
@@ -839,6 +915,10 @@ public final class EcranAtelier extends Activity {
         sync = syncLocal;
         moteurs = moteursLocal;
         etat.setProjetMonte(true);
+        journaliser(EtatJournal.Source.INDEX,
+                EtatJournal.Niveau.INFO,
+                workspace.allModules().size() + " modules · "
+                        + fichiersArbre.size() + " fichiers");
         nomProjet.setText(String.valueOf(racine.getFileName()));
         int modules = workspace.allModules().size();
         puceModules.setText(modules == 1
@@ -879,6 +959,10 @@ public final class EcranAtelier extends Activity {
         });
 
         scene = new SceneEditeur(this, moteurs);
+        // lot L3 (ADR-083) : les diagnostics BRUTS alimentent la
+        // section Problèmes (la source LSP de la feuille)
+        scene.poserAuditeurDiagnosticsEcran(
+                this::surDiagnosticsLangage);
         // lot M (ADR-É8) : les réglages d'éditeur s'appliquent à
         // l'OUVERTURE suivante — la session se monte avec eux
         Reglages reglagesEditeur = Reglages.lire(sourceReglages);
@@ -1023,18 +1107,237 @@ public final class EcranAtelier extends Activity {
         }
     }
 
-    private void majOnglets() {
-        if (onglets == null) {
+    /** Lot L2 (ADR-083) — commenter la ligne courante : « // » en
+     *  tête de ligne, via l'InputConnection réelle de la vue éditeur
+     *  (batch unique, la position du curseur reprise après). */
+    private void commenterLigneCourante() {
+        android.view.inputmethod.InputConnection connexion =
+                connexionEditeur();
+        if (connexion == null) {
             return;
         }
-        java.util.List<Onglets.Onglet> ouvertures =
-                new java.util.ArrayList<>();
-        for (String chemin : etat.onglets()) {
-            ouvertures.add(new Onglets.Onglet(chemin,
-                    Arborescence.nomAffiche(chemin),
-                    etat.estModifie(chemin)));
+        CharSequence avantBrut = connexion
+                .getTextBeforeCursor(8000, 0);
+        String avant = avantBrut == null ? "" : avantBrut.toString();
+        int debutLigne = avant.lastIndexOf("\n") + 1;
+        connexion.beginBatchEdit();
+        connexion.setSelection(debutLigne, debutLigne);
+        connexion.commitText("// ", 1);
+        connexion.endBatchEdit();
+    }
+
+    /** Dupliquer la ligne courante sous elle-même. */
+    private void dupliquerLigneCourante() {
+        android.view.inputmethod.InputConnection connexion =
+                connexionEditeur();
+        if (connexion == null) {
+            return;
         }
-        onglets.setOnglets(ouvertures, etat.actif());
+        CharSequence avantBrut = connexion
+                .getTextBeforeCursor(8000, 0);
+        CharSequence apresBrut = connexion
+                .getTextAfterCursor(8000, 0);
+        if (avantBrut == null || apresBrut == null) {
+            return;
+        }
+        String avant = avantBrut.toString();
+        String apres = apresBrut.toString();
+        int debutLigne = avant.lastIndexOf("\n") + 1;
+        String ligne = avant.substring(debutLigne)
+                + ligneApres(avant.length() - debutLigne, apres);
+        connexion.beginBatchEdit();
+        connexion.commitText("\n" + ligne, 1);
+        connexion.endBatchEdit();
+    }
+
+    /** La suite de la ligne courante (jusqu'au premier retour). */
+    private String ligneApres(int dejaLue, CharSequence apres) {
+        String suite = apres.toString();
+        int finLigne = suite.indexOf("\n");
+        return finLigne < 0 ? suite : suite.substring(0, finLigne);
+    }
+
+    /** L'InputConnection RÉELLE de la vue éditeur (la fabrique de la
+     *  vue est légitime : la connexion est liée à la session). */
+    private android.view.inputmethod.InputConnection connexionEditeur() {
+        if (scene == null) {
+            return null;
+        }
+        android.view.View editeur = scene.vue();
+        return editeur.onCreateInputConnection(
+                new android.view.inputmethod.EditorInfo());
+    }
+
+    /** L'insertion d'une touche symbole (même voie). */
+    private void insererSymbole(String texte) {
+        android.view.inputmethod.InputConnection connexion =
+                connexionEditeur();
+        if (connexion == null) {
+            return;
+        }
+        connexion.commitText(texte, 1);
+    }
+
+    /** Lot L2 (ADR-083) — le fil d'Ariane suit le fichier courant
+     *  (§3.3 : chemin + symbole englobant du moteur de langage ; le
+     *  symbole arrive au lot L3 avec la source LSP — absent, la
+     *  classe termine le fil, franchement). */
+    /** Lot L3 (ADR-083) — le journal de l'IDE reçoit l'événement et
+     *  la zone vivante suit (source accent, MCP alerte, erreur rouge). */
+    private void journaliser(EtatJournal.Source source,
+                             EtatJournal.Niveau niveau,
+                             String message) {
+        etatJournal.ajouter(source, niveau, message);
+        if (listeJournal != null) {
+            listeJournal.maj(etatJournal);
+        }
+        EtatJournal.Evenement dernier = etatJournal.dernier();
+        if (feuille != null && dernier != null) {
+            int couleur = dernier.niveau() == EtatJournal.Niveau.ERREUR
+                    ? palette.erreur : palette.accent;
+            feuille.poserVerdictJournal("● " + dernier.source()
+                    + " · " + message.toLowerCase(java.util.Locale
+                    .FRENCH), dernier.heure() + " · "
+                    + etatJournal.taille() + " événements");
+        }
+    }
+
+    /** La ligne courante du curseur (le saut ↓ part d'ici) — 1 si
+     *  la session n'est pas lisible. */
+    private int ligneCourante() {
+        if (scene == null) {
+            return 1;
+        }
+        android.view.View editeur = scene.vue();
+        android.view.inputmethod.EditorInfo infos =
+                new android.view.inputmethod.EditorInfo();
+        android.view.inputmethod.InputConnection connexion =
+                editeur.onCreateInputConnection(infos);
+        if (connexion == null) {
+            return 1;
+        }
+        CharSequence avantBrut = connexion
+                .getTextBeforeCursor(8000, 0);
+        if (avantBrut == null) {
+            return 1;
+        }
+        int lignes = 1;
+        for (int i = 0; i < avantBrut.length(); i++) {
+            if (avantBrut.charAt(i) == '\n') {
+                lignes++;
+            }
+        }
+        return lignes;
+    }
+
+    /** L'écran alimente EtatProblemes depuis les diagnostics de la
+     *  scène (la source LSP de la section, §3.6) et redessine. */
+    private void surDiagnosticsLangage(String uri,
+            List<SceneEditeur.ProblemeEcran> bruts) {
+        String chemin = uri;
+        String prefixe = "file://";
+        if (chemin.startsWith(prefixe)) {
+            chemin = chemin.substring(prefixe.length());
+        }
+        List<EtatProblemes.Probleme> nouveaux = new ArrayList<>();
+        for (SceneEditeur.ProblemeEcran brut : bruts) {
+            nouveaux.add(new EtatProblemes.Probleme(chemin,
+                    Arborescence.nomAffiche(chemin),
+                    brut.ligne(), brut.message(), brut.erreur()));
+        }
+        etatProblemes.poserFichier(chemin,
+                Arborescence.nomAffiche(chemin), nouveaux);
+        if (listeProblemes != null) {
+            listeProblemes.maj(etatProblemes);
+        }
+        feuille.poserBadgeProblemes(etatProblemes.erreurs());
+        majVerdictProblemes();
+    }
+
+    /** La zone vivante des problèmes (§3.6 : ✕ n ▲ n ou « Aucun
+     *  problème » / première erreur du fichier actif). */
+    private void majVerdictProblemes() {
+        if (feuille == null) {
+            return;
+        }
+        int erreurs = etatProblemes.erreurs();
+        int avertissements = etatProblemes.avertissements();
+        String verdict;
+        int couleur;
+        if (erreurs == 0 && avertissements == 0) {
+            verdict = getString(R.string.atelier_aucun_probleme);
+            couleur = palette.reussite;
+        } else {
+            verdict = "✕ " + erreurs + "  ▲ " + avertissements;
+            couleur = erreurs > 0 ? palette.erreur : palette.alerte;
+        }
+        EtatProblemes.Probleme premier = etatProblemes
+                .premierDuFichier(fichierCourant == null ? ""
+                        : fichierCourant);
+        String detail = premier == null
+                ? getString(R.string.atelier_aucun_probleme)
+                : Arborescence.nomAffiche(premier.chemin()) + ":"
+                + premier.ligne() + " · " + premier.message();
+        feuille.poserVerdictProblemes(verdict, detail);
+    }
+
+    private void majFilAriane() {
+        if (filAriane == null || fichierCourant == null) {
+            return;
+        }
+        String relatif = fichierCourant;
+        String prefixe = racineProjet == null ? ""
+                : racineProjet.toString();
+        if (relatif.startsWith(prefixe)) {
+            relatif = relatif.substring(prefixe.length());
+            while (relatif.startsWith("/")) {
+                relatif = relatif.substring(1);
+            }
+        }
+        filAriane.poser("", "", "", "");
+        var segments = jo.joide.app.android.atelier
+                .FormateurFilAriane.segmentsDepuisChemin(relatif, null);
+        StringBuilder module = new StringBuilder();
+        StringBuilder paquet = new StringBuilder();
+        StringBuilder classe = new StringBuilder();
+        if (!segments.isEmpty()) {
+            module.append(segments.get(0).texte());
+        }
+        for (int i = 1; i < segments.size(); i++) {
+            if (i == segments.size() - 1) {
+                classe.append(segments.get(i).texte());
+            } else {
+                if (paquet.length() > 0) {
+                    paquet.append('.');
+                }
+                paquet.append(segments.get(i).texte());
+            }
+        }
+        filAriane.poser(module.toString(), paquet.toString(),
+                classe.toString(), null);
+    }
+
+    private void majOnglets() {
+        if (barreOnglets == null) {
+            return;
+        }
+        // lot L2 (ADR-083) : le modèle PUR porte l'état des onglets
+        // (pastilles de type, points erreur/modifié), la vue liée le
+        // dessine — plus de widget propriétaire
+        ModeleOnglets modele = new ModeleOnglets();
+        for (String chemin : etat.onglets()) {
+            modele.ouvrir(chemin, Arborescence.nomAffiche(chemin),
+                    etat.estModifie(chemin), false);
+        }
+        modele.activer(etat.actif());
+        barreOnglets.poser(modele);
+        // le bouton d'aperçu : onglet actif = mise en page (ADR-É7)
+        if (boutonApercuOnglets != null && !etat.grandEcran()) {
+            boutonApercuOnglets.setVisibility(
+                    FichiersProjet.estMiseEnPage(fichierCourant)
+                            ? View.VISIBLE : View.GONE);
+        }
+        majFilAriane();
     }
 
     private void ouvrirCible(String cible) {
@@ -1098,11 +1401,188 @@ public final class EcranAtelier extends Activity {
             return;
         }
         vueArbre.setSortiesEnCours(buildEnCours);
-        vueArbre.setArbre(Arborescence.composer(fichiersArbre,
+        List<String> retenus = Arborescence.cheminsFiltres(fichiersArbre,
+                filtreTiroir);
+        vueArbre.setArbre(Arborescence.composer(retenus,
                 String.valueOf(racineProjet.getFileName()),
-                dossiersOuverts, etat.actif(), sortiesPresentes),
+                filtreTiroir.isBlank() ? dossiersOuverts
+                        : Arborescence.ancetresDe(retenus),
+                etat.actif(), sortiesPresentes),
                 String.valueOf(racineProjet.getFileName()));
     }
+
+    /**
+     * Lot L4 (ADR-083) — le menu contextuel de l'arbre (§3.8,
+     * appui long) : des VERBES RÉELS — nouveau fichier/dossier ici,
+     * renommer (déplacement), dupliquer (copie « (copie) »),
+     * supprimer (confirmation, l'onglet ouvert se ferme). Franchise :
+     * jamais un item mort.
+     */
+    private void montrerMenuContextuel(String chemin, boolean dossier) {
+        java.util.List<String> verbes = new ArrayList<>();
+        java.util.List<Runnable> actions = new ArrayList<>();
+        verbes.add(getString(R.string.atelier_nouveau_fichier));
+        actions.add(() -> proposerNouveau(true));
+        verbes.add(getString(R.string.atelier_nouveau_dossier));
+        actions.add(() -> proposerNouveau(false));
+        if (!dossier) {
+            verbes.add(getString(R.string.atelier_dupliquer));
+            actions.add(() -> dupliquerEntree(chemin));
+            verbes.add(getString(R.string.atelier_renommer));
+            actions.add(() -> renommerEntree(chemin));
+        }
+        verbes.add(getString(R.string.atelier_supprimer));
+        actions.add(() -> supprimerEntree(chemin, dossier));
+        LinearLayout contenu = new LinearLayout(this);
+        contenu.setOrientation(LinearLayout.VERTICAL);
+        for (int i = 0; i < verbes.size(); i++) {
+            String verbe = verbes.get(i);
+            Runnable action = actions.get(i);
+            View ligne = PopupAncre.ligneMenu(this, palette, verbe,
+                    () -> {
+                        fenetreMenuArbre.dismiss();
+                        action.run();
+                    });
+            contenu.addView(ligne);
+        }
+        View vueArbreAncre = getWindow().getDecorView()
+                .findViewById(android.R.id.content);
+        fenetreMenuArbre = PopupAncre.montrer(vueArbre != null
+                ? vueArbre : vueArbreAncre, palette, contenu,
+                GraphiteVue.dp(this, 220));
+    }
+
+    /** Duplique un fichier du projet : la copie vit à côté. */
+    private void dupliquerEntree(String chemin) {
+        try {
+            java.nio.file.Path source = java.nio.file.Path.of(chemin);
+            String nom = source.getFileName().toString();
+            int point = nom.lastIndexOf('.');
+            String copie = point < 0 ? nom + " (copie)"
+                    : nom.substring(0, point) + " (copie)"
+                    + nom.substring(point);
+            java.nio.file.Path cible = source.resolveSibling(copie);
+            java.nio.file.Files.copy(source, cible,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            rechargerArbre();
+        } catch (java.io.IOException e) {
+            Dialogue.information(this, palette,
+                    getString(R.string.atelier_dupliquer),
+                    String.valueOf(e.getMessage()), R.string.action_ok);
+        }
+    }
+
+    /** Renomme un fichier du projet (déplacement au même dossier) :
+     *  la saisie suit le même dialogue que la création, la validation
+     *  NouveauNom incluse. */
+    private void renommerEntree(String chemin) {
+        android.widget.EditText saisie = new android.widget.EditText(this);
+        saisie.setHint(R.string.atelier_renommer);
+        Dialogue.saisie(this, palette,
+                getString(R.string.atelier_renommer),
+                saisie, R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    if (lequel != DialogInterface.BUTTON_POSITIVE) {
+                        return;
+                    }
+                    String nom = saisie.getText().toString().trim();
+                    NouveauNom.Raison raison = NouveauNom.valider(nom);
+                    if (raison != null) {
+                        Dialogue.information(this, palette,
+                                getString(R.string.atelier_renommer),
+                                texteRaisonNom(raison),
+                                R.string.action_ok);
+                        return;
+                    }
+                    try {
+                        java.nio.file.Path source =
+                                java.nio.file.Path.of(chemin);
+                        java.nio.file.Files.move(source,
+                                source.resolveSibling(nom),
+                                java.nio.file.StandardCopyOption
+                                        .ATOMIC_MOVE);
+                        rechargerArbre();
+                    } catch (java.io.IOException e) {
+                        Dialogue.information(this, palette,
+                                getString(R.string.atelier_renommer),
+                                String.valueOf(e.getMessage()),
+                                R.string.action_ok);
+                    }
+                });
+    }
+
+    /** Supprime (confirmation ; l'onglet ouvert se ferme, §3.8). */
+    private void supprimerEntree(String chemin, boolean dossier) {
+        Dialogue.confirmation(this, palette,
+                getString(R.string.atelier_supprimer), chemin,
+                R.string.action_annuler, R.string.action_ok,
+                (dialog, lequel) -> {
+                    try {
+                        java.nio.file.Path cible =
+                                java.nio.file.Path.of(chemin);
+                        if (dossier) {
+                            supprimerRecursivement(cible);
+                        } else {
+                            java.nio.file.Files.deleteIfExists(cible);
+                        }
+                        if (fichierCourant != null
+                                && fichierCourant.startsWith(chemin)) {
+                            fermerOnglet(fichierCourant);
+                        }
+                        rechargerArbre();
+                    } catch (java.io.IOException e) {
+                        Dialogue.information(this, palette,
+                                getString(R.string.atelier_supprimer),
+                                String.valueOf(e.getMessage()),
+                                R.string.action_ok);
+                    }
+                });
+    }
+
+    /**
+     * Lot L4 (ADR-083) — « localiser le fichier actif » (§3.8) : les
+     * dossiers ancêtres s'ouvrent et l'arbre se redessine avec le
+     * filtre levé (on cherche à VOIR le fichier, pas à filtrer).
+     */
+    private void localiserFichierActif() {
+        if (fichierCourant == null) {
+            return;
+        }
+        String relatif = fichierCourant;
+        String prefixe = racineProjet == null ? ""
+                : racineProjet.toString();
+        if (relatif.startsWith(prefixe)) {
+            relatif = relatif.substring(prefixe.length());
+            while (relatif.startsWith("/")) {
+                relatif = relatif.substring(1);
+            }
+        }
+        filtreTiroir = "";
+        if (tiroirFichiers != null) {
+            tiroirFichiers.champFiltre().setText("");
+        }
+        dossiersOuverts.addAll(
+                Arborescence.ancetresDe(List.of(relatif)));
+        majArbre();
+    }
+
+    /** La suppression récursive d'un dossier du projet. */
+    private static void supprimerRecursivement(java.nio.file.Path racine)
+            throws java.io.IOException {
+        try (var chemins = java.nio.file.Files.walk(racine)) {
+            chemins.sorted(java.util.Comparator.reverseOrder())
+                    .forEach(chemin -> {
+                        try {
+                            java.nio.file.Files.deleteIfExists(chemin);
+                        } catch (java.io.IOException ignore) {
+                            // au mieux : le suivant continue
+                        }
+                    });
+        }
+    }
+
+    /** La fenêtre du menu contextuel de l'arbre (fermée sur action). */
+    private android.widget.PopupWindow fenetreMenuArbre;
 
     private void proposerNouveau(boolean fichier) {
         String dossier = etat.actif() == null
@@ -3433,8 +3913,14 @@ public final class EcranAtelier extends Activity {
 
     private void majVolets() {
         majPuits();
-        if (dock != null) {
-            dock.setDeplie(etat.consoleDepliee());
+        if (feuille != null) {
+            feuille.poserDeplie(etat.consoleDepliee());
+        }
+        if (fab != null) {
+            // §3.7 : le FAB disparaît dès que la feuille dépasse la
+            // barre (le clavier le cache aussi, via les insets)
+            fab.setVisibility(etat.consoleDepliee()
+                    ? View.GONE : View.VISIBLE);
         }
         if (boutonRailConsole != null) {
             boutonRailConsole.setCouleur(etat.consoleDepliee()
@@ -3501,12 +3987,61 @@ public final class EcranAtelier extends Activity {
     }
 
     private void majDock() {
-        if (dock == null) {
+        if (feuille == null) {
             return;
         }
-        dock.setTitre(getString(R.string.console_build) + " — "
-                + etatConsole.libelleCourt());
-        dock.setLegende(legendeDernierBilan());
+        // lot L3 (ADR-083) : la zone vivante console — verdict coloré
+        // selon l'état, détail = dernier bilan, pipeline de 3 segments
+        String libelle = etatConsole.libelleCourt();
+        int couleur;
+        String verdict;
+        switch (etatConsole.etat()) {
+            case EN_COURS -> {
+                couleur = palette.accent;
+                verdict = "● " + libelle;
+            }
+            case REUSSI -> {
+                couleur = palette.reussite;
+                verdict = "✓ " + libelle;
+            }
+            case ECHOUE -> {
+                couleur = palette.erreur;
+                verdict = "✕ " + libelle;
+            }
+            case INTERROMPU -> {
+                couleur = palette.alerte;
+                verdict = "■ " + libelle;
+            }
+            default -> {
+                couleur = palette.texteSecondaire;
+                verdict = getString(R.string.console_etat_vide);
+            }
+        }
+        boolean enCours = etatConsole.etat() == EtatConsole.Etat.EN_COURS;
+        boolean resolutionOk = false;
+        boolean compilationOk = false;
+        boolean compilationErreur = false;
+        boolean assemblageAtteint = false;
+        boolean assemblageErreur = false;
+        for (EtatConsole.PhaseEtat phase : etatConsole.phases()) {
+            if (phase.phase() == jo.joide.app.android.ConsoleBuild.Phase.PREPARATION) {
+                resolutionOk = phase.commencee() && !enCours;
+            } else if (phase.phase()
+                    == jo.joide.app.android.ConsoleBuild.Phase.COMPILATION) {
+                compilationOk = phase.commencee() && !enCours;
+                compilationErreur = etatConsole.etat()
+                        == EtatConsole.Etat.ECHOUE;
+            } else if (phase.phase()
+                    == jo.joide.app.android.ConsoleBuild.Phase.ASSEMBLAGE) {
+                assemblageAtteint = phase.commencee();
+                assemblageErreur = etatConsole.etat()
+                        == EtatConsole.Etat.ECHOUE && assemblageAtteint;
+            }
+        }
+        feuille.poserVerdictConsole(verdict, couleur,
+                String.valueOf(legendeDernierBilan()), enCours,
+                resolutionOk, compilationOk, compilationErreur,
+                assemblageAtteint, assemblageErreur);
     }
 
     private CharSequence legendeDernierBilan() {

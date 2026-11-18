@@ -10,6 +10,8 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 
+import jo.joide.app.android.R;
+
 /**
  * Icône du kit : un glyphe dessiné au canvas (chemins en unités 24,
  * trait 1,8 dp, bouts et jointures arrondis), à la couleur demandée.
@@ -48,7 +50,13 @@ public final class Icone extends View {
         /** Bulle de chat (l'agent — lot P). */
         BULLE,
         /** Étoile pleine (favori — lot T). */
-        ETOILE
+        ETOILE,
+        /** Trois barres horizontales (tiroir fichiers — atelier v2). */
+        MENU,
+        /** Trois barres, la dernière courte (journal — atelier v2). */
+        JOURNAL,
+        /** Encadré à lignes (logcat — atelier v2). */
+        LOGCAT
     }
 
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -63,6 +71,51 @@ public final class Icone extends View {
     public Icone(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
         setClickable(false);
+        // atelier v2 (lot L2, ADR-083) : le glyphe et la couleur se
+        // posent DEPUIS LE XML — ?attr/jo_* pour la couleur (jamais
+        // une valeur codée en dur, franchise §0.4) ; sans attribut,
+        // la couleur du thème texte2 s'applique.
+        if (attributs != null) {
+            android.content.res.TypedArray pose = contexte
+                    .obtainStyledAttributes(attributs,
+                            R.styleable.JoIcone);
+            int glyphePose = pose.getInt(R.styleable.JoIcone_jo_icone_glyphe,
+                    -1);
+            if (glyphePose >= 0 && glyphePose < Glyphe.values().length) {
+                glyphe = Glyphe.values()[glyphePose];
+            }
+            if (pose.hasValue(R.styleable.JoIcone_jo_icone_couleur)) {
+                TypedValue valeur = new TypedValue();
+                pose.getValue(R.styleable.JoIcone_jo_icone_couleur,
+                        valeur);
+                couleur = resolveCouleur(valeur);
+            } else {
+                TypedValue valeur = new TypedValue();
+                getContext().getTheme().resolveAttribute(
+                        R.attr.jo_texte2, valeur, true);
+                couleur = resolveCouleur(valeur);
+            }
+            pose.recycle();
+        } else {
+            TypedValue valeur = new TypedValue();
+            getContext().getTheme().resolveAttribute(
+                    R.attr.jo_texte2, valeur, true);
+            couleur = resolveCouleur(valeur);
+        }
+    }
+
+    /** Résout une valeur de couleur : un ?attr résolu par le thème
+     *  (TypedValue.type = ATTRIBUTE) se re-résout dans les ressources. */
+    private int resolveCouleur(TypedValue valeur) {
+        if (valeur.type == TypedValue.TYPE_ATTRIBUTE) {
+            int[] requete = {valeur.data};
+            android.content.res.TypedArray suivant =
+                    getContext().obtainStyledAttributes(requete);
+            int resolue = suivant.getColor(0, 0);
+            suivant.recycle();
+            return resolue;
+        }
+        return valeur.data;
     }
 
     /** Pose le glyphe. */
@@ -218,6 +271,41 @@ public final class Icone extends View {
                     chemin.lineTo(sommet[0] * u, sommet[1] * u);
                 }
                 chemin.close();
+                canvas.drawPath(chemin, pinceau);
+            }
+            case MENU -> {
+                // trois barres horizontales (tiroir fichiers, §3.1)
+                for (float y : new float[]{6f, 12f, 18f}) {
+                    chemin.moveTo(4.5f * u, y * u);
+                    chemin.lineTo(19.5f * u, y * u);
+                    canvas.drawPath(chemin, pinceau);
+                }
+            }
+            case JOURNAL -> {
+                // trois barres, la dernière courte (journal, §3.6)
+                chemin.moveTo(4.5f * u, 6f * u);
+                chemin.lineTo(19.5f * u, 6f * u);
+                canvas.drawPath(chemin, pinceau);
+                chemin.moveTo(4.5f * u, 12f * u);
+                chemin.lineTo(19.5f * u, 12f * u);
+                canvas.drawPath(chemin, pinceau);
+                chemin.moveTo(4.5f * u, 18f * u);
+                chemin.lineTo(13.5f * u, 18f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case LOGCAT -> {
+                // l'encadré du flux + deux lignes (logcat, §3.6)
+                chemin.moveTo(4.5f * u, 5f * u);
+                chemin.lineTo(19.5f * u, 5f * u);
+                chemin.lineTo(19.5f * u, 19f * u);
+                chemin.lineTo(4.5f * u, 19f * u);
+                chemin.close();
+                canvas.drawPath(chemin, pinceau);
+                chemin.moveTo(7.5f * u, 9f * u);
+                chemin.lineTo(16.5f * u, 9f * u);
+                canvas.drawPath(chemin, pinceau);
+                chemin.moveTo(7.5f * u, 13f * u);
+                chemin.lineTo(13.5f * u, 13f * u);
                 canvas.drawPath(chemin, pinceau);
             }
             case AGRANDIR -> {

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L3 : le rail de sections — pilule fond, rayon 14, padding 3. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_fond" />
+    <corners android:radius="14dp" />
+</shape>

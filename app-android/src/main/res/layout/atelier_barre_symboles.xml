@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L2 (ADR-083) — la barre de symboles (§3.5) : 42 dp,
+  fond surfaceHaute, bord haut 1 dp bord, padding 5/6, espacement 4.
+  VISIBLE SEULEMENT quand le clavier est affiché ; les touches se
+  gonflent depuis item_touche dans l'ordre de ModeleBarreSymboles.
+  Aucune touche ne prend le focus (le clavier ne doit pas se fermer).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/barre_symboles"
+    android:layout_width="match_parent"
+    android:layout_height="42dp"
+    android:orientation="horizontal"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/atelier_barre_symboles_fond"
+    android:visibility="gone" />

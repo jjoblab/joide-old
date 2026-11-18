@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L4 (ADR-083) — le tiroir fichiers (§3.8) : 300 dp
+  poussé depuis la gauche, fond surface. Pas de rangée projet (le nom
+  et « n modules » vivent dans la barre supérieure : aucun doublon) ;
+  le sélecteur n'apparaît que le jour où ≥ 2 sections sont réellement
+  implémentées (franchise §3.8 : aujourd'hui un simple titre
+  « Fichiers »). Actions 34×34 (nouveau fichier, nouveau dossier,
+  tout réduire, localiser), champ de filtre 36 dp rayon 12, puis
+  l'arbre (VueArbre, lignes item_noeud).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="10dp"
+        android:text="@string/atelier_tiroir_fichiers"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="?attr/jo_texte" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_nouveau_fichier"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            app:jo_icone_glyphe="plus"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/atelier_nouveau_fichier" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_nouveau_dossier"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="2dp"
+            app:jo_icone_glyphe="dossier"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/atelier_nouveau_dossier" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_tout_reduire"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="2dp"
+            app:jo_icone_glyphe="chevron"
+            android:rotation="-90"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/atelier_tout_reduire" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_localiser"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginStart="2dp"
+            app:jo_icone_glyphe="recherche"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/atelier_localiser" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/champ_filtre"
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:layout_margin="14dp"
+        android:background="@drawable/champ_filtre_fond"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:hint="@string/atelier_filtrer_fichiers"
+        android:textColorHint="?attr/jo_texte3"
+        android:textSize="13sp"
+        android:textColor="?attr/jo_texte"
+        android:importantForAutofill="no"
+        android:inputType="text"
+        android:singleLine="true" />
+
+    <FrameLayout
+        android:id="@+id/cadre_arbre"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

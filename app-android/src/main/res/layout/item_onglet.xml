@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Atelier v2, lot L2 (ADR-083) — un onglet (§3.2) : hauteur 34,
+  padding 0 10, rayon haut 10 ; pastille de type 16×16 (teinte posée
+  par code selon ModeleOnglets.Badge), nom 13, point d'état 7 (erreur
+  ou alerte), fermeture × visible sur l'onglet actif, indicateur 2 dp
+  accent collé en bas (inset 10). Le fond actif se pose par code
+  (onglet_actif_fond / transparent).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="34dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp">
+
+        <TextView
+            android:id="@+id/pastille_onglet"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:gravity="center"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/nom_onglet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="7dp"
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte2"
+            android:singleLine="true" />
+
+        <View
+            android:id="@+id/point_onglet"
+            android:layout_width="7dp"
+            android:layout_height="7dp"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/point_onglet" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/btn_fermer_onglet"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="6dp"
+            android:padding="1dp"
+            app:jo_icone_glyphe="croix"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            android:contentDescription="@string/atelier_desc_fermer_onglet" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/indicateur_onglet"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/indicateur_onglet"
+        android:visibility="gone" />
+</FrameLayout>

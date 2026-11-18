@@ -379,4 +379,28 @@
     <string name="parametres_depot">Repository</string>
     <string name="parametres_depot_echoue">No browser on this device — the repository is at %1$s</string>
     <string name="parametres_consulter">View</string>
+
+    <!-- atelier v2, lot L2 -->
+    <string name="atelier_desc_fermer_onglet">Close this tab</string>
+    <string name="atelier_desc_barre_symboles">Symbol bar</string>
+    <string name="atelier_desc_touche_symbole">Insert %1$s</string>
+    <string name="atelier_desc_touche_tab">Insert tabulation</string>
+    <string name="atelier_desc_touche_actions">Symbol row actions</string>
+    <string name="atelier_action_commenter">Comment line</string>
+    <string name="atelier_action_dupliquer">Duplicate line</string>
+    <string name="atelier_action_symboles">Symbols</string>
+    <string name="atelier_desc_problemes">Problems</string>
+    <string name="atelier_desc_journal">Journal</string>
+    <string name="atelier_desc_logcat">Logcat</string>
+    <string name="atelier_desc_probleme_suivant">Next problem</string>
+    <string name="atelier_probleme_ligne">line %1$d</string>
+    <string name="atelier_aucun_probleme">No problems</string>
+    <string name="atelier_tiroir_fichiers">Files</string>
+    <string name="atelier_tout_reduire">Collapse all</string>
+    <string name="atelier_localiser">Locate active file</string>
+    <string name="atelier_filtrer_fichiers">Filter files…</string>
+    <string name="atelier_dupliquer">Duplicate</string>
+    <string name="atelier_renommer">Rename</string>
+    <string name="atelier_supprimer">Delete</string>
+    <string name="atelier_sorties_en_cours">build #… running</string>
 </resources>
