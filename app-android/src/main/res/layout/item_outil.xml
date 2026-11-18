@@ -1,68 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 (§3.9) — la carte d'OUTIL : glyphe d'état (✓ réussite, ●
-  accent pulsant, ✕ erreur), nom mono 12,5 semi-gras, cible, libellé
-  droit (« 14 lignes ▸ » pliée par défaut / « à approuver »). Le bloc
-  de permission (diff + 2 boutons) se gonfle SOUS la carte quand
-  l'outil attend une décision.
+  Lot L5 — la carte d'OUTIL : point d'état (8 dp, accent/en cours,
+  réussite, erreur), nom mono semi-gras, cible, libellé droit
+  (« 14 lignes ▸ » / « Refusé ») ; le résultat se déplie au tap de la
+  rangée quand l'outil est fini. Le fond et la bordure se posent par
+  code (la couleur du bord dépend de l'état).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/agent_carte_outil"
-    android:padding="10dp">
+    android:orientation="vertical">
 
     <LinearLayout
+        android:id="@+id/rangee_outil"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:paddingStart="11dp"
+        android:paddingEnd="11dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp">
 
-        <TextView
-            android:id="@+id/glyphe_outil"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12.5sp"
-            android:textStyle="bold" />
+        <View
+            android:id="@+id/point_outil"
+            android:layout_width="8dp"
+            android:layout_height="8dp" />
 
         <TextView
             android:id="@+id/nom_outil"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textSize="12.5sp"
+            android:layout_marginStart="9dp"
+            android:textSize="12sp"
             android:textStyle="bold"
-            android:textColor="?attr/jo_texte"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/cible_outil"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:textSize="12sp"
+            android:textColor="?attr/jo_texte3"
             android:fontFamily="monospace"
             android:singleLine="true" />
 
         <TextView
             android:id="@+id/libelle_outil"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
             android:textSize="12sp"
-            android:textColor="?attr/jo_texte2"
+            android:textColor="?attr/jo_texte3"
             android:singleLine="true" />
     </LinearLayout>
 
     <TextView
-        android:id="@+id/cible_outil"
+        android:id="@+id/resultat_outil"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:textSize="11.5sp"
-        android:textColor="?attr/jo_texte3"
+        android:paddingStart="11dp"
+        android:paddingEnd="11dp"
+        android:paddingBottom="9dp"
+        android:textSize="11sp"
+        android:textColor="?attr/jo_texte2"
         android:fontFamily="monospace"
-        android:ellipsize="middle"
-        android:singleLine="true" />
-
-    <FrameLayout
-        android:id="@+id/bloc_permission_outil"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:visibility="gone" />
 </LinearLayout>

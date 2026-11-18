@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 — la carte QUESTIONS : fond surface, bord accent 35 %, rayon
+  12 ; les demandes numérotées et les puces d'options (choix, Autre,
+  Passer) se posent par code depuis EtatAgentChat — le conteneur est
+  ici, la logique reste dans la vue.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="11dp"
+    android:paddingEnd="11dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp" />

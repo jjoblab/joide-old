@@ -1,29 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 (§3.9) — le tiroir agent : 340 dp poussé depuis la droite,
-  fond surface, bord gauche 1 dp bord. En-tête (« Agent » 16
-  semi-gras, puce modèle accent tonal ▾ → PopupModeles, puce mode
-  neutre *Demander/Auto/Plan*, historique ⟲, ✕) ; transcript
-  (padding 12) ; ligne d'activité (point 8 dp accent pulsant + pas +
-  écoulé) ; ligne d'usage mono 11,5 ; le composeur (include).
-  Les états vivent dans EtatAgentChat — la vue ne décide rien.
+  Lot L5 — le tiroir agent migré du code vers le XML + ViewBinding.
+  Structure : en-tête (titre, puce modèle → sélecteur, puce de mode,
+  menu ⋯, ✕), transcript, ligne d'activité (au-dessus du composeur,
+  §3.9), composeur. Les états vivent dans EtatAgentChat — la vue ne
+  décide rien. Les glyphes se posent par code (pas d'attribut XML :
+  le contrat de Icone reste programmatique).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="?attr/jo_surface">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="6dp"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="10dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="2dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
 
         <TextView
             android:layout_width="0dp"
@@ -37,45 +34,36 @@
         <jo.joide.app.android.ui.Puce
             android:id="@+id/puce_modele_agent"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp" />
 
         <jo.joide.app.android.ui.Puce
             android:id="@+id/puce_mode_agent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp" />
+            android:layout_marginEnd="6dp" />
 
         <jo.joide.app.android.ui.Icone
-            android:id="@+id/btn_historique_agent"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="6dp"
-            app:jo_icone_glyphe="rafraichir"
+            android:id="@+id/btn_menu_agent"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/agent_historique" />
+            android:focusable="true" />
 
         <jo.joide.app.android.ui.Icone
             android:id="@+id/btn_fermer_agent"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            app:jo_icone_glyphe="croix"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/action_fermer" />
+            android:focusable="true" />
     </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?attr/jo_bord_fin" />
 
     <ScrollView
         android:id="@+id/defilement_agent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="12dp"
+        android:padding="8dp"
         android:clipToPadding="false">
 
         <LinearLayout
@@ -86,52 +74,39 @@
     </ScrollView>
 
     <LinearLayout
+        android:id="@+id/ligne_activite_agent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp">
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="6dp"
+        android:visibility="gone">
 
         <View
-            android:id="@+id/point_activite_agent"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/dot_agent"
-            android:visibility="gone" />
+            android:layout_width="7dp"
+            android:layout_height="7dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/dot_agent" />
 
         <TextView
             android:id="@+id/libelle_activite_agent"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:textSize="12.5sp"
-            android:textColor="?attr/jo_texte2"
-            android:singleLine="true" />
+            android:textSize="12sp"
+            android:textColor="?attr/jo_texte"
+            android:singleLine="true"
+            android:ellipsize="end" />
 
         <TextView
             android:id="@+id/ecoule_activite_agent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="12sp"
-            android:textColor="?attr/jo_texte3"
-            android:fontFamily="monospace" />
+            android:textColor="?attr/jo_texte3" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/ligne_usage_agent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="4dp"
-        android:textSize="11.5sp"
-        android:textColor="?attr/jo_texte3"
-        android:fontFamily="monospace"
-        android:singleLine="true" />
 
     <include
         android:id="@+id/composeur"

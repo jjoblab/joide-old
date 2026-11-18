@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -17,6 +18,14 @@ import java.util.List;
 import jo.joide.agent.Permissions;
 import jo.joide.agent.UsageLlm;
 import jo.joide.app.android.R;
+import jo.joide.app.android.databinding.ComposeurAgentBinding;
+import jo.joide.app.android.databinding.ItemErreurAgentBinding;
+import jo.joide.app.android.databinding.ItemMsgAgentBinding;
+import jo.joide.app.android.databinding.ItemMsgUtilisateurBinding;
+import jo.joide.app.android.databinding.ItemOutilBinding;
+import jo.joide.app.android.databinding.ItemQuestionBinding;
+import jo.joide.app.android.databinding.ItemRaisonnementBinding;
+import jo.joide.app.android.databinding.TiroirAgentBinding;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Champ;
 import jo.joide.app.android.ui.Graphite;
@@ -88,6 +97,10 @@ public final class VueAgent extends LinearLayout {
     }
 
     private final Graphite.Palette palette;
+    /** La coque du tiroir gonflée du XML (lot L5). */
+    private final TiroirAgentBinding coque;
+    /** Le composeur inclus (binding imbriqué du <include>). */
+    private final ComposeurAgentBinding composeur;
     private final LinearLayout colonneCartes;
     private final ScrollView defilement;
     private final EditText saisie;
@@ -118,187 +131,64 @@ public final class VueAgent extends LinearLayout {
         palette = GraphiteVue.palette(contexte);
         int fond = palette.fond;
 
-        // ---- en-tête : titre, puces, fermer (compact, lot S) ----
-        LinearLayout tete = new LinearLayout(contexte);
-        tete.setOrientation(LinearLayout.HORIZONTAL);
-        tete.setGravity(Gravity.CENTER_VERTICAL);
-        tete.setBackgroundColor(palette.surface);
-        int marge = GraphiteVue.dp(contexte, 8);
-        tete.setPadding(marge, GraphiteVue.dp(contexte, 5),
-                GraphiteVue.dp(contexte, 2),
-                GraphiteVue.dp(contexte, 5));
-        TextView titre = new TextView(contexte);
-        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(palette.texte);
-        titre.setText(R.string.agent_titre);
-        tete.addView(titre, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        puceModele = new Puce(contexte);
-        puceModele.setOnClickListener(
-                vue -> auditeurModele());
-        tete.addView(puceModele, margeParams(contexte));
-        puceMode = new Puce(contexte);
+        // ---- la coque du XML (lot L5) : en-tête, transcript,
+        // ligne d'activité, composeur — les auditeurs et glyphes
+        // restent posés ici (le contrat des vues du kit ne change pas)
+        coque = TiroirAgentBinding.inflate(
+                LayoutInflater.from(contexte), this, true);
+        composeur = coque.composeur;
+        colonneCartes = coque.colonneTranscript;
+        defilement = coque.defilementAgent;
+        saisie = composeur.saisieAgent;
+        rangeePieces = composeur.rangeePiecesAgent;
+        envoyer = composeur.btnEnvoyerAgent;
+        arreter = composeur.btnArreterAgent;
+        puceModele = coque.puceModeleAgent;
+        puceMode = coque.puceModeAgent;
+        vueMenu = coque.btnMenuAgent;
+        vueAjouter = composeur.btnAjouterPiece;
+        ligneActivite = coque.ligneActiviteAgent;
+        texteActivite = coque.libelleActiviteAgent;
+        tempsActivite = coque.ecouleActiviteAgent;
+
+        saisie.setTextColor(palette.texte);
+        saisie.setHintTextColor(palette.texteEstompe);
+        saisie.setTypeface(GraphiteVue.police(contexte, 400, false));
+        envoyer.setOnClickListener(vue -> envoyer());
+        arreter.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.arreter();
+            }
+        });
+        puceModele.setOnClickListener(vue -> auditeurModele());
         puceMode.setOnClickListener(vue -> auditeurMode());
-        tete.addView(puceMode, margeParams(contexte));
-        vueMenu = new Icone(contexte);
-        Icone menu = vueMenu;
-        menu.setGlyphe(Icone.Glyphe.POINTS);
-        menu.setCouleur(palette.texte);
-        menu.setClickable(true);
-        menu.setContentDescription(
+        vueMenu.setGlyphe(Icone.Glyphe.POINTS);
+        vueMenu.setCouleur(palette.texte);
+        vueMenu.setClickable(true);
+        vueMenu.setContentDescription(
                 getContext().getString(R.string.agent_menu));
-        menu.setOnClickListener(vue -> {
+        vueMenu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirMenuAgent();
             }
         });
-        tete.addView(menu, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(contexte, 38),
-                GraphiteVue.dp(contexte, 38)));
-        Icone fermer = new Icone(contexte);
+        Icone fermer = coque.btnFermerAgent;
         fermer.setGlyphe(Icone.Glyphe.CROIX);
         fermer.setCouleur(palette.texte);
         fermer.setClickable(true);
         fermer.setContentDescription(
                 getContext().getString(R.string.agent_fermer));
         fermer.setOnClickListener(vue -> demanderFermeture());
-        tete.addView(fermer, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(contexte, 38),
-                GraphiteVue.dp(contexte, 38)));
-        addView(tete, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        // ---- transcript (les cartes respirent de 8 dp, lot S) ----
-        colonneCartes = new LinearLayout(contexte);
-        colonneCartes.setOrientation(LinearLayout.VERTICAL);
-        colonneCartes.setBackgroundColor(fond);
-        int margeCarte = GraphiteVue.dp(contexte, 8);
-        colonneCartes.setPadding(margeCarte, margeCarte, margeCarte,
-                margeCarte);
-        defilement = new ScrollView(contexte);
-        defilement.setBackgroundColor(fond);
-        defilement.addView(colonneCartes, new FrameLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
-        addView(defilement, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT, 0, 1f));
-
-        // ---- composeur ----
-        LinearLayout composeur = new LinearLayout(contexte);
-        composeur.setOrientation(LinearLayout.VERTICAL);
-        composeur.setBackgroundColor(palette.surface);
-        int margeBas = GraphiteVue.dp(contexte, 10);
-        composeur.setPadding(marge, marge, marge, margeBas);
-        rangeePieces = new LinearLayout(contexte);
-        rangeePieces.setOrientation(LinearLayout.HORIZONTAL);
-        rangeePieces.setVisibility(GONE);
-        composeur.addView(rangeePieces, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        LinearLayout rangee = new LinearLayout(contexte);
-        rangee.setOrientation(LinearLayout.HORIZONTAL);
-        rangee.setGravity(Gravity.BOTTOM);
-        vueAjouter = new Icone(contexte);
-        Icone ajouter = vueAjouter;
-        ajouter.setGlyphe(Icone.Glyphe.PLUS);
-        ajouter.setCouleur(palette.texteSecondaire);
-        ajouter.setClickable(true);
-        ajouter.setContentDescription(
+        vueAjouter.setGlyphe(Icone.Glyphe.PLUS);
+        vueAjouter.setCouleur(palette.texteSecondaire);
+        vueAjouter.setClickable(true);
+        vueAjouter.setContentDescription(
                 getContext().getString(R.string.agent_ajouter));
-        ajouter.setOnClickListener(vue -> {
+        vueAjouter.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirAjouts();
             }
         });
-        LinearLayout.LayoutParams paramsAjouter = new LinearLayout.LayoutParams(
-                GraphiteVue.dp(contexte, 36),
-                GraphiteVue.dp(contexte, 36));
-        paramsAjouter.gravity = Gravity.CENTER_VERTICAL;
-        rangee.addView(ajouter, paramsAjouter);
-        saisie = new EditText(contexte);
-        saisie.setHint(R.string.agent_ecrire_indice);
-        saisie.setTextColor(palette.texte);
-        saisie.setHintTextColor(palette.texteEstompe);
-        saisie.setTypeface(GraphiteVue.police(contexte, 400, false));
-        saisie.setTextSize(14f);
-        saisie.setInputType(InputType.TYPE_CLASS_TEXT
-                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        saisie.setMaxLines(4);
-        // la saisie vit dans une pilule discrète (finesse du lot S)
-        android.graphics.drawable.GradientDrawable pilule =
-                new android.graphics.drawable.GradientDrawable();
-        pilule.setColor(palette.fond);
-        pilule.setCornerRadius(GraphiteVue.dp(contexte, 18));
-        pilule.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
-        saisie.setBackground(pilule);
-        saisie.setPadding(GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 8),
-                GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 8));
-        rangee.addView(saisie, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        envoyer = new Bouton(contexte);
-        envoyer.setTexte(getContext()
-                .getString(R.string.agent_envoyer));
-        envoyer.setOnClickListener(vue -> envoyer());
-        rangee.addView(envoyer, margeParams(contexte));
-        arreter = new Bouton(contexte);
-        arreter.setTexte(getContext()
-                .getString(R.string.agent_arreter_tour));
-        arreter.setOnClickListener(vue -> {
-            if (auditeur != null) {
-                auditeur.arreter();
-            }
-        });
-        arreter.setVisibility(GONE);
-        composeur.addView(rangee, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        LinearLayout rangeeArret = new LinearLayout(contexte);
-        rangeeArret.setOrientation(LinearLayout.HORIZONTAL);
-        rangeeArret.addView(arreter, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        composeur.addView(rangeeArret, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        addView(composeur, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        // ---- ligne d'activité (lot T, la manière CodeAssist) : le
-        // tour qui tourne dit ce qu'il fait et depuis combien de temps
-        ligneActivite = new LinearLayout(contexte);
-        ligneActivite.setOrientation(LinearLayout.HORIZONTAL);
-        ligneActivite.setGravity(Gravity.CENTER_VERTICAL);
-        ligneActivite.setPadding(marge, GraphiteVue.dp(contexte, 6),
-                marge, 0);
-        ligneActivite.setVisibility(GONE);
-        View pointVivant = new View(contexte);
-        pointVivant.setBackground(cercle(contexte, palette.accent));
-        LinearLayout.LayoutParams paramsPoint = new LinearLayout
-                .LayoutParams(GraphiteVue.dp(contexte, 7),
-                GraphiteVue.dp(contexte, 7));
-        paramsPoint.rightMargin = GraphiteVue.dp(contexte, 8);
-        ligneActivite.addView(pointVivant, paramsPoint);
-        texteActivite = new TextView(contexte);
-        GraphiteVue.typographie(texteActivite, Graphite.LEGENDE);
-        texteActivite.setTextColor(palette.texte);
-        texteActivite.setSingleLine(true);
-        texteActivite.setEllipsize(android.text.TextUtils
-                .TruncateAt.END);
-        ligneActivite.addView(texteActivite, new LinearLayout
-                .LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f));
-        tempsActivite = new TextView(contexte);
-        GraphiteVue.typographie(tempsActivite, Graphite.LEGENDE);
-        tempsActivite.setTextColor(palette.texteEstompe);
-        ligneActivite.addView(tempsActivite, new LinearLayout
-                .LayoutParams(LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT));
-        addView(ligneActivite, new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     /**
@@ -430,101 +320,54 @@ public final class VueAgent extends LinearLayout {
     // ------------------------------------------------------------------
 
     private View carteMessage(Carte carte) {
-        Context contexte = getContext();
-        LinearLayout bloc = new LinearLayout(contexte);
-        bloc.setOrientation(LinearLayout.VERTICAL);
-        bloc.setGravity(Gravity.END);
-        TextView vue = new TextView(contexte);
+        ItemMsgUtilisateurBinding item = ItemMsgUtilisateurBinding
+                .inflate(LayoutInflater.from(getContext()),
+                        colonneCartes, false);
+        TextView vue = item.texteMessage;
         GraphiteVue.typographie(vue, Graphite.CORPS);
         vue.setTextColor(palette.texte);
         vue.setText(carte.texte);
-        vue.setPadding(GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 8),
-                GraphiteVue.dp(contexte, 12),
-                GraphiteVue.dp(contexte, 8));
-        android.graphics.drawable.GradientDrawable fond =
-                new android.graphics.drawable.GradientDrawable();
-        fond.setColor(palette.surfaceHaute);
-        // le coin bas-droit se resserre : la bulle parle DU côté de
-        // son auteur (finesse du lot S)
-        int grand = GraphiteVue.dp(contexte, 16);
-        int petit = GraphiteVue.dp(contexte, 6);
-        fond.setCornerRadii(new float[]{grand, grand, grand, grand,
-                petit, petit, grand, grand});
-        fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
-        vue.setBackground(fond);
-        LayoutParams params = new LayoutParams(LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT);
-        params.gravity = Gravity.END;
-        params.setMargins(0, GraphiteVue.dp(contexte, 2), 0,
-                GraphiteVue.dp(contexte, 2));
-        vue.setLayoutParams(params);
-        vue.setMaxWidth(GraphiteVue.dp(contexte, 300));
-        bloc.addView(vue);
         if (carte.pieces != null && !carte.pieces.isEmpty()) {
-            LinearLayout puces = new LinearLayout(contexte);
-            puces.setOrientation(LinearLayout.HORIZONTAL);
-            puces.setGravity(Gravity.END);
             for (String nom : carte.pieces) {
-                Puce puce = new Puce(contexte);
+                Puce puce = new Puce(getContext());
                 puce.setText(nom);
-                puces.addView(puce, margeParams(contexte));
+                item.piecesMessage.addView(puce,
+                        margeParams(getContext()));
             }
-            bloc.addView(puces, new LayoutParams(
-                    LayoutParams.WRAP_CONTENT,
-                    LayoutParams.WRAP_CONTENT));
         }
-        return bloc;
+        return item.getRoot();
     }
 
     private View carteReponse(Carte carte) {
-        Context contexte = getContext();
-        TextView vue = new TextView(contexte);
+        ItemMsgAgentBinding item = ItemMsgAgentBinding.inflate(
+                LayoutInflater.from(getContext()),
+                colonneCartes, false);
+        TextView vue = item.texteReponse;
         GraphiteVue.typographie(vue, Graphite.CORPS);
         vue.setTextColor(palette.texte);
         vue.setText(carte.reponse == null ? "" : carte.reponse);
-        vue.setPadding(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        return vue;
+        return item.getRoot();
     }
 
     private View carteRaisonnement(Carte carte) {
         Context contexte = getContext();
+        ItemRaisonnementBinding item = ItemRaisonnementBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        LinearLayout bloc = item.getRoot();
         // la manière CodeAssist (lot T) : la réflexion OUVERTE tant
         // que le tour vit (il se passe quelque chose à regarder),
         // repliée à une ligne quand il est fini — le tap rouvre.
         boolean vivant = etat.etat() == TourEtat.EN_COURS
                 && estDernierRaisonnement(carte);
         boolean ouverte = carte.deplie || vivant;
-        LinearLayout bloc = new LinearLayout(contexte);
-        bloc.setOrientation(LinearLayout.VERTICAL);
-        android.graphics.drawable.GradientDrawable fond =
-                new android.graphics.drawable.GradientDrawable();
-        if (ouverte) {
-            fond.setColor(palette.surface);
-            fond.setStroke(GraphiteVue.dp(contexte, 1), palette.bordFin);
-        } else {
-            fond.setColor(android.graphics.Color.TRANSPARENT);
+        if (!ouverte) {
+            bloc.setBackgroundResource(0);
+            int fin = GraphiteVue.dp(contexte, 2);
+            bloc.setPadding(fin, fin, fin, fin);
         }
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
-        bloc.setBackground(fond);
-        int horizontal = GraphiteVue.dp(contexte, ouverte ? 11 : 2);
-        bloc.setPadding(horizontal, GraphiteVue.dp(contexte, ouverte ? 7 : 2),
-                horizontal, GraphiteVue.dp(contexte, ouverte ? 8 : 2));
-        LinearLayout entete = new LinearLayout(contexte);
-        entete.setOrientation(LinearLayout.HORIZONTAL);
-        entete.setGravity(Gravity.CENTER_VERTICAL);
-        if (vivant) {
-            // le point qui dit « ça réfléchit » (l'accent du tiroir)
-            View point = new View(contexte);
-            point.setBackground(cercle(contexte, palette.accent));
-            LinearLayout.LayoutParams paramsPoint = new LinearLayout
-                    .LayoutParams(GraphiteVue.dp(contexte, 6),
-                    GraphiteVue.dp(contexte, 6));
-            paramsPoint.rightMargin = GraphiteVue.dp(contexte, 7);
-            entete.addView(point, paramsPoint);
-        }
-        TextView plis = new TextView(contexte);
+        item.pointRaisonnement.setVisibility(
+                vivant ? View.VISIBLE : View.GONE);
+        TextView plis = item.plisRaisonnement;
         GraphiteVue.typographie(plis, Graphite.LEGENDE);
         plis.setTextColor(vivant ? palette.accent
                 : palette.texteEstompe);
@@ -535,6 +378,7 @@ public final class VueAgent extends LinearLayout {
         plis.setSingleLine(true);
         plis.setEllipsize(android.text.TextUtils.TruncateAt.END);
         // le chevron suit l'état (la rotation du précédent CodeAssist)
+        LinearLayout entete = item.enteteRaisonnement;
         Icone chevron = new Icone(contexte);
         chevron.setGlyphe(Icone.Glyphe.CHEVRON);
         chevron.setCouleur(palette.texteEstompe);
@@ -544,19 +388,15 @@ public final class VueAgent extends LinearLayout {
             carte.deplie = !ouverte;
             rafraichir();
         });
-        entete.addView(plis, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         entete.addView(chevron, new LinearLayout.LayoutParams(
                 GraphiteVue.dp(contexte, 16),
                 GraphiteVue.dp(contexte, 16)));
-        bloc.addView(entete);
         if (ouverte && carte.raisonnement.length() > 0) {
-            TextView texte = new TextView(contexte);
+            TextView texte = item.contenuRaisonnement;
             GraphiteVue.typographie(texte, Graphite.LEGENDE);
             texte.setTextColor(palette.texteSecondaire);
             texte.setText(carte.raisonnement.toString());
-            texte.setPadding(0, GraphiteVue.dp(contexte, 6), 0, 0);
-            bloc.addView(texte);
+            texte.setVisibility(View.VISIBLE);
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
@@ -568,8 +408,9 @@ public final class VueAgent extends LinearLayout {
 
     private View carteOutil(Carte carte) {
         Context contexte = getContext();
-        LinearLayout bloc = new LinearLayout(contexte);
-        bloc.setOrientation(LinearLayout.VERTICAL);
+        ItemOutilBinding item = ItemOutilBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        LinearLayout bloc = item.getRoot();
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(palette.surface);
@@ -582,67 +423,36 @@ public final class VueAgent extends LinearLayout {
                 carte.etatOutil == EtatOutil.REFUSE
                         ? couleur : palette.bordFin);
         bloc.setBackground(fond);
-        LinearLayout plis = new LinearLayout(contexte);
-        plis.setOrientation(LinearLayout.HORIZONTAL);
-        plis.setGravity(Gravity.CENTER_VERTICAL);
-        plis.setPadding(GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 8),
-                GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 8));
-        View point = new View(contexte);
-        point.setBackground(
-                cercle(contexte, couleur));
-        plis.addView(point, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(contexte, 8),
-                GraphiteVue.dp(contexte, 8)));
-        TextView nom = new TextView(contexte);
+        item.pointOutil.setBackground(cercle(contexte, couleur));
+        TextView nom = item.nomOutil;
         nom.setTypeface(GraphiteVue.police(contexte, 500, true));
-        nom.setTextSize(12f);
         nom.setTextColor(carte.etatOutil == EtatOutil.REFUSE
                 ? palette.erreur : palette.texte);
         nom.setText(carte.outil);
-        LinearLayout.LayoutParams paramsNom =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-        paramsNom.leftMargin = GraphiteVue.dp(contexte, 9);
-        plis.addView(nom, paramsNom);
-        TextView cible = new TextView(contexte);
+        TextView cible = item.cibleOutil;
         GraphiteVue.typographie(cible, Graphite.LEGENDE);
         cible.setTextColor(palette.texteEstompe);
         cible.setText(carte.cible);
-        cible.setSingleLine(true);
-        LinearLayout.LayoutParams paramsCible =
-                new LinearLayout.LayoutParams(0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        paramsCible.leftMargin = GraphiteVue.dp(contexte, 8);
-        plis.addView(cible, paramsCible);
         if (carte.etatOutil != EtatOutil.EN_COURS
                 && carte.resultat != null) {
-            TextView resume = new TextView(contexte);
+            TextView resume = item.libelleOutil;
             GraphiteVue.typographie(resume, Graphite.LEGENDE);
             resume.setTextColor(palette.texteEstompe);
             resume.setText(carte.etatOutil == EtatOutil.REFUSE
                     ? contexte.getString(R.string.agent_refuse)
                     : contexte.getString(R.string.agent_lignes,
                             carte.lignesResultat));
-            plis.addView(resume);
-            plis.setOnClickListener(vue -> {
+            item.rangeeOutil.setOnClickListener(vue -> {
                 carte.deplie = !carte.deplie;
                 rafraichir();
             });
         }
-        bloc.addView(plis);
         if (carte.deplie && carte.resultat != null) {
-            TextView texte = new TextView(contexte);
+            TextView texte = item.resultatOutil;
             texte.setTypeface(GraphiteVue.police(contexte, 400, true));
-            texte.setTextSize(11f);
             texte.setTextColor(palette.texteSecondaire);
             texte.setText(carte.resultat);
-            texte.setPadding(GraphiteVue.dp(contexte, 11), 0,
-                    GraphiteVue.dp(contexte, 11),
-                    GraphiteVue.dp(contexte, 9));
-            bloc.addView(texte);
+            texte.setVisibility(View.VISIBLE);
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
@@ -717,18 +527,15 @@ public final class VueAgent extends LinearLayout {
 
     private View carteErreur(Carte carte) {
         Context contexte = getContext();
-        LinearLayout bloc = new LinearLayout(contexte);
-        bloc.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout bloc = ItemErreurAgentBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes,
+                false).getRoot();
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(0x12E06C75);
         fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
         fond.setStroke(GraphiteVue.dp(contexte, 1), 0x66E06C75);
         bloc.setBackground(fond);
-        bloc.setPadding(GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 10),
-                GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 10));
         TextView titre = new TextView(contexte);
         GraphiteVue.typographie(titre, Graphite.CORPS);
         titre.setTextColor(palette.erreur);
@@ -765,18 +572,15 @@ public final class VueAgent extends LinearLayout {
 
     private View carteQuestions(Carte carte) {
         Context contexte = getContext();
-        LinearLayout bloc = new LinearLayout(contexte);
-        bloc.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout bloc = ItemQuestionBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes,
+                false).getRoot();
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(palette.surface);
         fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
         fond.setStroke(GraphiteVue.dp(contexte, 1), 0x5982AAFF);
         bloc.setBackground(fond);
-        bloc.setPadding(GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 10),
-                GraphiteVue.dp(contexte, 11),
-                GraphiteVue.dp(contexte, 10));
         for (int i = 0; i < carte.questions.size(); i++) {
             EtatAgentChat.Question question = carte.questions.get(i);
             TextView demande = new TextView(contexte);
@@ -828,10 +632,6 @@ public final class VueAgent extends LinearLayout {
         bloc.setLayoutParams(params);
         return bloc;
     }
-
-    // ------------------------------------------------------------------
-    // Actions locales
-    // ------------------------------------------------------------------
 
     private void envoyer() {
         String message = saisie.getText().toString().trim();
