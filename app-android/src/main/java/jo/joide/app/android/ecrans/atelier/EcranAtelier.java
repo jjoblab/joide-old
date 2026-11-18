@@ -149,17 +149,17 @@ public final class EcranAtelier extends ActiviteJoide {
      * chaque premier build répétait « injoignable », rapport du
      * 2026-11-17).
      */
-    private static final long ATTENTE_PORT_MS = 30_000L;
+    static final long ATTENTE_PORT_MS = 30_000L;
 
     /**
      * Le pas de re-demande du service pendant l'attente (lot U/7) :
      * un service tué entre-temps repart avec cette demande — jamais
      * une attente muette jusqu'au délai complet.
      */
-    private static final long REDEMANDE_SERVICE_MS = 5_000L;
+    static final long REDEMANDE_SERVICE_MS = 5_000L;
     private static final int HAUTEUR_CONSOLE_DP = 300;
 
-    private final ExecutorService fond = Executors.newSingleThreadExecutor(
+    final ExecutorService fond = Executors.newSingleThreadExecutor(
             runnable -> {
                 Thread fil = new Thread(runnable, "joide-atelier");
                 fil.setDaemon(true);
@@ -173,20 +173,20 @@ public final class EcranAtelier extends ActiviteJoide {
             });
     private final EcrituresFusionnees ecritures =
             new EcrituresFusionnees();
-    private final AtomicLong numerosBuild = new AtomicLong();
-    private final AtomicReference<DaemonClient> clientDemon =
+    final AtomicLong numerosBuild = new AtomicLong();
+    final AtomicReference<DaemonClient> clientDemon =
             new AtomicReference<>();
     private final Set<String> dossiersOuverts = new LinkedHashSet<>();
 
     private Graphite.Palette palette;
-    private EtatAtelier etat;
-    private final EtatConsole etatConsole = new EtatConsole();
+    EtatAtelier etat;
+    final EtatConsole etatConsole = new EtatConsole();
     private final EtatApercu etatApercu = new EtatApercu();
 
     private TextView nomProjet;
     private Puce puceModules;
     private Pilule piluleIndex;
-    private VueArbre vueArbre;
+    VueArbre vueArbre;
     private VueConsole vueConsole;
     private VueApercu vueApercu;
     private FeuilleBasse feuille;
@@ -223,19 +223,19 @@ public final class EcranAtelier extends ActiviteJoide {
 
     /** IDE monté (null tant qu'aucun projet natif n'est chargé). */
     private MoteursLangage moteurs;
-    private LanguageModelSync sync;
+    LanguageModelSync sync;
     private SceneEditeur scene;
     private ApercuLayouts apercu;
     private ConfigurationApercu configApercuBase;
-    private Workspace modele;
-    private Path racineProjet;
+    Workspace modele;
+    Path racineProjet;
     private String fichierCourant;
     private String fichierInitial;
     private String xmlCourant;
     private List<String> fichiersArbre = List.of();
     private boolean sortiesPresentes;
-    private volatile boolean buildEnCours;
-    private Reglages.Source sourceReglages;
+    volatile boolean buildEnCours;
+    Reglages.Source sourceReglages;
 
     // ---- l'agent (lot P, ADR-É11) ----
     private VueAgent vueAgent;
@@ -334,7 +334,7 @@ public final class EcranAtelier extends ActiviteJoide {
         vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
             @Override
             public void surArreter() {
-                arreterBuild();
+                controleurBuild.arreterBuild();
             }
 
             @Override
@@ -409,6 +409,7 @@ public final class EcranAtelier extends ActiviteJoide {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
 
+        controleurBuild = new ControleurBuild(this);
         // ---- lot L2 (ADR-083) : la barre supérieure est un layout
         // XML + ViewBinding (atelier_barre_haut) — la vue est mince,
         // les auditeurs restent ici, l'état reste EtatAtelier ----
@@ -712,7 +713,7 @@ public final class EcranAtelier extends ActiviteJoide {
         fab.setAuditeur(new Fab.AuditeurFab() {
             @Override
             public void surLancer() {
-                construire();
+                controleurBuild.construire();
             }
 
             @Override
@@ -723,7 +724,7 @@ public final class EcranAtelier extends ActiviteJoide {
 
             @Override
             public void surArreter() {
-                arreterBuild();
+                controleurBuild.arreterBuild();
             }
         });
         FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(
@@ -1444,7 +1445,7 @@ public final class EcranAtelier extends ActiviteJoide {
     // Arborescence et nouveaux fichiers
     // ------------------------------------------------------------------
 
-    private void rechargerArbre() {
+    void rechargerArbre() {
         if (racineProjet == null) {
             return;
         }
@@ -1465,7 +1466,7 @@ public final class EcranAtelier extends ActiviteJoide {
         });
     }
 
-    private void majArbre() {
+    void majArbre() {
         if (vueArbre == null || racineProjet == null) {
             return;
         }
@@ -3632,317 +3633,6 @@ public final class EcranAtelier extends ActiviteJoide {
     // Build (lot F repris, pilule et arrêt du lot J/K)
     // ------------------------------------------------------------------
 
-    private void construire() {
-        if (racineProjet == null || modele == null || buildEnCours) {
-            return;
-        }
-        long numero = numerosBuild.incrementAndGet();
-        etat.commencerBuild(numero);
-        etatConsole.surDemarrage(numero, System.currentTimeMillis());
-        etat.deplierConsole();
-        majVolets();
-        majConsole();
-        majFab();
-        majArbre();
-        // lot U : la constitution peut EXTRAIRE des AAR au disque et
-        // LOCALISER l'outillage — elle vit sur le fil de fond, ses
-        // écarts remontent à la console dès qu'ils sont connus
-        ExternalResolution externals = sync.derniereResolution()
-                .orElse(ExternalResolution.empty());
-        fond.execute(() -> {
-            // lot U/8 : le keystore de débogage se prépare AVANT la
-            // constitution — l'asset de l'APK se copie UNE fois vers
-            // filesDir/toolchain, la variante debug signée suit
-            // (avant : APK produit non signé, ininstallable)
-            java.nio.file.Path keystoreDebug =
-                    jo.joide.app.android.PreparationChaine
-                            .assurerKeystoreDebug(this);
-            SpecsBuild.Constitution constitution = SpecsBuild
-                    .constituer(modele, externals, racineProjet,
-                            racineProjet.resolve("build-joide"),
-                            Paths.get(getFilesDir().getAbsolutePath(),
-                                    "m2"), keystoreDebug);
-            runOnUiThread(() -> {
-                etatConsole.surEcarts(constitution.ecarts);
-                if (!constitution.constructible()) {
-                    etatConsole.surRienAConstruire();
-                    etat.interrompreBuild();
-                    majConsole();
-                    finirBuild();
-                    return;
-                }
-                // lot M : le moteur par défaut vit dans Paramètres
-                boolean enProcessus = Reglages.lire(sourceReglages)
-                        .moteur == Reglages.Moteur.PROCESSUS;
-                if (enProcessus) {
-                    etatConsole.surAnnonceEnProcessus();
-                }
-                majConsole();
-                if (enProcessus) {
-                    fond.execute(() -> construireEnProcessus(
-                            constitution.spec, numero));
-                } else {
-                    fond.execute(() -> construireParService(
-                            constitution.spec, numero));
-                }
-            });
-        });
-    }
-
-    private void construireParService(BuildSpec spec, long numero) {
-        // lot U/7 : le canal d'erreur part AVANT de demander le service
-        // — un échec d'hier ne doit jamais censurer un essai neuf ;
-        // lot VIII : la preuve de VIE part aussi — une vie d'hier ne
-        // doit pas faire croire que le processus démarre
-        BuildService.effacerErreur(getFilesDir());
-        BuildService.effacerVie(getFilesDir());
-        startForegroundService(new Intent(this, BuildService.class));
-        Socket socket = null;
-        DaemonClient client = null;
-        long limite = System.currentTimeMillis() + ATTENTE_PORT_MS;
-        long prochaineRedemande =
-                System.currentTimeMillis() + REDEMANDE_SERVICE_MS;
-        // un port lu n'est pas un port servi : le fichier peut être
-        // PÉRIMÉ (un service mort sans onDestroy l'a laissé — force
-        // stop, crash du processus :build) — chaque tentative refusée
-        // efface le fichier et la boucle attend la republication du
-        // service reparti, jamais une boucle d'échec sur un vieux
-        // port (« service de build injoignable » rapporté le
-        // 2026-11-17)
-        String causeDemon = null;
-        // lot VIII (ADR-070) : la preuve de vie du processus :build et
-        // le compte des connexions REFUSÉES distingueront « jamais
-        // lancé », « lancé mais pas prêt » et « mort juste après
-        // publication » dans le détail final
-        boolean vieVue = false;
-        int refus = 0;
-        while (System.currentTimeMillis() < limite) {
-            // lot U/7 : le démon a-t-il écrit SA cause d'échec ? la
-            // boucle sort tôt avec la cause RÉELLE au lieu de courir
-            // jusqu'au délai (« démon de build : ClassNotFoundException
-            // ... » vaut mieux que « port non publié »)
-            String cause = BuildService.lireErreur(getFilesDir());
-            if (cause != null) {
-                causeDemon = cause;
-                break;
-            }
-            if (!vieVue
-                    && BuildService.lireVie(getFilesDir()) != null) {
-                vieVue = true;
-            }
-            int port = BuildService.lirePort(getFilesDir());
-            if (port >= 0) {
-                try {
-                    socket = new Socket("127.0.0.1", port);
-                    socket.setTcpNoDelay(true);
-                    client = DaemonClient.over(
-                            socket.getInputStream(),
-                            socket.getOutputStream());
-                    break;
-                } catch (IOException refuse) {
-                    refus++;
-                    BuildService.effacerPort(getFilesDir());
-                    if (socket != null) {
-                        try {
-                            socket.close();
-                        } catch (IOException ignore) {
-                            // le socket est déjà mort
-                        }
-                        socket = null;
-                    }
-                }
-            }
-            // lot U/7 : sans nouvelle du service, on le REDEMANDE —
-            // un service tué entre-temps (pression système, crash
-            // avant publication) repart avec cette demande, jamais
-            // une attente muette jusqu'au délai
-            if (System.currentTimeMillis() >= prochaineRedemande) {
-                startForegroundService(new Intent(this,
-                        BuildService.class));
-                prochaineRedemande =
-                        System.currentTimeMillis() + REDEMANDE_SERVICE_MS;
-            }
-            try {
-                Thread.sleep(150L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                runOnUiThread(this::finirBuild);
-                return;
-            }
-        }
-        if (client == null) {
-            // lot U/6 : le budget est écoulé SANS connexion — le build
-            // ne meurt plus : il continue EN PROCESSUS, annoncé dans la
-            // console (jamais un échec muet — rapport « injoignable »
-            // du 2026-11-17 ; le mode en processus est le même moteur,
-            // le service n'apporte que l'isolation du tas). La cause
-            // RÉELLE du démon (lot U/7) sort en premier s'il l'a
-            // écrite : « injoignable » seul n'apprend rien.
-            // lot VIII (ADR-070) : le détail DISTINGUE les silences du
-            // service — la cause écrite par le démon d'abord, puis
-            // « jamais lancé » (aucune preuve de vie : restriction
-            // ROM/batterie) contre « lancé mais pas prêt », et le port
-            // publié mais refusé (démon mort juste après publication).
-            // « port non publié » seul n'apprenait rien (rapport du
-            // 2026-11-17).
-            String detail = causeDemon;
-            if (detail == null) {
-                if (!vieVue) {
-                    detail = "port non publié en "
-                            + (ATTENTE_PORT_MS / 1000) + " s et le"
-                            + " processus :build n'a JAMAIS démarré"
-                            + " (restriction ROM ou batterie ?)";
-                } else if (refus > 0) {
-                    detail = "port publié mais connexion refusée "
-                            + refus + " fois — rien n'écoute sur"
-                            + " 127.0.0.1 (démon :build arrêté ou"
-                            + " injoignable)";
-                } else {
-                    detail = "port non publié en "
-                            + (ATTENTE_PORT_MS / 1000) + " s"
-                            + " (processus :build démarré, démon pas"
-                            + " prêt)";
-                }
-            }
-            final String detailFinal = detail;
-            runOnUiThread(() -> {
-                etatConsole.surInjoignable(detailFinal);
-                etatConsole.surRepliEnProcessus();
-                majConsole();
-            });
-            construireEnProcessus(spec, numero);
-            return;
-        }
-        try (DaemonClient branche = client) {
-            clientDemon.set(branche);
-            DaemonClient.Event salutation =
-                    branche.await("hello", 30);
-            evenement(salutation.type, salutation.id,
-                    salutation.body);
-            construireAvecClient(branche, spec, numero);
-        } catch (DaemonClient.DaemonDiedException e) {
-            // §6.7 : la mort du démon est un événement, l'UI survit —
-            // le build suivant relance le service
-            runOnUiThread(() -> {
-                etatConsole.surInterrompu();
-                etat.interrompreBuild();
-                majConsole();
-                majFab();
-            });
-        } catch (IOException e) {
-            runOnUiThread(() -> {
-                etatConsole.surInjoignable(String.valueOf(e.getMessage()));
-                etat.interrompreBuild();
-                majConsole();
-                majFab();
-            });
-        } finally {
-            if (socket != null) {
-                try {
-                    socket.close();
-                } catch (IOException ignore) {
-                    // le socket est déjà mort
-                }
-            }
-            clientDemon.set(null);
-            runOnUiThread(this::finirBuild);
-        }
-    }
-
-    private void construireAvecClient(DaemonClient client, BuildSpec spec,
-                                      long numero) throws IOException {
-        client.build(numero, spec);
-        while (true) {
-            DaemonClient.Event event = client.next(900);
-            evenement(event.type, event.id, event.body);
-            if ("build-finished".equals(event.type)) {
-                return;
-            }
-        }
-    }
-
-    private void evenement(String type, long id,
-                           jo.joide.deps.json.JsonValue corps) {
-        long maintenant = System.currentTimeMillis();
-        runOnUiThread(() -> {
-            etatConsole.surEvenement(type, id, corps, maintenant);
-            jo.joide.app.android.ConsoleBuild.Phase phase =
-                    etatConsole.phaseCourante();
-            if (phase != null) {
-                etat.phaseBuild(phase.name().toLowerCase(
-                        java.util.Locale.ROOT));
-            }
-            if ("build-finished".equals(type)) {
-                etat.terminerBuild(
-                        corps.member("success").asBoolean());
-                majFab();
-            }
-            majConsole();
-        });
-    }
-
-    private void construireEnProcessus(BuildSpec spec, long numero) {
-        int fils = Reglages.lire(sourceReglages).filsParBuild;
-        try (BuildRunner runner = new BuildRunner(
-                outDir -> StoreAndroid.open(outDir), fils)) {
-            BuildRunner.Outcome resultat = runner.run(spec, null,
-                    (nom, statut) -> runOnUiThread(() -> {
-                        etatConsole.surTache(nom, statut,
-                                System.currentTimeMillis());
-                        jo.joide.app.android.ConsoleBuild.Phase phase =
-                                etatConsole.phaseCourante();
-                        if (phase != null) {
-                            etat.phaseBuild(phase.name().toLowerCase(
-                                    java.util.Locale.ROOT));
-                        }
-                        majConsole();
-                    }), jo.joide.platform.CancelToken.NEVER);
-            runOnUiThread(() -> {
-                etatConsole.surBilanEnProcessus(numero,
-                        resultat.success, resultat.executed,
-                        resultat.fromCache, resultat.upToDate,
-                        resultat.problems, System.currentTimeMillis());
-                etat.terminerBuild(resultat.success);
-                majConsole();
-            });
-        } catch (Exception e) {
-            runOnUiThread(() -> {
-                etatConsole.surTermine(numero, false, 0, 0, 0, -1,
-                        java.util.List.of(String.valueOf(e.getMessage())),
-                        System.currentTimeMillis());
-                etat.terminerBuild(false);
-                majConsole();
-            });
-        } finally {
-            runOnUiThread(this::finirBuild);
-        }
-    }
-
-    /** Arrête le build en cours : la croix de la pilule (critère J). */
-    private void arreterBuild() {
-        DaemonClient client = clientDemon.get();
-        if (client == null || !buildEnCours) {
-            return;
-        }
-        long numero = etat.build() == null ? -1 : etat.build().numero();
-        if (numero < 0) {
-            return;
-        }
-        try {
-            client.cancel(numero);
-        } catch (IOException e) {
-            // le canal vient de mourir : les événements suivants
-            // raconteront l'interruption, jamais un état zombie
-        }
-    }
-
-    private void finirBuild() {
-        buildEnCours = false;
-        vueArbre.setSortiesEnCours(false);
-        majFab();
-        majDock();
-        rechargerArbre();
-    }
 
     private void confirmerVidage() {
         Dialogue.confirmation(this, palette,
@@ -3980,7 +3670,7 @@ public final class EcranAtelier extends ActiviteJoide {
     }
 
 
-    private void majVolets() {
+    void majVolets() {
         majPuits();
         if (feuille != null) {
             feuille.poserDeplie(etat.consoleDepliee());
@@ -4036,7 +3726,7 @@ public final class EcranAtelier extends ActiviteJoide {
         }
     }
 
-    private void majFab() {
+    void majFab() {
         if (fab == null) {
             return;
         }
@@ -4055,7 +3745,7 @@ public final class EcranAtelier extends ActiviteJoide {
         buildEnCours = etat.buildEnCours();
     }
 
-    private void majDock() {
+    void majVerdictConsole() {
         if (feuille == null) {
             return;
         }
@@ -4125,14 +3815,14 @@ public final class EcranAtelier extends ActiviteJoide {
         return null;
     }
 
-    private void majConsole() {
+    void majConsole() {
         if (vueConsole == null) {
             return;
         }
         vueConsole.maj(etatConsole,
                 racineProjet == null ? null
                         : String.valueOf(racineProjet.getFileName()));
-        majDock();
+        majVerdictConsole();
     }
 
     private void reconfigurerApercu() {

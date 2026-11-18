@@ -1,3 +1,33 @@
+# CHANGES — L5 le tiroir agent aux bindings + L6 le contrôleur du build (2026-11-18)
+
+**L5 — tiroir agent (layouts + ViewBinding)** : `VueAgent` (1 024
+lignes) gonfle désormais `tiroir_agent.xml` + `composeur_agent.xml`
+(en-tête, transcript, ligne d'activité au-dessus du composeur, saisie
+en pilule, envoyer + rangée d'arrêt) et ses cartes depuis les items
+(`item_msg_utilisateur`, `item_msg_agent`, `item_raisonnement`,
+`item_outil`, `item_question`, `item_erreur_agent`) — 1 024 → 824
+lignes, la LOGIQUE 1:1 (plis de réflexion, états d'outil, questions
+tapables, erreurs actionnables). `item_permission` retiré : la
+permission inline (diff + Refuser/Appliquer) est un lot FUTUR, la
+permission vit aujourd'hui dans un dialogue — pas de layout mort.
+Reste du lot : `PopupModeles` (recherche + favoris persistés) et
+l'extraction `ControleurAgent` — le sélecteur actuel reste le
+dialogue éprouvé (le fix du 2026-11-17 « le fournisseur se persiste
+au tap » y vit).
+
+**L6 — contrôleur du build + retrait du Dock** : `ControleurBuild`
+(347 lignes) quitte `EcranAtelier` — la chaîne construire →
+constitution → service ou en processus → événements → fin, corps
+inchangés, champs partagés en package-private (même paquet), les
+trois sites d'appel délèguent. `ui/Dock.java` (204 lignes) RETIRÉ :
+aucune instanciation depuis le lot L3 (« la feuille basse REMPLACE le
+Dock ») ; `majDock` → `majVerdictConsole` (le nom suit la feuille).
+`EcranAtelier` : 4 241 → 3 931 lignes. Reste du lot pour la cible
+« < 500 lignes » : l'extraction `ControleurAgent` (bloc 1831-3205,
+interlock profond avec l'écran), les contrôleurs fichiers/édition, la
+conversion du grand écran en `layout-w720dp/atelier.xml` (le
+comportement actuel en code reste conforme §3.11).
+
 # CHANGES — ADR-084 + correction du crash du thème des écrans (2026-11-18)
 
 **Le crash du terrain** (« Failed to resolve attribute at index 5 »
