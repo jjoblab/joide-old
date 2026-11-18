@@ -337,6 +337,38 @@ class BuildEngineTest {
                 Files.readString(tempDir.resolve("out2/a.txt")));
     }
 
+    /** Lot XX/g — le daemon ne signale JAMAIS les sorties supprimées
+     *  (les racines de sorties portent un ensemble sale vide : « les
+     *  sorties relisent fraîches ») : le moteur doit SE VÉRIFIER
+     *  LUI-MÊME sur le disque. Le terrain du 2026-11-18 : generateRJar
+     *  « à jour » pour toujours, r.jar manquant pour toujours,
+     *  compileKotlin « Classpath entry points to a non-existent
+     *  location: app/r.jar » à CHAQUE build — un hit à-jour dont une
+     *  sortie déclarée a disparu doit tomber dans la restauration du
+     *  cache (ici) ou la réexécution (cache purgé aussi). */
+    @Test
+    void silentlyCleanedOutputsRestoreWithoutHints() throws IOException {
+        write("src/a.txt", "contenu-a");
+        TaskGraph graph = TaskGraph.builder()
+                .register(copyTask("copy-a", "src/a.txt", "a.txt"))
+                .build();
+        BuildStore store = new EngineMemoryStore();
+        BuildEngine engine = engine(store, roots());
+        engine.build(graph, noDirty(), snapshots(roots()), null);
+
+        // le « Clean » silencieux : les sorties partent, aucune hint
+        // n'arrive au moteur (le daemon ne comptabilise pas out/)
+        Files.delete(out.resolve("a.txt"));
+        BuildReport report = engine.build(graph, noDirty(),
+                snapshots(roots()), null);
+        assertTrue(report.count(TaskStatus.FROM_CACHE) == 1
+                        || report.count(TaskStatus.SUCCEEDED) == 1,
+                "la sortie disparue doit se restaurer ou réexécuter : "
+                        + report);
+        assertEquals("contenu-a", Files.readString(out.resolve("a.txt")),
+                "la sortie doit être de retour sur le disque");
+    }
+
     @Test
     void unreadableInputFailsExplicitly() throws IOException {
         // lien symbolique pendant : la lecture échoue, l'erreur est

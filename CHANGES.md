@@ -1,3 +1,49 @@
+# CHANGES — Lot XX/g : le moteur regarde le disque — un « Clean » qui garde le store ne condamne plus les builds (2026-11-18)
+
+**Le terrain** : l'erreur « Classpath entry points to a non-existent
+location: app/r.jar » résiste aux lots XX/d (bytecode R), XX/e (le
+reset de l'ouvrière à la frontière de build) et XX/f (le jar standard
+du JDK) — TOUS trois utiles, AUCUN décisif. L'explication qui tient
+toutes les observations : la persistance à travers des ouvrières
+fraîches et des octets neufs.
+
+**La cause** : le raccourci « tout à jour » du MOTEUR ne regarde
+jamais le disque. Les racines de sorties ne portent pas de
+comptabilité de suppression (le daemon vide leur ensemble sale en
+dur : « les sorties relisent fraîches ») — `outputsTouched` ne peut
+jamais s'allumer pour OUT, et le verdict à-jour tombe sur la seule
+empreinte. Dès qu'un « Clean » (ou tout effacement de l'arbre `out/`)
+épargne le store, generateRJar est « à jour » POUR TOUJOURS, r.jar
+manque POUR TOUJOURS, et compileKotlin échoue à CHAQUE build — le
+commentaire de RJarTask (« la restauration du cache doit le remettre
+sur le disque ») décrivait une intention que le court-circuit
+à-jour empêchait d'atteindre.
+
+**Les corrections** (core-tasks/BuildEngine) :
+1. `outputsPresentOnDisk(task)` : toute sortie DÉCLARÉE doit exister
+   sur le disque — le disque reste la vérité ; quelques syscalls par
+   tâche à-jour, négligeable devant le coût d'un faux « à jour ».
+2. Le raccourci « tout à jour » (`tryHotNoChangePass`) casse et tombe
+   dans le chemin complet dès qu'une sortie déclarée manque.
+3. Le chemin complet : le hit à-jour exige `outputsPresent` — les
+   sorties manquantes tombent dans la restauration du cache (le
+   comment de RJarTask devient vrai) ou, cache purgé, dans la
+   réexécution.
+4. `silentlyCleanedOutputsRestoreWithoutHints` (nouveau test) : la
+   suppression SANS hint — exactement ce que le daemon passe — se
+   restaure ; l'ancien test `cleanedOutputsRestoreFromCache` portait
+   des hints explicites que le daemon ne fournit jamais.
+
+**La preuve** : core-tasks 50/50 vert — le test reproduit d'abord le
+bug au bureau (UP_TO_DATE sur sortie supprimée, comme sur l'appareil),
+puis passe avec le fix : FROM_CACHE, le fichier est de retour.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| core-tasks | `BuildEngine` | `outputsPresentOnDisk` — les deux sites à-jour regardent le disque |
+| core-tasks | `BuildEngineTest` | le test SANS hints reproduit le terrain et passe |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/f : le R.jar au jar STANDARD du JDK — les octets, pas le cache (2026-11-18)
 
 **Le terrain** : la même erreur après le lot XX/e (« Classpath entry

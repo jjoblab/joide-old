@@ -242,6 +242,20 @@ public final class BuildEngine {
             if (!record.fingerprint().equals(fingerprint)) {
                 return null;
             }
+            // LOT XX/g : le raccourci « tout à jour » regarde AUSSI le
+            // disque — les racines de sorties ne portent PAS de
+            // comptabilité de suppression (le daemon vide leur ensemble
+            // sale : « les sorties relisent fraîches ») ; une sortie
+            // déclarée disparue (un « Clean » qui garde le store — le
+            // terrain du 2026-11-18 : generateRJar « à jour » pour
+            // toujours, r.jar manquant pour toujours, compileKotlin
+            // « Classpath entry points to a non-existent location:
+            // app/r.jar » à chaque build) doit casser le raccourci et
+            // tomber dans le chemin complet, qui restaure du cache ou
+            // réexécute.
+            if (!outputsPresentOnDisk(task)) {
+                return null;
+            }
             long now = clock.nanoTime();
             results.put(name, new TaskResult(name, task.taskType(),
                     TaskStatus.UP_TO_DATE, List.of(),
@@ -250,6 +264,21 @@ public final class BuildEngine {
             start = now;
         }
         return results;
+    }
+
+    /** Toute sortie DÉCLARÉE du graphe existe-t-elle encore sur le
+     *  disque ? Le disque reste la vérité : les racines de sorties ne
+     *  portent pas de comptabilité de suppression, un « Clean » qui
+     *  vide l'arbre de sorties sans toucher au store est INVISIBLE
+     *  autrement. Quelques syscalls par tâche à-jour — négligeable
+     *  devant le coût d'un faux « à jour ». */
+    private boolean outputsPresentOnDisk(TaskDefinition task) {
+        for (RootedPath output : task.outputs().paths()) {
+            if (!Files.exists(roots.resolve(output))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean externalCancellation(CancelToken token) {
@@ -381,7 +410,17 @@ public final class BuildEngine {
             ExecutionRecord record = lastState.find(task.name());
             if (record != null && record.fingerprint().equals(fingerprint)) {
                 boolean outputsDirty = outputsTouched(task);
-                if (!outputsDirty || outputsMatchRecord(task, record)) {
+                // LOT XX/g : une sortie DÉCLARÉE disparue du disque fait
+                // tomber le hit à-jour — le « Clean » qui vide l'arbre de
+                // sorties sans toucher au store (le terrain du
+                // 2026-11-18 : generateRJar « à jour » pour toujours,
+                // r.jar manquant pour toujours, compileKotlin « Classpath
+                // entry points to a non-existent location » à chaque
+                // build) doit céder : la restauration du cache ci-dessous
+                // remet les sorties, sinon la tâche réexécute.
+                if (outputsPresent(task)
+                        && (!outputsDirty
+                                || outputsMatchRecord(task, record))) {
                     long afterCheck = clock.nanoTime();
                     TaskTimings timings = new TaskTimings(
                             afterFingerprint - start, afterCheck - afterFingerprint,
@@ -678,6 +717,16 @@ public final class BuildEngine {
                 }
             }
             return false;
+        }
+
+        /** Toute sortie DÉCLARÉE existe-t-elle encore sur le disque ?
+         *  Les racines de sorties ne portent PAS d'instantané VFS (les
+         *  sorties relisent fraîches) : outputsTouched ne voit jamais
+         *  une suppression opérée derrière le dos du moteur — ce
+         *  prédicat, lui, regarde le disque. Le raccourci
+         *  « tout à jour » comme le chemin complet s'en servent. */
+        private boolean outputsPresent(TaskDefinition task) {
+            return outputsPresentOnDisk(task);
         }
 
         private boolean outputsMatchRecord(TaskDefinition task,
