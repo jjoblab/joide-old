@@ -749,6 +749,19 @@ public final class EcranParametres extends ActiviteJoide {
                         }
                         try {
                             cles.poser(fournisseur, valeur);
+                            // la relecture (le 2026-11-18) : « posée »
+                            // doit VRAIMENT vouloir dire posée — un
+                            // coffre qui refuse la relecture est nommé,
+                            // jamais avalé
+                            if (!valeur.equals(cles.lire(fournisseur))) {
+                                Dialogue.information(this, palette,
+                                        getString(R.string
+                                                .parametres_section_ia),
+                                        getString(
+                                                R.string.parametres_cle_echec),
+                                        R.string.action_ok);
+                                return;
+                            }
                         } catch (IOException e) {
                             Dialogue.information(this, palette,
                                     getString(R.string.parametres_section_ia),

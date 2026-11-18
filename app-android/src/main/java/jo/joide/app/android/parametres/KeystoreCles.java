@@ -1,14 +1,20 @@
 package jo.joide.app.android.parametres;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.KeyStore;
+import java.security.SecureRandom;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import android.content.Context;
+
+import jo.joide.platform.AtomicFiles;
 
 /**
  * La clé de chiffrement des clés d'API, dans Android Keystore (lot P,
@@ -35,7 +41,7 @@ public final class KeystoreCles {
      * @return le stockage (clé Keystore + fichiers chiffrés)
      */
     public static ClesChiffrees sur(Context contexte) {
-        return new ClesChiffrees(cleKeystore(),
+        return new ClesChiffrees(cleKeystore(contexte),
                 dossier(contexte));
     }
 
@@ -52,7 +58,7 @@ public final class KeystoreCles {
      * l'application démarre : jamais un crash au boot pour une clé
      * d'API.
      */
-    static SecretKey cleKeystore() {
+    static SecretKey cleKeystore(Context contexte) {
         try {
             KeyStore magasin = KeyStore.getInstance("AndroidKeyStore");
             magasin.load(null);
@@ -76,18 +82,41 @@ public final class KeystoreCles {
                     .build());
             return generateur.generateKey();
         } catch (Exception e) {
-            // repli mémoire : la session vit, les fichiers d'avant
-            // ne se relisent pas (l'erreur de lecture est honnête)
+            // le repli SÉMENTÉ (le 2026-11-18 : l'ancien repli
+            // mémoire perdait les clés au redémarrage — « la clé
+            // n'est pas vraiment stockée », le rapport de l'écran
+            // Paramètres) : une amorce de 32 octets persistée dans
+            // filesDir/cles/.seed dérive la clé AES. Le coffre
+            // matériel manque, la clé reste privée au bac à sable de
+            // l'application et survit au redémarrage comme aux
+            // processus — les clés posées restent lisibles.
             try {
-                KeyGenerator enMemoire =
-                        KeyGenerator.getInstance("AES");
-                enMemoire.init(256);
-                return enMemoire.generateKey();
+                return cleDeSemance(contexte);
             } catch (Exception impossible) {
                 throw new IllegalStateException(
-                        "no AES available: "
-                                + impossible.getMessage());
+                        "no AES available: " + impossible.getMessage(),
+                        impossible);
             }
         }
+    }
+
+    /** La clé dérivée de l'amorce persistée (le repli du repli :
+     *  AES-GCM sur une SecretKeySpec des 32 octets du fichier). */
+    private static SecretKey cleDeSemance(Context contexte)
+            throws IOException {
+        Path fichier = dossier(contexte).resolve(".seed");
+        byte[] amorce;
+        if (Files.isRegularFile(fichier)) {
+            amorce = Files.readAllBytes(fichier);
+        } else {
+            amorce = new byte[32];
+            new SecureRandom().nextBytes(amorce);
+            Files.createDirectories(fichier.getParent());
+            AtomicFiles.writeBytes(fichier, amorce);
+        }
+        if (amorce.length != 32) {
+            throw new IOException("seed corrompue");
+        }
+        return new SecretKeySpec(amorce, "AES");
     }
 }

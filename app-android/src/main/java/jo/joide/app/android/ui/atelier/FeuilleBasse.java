@@ -118,9 +118,17 @@ public final class FeuilleBasse extends LinearLayout {
         }
     }
 
-    /** La section demandée (le rail ou le glissement d'en-tête). */
+    /** La section demandée (le rail ou le glissement d'en-tête) :
+     *  feuille repliée, le choix DÉPLIE à mi-hauteur (le 2026-11-18 :
+     *  le contenu changeait dans une feuille à 72 dp — invisible, la
+     *  barre paraissait morte). Déjà ouverte : la section seule
+     *  change, la hauteur reste. */
     public void poserSection(EtatFeuille.Section section) {
         etatFeuille.poserSection(section);
+        if (etatFeuille.detente() == EtatFeuille.Detente.REPLIE) {
+            etatFeuille.poserDetente(EtatFeuille.Detente.MI);
+            appliquerDetente(true);
+        }
         majSection();
     }
 
@@ -168,9 +176,16 @@ public final class FeuilleBasse extends LinearLayout {
             switch (evenement.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN -> {
                     gesteVerticalDebut(evenement.getY());
+                    // le geste se RÉCLAME dès le contact : sinon le
+                    // parent intercepte le flux et rien ne suit
+                    return true;
                 }
                 case MotionEvent.ACTION_MOVE -> {
                     gesteVerticalDeplacement(evenement.getY());
+                    // le flux reste à la feuille pendant la traîne :
+                    // un false ici rendait la feuille au parent dès le
+                    // premier pixel (le 2026-11-18, seconde remontée)
+                    return true;
                 }
                 case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (aGlisse) {
@@ -220,9 +235,16 @@ public final class FeuilleBasse extends LinearLayout {
                     xInitial[0] = evenement.getX();
                     yInitial[0] = evenement.getY();
                     gesteVerticalDebut(evenement.getY());
+                    // le geste se RÉCLAME dès le contact : le
+                    // glissement vertical, le fling et le tap du
+                    // cycle des trois détentes suivent (le 2026-11-18)
+                    return true;
                 }
                 case MotionEvent.ACTION_MOVE -> {
                     gesteVerticalDeplacement(evenement.getY());
+                    // le flux reste à la barre pendant la traîne (le
+                    // balayage horizontal se juge au relâché)
+                    return true;
                 }
                 case MotionEvent.ACTION_UP,
                      MotionEvent.ACTION_CANCEL -> {
@@ -303,6 +325,10 @@ public final class FeuilleBasse extends LinearLayout {
             etatFeuille.sectionSuivante();
         } else {
             etatFeuille.sectionPrecedente();
+        }
+        if (etatFeuille.detente() == EtatFeuille.Detente.REPLIE) {
+            etatFeuille.poserDetente(EtatFeuille.Detente.MI);
+            appliquerDetente(true);
         }
         majSection();
         // le contenu entre en glissant de 14 dp + fondu (220 ms)

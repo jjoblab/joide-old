@@ -896,7 +896,37 @@ final class ControleurAgent {
                     nomFournisseur(courant)));
         };
 
+        // LES PASTILLES (restaurées le 2026-11-18 : la migration du
+        // XML les avait perdues avec la coque — la rangée reste posée
+        // par code, seule son conteneur vient du XML)
         LinearLayout rangeeFournisseurs = coque.rangeeFournisseurs;
+        Puce[] puces = new Puce[fournisseurs.length];
+        for (int i = 0; i < fournisseurs.length; i++) {
+            final int index = i;
+            Puce puce = new Puce(atelier);
+            puce.setText(nomFournisseur(fournisseurs[i]));
+            puce.setPointee(i == fournisseurIndex[0]);
+            puce.setOnClickListener(vue -> {
+                fournisseurIndex[0] = index;
+                for (int j = 0; j < puces.length; j++) {
+                    puces[j].setPointee(j == index);
+                }
+                // fix 2026-11-17 : le fournisseur se PERSISTE au tap —
+                // puce seule ne suffisait pas (voir choisirFournisseur)
+                choisirFournisseur(fournisseurs[index]);
+                majEtatCles[0].run();
+                rafraichir[0].run();
+            });
+            puces[i] = puce;
+            LinearLayout.LayoutParams paramsPuce =
+                    new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            paramsPuce.rightMargin = GraphiteVue.dp(atelier, 6);
+            paramsPuce.topMargin = GraphiteVue.dp(atelier, 8);
+            rangeeFournisseurs.addView(puce, paramsPuce);
+        }
+        majEtatCles[0].run();
 
         // la recherche : le filtre des listes longues
         android.widget.EditText recherche = coque.rechercheModeles;
