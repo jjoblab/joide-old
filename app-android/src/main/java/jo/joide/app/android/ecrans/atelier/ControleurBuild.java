@@ -343,3 +343,4 @@ final class ControleurBuild {
         atelier.majVerdictConsole();
         atelier.rechargerArbre();
     }
+}
