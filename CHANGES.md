@@ -1,3 +1,36 @@
+# CHANGES — la feuille à trois détentes, l'URL par fournisseur, les contrôleurs de l'écran (2026-11-18)
+
+**Corrections demandées** : (1) la feuille basse a ses TROIS détentes
+partout — le tap de la zone vivante cycle replié → mi → plein →
+replié (avant : barre ↔ mi seulement, le plein n'était atteignable
+que par la poignée de 20 dp), le glissement vertical traîne depuis la
+zone vivante aussi et s'ancre à la détente la plus proche, le fling
+saute une détente ; les balayages horizontaux gardent les sections.
+(2) l'API d'un fournisseur lui est LIÉE : l'URL libre vit pour un
+fournisseur (ia.url.<fournisseur>, la manière du lot U/7 pour les
+modèles) — une URL OpenRouter ne part plus chez OpenAI ; chez OpenAI,
+l'URL globale héritée reste lue.
+
+**L6 poursuivi** : ControleurAgent (1 802 lignes — service, tour,
+pièces, MCP, sélecteur, usages, historique, permissions, questions),
+ControleurEdition (534 — fichiers ouverts, édition, diagnostics,
+journaux), ControleurFichiers (435 — arbre, menu contextuel,
+création, index) quittent EcranAtelier, corps inchangés, le montage
+et le cycle de vie restent câblés sur les mêmes noms (délégués d'une
+ligne). EcranAtelier : 4 241 → 1 517 lignes.
+
+**Le geste des touches** (§3.5, le restant du lot) : flick HAUT sur
+une touche de symboles = la variante (la fermante d'une ouvrante) ;
+appui long puis glisser = le trackpad du curseur (14 dp = un
+caractère, SceneEditeur.deplacerCurseur). Le sélecteur de modèle :
+la coque vient de popup_modeles.xml + ViewBinding (recherche,
+favoris et récents persistés — l'état reste dans Reglages).
+
+**Restant (franchise)** : la conversion layout-w720dp/atelier.xml —
+le shell de l'écran est encore codé (construireUi, ~550 lignes) ; sa
+migration + la variante grand écran est le dernier morceau pour la
+cible « < 500 lignes ». EcranAtelier est à 1 517 lignes.
+
 # CHANGES — L5 le tiroir agent aux bindings + L6 le contrôleur du build (2026-11-18)
 
 **L5 — tiroir agent (layouts + ViewBinding)** : `VueAgent` (1 024
