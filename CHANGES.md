@@ -1,3 +1,50 @@
+# CHANGES — Lot XX/e : la frontière de build tue l'ouvrière Kotlin — le R.jar des builds suivants redevient lisible (2026-11-18)
+
+**Le terrain** : « :app:compileKotlin : Classpath entry points to a
+non-existent location: app/r.jar » + « Unresolved reference 'R' » —
+le PREMIER build appareil qui a jamais atteint compileKotlin (les
+trois terrains précédents mouraient tous à generateRJar ; le chemin
+Kotlin+R.jar n'avait JAMAIS été couvert par le bureau).
+
+**La cause** : l'ouvrière Kotlin PERSISTE par espace de travail (le
+lot VII) et le JAR FS de kotlinc GARDE les snapshots des jars du
+classpath ouverts — le r.jar RÉÉCRIT sous le même chemin (chaque
+generateRJar, replace-existing) rend l'ancien snapshot caduc ; la
+compilation d'un build suivant lit un jar « non-existent » et résout
+plus R. Le bureau ne reproduisait RIEN : ses tempdirs sont jetables,
+jamais deux builds sur le même workspace.
+
+**Les corrections** :
+1. `KotlinForkedDriver.reinitialiser()` (nouveau) — appelé par
+   `BuildRunner.run` À LA FRONTIÈRE de chaque build : l'ouvrière
+   re-fourche à la première compilation, état frais, snapshot JAR FS
+   vierge. Idempotent.
+2. `KotlinCompilerDriver.stdlibEmbarquee()` (nouveau) : le pilote
+   embarqué sonde la kotlin-stdlib dans son PROPRE classpath
+   (`kotlin.Unit` → codeSource) — la stdlib est une entrée
+   OBLIGATOIRE du classpath fourni (`-no-stdlib`, la manière
+   CodeAssist) et le bureau ne l'avait JAMAIS câblée (le terrain de
+   CE lot : « Cannot access built-in declaration 'kotlin.Any' » dès
+   qu'un module Kotlin compilait au bureau).
+3. `AndroidPipelineTest` : le module app du projet réel porte une
+   source KOTLIN référençant R (`Activite.kt`) ET le test enchaîne
+   un SECOND build incrémental sur le même workspace (une ressource
+   change → generateRJar réexécute → compileKotlin consomme le
+   nouveau r.jar) — le flux appareil, jamais exercé au bureau.
+
+**La preuve** : build-jvm, build-android et build-daemon verts — le
+pipeline compile Kotlin contre le R.jar bytecode aux DEUX passes, et
+l'APK final porte les classes Kotlin. L'ouvrière re-forkée lit le
+jar neuf.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-android | `KotlinForkedDriver` | `reinitialiser()` — la tue de l'ouvrière à la frontière de build |
+| build-daemon | `BuildRunner` | l'appel du reset au début de chaque `run` |
+| build-jvm | `KotlinCompilerDriver` | la stdlib sondée du classpath propre (le trou général du bureau) |
+| build-android | `AndroidPipelineTest` | la source Kotlin + le second build incrémental |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/d : le R.jar en bytecode direct et la garde R8 des gabarits d'ecj — l'architecture CodeAssist adoptée (2026-11-18)
 
 **Le terrain** : « :app:generateRJar : ExceptionInInitializerError:
