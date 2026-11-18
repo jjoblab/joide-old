@@ -565,7 +565,7 @@ public final class EcranAtelier extends ActiviteJoide {
                     FluxLogcat.tampon().poserAuditeur(null);
                     return;
                 }
-                FluxLogcat.tampon().poserAuditeur(this::surFluxRelais);
+                FluxLogcat.tampon().poserAuditeur(auditeurFluxLogcat);
                 viderFluxDansEtatLogcat();
             }
         });
@@ -1298,7 +1298,7 @@ public final class EcranAtelier extends ActiviteJoide {
             new FluxLogcat.Auditeur() {
                 @Override
                 public void surLignes() {
-                    runOnUiThread(this::lireFluxRelais);
+                    runOnUiThread(EcranAtelier.this::lireFluxRelais);
                 }
             };
 

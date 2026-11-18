@@ -2,6 +2,8 @@ package jo.joide.app.android.logcat;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+
+import java.util.ArrayList;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
