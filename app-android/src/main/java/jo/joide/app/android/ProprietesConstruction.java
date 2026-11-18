@@ -36,6 +36,18 @@ public final class ProprietesConstruction {
     static final String ASSET_PLUGIN_COMPOSE
             = "toolchain/kotlin-compose-compiler-plugin.jar";
 
+    /**
+     * L'asset des stubs d'invokedynamic du compile-time (le rôle
+     * d'AGP core-lambda-stubs, la doctrine CodeAssist) : android.jar
+     * OMET les fabriques java.lang.invoke et, à compliance ≥ 9, la
+     * moindre concaténation ou lambda du Java utilisateur émet un
+     * invokedynamic dont la bootstrap doit se résoudre — jamais dexé,
+     * D8 désugare l'indy au dexage. La cible est le MÊME cache que le
+     * localisateur d'outillage ({@code joide.toolchain.dir}), qui y
+     * trouve la pièce sans rien télécharger.
+     */
+    static final String ASSET_STUBS = "toolchain/core-lambda-stubs.jar";
+
     private ProprietesConstruction() {
         // utilitaire statique
     }
@@ -59,6 +71,7 @@ public final class ProprietesConstruction {
             System.setProperty("joide.app.apk", apk);
         }
         extrairePluginCompose(contexte);
+        extraireStubs(contexte);
     }
 
     /** Le jar du plugin Compose : asset extrait une fois (la
@@ -88,6 +101,38 @@ public final class ProprietesConstruction {
         } catch (IOException e) {
             // pas d'asset (APK de bureau, APK allégé) : PluginsKotlin
             // nommera l'échec SI Compose est demandé — pas avant
+        }
+    }
+
+    /** Les stubs d'invokedynamic : asset extrait une fois dans le
+     *  cache d'outillage — la même idempotence que le plugin Compose
+     *  (comparaison de taille, publication par renommage). L'échec est
+     *  SILENCIEUX (l'asset peut manquer) : le localisateur retombe sur
+     *  la ressource du classpath, et le terrain nommera l'échec si un
+     *  projet Java en a réellement besoin. */
+    private static void extraireStubs(Context contexte) {
+        try {
+            Path cible = Paths.get(contexte.getFilesDir()
+                            .getAbsolutePath(), "toolchain",
+                    "core-lambda-stubs.jar");
+            byte[] contenu;
+            try (InputStream asset = contexte.getAssets()
+                    .open(ASSET_STUBS)) {
+                contenu = asset.readAllBytes();
+            }
+            if (!Files.isRegularFile(cible)
+                    || Files.size(cible) != contenu.length) {
+                Files.createDirectories(cible.getParent());
+                Path temporaire = Files.createTempFile(
+                        cible.getParent(), "stubs-", ".jar");
+                Files.write(temporaire, contenu);
+                Files.move(temporaire, cible,
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            // pas d'asset : le localisateur retombe sur la ressource
+            // du classpath (le bureau) — le compileJava nommera
+            // l'échec seulement si un projet Java en a besoin
         }
     }
 }

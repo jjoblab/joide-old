@@ -1,10 +1,12 @@
 package jo.joide.build.android.toolchain;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -34,6 +36,18 @@ public final class ToolchainLocator {
             = "fa1014cb1431622d292ef55ba870e75882ea19987bec541698b912f446a2d08f";
     /** Taille attendue du jar d'aapt2 linux. */
     public static final long AAPT2_SIZE = 2_451_278L;
+
+    /**
+     * Nom du jar des stubs d'invokedynamic posé au cache (le contenu
+     * d'AGP core-lambda-stubs, embarqué en ressource du module — la
+     * doctrine du lot XX : tout embarqué, zéro téléchargement
+     * d'outillage à l'exécution).
+     */
+    public static final String LAMBDA_STUBS_JAR_NAME
+            = "core-lambda-stubs.jar";
+    /** La ressource embarquée portant les stubs. */
+    private static final String LAMBDA_STUBS_RESOURCE
+            = "/jo/joide/build/android/toolchain/core-lambda-stubs.jar";
 
     // lot XIX : les binaires aapt2 ANDROID (ReVanced v1.1.0, la même
     // source que les jniLibs de l'APK — ELF statique bionic, segments
@@ -153,7 +167,8 @@ public final class ToolchainLocator {
         }
         Path aidl = platform.getParent().resolve("framework.aidl");
         return new Toolchain(aapt2, platform,
-                Files.isRegularFile(aidl) ? aidl : null, r8);
+                Files.isRegularFile(aidl) ? aidl : null, r8,
+                lambdaStubs());
     }
 
     /**
@@ -175,7 +190,56 @@ public final class ToolchainLocator {
         Path r8 = ensureR8();
         Path aidl = platform.getParent().resolve("framework.aidl");
         return new Toolchain(aapt2, platform,
-                Files.isRegularFile(aidl) ? aidl : null, r8);
+                Files.isRegularFile(aidl) ? aidl : null, r8,
+                lambdaStubs());
+    }
+
+    /**
+     * Les stubs d'invokedynamic du compile-time (StringConcatFactory
+     * pour la concaténation, LambdaMetafactory pour les lambdas) :
+     * android.jar les OMET et, à compliance ≥ 9, la moindre
+     * concaténation ou lambda émet un invokedynamic dont la bootstrap
+     * doit se résoudre au compile-time — le terrain du 2026-11-18 :
+     * « The type java.lang.invoke.StringConcatFactory cannot be
+     * resolved » sur compileJava après generateRJar (le plateau 35 ne
+     * porte que LambdaMetafactory dans son jar system-modules ; AGP
+     * pose core-lambda-stubs.jar du build-tools, la même doctrine
+     * CodeAssist ; jamais dexé, D8 désugare l'indy au dexage).
+     *
+     * <p>Sources, par priorité : le fichier DÉJÀ AU CACHE (l'APK
+     * embarque la pièce en asset et l'extrait une fois dans le MÊME
+     * cache via ProprietesConstruction — l'appareil n'a rien à
+     * faire), puis la variable d'environnement
+     * {@code JOIDE_LAMBDA_STUBS}, puis la ressource EMBARQUÉE du
+     * module, extraite une fois au cache (le bureau, les tests).
+     * Retourne nul si la pièce manque (contractuellement possible —
+     * les appelants acceptent le nul, comme le fait CodeAssist sur
+     * les vieux build-tools).</p>
+     */
+    private Path lambdaStubs() {
+        Path cached = cacheDir.resolve(LAMBDA_STUBS_JAR_NAME);
+        if (Files.isRegularFile(cached)) {
+            return cached;
+        }
+        Path env = envPath("JOIDE_LAMBDA_STUBS");
+        if (env != null) {
+            return env;
+        }
+        try (InputStream resource = ToolchainLocator.class
+                .getResourceAsStream(LAMBDA_STUBS_RESOURCE)) {
+            if (resource == null) {
+                return null;
+            }
+            byte[] bytes = resource.readAllBytes();
+            if (!Files.isRegularFile(cached)
+                    || !Arrays.equals(bytes, Files.readAllBytes(cached))) {
+                Files.createDirectories(cached.getParent());
+                Files.write(cached, bytes);
+            }
+            return cached;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     private Path ensureAapt2() throws IOException {

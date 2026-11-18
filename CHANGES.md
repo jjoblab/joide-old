@@ -1,3 +1,65 @@
+# CHANGES — Lot XX/c : le jrt interdit sur ART et les stubs de l'indy — les projets réels rendus au moteur (2026-11-18)
+
+**Le terrain 1** : « :app:generateRJar : IllegalStateException:
+Failed to init packages for /apex/com.android.art ». La suite du lot
+XX/b : le pilote ECJ sondait SANS garde le jrt du JDK courant
+(`FileSystem.getJrtClasspath(java.home)`) — sur l'appareil,
+`java.home` est `/apex/com.android.art` : PAS de jimage, PAS de layout
+JDK, le sondage lève. La consultation de CodeAssist donne la doctrine
+(`ImageFreeJavaCompiler.kt:19-26`) : à compliance ≥ 9, le front-end
+batch refuse `-bootclasspath android.jar`, un jar non modulaire n'est
+pas un `--system` valide et ART n'a pas de jimage — ECJ doit rester
+NON-modulaire et lier `java.lang.*` aux OCTETS du jar de plateforme.
+Le pilote saute donc le jrt dès qu'un `android.jar` est au classpath
+(la détection par NOM, comme `JdtSourceAnalyzer.isAndroidPlatform`
+chez CodeAssist) ; hors plateforme Android, le sondage est encadré
+(bureau : il réussit ; ART sans android.jar : échec silencieux,
+diagnostics propres au lieu du crash de tâche). Kotlin était déjà
+ART-safe (`-no-jdk`, lot XIV) — le pilote Java était le seul hors-la-
+doctrine.
+
+**Le terrain 2** (masqué par le premier — `compileJava` n'avait JAMAIS
+tourné sur l'appareil) : « The type java.lang.invoke.StringConcatFactory
+cannot be resolved » sur `lib:compileJava` — reproduit par les tests du
+pipeline dès le déblocage du terrain 1 (`app:generateRJar:SUCCEEDED`,
+puis l'échec). android.jar OMET les fabriques `java.lang.invoke` ; à
+compliance ≥ 9, la moindre concaténation ou lambda du Java utilisateur
+émet un `invokedynamic` dont la bootstrap doit se résoudre au
+compile-time ; le plateau 35 ne porte que `LambdaMetafactory` dans son
+`core-for-system-modules.jar`. AGP pose `core-lambda-stubs.jar` du
+build-tools, CodeAssist exige la même pièce sur les libraries — nous
+l'embarquons (17 Ko, Apache-2.0) en asset de l'app ET en ressource du
+module : l'app l'extrait UNE fois dans le cache d'outillage
+(`ProprietesConstruction`, la même idempotence que le plugin Compose),
+le localisateur la trouve DANS CE MÊME CACHE (puis env
+`JOIDE_LAMBDA_STUBS`, puis la ressource du classpath au bureau), la
+fabrique la pose au classpath plateforme. Jamais dexé — D8 désugare
+l'indy au dexage (minSdk 28 : ART n'a `StringConcatFactory` qu'à
+l'API 30).
+
+**La consultation du moteur** (le reste, à la lumière de CodeAssist) :
+kotlin (`-no-jdk`), le dexage (D8 désugare records/indy — tests déjà
+là), l'outillage (épinglé, la doctrine du lot XX) sont CONFORMES ;
+la divergence restante est documentée : CodeAssist synthétise le R.jar
+en BYTECODE direct (`RBytecodeGenerator`) parce qu'avec
+`--extra-packages` aapt2 émet des R.java de millions de lignes qu'ECJ
+OOM à tas plafonné — notre `generateRJar` compile le R.java non
+transitif (1 source par module dans les tests du pipeline) ; à l'échelle
+CodeAssist, la synthèse bytecode reste à écrire si un projet réel y
+butte.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-jvm | `EcjCompilerDriver` | le sondage jrt sauté pour android.jar (détection par nom), encadré sinon |
+| build-android | `Toolchain` | + `lambdaStubsJar` nullable (le contrat CodeAssist du Files.exists) |
+| build-android | `ToolchainLocator` | + `lambdaStubs()` : cache d'abord, env, puis la ressource embarquée extraite au cache |
+| build-android | `AndroidTaskFactory` | les stubs au classpath plateforme quand la pièce existe |
+| build-android | `src/main/resources/…/core-lambda-stubs.jar` | la pièce embarquée (bureau/tests) |
+| app-android | `src/main/assets/toolchain/core-lambda-stubs.jar` | la pièce embarquée (appareil), extraite par `ProprietesConstruction` |
+| app-android | `ProprietesConstruction` | + `extraireStubs` (la même idempotence que le plugin Compose) |
+| build-jvm | `CompilerDriverTest` | + 2 discriminateurs : le jrt sauté (le faux ToolProvider dans un android.jar factice), l'indy résolu par les stubs (et en échec propre sans eux) |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/b : le patch ART de SourceVersion — le generateRJar rendu à l'appareil (2026-11-17)
 
 **Le terrain** : « :app:generateRJar : NoSuchMethodError: No static

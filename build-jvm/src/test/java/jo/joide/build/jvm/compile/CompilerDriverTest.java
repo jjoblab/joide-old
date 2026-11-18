@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -260,5 +261,166 @@ class CompilerDriverTest {
         assertFalse(result.writtenClasses.contains(
                 "com/example/joint/Joint.class"),
                 "java must not be codegen'd: " + result.writtenClasses);
+    }
+
+    @Test
+    void ecjSkipsJrtWhenAndroidJarIsThePlatform() throws Exception {
+        // Terrain du 2026-11-17 (app:generateRJar sur ART) : le
+        // sondage jrt de java.home levait « IllegalStateException:
+        // Failed to init packages for /apex/com.android.art ». Un jar
+        // NOMMÉ android.jar au classpath doit court-circuiter ce
+        // sondage — le discriminant : un faux javax.tools.ToolProvider
+        // portant une méthode ABSENTE du vrai (si le jrt du bureau
+        // était ajouté, il gagnerait la résolution et la sonde
+        // échouerait).
+        EcjCompilerDriver driver = new EcjCompilerDriver();
+        // la doctrine ImageFree : java.lang.Object lui-même se lie aux
+        // OCTETS du jar de plateforme — le jar factice l'embarque (lu
+        // depuis le jrt du JDK de test) sous la fabrique fausse
+        byte[] objectBytes;
+        try (java.nio.file.FileSystem jrt =
+                     java.nio.file.FileSystems.newFileSystem(
+                             java.net.URI.create("jrt:/"),
+                             java.util.Map.of())) {
+            objectBytes = Files.readAllBytes(jrt.getPath(
+                    "/modules/java.base/java/lang/Object.class"));
+        }
+        // phase 1 : un mini-plateforme (Object seul) — il court-circuite
+        // le jrt du bureau et permet de compiler le FAUX ToolProvider
+        // sans conflit de module (javax.tools existe dans java.compiler)
+        Path platform = work.resolve("plateforme");
+        Files.createDirectories(platform);
+        Path miniJar = platform.resolve("android.jar");
+        try (java.util.zip.ZipOutputStream zip =
+                     new java.util.zip.ZipOutputStream(
+                             Files.newOutputStream(miniJar))) {
+            zip.putNextEntry(new java.util.zip.ZipEntry(
+                    "java/lang/Object.class"));
+            zip.write(objectBytes);
+            zip.closeEntry();
+        }
+        Path fakeSrc = work.resolve("sonde-faux/ToolProvider.java");
+        Files.createDirectories(fakeSrc.getParent());
+        Files.writeString(fakeSrc, """
+                package javax.tools;
+
+                public class ToolProvider {
+                    public static int marquePlateforme() {
+                        return 7;
+                    }
+                }
+                """);
+        Path fakeOut = work.resolve("sonde-faux-out");
+        CompileResult fake = driver.compile(CompileRequest.builder()
+                .source(fakeSrc)
+                .classpath(miniJar)
+                .outputDir(fakeOut)
+                .build());
+        assertTrue(fake.success, "diagnostics: " + fake.diagnostics);
+
+        // phase 2 : le plateforme complet (Object + la fabrique fausse)
+        // — UN seul flux zip, les deux entrées
+        Path androidJar = platform.resolve("android.jar");
+        try (java.util.zip.ZipOutputStream zip =
+                     new java.util.zip.ZipOutputStream(
+                             Files.newOutputStream(androidJar))) {
+            zip.putNextEntry(new java.util.zip.ZipEntry(
+                    "java/lang/Object.class"));
+            zip.write(objectBytes);
+            zip.closeEntry();
+            zip.putNextEntry(new java.util.zip.ZipEntry(
+                    "javax/tools/ToolProvider.class"));
+            zip.write(Files.readAllBytes(
+                    fakeOut.resolve("javax/tools/ToolProvider.class")));
+            zip.closeEntry();
+        }
+        Path probe = work.resolve("sonde-src/Sonde.java");
+        Files.createDirectories(probe.getParent());
+        Files.writeString(probe, """
+                package com.example.sonde;
+
+                public class Sonde {
+                    public int sonde() {
+                        return javax.tools.ToolProvider.marquePlateforme();
+                    }
+                }
+                """);
+        assertTrue(driver.compile(CompileRequest.builder()
+                        .source(probe)
+                        .classpath(androidJar)
+                        .outputDir(work.resolve("sonde-out"))
+                        .build()).success,
+                "le jrt du bureau ne doit pas gagner la résolution");
+        // contre-preuve : renommé, le jar n'est plus une plateforme —
+        // le jrt du bureau revient et le vrai ToolProvider (sans la
+        // méthode) fait échouer la sonde
+        Path autreJar = platform.resolve("autre.jar");
+        Files.copy(androidJar, autreJar);
+        assertFalse(driver.compile(CompileRequest.builder()
+                        .source(probe)
+                        .classpath(autreJar)
+                        .outputDir(work.resolve("sonde-out-2"))
+                        .build()).success,
+                "le jrt doit revenir hors android.jar");
+    }
+
+    @Test
+    void ecjCompilesIndyAgainstPlatformStubs() throws Exception {
+        // La doctrine CodeAssist : android.jar OMET les fabriques
+        // java.lang.invoke ; à compliance ≥ 9, la concaténation et les
+        // lambdas émettent un invokedynamic qui ne se résout que si le
+        // jar system-modules du plateau (sibling d'android.jar, le
+        // rôle d'AGP core-lambda-stubs) est au classpath — jamais dexé,
+        // D8 désugare l'indy.
+        String sdk = System.getenv("ANDROID_HOME");
+        Assumptions.assumeTrue(sdk != null,
+                "ANDROID_HOME absent — SDK non installé");
+        Path androidJar = Path.of(sdk, "platforms", "android-36",
+                "android.jar");
+        Assumptions.assumeTrue(Files.isRegularFile(androidJar),
+                "android.jar absent du SDK local");
+        Path systemModules = androidJar.getParent()
+                .resolve("core-for-system-modules.jar");
+        Assumptions.assumeTrue(Files.isRegularFile(systemModules),
+                "core-for-system-modules.jar absent du plateau");
+
+        Path src = work.resolve("indy-src/Concat.java");
+        Files.createDirectories(src.getParent());
+        Files.writeString(src, """
+                package com.example.indy;
+
+                import java.util.function.IntSupplier;
+
+                public class Concat {
+                    public String salut(String qui) {
+                        IntSupplier deux = () -> 2;
+                        return "salut " + qui + deux.getAsInt();
+                    }
+                }
+                """);
+        EcjCompilerDriver driver = new EcjCompilerDriver();
+        Path out = work.resolve("indy-out");
+        CompileResult withStubs = driver.compile(CompileRequest.builder()
+                .source(src)
+                .classpath(androidJar)
+                .classpath(systemModules)
+                .outputDir(out)
+                .build());
+        assertTrue(withStubs.success, "diagnostics: " + withStubs.diagnostics);
+        byte[] bytes = Files.readAllBytes(
+                out.resolve("com/example/indy/Concat.class"));
+        // l'indy de concaténation est bien émis contre les stubs
+        assertTrue(new String(bytes, java.nio.charset.StandardCharsets.ISO_8859_1)
+                        .contains("makeConcatWithConstants"),
+                "indy string concat attendu");
+        // sans les stubs, la bootstrap est irrésolvable : échec propre
+        Path outBare = work.resolve("indy-bare-out");
+        CompileResult bare = driver.compile(CompileRequest.builder()
+                .source(src)
+                .classpath(androidJar)
+                .outputDir(outBare)
+                .build());
+        assertFalse(bare.success,
+                "les fabriques doivent manquer sans le jar system-modules");
     }
 }

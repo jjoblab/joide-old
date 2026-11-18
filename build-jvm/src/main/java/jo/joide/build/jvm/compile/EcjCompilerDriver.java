@@ -85,15 +85,38 @@ public final class EcjCompilerDriver implements CompilerDriver {
         List<Path> classpath = request.classpath;
         List<FileSystem.Classpath> entries = new ArrayList<>(
                 classpath.size() + 1);
-        // module système du JDK courant (jrt) : sans lui, Object est
-        // irrésolvable ; sur Android, l'entrée équivalente sera le
-        // classpath android.jar fourni par le modèle (P5)
-        String javaHome = System.getProperty("java.home");
-        if (javaHome != null) {
-            FileSystem.Classpath jrt = FileSystem.getJrtClasspath(
-                    javaHome, request.encoding, null, new java.util.HashMap<>());
-            if (jrt != null) {
-                entries.add(jrt);
+        // Plateforme Android (android.jar dans le classpath, posé par
+        // le modèle) : ECJ reste NON-modulaire et lie java.lang.* aux
+        // OCTETS du jar de plateforme — jamais à l'image jrt de la VM
+        // hôte (la manière CodeAssist, ImageFreeJavaCompiler : à
+        // compliance ≥ 9 le front-end batch refuse -bootclasspath
+        // android.jar, un jar non modulaire n'est pas un --system
+        // valide, et ART n'a PAS de jimage — le sondage jrt sur
+        // java.home=/apex/com.android.art levait
+        // « IllegalStateException: Failed to init packages for
+        // /apex/com.android.art », le terrain du 2026-11-17 sur
+        // app:generateRJar).
+        boolean plateformeAndroid = classpath.stream().anyMatch(
+                p -> p.getFileName().toString().equals("android.jar"));
+        if (!plateformeAndroid) {
+            // Module JVM pur (bureau) : le jrt du JDK courant fournit
+            // java.lang.Object. Le sondage est encadré : sur ART sans
+            // jar de plateforme, son échec laisse le classpath seul
+            // répondre (diagnostics propres — Object non résolu — pas
+            // un crash de tâche).
+            try {
+                String javaHome = System.getProperty("java.home");
+                if (javaHome != null) {
+                    FileSystem.Classpath jrt = FileSystem.getJrtClasspath(
+                            javaHome, request.encoding, null,
+                            new java.util.HashMap<>());
+                    if (jrt != null) {
+                        entries.add(jrt);
+                    }
+                }
+            } catch (RuntimeException e) {
+                // pas de jrt ici (ART sans android.jar) : voir le
+                // commentaire ci-dessus
             }
         }
         for (Path entry : classpath) {

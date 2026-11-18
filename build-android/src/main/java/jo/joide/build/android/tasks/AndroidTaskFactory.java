@@ -297,6 +297,19 @@ public final class AndroidTaskFactory {
         addExternalJar(graph, upstreamJava, upstreamKotlin,
                 toolchain.platformJar.toAbsolutePath().normalize(),
                 "platform:android.jar");
+        // Les stubs d'invokedynamic du compile-time (StringConcatFactory
+        // pour la concaténation, LambdaMetafactory pour les lambdas) :
+        // à compliance ≥ 9, ECJ émet un invokedynamic dont la bootstrap
+        // doit être résolvable — android.jar les OMET et le plateau 35
+        // n'a que LambdaMetafactory dans son jar system-modules ; AGP
+        // pose core-lambda-stubs.jar du build-tools, la même doctrine
+        // CodeAssist (le localisateur embarque et extrait la pièce ;
+        // jamais dexé, D8 désugare l'indy au dexage).
+        if (toolchain.lambdaStubsJar != null) {
+            addExternalJar(graph, upstreamJava, upstreamKotlin,
+                    toolchain.lambdaStubsJar.toAbsolutePath().normalize(),
+                    "platform:core-lambda-stubs.jar");
+        }
         // R.jar du module : son manifeste ABI est écrit par la tâche
         // de génération (le jar n'existe pas encore à la construction
         // du graphe) — chemin stable, contenu haché par le moteur ;
