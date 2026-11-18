@@ -36,7 +36,7 @@ public final class FluxLogcat {
         void surLignes();
     }
 
-    private FluxLogcat() {
+    FluxLogcat() {
     }
 
     private static final FluxLogcat INSTANCE = new FluxLogcat();
