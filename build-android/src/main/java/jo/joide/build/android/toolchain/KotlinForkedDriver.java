@@ -515,6 +515,21 @@ public final class KotlinForkedDriver implements CompilerDriver {
         entree.flush();
     }
 
+    /**
+     * Tue l'ouvrière à la FRONTIÈRE de build : le JAR FS de kotlinc
+     * garde les snapshots des jars du classpath ouverts — un r.jar
+     * RÉÉCRIT sous le même chemin (replace-existing à chaque
+     * generateRJar) rend l'ancien snapshot caduc et la compilation
+     * suivante du même espace de travail lit un jar
+     * « Classpath entry points to a non-existent location » puis
+     * résout plus R (« Unresolved reference 'R' », le terrain
+     * appareil du 2026-11-18). L'ouvrière re-fourche à la première
+     * compilation du build suivant, état frais. Idempotent.
+     */
+    public void reinitialiser() {
+        tuerOuvriere();
+    }
+
     /** Tue l'ouvrière (et son journal) — suivie d'un re-fork ou d'un
      *  échec nommé, jamais d'un canal mort réutilisé. La destruction
      *  passe d'abord (les tuyaux se ferment, le drain du stderr se

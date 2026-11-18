@@ -374,6 +374,19 @@ public final class BuildRunner implements AutoCloseable {
                        Map<RootName, DirtySet> dirty,
                        EventSink sink,
                        CancelToken cancellation) throws IOException {
+        // LOT XX/e : la frontière de build tue l'ouvrière Kotlin — le
+        // JAR FS de kotlinc garde les snapshots des jars du classpath
+        // ouverts ; un r.jar RÉÉCRIT sous le même chemin (chaque
+        // generateRJar) rend l'ancien snapshot caduc et la compilation
+        // suivante lit « Classpath entry points to a non-existent
+        // location » puis résout plus R (le terrain appareil du
+        // 2026-11-18). L'ouvrière re-fourche à la première
+        // compilation du build, état frais.
+        CompilerDriver resolu = kotlinDriverResolu;
+        if (resolu instanceof jo.joide.build.android.toolchain
+                .KotlinForkedDriver fourche) {
+            fourche.reinitialiser();
+        }
         long started = System.currentTimeMillis();
         RootSet roots = rootsOf(spec);
         TaskGraph graph = graphOf(spec, roots);

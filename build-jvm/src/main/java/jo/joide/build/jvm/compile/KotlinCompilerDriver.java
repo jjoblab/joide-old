@@ -51,6 +51,26 @@ public final class KotlinCompilerDriver implements CompilerDriver {
         return toolVersion;
     }
 
+    /**
+     * La bibliothèque standard Kotlin : une entrée OBLIGATOIRE du
+     * classpath fourni (KotlinArgs pose {@code -no-stdlib} — la
+     * manière CodeAssist). Le pilote embarqué la sonde dans son
+     * PROPRE classpath ({@code kotlin.Unit} vit dans kotlin-stdlib,
+     * transitif de kotlin-compiler-embeddable) ; la fourche appareil,
+     * elle, la prend du pack ({@code jarStdlib}). Le bureau ne
+     * l'avait JAMAIS câblée — aucun module Kotlin de test ne
+     * compilait (le terrain du 2026-11-18 : « Cannot access built-in
+     * declaration 'kotlin.Any' »).
+     */
+    private static List<Path> stdlibEmbarquee() {
+        try {
+            return List.of(Path.of(kotlin.Unit.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()));
+        } catch (RuntimeException | java.net.URISyntaxException e) {
+            return List.of();
+        }
+    }
+
     @Override
     public CompileResult compile(CompileRequest request) {
         Map<String, CompileInventory.SizeAndTime> before =
@@ -66,7 +86,7 @@ public final class KotlinCompilerDriver implements CompilerDriver {
         }
         List<String> args;
         try {
-            args = KotlinArgs.args(request, List.of(), plugins);
+            args = KotlinArgs.args(request, stdlibEmbarquee(), plugins);
         } catch (IOException e) {
             return new CompileResult(false, List.of(Problem.error(
                     "java-root-error",

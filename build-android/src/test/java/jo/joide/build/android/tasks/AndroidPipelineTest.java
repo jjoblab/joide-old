@@ -98,6 +98,18 @@ class AndroidPipelineTest {
                     }
                 }
                 """);
+        // une source KOTLIN référençant R : compileKotlin consomme le
+        // R.jar du module — le chemin jamais couvert par le bureau
+        // (le terrain appareil du 2026-11-18 : « Classpath entry
+        // points to a non-existent location » + « Unresolved
+        // reference 'R' »)
+        write(project, "app/src/main/kotlin/com/example/app/Activite.kt", """
+                package com.example.app
+
+                class Activite {
+                    fun libelle(): String = "activite:" + R.string.greeting
+                }
+                """);
         write(project, "lib/src/main/AndroidManifest.xml", """
                 <?xml version="1.0" encoding="utf-8"?>
                 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -130,6 +142,7 @@ class AndroidPipelineTest {
         spec.manifest = Path.of("app/src/main/AndroidManifest.xml");
         spec.resourceDirs.add(Path.of("app/src/main/res"));
         spec.sourceRoots.add(Path.of("app/src/main/java"));
+        spec.sourceRoots.add(Path.of("app/src/main/kotlin"));
         spec.moduleDependencies.add("lib");
         return spec;
     }
@@ -205,6 +218,29 @@ class AndroidPipelineTest {
             assertTrue(Files.isRegularFile(libR),
                     "library R must be generated");
             assertTrue(Files.readString(libR).contains("lib_label"));
+
+            // LOT XX/e : le workspace PERSISTE entre deux constructions
+            // (le terrain appareil — les tempdirs du bureau ne
+            // l'avaient jamais exercé) : une ressource change,
+            // generateRJar réexécute, compileKotlin consomme le NOUVEAU
+            // r.jar — le terrain « Classpath entry points to a
+            // non-existent location: app/r.jar » + « Unresolved
+            // reference 'R' »
+            write(project, "app/src/main/res/values/strings.xml", """
+                    <?xml version="1.0" encoding="utf-8"?>
+                    <resources>
+                      <string name="app_name">JoIDE App</string>
+                      <string name="greeting">Bonjour la seconde passe</string>
+                    </resources>
+                    """);
+            try (AndroidHarness harness2 = new AndroidHarness(project, out,
+                    List.of(libSpec(), appSpec()), variants(), keystore)) {
+                TaskGraph graph2 = harness2.graph();
+                BuildReport report2 = harness2.build(graph2,
+                        DirtySet.empty());
+                assertTrue(report2.successful(), () -> AndroidHarness
+                        .allTasks(report2).toString());
+            }
         }
     }
 
