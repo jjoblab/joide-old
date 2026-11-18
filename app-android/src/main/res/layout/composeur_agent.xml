@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 (§3.9) — le composeur : fond fond, bord 1 dp bord, rayon 18,
+  padding 10/12 ; puces de pièces jointes (fichier courant, images) ;
+  saisie 14 sp, placeholder « Demander à l'agent… » ; rangée basse :
+  ＋ (32 dp, menu d'ajouts existant) et envoyer (36 dp rayon 12 fond
+  accent — devient ■ Arrêter pendant un tour).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/composeur_agent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/agent_composeur_fond"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:id="@+id/rangee_pieces_agent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/saisie_agent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@null"
+        android:hint="@string/agent_composeur_placeholder"
+        android:textColorHint="?attr/jo_texte3"
+        android:textSize="14sp"
+        android:textColor="?attr/jo_texte"
+        android:inputType="textMultiLine|textCapSentences"
+        android:maxLines="4"
+        android:importantForAutofill="no" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/btn_ajouter_piece"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="＋"
+            android:textSize="16sp"
+            android:textColor="?attr/jo_texte2" />
+
+        <TextView
+            android:id="@+id/btn_envoyer_agent"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/agent_bouton_appliquer"
+            android:gravity="center"
+            android:text="@string/agent_envoyer"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/jo_texte_sur_accent" />
+    </LinearLayout>
+</LinearLayout>

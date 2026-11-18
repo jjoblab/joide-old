@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L5 (§3.9) : la bulle du message utilisateur — surfaceHaute,
+     rayon 16 partout sauf le coin bas-droit 4 (la bulle parle du côté
+     de son auteur), bord fin. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface_haute" />
+    <corners android:topLeftRadius="16dp" android:topRightRadius="16dp"
+        android:bottomRightRadius="4dp" android:bottomLeftRadius="16dp" />
+    <stroke android:width="1dp" android:color="?attr/jo_bord_fin" />
+</shape>

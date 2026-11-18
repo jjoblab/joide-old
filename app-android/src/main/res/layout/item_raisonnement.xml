@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 (§3.9) — la carte RÉFLEXION : en-tête 12,5 (« ▸ Réflexion ·
+  4 s », texte2 ; point accent 6 dp tant que ça réfléchit) ; ouverte
+  pendant le flux, PLIÉE À LA FIN, rouvrable au tap (l'état pli/ouvert
+  et la visibilité du contenu se posent par code depuis EtatAgentChat).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/carte_raisonnement"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/agent_raisonnement_fond"
+    android:paddingStart="11dp"
+    android:paddingEnd="11dp"
+    android:paddingTop="7dp"
+    android:paddingBottom="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <View
+            android:id="@+id/point_raisonnement"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:layout_marginEnd="7dp"
+            android:background="@drawable/point_onglet"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/plis_raisonnement"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12.5sp"
+            android:textColor="?attr/jo_texte2" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/contenu_raisonnement"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textSize="12.5sp"
+        android:lineHeight="17sp"
+        android:textColor="?attr/jo_texte2"
+        android:fontFamily="monospace"
+        android:visibility="gone" />
+</LinearLayout>

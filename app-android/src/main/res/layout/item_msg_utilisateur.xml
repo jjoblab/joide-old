@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 (§3.9) — le message UTILISATEUR du transcript : aligné à
+  droite, max 84 %, bulle surfaceHaute rayon 16/16/4/16, 14 sp ; les
+  puces de pièces jointes suivent, alignées à droite.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="end">
+
+    <TextView
+        android:id="@+id/texte_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/agent_bulle_utilisateur"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:maxWidth="300dp"
+        android:textSize="14sp"
+        android:textColor="?attr/jo_texte" />
+
+    <LinearLayout
+        android:id="@+id/pieces_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end" />
+</LinearLayout>

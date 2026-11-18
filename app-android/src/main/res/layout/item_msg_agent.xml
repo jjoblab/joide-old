@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 (§3.9) — la réponse de l'agent : texte 14/21 SANS bulle
+  (l'assistant ne parle pas en bulle).
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_reponse"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp"
+    android:textSize="14sp"
+    android:lineHeight="21sp"
+    android:textColor="?attr/jo_texte" />

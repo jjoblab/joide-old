@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L5 (§3.9) : « Appliquer » — accent, rayon 11, texte sur
+     accent. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_accent" />
+    <corners android:radius="11dp" />
+</shape>

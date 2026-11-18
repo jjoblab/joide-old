@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot L5 (§3.9) — la PERMISSION inline : bloc diff (fond puits, mono
+  11,5/18 ; ajout réussite 10 %, retrait erreur 10 %, BORNÉ à 12
+  lignes visibles + « Voir tout » → dialogue plein écran), puis la
+  rangée de 2 boutons 36 dp rayon 11 : Refuser (surfaceHaute) /
+  Appliquer (accent, texte sur accent). Fermer ou ignorer = REFUSER
+  (défaut sûr conservé). Les diffs se posent par code (lignes colorées
+  depuis les jetons) ; les deux boutons portent leurs auditeurs réels.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:id="@+id/defilement_diff"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/agent_bloc_permission"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:id="@+id/lignes_diff"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/voir_tout_diff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="4dp"
+        android:textSize="12sp"
+        android:textColor="?attr/jo_accent"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/btn_refuser"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:background="@drawable/agent_bouton_refuser"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/btn_appliquer"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/agent_bouton_appliquer"
+            android:gravity="center"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/jo_texte_sur_accent" />
+    </LinearLayout>
+</LinearLayout>
