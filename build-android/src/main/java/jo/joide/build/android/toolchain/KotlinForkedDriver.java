@@ -220,6 +220,26 @@ public final class KotlinForkedDriver implements CompilerDriver {
     public CompileResult compile(CompileRequest request) {
         Map<String, CompileInventory.SizeAndTime> avant =
                 CompileInventory.of(request.outputDir);
+        // LOT XX/f : les entrées de classpath absentes du disque se
+        // NOMMENT ici — kotlinc ne dit qu'un vague « Classpath entry
+        // points to a non-existent location » puis « Unresolved
+        // reference 'R' » (le terrain du 2026-11-18) : un diagnostic
+        // nommé, chemin par chemin, avant la requête épargne la
+        // fourche, le pack et le devin d'indices.
+        List<Path> absentes = new ArrayList<>();
+        for (Path entree : request.classpath) {
+            if (!Files.exists(entree)) {
+                absentes.add(entree);
+            }
+        }
+        if (!absentes.isEmpty()) {
+            List<Problem> manquants = new ArrayList<>();
+            for (Path entree : absentes) {
+                manquants.add(Problem.error("classpath.missing",
+                        "classpath entry missing on disk : " + entree));
+            }
+            return new CompileResult(false, manquants, List.of());
+        }
         // le pack peut devoir se télécharger (UNE fois) : le message
         // d'échec porte l'URL épinglée ; le jar ORIGINAL de la stdlib
         // (lot XVI) s'extrait des ressources du pack AVANT la

@@ -1,3 +1,54 @@
+# CHANGES — Lot XX/f : le R.jar au jar STANDARD du JDK — les octets, pas le cache (2026-11-18)
+
+**Le terrain** : la même erreur après le lot XX/e (« Classpath entry
+points to a non-existent location: app/r.jar » + « Unresolved
+reference 'R' ») — et un fait capital : le logcat porte le
+DÉMARRAGE d'une VM dalvikvm64 fraîche (l'ouvrière re-forkée par le
+reset du lot XX/e) — l'erreur était donc sur une ouvrière NEUVE.
+
+**La cause** : les OCTETS du jar. `JarWriter` sortait un zip d'APK
+via `ApkWriter` (entrées STORED alignées pour l'mmap de
+resources.arsc, en-têtes écrits à la main) — le R.jar n'a JAMAIS
+besoin de ces propriétés (il n'est ni installé ni mmapé, il ne sert
+qu'aux compilations ecj/kotlinc et au hachage ABI) — et sur ART le
+ZipFile du compilateur (libziparchive) est PLUS STRICT que le bureau
+sur un zip aux particularités d'APK : un jar qu'il n'ouvre pas, kotlinc
+le nomme « Classpath entry points to a non-existent location » puis
+« Unresolved reference 'R' ». Le bureau lisait ces octets (java.util.zip
+tolérant) — d'où des tests verts et un terrain rouge.
+
+**Les corrections** :
+1. `JarWriter` réécrit au jar STANDARD du JDK : `JarOutputStream`,
+   META-INF/MANIFEST.MF (la manière CodeAssist — un jar porte son
+   manifeste même sans classes), entrées triées, compression
+   standard, horodatage fixe (la déterminisme pour le hachage ABI).
+   L'APK, lui, garde son `ApkWriter` (l'alignement y est UNE
+   nécessité).
+2. `KotlinForkedDriver` : les entrées de classpath absentes du disque
+   se NOMMENT avant la requête (code `classpath.missing`, un
+   diagnostic par chemin) — plus jamais le vague kotlinc.
+3. `RJarForkedReadTest` (nouveau, paquet tasks) : la chaîne RÉELLE
+   (R.java aapt2 → `RBytecode.parse` → `RBytecode.emettre` →
+   `JarWriter.write`) sert une compilation Kotlin PAR LA FOURCHE
+   (ouvrière `java`, le même chemin que `dalvikvm64`), le jar est
+   RÉÉCRIT avec un NOUVEAU symbole sous le même chemin et la MÊME
+   ouvrière relit le neuf — le flux terrain complet. Audit
+   structurel au passage : `JarFile` ouvre, le manifeste vit.
+4. Diagnostic testé : une entrée de classpath fantôme échoue NOMMÉE
+   (code `classpath.missing`), sans fourche ni pack.
+
+**La preuve** : build-android vert — le jar standard se lit par la
+fourche, R se résout, la réécriture se relit ; l'ouvrière du
+lot XX/e reste utile (la frontière de build garde un état frais
+garanti quel que soit le JAR FS d'ART).
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-android | `JarWriter` | le jar STANDARD du JDK (JarOutputStream + manifeste) — ApkWriter reste pour l'APK |
+| build-android | `KotlinForkedDriver` | les entrées de classpath absentes se nomment (`classpath.missing`) |
+| build-android | `RJarForkedReadTest` | la chaîne réelle lue PAR LA FOURCHE + réécriture + relecture + l'audit structurel |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/e : la frontière de build tue l'ouvrière Kotlin — le R.jar des builds suivants redevient lisible (2026-11-18)
 
 **Le terrain** : « :app:compileKotlin : Classpath entry points to a
