@@ -49,12 +49,13 @@ okhttp = "5.5.1"
 # Patcheur ART du pack du compilateur Kotlin (lot XI) : réécritures
 # ASM des classes hostiles à ART avant le dexage (OW2, BSD-3 — NOTICE)
 asm = "9.7.1"
-# Briques du propriétaire (§6.8, docs/integration/) : versions publiées,
-# consommées en dépendances binaires depuis le checkout épinglé (publication
-# Maven Local ; jamais de modification des briques — DEMANDES.md).
-celeris = "1.1.0"
-layoutlib = "3.7.0"
-codelsp = "1.15.0"
+# Briques du propriétaire (§6.8, docs/integration/) : versions publiées sur
+# JitPack (com.github.jjoblab.*) — celeris 2.1.0 déjà publiée, code-lsp
+# v1.15.0 et LayoutLib v3.7.1 étiquetées le 2026-11-18 (jitpack.yml aux six
+# modules de rendu) ; jamais de modification des briques — DEMANDES.md.
+celeris = "2.1.0"
+layoutlib = "v3.7.1"
+codelsp = "v1.15.0"
 
 [libraries]
 # Alias de classpath pour build-logic (application du plugin AGP par les
@@ -86,20 +87,20 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 # Éditeur (celeris) : le POM d'android-host tire android-view (et par lui
 # core-text, core-syntax, core-language, core-intelligence) ; les
 # dépendances ci-dessous ne listent que ce qu'ide-integration nomme.
-celeris-android-host = { module = "jo.celeris:android-host", version.ref = "celeris" }
-celeris-android-widgets = { module = "jo.celeris:android-widgets", version.ref = "celeris" }
-celeris-lsp-protocole = { module = "jo.celeris:lsp-protocole", version.ref = "celeris" }
+celeris-android-host = { module = "com.github.jjoblab.celeris:android-host", version.ref = "celeris" }
+celeris-android-widgets = { module = "com.github.jjoblab.celeris:android-widgets", version.ref = "celeris" }
+celeris-lsp-protocole = { module = "com.github.jjoblab.celeris:lsp-protocole", version.ref = "celeris" }
 # Grammaires TextMate compilées (celeris) : les paquets intégrés du
 # registre de langages exigent la fabrique pour les langages sans
 # analyseur écrit (MIT joni/jcodings consignés dans le NOTICE).
-celeris-core-syntax-grammars = { module = "jo.celeris:core-syntax-grammars", version.ref = "celeris" }
+celeris-core-syntax-grammars = { module = "com.github.jjoblab.celeris:core-syntax-grammars", version.ref = "celeris" }
 # Serveurs de langage (code-lsp) : moteurs + socle, SANS l'AAR :host
 # (ADR-044 : :host exposerait codeide-tooling, interdit §6.8 règle 2b).
-codelsp-java = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java", version.ref = "codelsp" }
-codelsp-kotlin = { module = "jo.codeide.lsp.kotlin:jo-codeide-lsp-kotlin", version.ref = "codelsp" }
-codelsp-xml = { module = "jo.codeide.lsp.xml:jo-codeide-lsp-xml", version.ref = "codelsp" }
-codelsp-model = { module = "jo.codeide.lsp.model:jo-codeide-lsp-model", version.ref = "codelsp" }
-codelsp-index = { module = "jo.codeide.lsp.index:jo-codeide-lsp-index", version.ref = "codelsp" }
+codelsp-java = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-java", version.ref = "codelsp" }
+codelsp-kotlin = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-kotlin", version.ref = "codelsp" }
+codelsp-xml = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-xml", version.ref = "codelsp" }
+codelsp-model = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-model", version.ref = "codelsp" }
+codelsp-index = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-index", version.ref = "codelsp" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm", version.ref = "kotlinxCoroutines" }
 # OkHttp (Apache-2.0, NOTICE) : transport du module agent (D-5).
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
@@ -108,7 +109,7 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 kxml2 = { module = "net.sf.kxml:kxml2", version.ref = "kxml2" }
 # Compagnon ecj patché ART (EPL-2.0, NOTICE) : classpath RUNTIME du moteur
 # Java uniquement, jamais compilé contre — séparation de licences.
-codelsp-ecj-art = { module = "jo.codeide.lsp.java:jo-codeide-lsp-java-ecj-art", version.ref = "codelsp" }
+codelsp-ecj-art = { module = "com.github.jjoblab.code-lsp:jo-codeide-lsp-java-ecj-art", version.ref = "codelsp" }
 # Aperçu de layouts (LayoutLib) : les 6 modules de rendu, module-inflater
 # expose les cinq autres en api (docs/integration/layoutlib.md).
 # LIVRAISON CONDITIONNÉE à la demande D-1 (LICENSE LayoutLib, DEMANDES.md).

@@ -17,9 +17,12 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        // Briques du propriétaire (§6.8, ADR-044) : publiées en Maven Local
-        // depuis les checkouts épinglés (procédure dans docs/dev.md).
+        // Briques du propriétaire (§6.8, ADR-044) : publiées sur JitPack
+        // (celeris 2.1.0, code-lsp v1.15.0, LayoutLib v3.7.0 — le
+        // 2026-11-18). Maven Local reste premier : un checkout épinglé
+        // publié localement prime pendant le développement.
         mavenLocal()
+        maven("https://jitpack.io")
         google()
         mavenCentral()
         // Dépendances des moteurs code-lsp issues d'intellij-dependencies

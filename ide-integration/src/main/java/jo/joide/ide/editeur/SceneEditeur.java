@@ -66,7 +66,9 @@ public final class SceneEditeur implements AutoCloseable {
         this.pont = new SessionLangageCeleris(moteurs,
                 ExecutorPopups.de(this.editeur));
         this.editeur.setSession(session);
-        this.editeur.setTheme(theme);
+        // celeris 2.1.0 : l'état de présentation vit dans settings() —
+        // les popups s'y abonnent eux-mêmes (plus de poussée manuelle)
+        this.editeur.settings().setTheme(theme);
         this.pont.poserAuditeurDiagnostics(this::surDiagnostics);
     }
 
@@ -131,24 +133,20 @@ public final class SceneEditeur implements AutoCloseable {
     /** La taille de police (sp). */
     public void taillePolice(float sp) {
         this.tailleTexteSp = sp;
-        editeur.setFont(new jo.celeris.android.view.FontSpec("mono", sp));
-        if (popups != null) {
-            popups.surTailleTexte(sp);
-        }
+        // celeris 2.1.0 : la taille se pose sur settings() (la famille
+        // reste celle de la vue) — les popups suivent via l'écouteur
+        editeur.settings().setFontSizeSp(sp);
     }
 
     /** Le thème : sombre (défaut) ou clair. */
     public void theme(boolean sombre) {
         this.theme = sombre ? EditorThemes.SOMBRE : EditorThemes.CLAIR;
-        editeur.setTheme(theme);
-        if (popups != null) {
-            popups.surTheme(theme);
-        }
+        editeur.settings().setTheme(theme);
     }
 
     /** Le retour à la ligne automatique. */
     public void retourLigne(boolean actif) {
-        editeur.setSoftWrap(actif);
+        editeur.settings().setSoftWrap(actif);
     }
 
     /** Les numéros de ligne. */
