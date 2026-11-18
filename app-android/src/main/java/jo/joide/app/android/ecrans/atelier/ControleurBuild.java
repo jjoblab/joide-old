@@ -99,9 +99,9 @@ final class ControleurBuild {
         atelier.startForegroundService(new Intent(atelier, BuildService.class));
         Socket socket = null;
         DaemonClient client = null;
-        long limite = System.currentTimeMillis() + atelier.ATTENTE_PORT_MS;
+        long limite = System.currentTimeMillis() + EcranAtelier.ATTENTE_PORT_MS;
         long prochaineRedemande =
-                System.currentTimeMillis() + atelier.REDEMANDE_SERVICE_MS;
+                System.currentTimeMillis() + EcranAtelier.REDEMANDE_SERVICE_MS;
         // un port lu n'est pas un port servi : le fichier peut être
         // PÉRIMÉ (un service mort sans onDestroy l'a laissé — force
         // stop, crash du processus :build) — chaque tentative refusée
@@ -160,7 +160,7 @@ final class ControleurBuild {
                 atelier.startForegroundService(new Intent(atelier,
                         BuildService.class));
                 prochaineRedemande =
-                        System.currentTimeMillis() + atelier.REDEMANDE_SERVICE_MS;
+                        System.currentTimeMillis() + EcranAtelier.REDEMANDE_SERVICE_MS;
             }
             try {
                 Thread.sleep(150L);
@@ -189,7 +189,7 @@ final class ControleurBuild {
             if (detail == null) {
                 if (!vieVue) {
                     detail = "port non publié en "
-                            + (atelier.ATTENTE_PORT_MS / 1000) + " s et le"
+                            + (EcranAtelier.ATTENTE_PORT_MS / 1000) + " s et le"
                             + " processus :build n'a JAMAIS démarré"
                             + " (restriction ROM ou batterie ?)";
                 } else if (refus > 0) {
@@ -199,7 +199,7 @@ final class ControleurBuild {
                             + " injoignable)";
                 } else {
                     detail = "port non publié en "
-                            + (atelier.ATTENTE_PORT_MS / 1000) + " s"
+                            + (EcranAtelier.ATTENTE_PORT_MS / 1000) + " s"
                             + " (processus :build démarré, démon pas"
                             + " prêt)";
                 }
