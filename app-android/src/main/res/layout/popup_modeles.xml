@@ -60,7 +60,7 @@
         android:paddingEnd="14dp"
         android:paddingTop="4dp"
         android:textSize="11sp"
-        android:textColor="?attr/jo_texte_secondaire" />
+        android:textColor="?attr/jo_texte2" />
 
     <EditText
         android:id="@+id/recherche_modeles"
