@@ -1,6 +1,7 @@
 package jo.joide.build.android.tasks;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -9,9 +10,6 @@ import java.util.Objects;
 
 import jo.joide.build.jvm.abi.AbiManifest;
 import jo.joide.build.jvm.abi.EntryAbi;
-import jo.joide.build.jvm.compile.CompileRequest;
-import jo.joide.build.jvm.compile.CompileResult;
-import jo.joide.build.jvm.compile.EcjCompilerDriver;
 import jo.joide.platform.Problem;
 import jo.joide.platform.RootedPath;
 import jo.joide.tasks.ResourceClaim;
@@ -22,11 +20,19 @@ import jo.joide.tasks.TaskInputs;
 import jo.joide.tasks.TaskOutputs;
 
 /**
- * Tâche de fabrication du jar des classes R : les sources R.java
- * générées par le lien aapt2 sont compilées par ecj (aucune
- * dépendance externe — des constantes entières) puis archivées en jar
- * déterministe. Le jar entre au classpath de compilation du module et
- * à son dex.
+ * Tâche de fabrication du jar des classes R en BYTECODE direct (la
+ * manière AGP/CodeAssist) : les sources R.java générées par le lien
+ * aapt2 sont PARSED et leurs constantes émises en class files faits
+ * main ({@link RBytecode}) — AUCUN compiler Java n'intervient. Le jar
+ * entre au classpath de compilation du module et à son dex.
+ *
+ * <p>L'histoire : la tâche compilait le R.java par ecj (des constantes
+ * entières, aucun compilateur n'était nécessaire) et le terrain 2026-
+ * 11-18 a tranché — sur ART, chaque diagnostic d'ecj réveille son
+ * bundle de messages, ABSENT du dex (« ExceptionInInitializerError:
+ * Missing message ») ; et à l'échelle CodeAssist, un R.java de
+ * millions de lignes OOM le compiler à tas plafonné. Le R.jar d'AGP
+ * est un artefact de bytecode, jamais un artefact de compilation.</p>
  */
 public final class RJarTask implements TaskDefinition {
 
@@ -40,7 +46,7 @@ public final class RJarTask implements TaskDefinition {
      * @param moduleName      nom du module
      * @param javaDir         répertoire des sources R.java (sortie du
      *                        lien)
-     * @param classesDir      répertoire de compilation
+     * @param classesDir      répertoire des classes émises
      * @param rJar            jar produit
      * @param abiManifestFile manifeste ABI stable du jar (entrée du
      *                        classpath de compilation aval)
@@ -81,17 +87,17 @@ public final class RJarTask implements TaskDefinition {
 
     @Override
     public String toolVersion() {
-        return new EcjCompilerDriver().toolVersion();
+        return "rjar-bytecode-v2";
     }
 
     @Override
     public String optionsFingerprint() {
-        return "rjar-v1";
+        return "rjar-bytecode-v2";
     }
 
     @Override
     public ResourceClaim resourceClaim() {
-        return new ResourceClaim(1, 128, false);
+        return new ResourceClaim(1, 64, false);
     }
 
     @Override
@@ -108,18 +114,11 @@ public final class RJarTask implements TaskDefinition {
             }
             List<Path> javaFiles = new ArrayList<>();
             collectJava(sources, javaFiles);
-            if (!javaFiles.isEmpty()) {
-                EcjCompilerDriver driver = new EcjCompilerDriver();
-                CompileRequest.Builder request = CompileRequest.builder()
-                        .outputDir(classes)
-                        .sourceLevel("17");
-                for (Path javaFile : javaFiles) {
-                    request.source(javaFile);
-                }
-                CompileResult result = driver.compile(request.build());
-                if (!result.success) {
-                    return TaskExecution.failed(result.diagnostics);
-                }
+            int classesEmissions = 0;
+            for (Path javaFile : javaFiles) {
+                RBytecode.ModeleR modele = RBytecode.parse(Files
+                        .readString(javaFile, StandardCharsets.UTF_8));
+                classesEmissions += RBytecode.emettre(modele, classes);
             }
             JarWriter.write(classes, jar);
             // manifeste ABI stable : la compilation aval lit ce
@@ -133,7 +132,8 @@ public final class RJarTask implements TaskDefinition {
             }
             Files.writeString(manifestOut, manifest.text());
             return TaskExecution.ok(List.of(Problem.info("r.jar",
-                    javaFiles.size() + " source(s) compiled")));
+                    classesEmissions + " classe(s) émise(s) depuis "
+                            + javaFiles.size() + " R.java")));
         } catch (IOException e) {
             return TaskExecution.failed(List.of(Problem.error("rjar.io",
                     e.getMessage())));

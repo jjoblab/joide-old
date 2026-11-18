@@ -37,6 +37,13 @@ sourceSets.named("main") {
 
 dependencies {
     api(project(":core-tasks"))
+    // ecj : la COMPILATION prend l'artefact Central ; le RUNTIME de
+    // l'APK ne le dexé PAS — app-android l'exclut et prend le jar
+    // ecj-art de la brique code-lsp (le MÊME artefact, resources
+    // comprises : bundles messages, tables .rsc du parseur), la
+    // doctrine CodeAssist anti-doublons (art-compat : « shipping both
+    // a stock Eclipse jar and its ART copy is a duplicate-class
+    // failure at dex time »).
     implementation(libs.ecj)
     implementation(libs.kotlin.compiler.embeddable)
     implementation(libs.kotlin.metadata.jvm)

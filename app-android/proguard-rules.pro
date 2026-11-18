@@ -41,6 +41,18 @@
 # renommage casse la sérialisation JSON du protocole.)
 -keep class org.eclipse.lsp4j.** { *; }
 
+# --- ecj compagnon : les gabarits de messages vivent en réflexion --
+# Messages.loadMessagesProperties remplit les champs statiques String
+# de org.eclipse.jdt.internal.compiler.util.Messages DEPUIS le bundle
+# messages.properties PAR NOM DE CHAMP (Field.getName → clé du
+# properties) — le terrain du 2026-11-18 : en RELEASE obfusquée, R8
+# renomme les champs (compilation_request → « t ») et le chargeur
+# lève « ExceptionInInitializerError: Missing message: t in:
+# org.eclipse.jdt.internal.compiler.messages ». La même garde que
+# CodeAssist (proguard-rules.pro:61) : l'ecj compagnon ne s'obfusque
+# pas — mêmes classes, shims ART en plus.
+-keep class org.eclipse.jdt.** { *; }
+
 # --- kotlinx.serialization (moteurs code-lsp) ----------------------
 # Le lookup réflexif du serializer compagnon des classes @Serializable.
 -keepclassmembers class kotlinx.serialization.** {
@@ -106,3 +118,19 @@
 -dontwarn org.jetbrains.kotlin.cli.common.messages.MessageCollector
 -dontwarn org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 -dontwarn org.jetbrains.kotlin.config.Services
+
+# Les feuilles manquantes du compagnon ecj gardé (la règle -keep ci-
+# dessus racine-référence TOUT org.eclipse.jdt) : l'adaptateur ANT
+# (org.apache.tools.ant — jamais invoqué sur ART) et deux API JDK de
+# compilation (Elements$DocCommentKind, PreviewFeature) — les lignes
+# générées par R8 (missing_rules.txt), la voie AGP standard.
+-dontwarn javax.lang.model.util.Elements$DocCommentKind
+-dontwarn jdk.internal.javac.PreviewFeature
+-dontwarn org.apache.tools.ant.BuildException
+-dontwarn org.apache.tools.ant.Project
+-dontwarn org.apache.tools.ant.taskdefs.Javac
+-dontwarn org.apache.tools.ant.taskdefs.compilers.DefaultCompilerAdapter
+-dontwarn org.apache.tools.ant.types.Commandline$Argument
+-dontwarn org.apache.tools.ant.types.Commandline
+-dontwarn org.apache.tools.ant.types.Path
+-dontwarn org.apache.tools.ant.util.JavaEnvUtils

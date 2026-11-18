@@ -7,9 +7,11 @@ junitPlatformLauncher = "1.14.4"
 # Store JVM : pilote SQLite JDBC (implémentation bureau de BuildStore ;
 # NOTICE : Apache-2.0 pour le pilote, SQLite du domaine public embarqué)
 sqliteJdbc = "3.49.1.0"
-# Pipeline JVM (P3) : compilateur Java ecj (même artefact que le patcheur
-# :ecj-art de code-lsp, EPL-2.0 — NOTICE), compilateur Kotlin embarqué et
-# lecture des métadonnées Kotlin (Apache-2.0 — NOTICE)
+# Pipeline JVM (P3) : compilateur Java ecj (EPL-2.0 — NOTICE), compilateur
+# Kotlin embarqué et lecture des métadonnées Kotlin (Apache-2.0 — NOTICE).
+# L'APK ne dexé PAS cet artefact (exclusion chez app-android) : le runtime
+# embarque le compagnon ecj-art de la brique code-lsp (le MÊME artefact,
+# shims ART et resources compris) — la doctrine CodeAssist anti-doublons.
 ecj = "3.40.0"
 kotlin = "2.3.0"
 # Lot XV — StAX sur ART (qui n'en livre pas) : l'API JSR-173 autonome,

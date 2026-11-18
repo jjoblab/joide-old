@@ -1,3 +1,64 @@
+# CHANGES — Lot XX/d : le R.jar en bytecode direct et la garde R8 des gabarits d'ecj — l'architecture CodeAssist adoptée (2026-11-18)
+
+**Le terrain** : « :app:generateRJar : ExceptionInInitializerError:
+Missing message: t in: org.eclipse.jdt.internal.compiler.messages ».
+Deux chantiers, tous deux dictés par la consultation de CodeAssist
+(l'approche exacte, pas le code) — et une fausse piste assumée :
+
+**1. Le R.jar est un artefact de BYTECODE, jamais une compilation**
+(la divergence majeure, corrigée). CodeAssist
+(`RBytecodeGenerator`) : avec `--extra-packages` aapt2 émet des
+R.java de millions de lignes qu'ECJ OOM à tas plafonné, et un R n'est
+que des constantes `int`/`int[]` — le compiler n'a rien à y apporter.
+Notre `generateRJar` compilait le R.java par ecj pour rien.
+`RBytecode.java` (nouveau, zéro dépendance) parse la forme rigide de
+l'R.java d'aapt2 et écrit les class files À LA MAIN : champs `final`
+avec `ConstantValue` (inlinable — `switch` sur un id), tableaux
+`styleable` posés en `<clinit>`, attribut `InnerClasses` où vit seul
+le `static` des nichées. Trois pièges du bytecode dormaient dedans,
+révélés par le vérificateur JVM : `constant_pool_count` = NOMBRE
+D'ENTRÉES **+ 1** (la place #0 réservée — un de moins déclaré
+glissait tout : « Invalid this class index ») ; `NEWARRAY` = 0xBC
+(pas 0xBB = `new` — « Illegal constant pool index 2649 ») ;
+`IASTORE` = 0x4F (javac vérifié — 0x4E est `astore_3` de la table
+0x4B-0x4E : « Bad type on operand stack »). La preuve : les octets
+émis sont chargés par réflexion et les valeurs lues EXACTES
+(`RBytecodeTest`), le lecteur ABI du dépôt les parse, le pipeline de
+projet réel passe. **La tâche qui plantait ne touchera plus JAMAIS un
+compilateur Java.**
+
+**2. « Missing message: t » = l'OBFUSCATION R8 du mécanisme réflexif
+d'ecj** (la cause exacte du terrain appareil). Le chargeur
+`Messages.loadMessagesProperties` remplit les champs statiques String
+de `org.eclipse.jdt.internal.compiler.util.Messages` DEPUIS
+`messages.properties` PAR NOM DE CHAMP (`Field.getName()` → clé du
+properties). En RELEASE (`isMinifyEnabled = true`), R8 renommait ces
+champs (`compilation_request` → « t ») — le chargeur itère les noms
+RENOMMÉS, ne trouve aucune clé du properties, lève. **La preuve** :
+l'APK du CI (93002f2) porte bien les quatre bundles
+`messages.properties` et les tables `.rsc` du parseur (vérifiés par
+désarchivage) — les resources N'étaient PAS le problème ; et
+`Messages` du jar ecj-art s'initialise proprement sur JVM même avec
+un classpath minimal. **La garde** (celle de CodeAssist,
+proguard-rules.pro:61) : `-keep class org.eclipse.jdt.** { public
+protected *; <init>(...); volatile <fields>; }` — l'ecj compagnon ne
+s'obfusque pas. **La fausse piste assumée** : un premier module
+(`ecj-appareil`, le jar Central re-publié en jar de projet à la
+manière art-compat) a été écrit sur la théorie « resources perdues au
+dexage » — RÉFUTÉE par l'inspection de l'APK du CI ; le module est
+retiré, l'APK gardait déjà les resources depuis le lot XIII
+(`runtimeOnly(libs.codelsp.ecj.art)` d'ide-integration + l'exclusion
+de l'ecj Central chez app-android : une seule copie de classes, la
+doctrine CodeAssist anti-doublons, déjà en place).
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-android | `RBytecode.java` (nouveau) | le parseur R.java + l'émetteur class files faits main |
+| build-android | `RJarTask` | le bytecode direct remplace la compilation ecj |
+| build-android | `RBytecodeTest` (nouveau) | 4 tests : parse+charge réflexive, déterminisme, lecture ABI, tolérance aux lignes hors forme |
+| app-android | `proguard-rules.pro` | la garde R8 des classes org.eclipse.jdt (les gabarits réflexifs d'ecj) |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/c : le jrt interdit sur ART et les stubs de l'indy — les projets réels rendus au moteur (2026-11-18)
 
 **Le terrain 1** : « :app:generateRJar : IllegalStateException:
