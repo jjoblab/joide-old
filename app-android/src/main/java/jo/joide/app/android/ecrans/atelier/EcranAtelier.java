@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ProprietesConstruction;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -124,7 +125,7 @@ import jo.joide.model.WorkspaceLoader;
  * montages des lots B-F (sync, moteurs, éditeur, aperçu, build) sont
  * repris tels quels : seul l'habillage change.</p>
  */
-public final class EcranAtelier extends Activity {
+public final class EcranAtelier extends ActiviteJoide {
 
     /** Extra d'intention : la racine du projet (chemin absolu). */
     public static final String EXTRA_RACINE = "joide.racine";

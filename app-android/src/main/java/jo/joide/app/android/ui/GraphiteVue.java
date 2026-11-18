@@ -62,6 +62,25 @@ public final class GraphiteVue {
         return Graphite.avecAccent(base, Graphite.ACCENTS[index]);
     }
 
+    /**
+     * La RESSOURCE de thème des écrans (correction du crash du
+     * 2026-11-18) : les ?attr/jo_* consommés par les layouts XML de
+     * l'atelier v2 exigent Theme.JoIDE.Sombre/Clair POSÉ AVANT TOUTE
+     * INFLATION — le manifeste reste framework, le kit programmatique
+     * n'en dépend pas. Même résolution que {@link #palette(Context)}.
+     */
+    public static int resTheme(Context contexte) {
+        Reglages reglages = Reglages.lire(
+                PreferencesAndroid.source(contexte));
+        boolean clair = switch (reglages.theme) {
+            case SOMBRE -> false;
+            case CLAIR -> true;
+            case SYSTEME -> modeNuit(contexte) == Graphite.Mode.CLAIR;
+        };
+        return clair ? jo.joide.app.android.R.style.Theme_JoIDE_Clair
+                : jo.joide.app.android.R.style.Theme_JoIDE_Sombre;
+    }
+
     /** Conversion dp vers pixels. */
     public static int dp(Context contexte, float valeur) {
         return Math.round(TypedValue.applyDimension(

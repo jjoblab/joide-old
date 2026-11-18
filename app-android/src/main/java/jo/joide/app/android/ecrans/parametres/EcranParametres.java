@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.parametres.ClesChiffrees;
 import jo.joide.app.android.parametres.KeystoreCles;
 
@@ -66,7 +67,7 @@ import jo.joide.app.android.ui.Stepper;
  * {@link Reglages}, les mesures dans {@link MesuresStockage} —
  * l'écran monte, traduit et déroule.</p>
  */
-public final class EcranParametres extends Activity {
+public final class EcranParametres extends ActiviteJoide {
 
     /** Le dépôt public du projet (rangée « Dépôt », ADR-É8). */
     private static final String DEPOT = "https://github.com/jjoblab/joide";

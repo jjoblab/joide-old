@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.accueil.AgeRelatif;
 import jo.joide.app.android.accueil.ClassifieurProjet;
 import jo.joide.app.android.accueil.EtatAccueil;
@@ -62,7 +63,7 @@ import jo.joide.platform.Clock;
  * (renommer l'affichage, supprimer avec ses deux conséquences
  * distinctes) et la recherche filtrent l'état, jamais l'inverse.</p>
  */
-public final class MainActivity extends Activity {
+public final class MainActivity extends ActiviteJoide {
 
     private static final int PICK_IMPORT = 41;
 

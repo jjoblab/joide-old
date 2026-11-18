@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ImporteurProjet;
 import jo.joide.app.android.R;
 import jo.joide.app.android.accueil.ProjetsRecents;
@@ -55,7 +56,7 @@ import jo.joide.platform.Clock;
  * sont des fichiers TOML de {@code assets/modeles/} (ADR-050) — un
  * modèle v3 s'ajoute sans toucher cet écran.</p>
  */
-public final class EcranCreation extends Activity {
+public final class EcranCreation extends ActiviteJoide {
 
     private Graphite.Palette palette;
     private EtatCreation etat;
