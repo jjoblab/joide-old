@@ -3170,7 +3170,12 @@ public final class EcranAtelier extends ActiviteJoide {
                             modele);
                     String url = saisieUrl.getText().toString().trim();
                     try {
-                        Reglages.ecrireUrlIa(sourceReglages, url);
+                        // la correction du 2026-11-18 : l'API
+                        // personnalisée se rattache au provider
+                        // choisi (une URL OpenRouter ne part plus
+                        // chez OpenAI)
+                        Reglages.ecrireUrlPour(sourceReglages, choisi,
+                                url);
                     } catch (IllegalArgumentException e) {
                         Dialogue.information(this, palette,
                                 getString(R.string.agent_modele_titre),

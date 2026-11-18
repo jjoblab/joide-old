@@ -167,31 +167,10 @@ public final class FeuilleBasse extends LinearLayout {
         binding.poigneeFeuille.setOnTouchListener((vue, evenement) -> {
             switch (evenement.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN -> {
-                    toucherInitialeY = evenement.getY();
-                    hauteurInitiale = etatFeuille.hauteurDp(
-                            hauteurUtileDp);
-                    aGlisse = false;
+                    gesteVerticalDebut(evenement.getY());
                 }
                 case MotionEvent.ACTION_MOVE -> {
-                    int voulu = Math.max(
-                            EtatFeuille.HAUTEUR_REPLIE_DP,
-                            (int) Math.min(
-                                    EtatFeuille.hauteurDe(
-                                            EtatFeuille.Detente.PLEINE,
-                                            hauteurUtileDp),
-                                    hauteurInitiale
-                                            + (toucherInitialeY
-                                            - evenement.getY())
-                                            / getResources()
-                                            .getDisplayMetrics()
-                                            .density));
-                    if (Math.abs(voulu - hauteurInitiale) > 2) {
-                        aGlisse = true;
-                    }
-                    if (aGlisse) {
-                        poserHauteur(voulu);
-                        return true;
-                    }
+                    gesteVerticalDeplacement(evenement.getY());
                 }
                 case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     if (aGlisse) {
@@ -207,42 +186,105 @@ public final class FeuilleBasse extends LinearLayout {
             return detecteur.onTouchEvent(evenement);
         });
 
-        // la zone vivante : tap = barre ↔ mi-hauteur ; glissement
-        // horizontal > 40 dp = section suivante/précédente (bouclage)
+        // la zone vivante (le comportement à 3 états demandé le
+        // 2026-11-18) : le tap CYCLE les détentes (replié → mi →
+        // plein → replié, comme la poignée), le glissement vertical
+        // TRAÎNE la feuille et s'ancre à la détente la plus proche,
+        // le fling saute une détente ; les balayages horizontaux
+        // gardent les sections (prioritaires quand |dx| > |dy|).
+        // Le geste vertical est le MÊME que celui de la poignée :
+        // les trois détentes répondent partout dans la barre.
         final float[] xInitial = new float[1];
+        final float[] yInitial = new float[1];
+        GestureDetector detecteurEntete = new GestureDetector(
+                getContext(),
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onFling(MotionEvent e1,
+                                           MotionEvent e2, float vx,
+                                           float vy) {
+                        int vitesseDpS = (int) (-vy / getResources()
+                                .getDisplayMetrics().density);
+                        EtatFeuille.Detente cible =
+                                etatFeuille.fling(vitesseDpS);
+                        if (cible != null) {
+                            appliquerDetente(true);
+                            return true;
+                        }
+                        return false;
+                    }
+                });
         entete.zoneVivante.setOnTouchListener((vue, evenement) -> {
-            if (evenement.getActionMasked()
-                    == MotionEvent.ACTION_DOWN) {
-                xInitial[0] = evenement.getX();
-                return false;
-            }
-            if (evenement.getActionMasked() == MotionEvent.ACTION_UP) {
-                float deplacement = evenement.getX() - xInitial[0];
-                float seuil = GraphiteVue.dp(getContext(), 40f);
-                if (deplacement < -seuil) {
-                    glisserSection(true);
-                    return true;
+            switch (evenement.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN -> {
+                    xInitial[0] = evenement.getX();
+                    yInitial[0] = evenement.getY();
+                    gesteVerticalDebut(evenement.getY());
                 }
-                if (deplacement > seuil) {
-                    glisserSection(false);
-                    return true;
+                case MotionEvent.ACTION_MOVE -> {
+                    gesteVerticalDeplacement(evenement.getY());
                 }
-                // tap : barre ↔ mi-hauteur (§3.6)
-                if (etatFeuille.detente() == EtatFeuille.Detente.REPLIE) {
+                case MotionEvent.ACTION_UP,
+                     MotionEvent.ACTION_CANCEL -> {
+                    float dx = evenement.getX() - xInitial[0];
+                    float dy = evenement.getY() - yInitial[0];
+                    float seuil = GraphiteVue.dp(getContext(), 40f);
+                    if (Math.abs(dx) > seuil
+                            && Math.abs(dx) > Math.abs(dy)) {
+                        // le balayage horizontal gagne : les sections
+                        aGlisse = false;
+                        glisserSection(dx < 0);
+                        break;
+                    }
+                    if (aGlisse) {
+                        // la feuille traînée s'ancre à la détente la
+                        // plus proche (replié, mi, plein)
+                        etatFeuille.ancrer(hauteurCouranteDp(),
+                                hauteurUtileDp);
+                        appliquerDetente(true);
+                        aGlisse = false;
+                        break;
+                    }
+                    // tap : le CYCLE COMPLET des trois détentes
                     etatFeuille.poserSection(etatFeuille.section());
                     etatFeuille.cycle();
                     appliquerDetente(true);
-                } else {
-                    etatFeuille.ancrer(
-                            EtatFeuille.HAUTEUR_REPLIE_DP,
-                            hauteurUtileDp);
-                    appliquerDetente(true);
                 }
-                return true;
+                default -> {
+                }
             }
-            return false;
+            return detecteurEntete.onTouchEvent(evenement)
+                    || aGlisse;
         });
         gesturesInstalles = true;
+    }
+
+    /** Le début du geste vertical partagé (poignée et en-tête). */
+    private void gesteVerticalDebut(float y) {
+        toucherInitialeY = y;
+        hauteurInitiale = etatFeuille.hauteurDp(hauteurUtileDp);
+        aGlisse = false;
+    }
+
+    /** Le déplacement du geste vertical partagé : la feuille suit le
+     *  doigt, bornée entre le replié et le plein. */
+    private void gesteVerticalDeplacement(float y) {
+        int voulu = Math.max(
+                EtatFeuille.HAUTEUR_REPLIE_DP,
+                (int) Math.min(
+                        EtatFeuille.hauteurDe(
+                                EtatFeuille.Detente.PLEINE,
+                                hauteurUtileDp),
+                        hauteurInitiale
+                                + (toucherInitialeY - y)
+                                / getResources()
+                                .getDisplayMetrics().density));
+        if (Math.abs(voulu - hauteurInitiale) > 2) {
+            aGlisse = true;
+        }
+        if (aGlisse) {
+            poserHauteur(voulu);
+        }
     }
 
     private void installerRail() {

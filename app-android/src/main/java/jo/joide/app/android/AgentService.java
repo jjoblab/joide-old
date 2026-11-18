@@ -1036,11 +1036,13 @@ public final class AgentService extends Service {
         // dans la signature — la bascule mémoïse par CLÉ, un simple
         // changement d'URL laissait l'ANCIENNE passerelle en place
         // jusqu'au redémarrage du processus
-        String urlIa = "openai".equals(nomFournisseur)
-                ? jo.joide.app.android.parametres.Reglages.lire(
+        // la correction du 2026-11-18 : l'URL vit POUR le
+        // fournisseur (l'API ajoutée est liée au provider) — chez
+        // OpenAI, l'URL globale héritée reste lue
+        String urlIa = jo.joide.app.android.parametres.Reglages
+                .lireUrlPour(
                         jo.joide.app.android.parametres.PreferencesAndroid
-                                .source(this)).urlIa
-                : "";
+                                .source(this), fournisseur);
         String signature = nomFournisseur + "|" + cles + "|" + urlIa;
         if (fournisseurBascule == null
                 || !signature.equals(bancSignature)) {
@@ -1078,24 +1080,31 @@ public final class AgentService extends Service {
     /** Le fournisseur d'une clé du banc. */
     private FournisseurLlm fournisseurParCle(String nomFournisseur,
                                              String cleDuBanc) {
+        // la correction du 2026-11-18 : chaque fournisseur porte SON
+        // URL de base posée (vide = le point d'entrée officiel) —
+        // l'API personnalisée d'un provider n'en remplace plus une
+        // autre
+        String url = jo.joide.app.android.parametres.Reglages
+                .lireUrlPour(
+                        jo.joide.app.android.parametres.PreferencesAndroid
+                                .source(this),
+                        jo.joide.app.android.parametres.Reglages
+                                .FournisseurIa.valueOf(
+                                nomFournisseur.toUpperCase(
+                                        java.util.Locale.ROOT)));
         if ("anthropic".equals(nomFournisseur)) {
-            return new FournisseurAnthropic("", cleDuBanc);
+            return new FournisseurAnthropic(url, cleDuBanc);
         }
         if ("gemini".equals(nomFournisseur)) {
             return new FournisseurGemini(cleDuBanc);
         }
         if ("openrouter".equals(nomFournisseur)) {
-            // lot U : la passerelle porte SON URL de base — l'URL
-            // libre du fournisseur OpenAI ne s'applique pas ici
+            // lot U : la passerelle porte SON URL de base — posée
+            // pour OpenRouter, sinon le point d'entrée officiel
             return new FournisseurOpenAiCompatible(
-                    URL_OPENROUTER, cleDuBanc);
+                    url.isEmpty() ? URL_OPENROUTER : url, cleDuBanc);
         }
-        jo.joide.app.android.parametres.Reglages reglages =
-                jo.joide.app.android.parametres.Reglages.lire(
-                        jo.joide.app.android.parametres
-                                .PreferencesAndroid.source(this));
-        return new FournisseurOpenAiCompatible(reglages.urlIa,
-                cleDuBanc);
+        return new FournisseurOpenAiCompatible(url, cleDuBanc);
     }
 
     /**

@@ -86,6 +86,10 @@ public final class Reglages {
     static final String CLE_MODELE_IA = "ia.modele";
     static final String CLE_MODELE_IA_PREFIXE = "ia.modele.";
     static final String CLE_URL_IA = "ia.url";
+    /** Le préfixe de l'URL posée POUR un fournisseur (le lien
+     *  demandé le 2026-11-18 : l'API ajoutée se rattache au
+     *  provider — l'URL globale ne reste que l'héritage OpenAI). */
+    static final String CLE_URL_POUR_PREFIXE = "ia.url.";
 
     // ---- Bornes (les steppers de l'écran et les tests les partagent) ----
     /** Taille du code : plancher (sp). */
@@ -384,6 +388,48 @@ public final class Reglages {
                     && !m.startsWith("gemini")
                     && !m.contains("/");
         };
+    }
+
+    /** La clé de l'URL posée pour UN fournisseur. */
+    public static String cleUrlPour(FournisseurIa fournisseur) {
+        return CLE_URL_POUR_PREFIXE + fournisseur.name().toLowerCase(
+                java.util.Locale.ROOT);
+    }
+
+    /**
+     * Pose l'URL de base d'UN fournisseur (la correction du
+     * 2026-11-18 : l'API personnalisée se rattache au provider
+     * choisi — l'URL d'OpenRouter ne part plus chez OpenAI).
+     */
+    public static void ecrireUrlPour(Source source,
+                                     FournisseurIa fournisseur,
+                                     String valeur) {
+        String bornee = valeur == null ? "" : valeur.trim();
+        if (bornee.length() > URL_IA_MAX
+                || (!bornee.isEmpty() && !bornee.startsWith("http://")
+                        && !bornee.startsWith("https://"))) {
+            throw new IllegalArgumentException(
+                    "base url must be http(s) or empty");
+        }
+        source.ecrire(cleUrlPour(fournisseur), bornee);
+    }
+
+    /**
+     * Lit l'URL posée pour UN fournisseur — chez OpenAI, retombe
+     * sur l'URL globale héritée (les réglages antérieurs au lien
+     * par provider restent vivants).
+     */
+    public static String lireUrlPour(Source source,
+                                     FournisseurIa fournisseur) {
+        String brut = source.lire(cleUrlPour(fournisseur));
+        if (brut == null || brut.trim().isEmpty()) {
+            if (fournisseur == FournisseurIa.OPENAI) {
+                String heritee = source.lire(CLE_URL_IA);
+                return heritee == null ? "" : heritee.trim();
+            }
+            return "";
+        }
+        return brut.trim();
     }
 
     /** Pose l'URL de base OpenAI-compatible (vide ou http(s), bornée). */
