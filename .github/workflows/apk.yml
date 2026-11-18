@@ -129,7 +129,7 @@ jobs:
           JOIDE_CI_KEYSTORE: ${{ runner.temp }}/joide-ci.keystore
           JOIDE_CI_KEYSTORE_PASSWORD: ${{ secrets.JOIDE_CI_KEYSTORE_PASSWORD }}
           JOIDE_CI_KEY_ALIAS: ${{ secrets.JOIDE_CI_KEY_ALIAS }}
-        run: ./gradlew :app-android:assembleDebug :app-android:assembleRelease
+        run: ./gradlew :app-android:assembleDebug :app-android:assembleRelease :app-android:verifierOmbreApk
 
       - name: Vérification des signatures (apksigner)
         run: |

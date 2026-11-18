@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot L1 de l'atelier v2 (ADR-083) — teinte à l'usage par
+     android:tint="?attr/jo_*", jamais une couleur codée en dur. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+        android:pathData="M4,5h16v14H4z M6,9v2h12V9z M6,13v2h9v-2z" />
+</vector>

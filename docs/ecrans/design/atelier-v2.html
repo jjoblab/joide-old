@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JoIDE — Atelier v2 (preview)</title>
+<style>
+:root{--bg:#0E1116;--sf:#151920;--sh:#1B212A;--pu:#0B0E12;--bd:#262D38;--bf:#1D232C;--t:#E7ECF3;--t2:#9AA6B5;--t3:#64707F;--ac:#82AAFF;--ok:#3DDC84;--wa:#E5C07B;--er:#E06C75;--vi:#C678DD;--fn:#61AFEF;--st:#98C379;--nu:#D19A66;--cm:#7C8695;--df:#D6DAE3;--mono:"JetBrains Mono","Fira Code",Consolas,monospace;--e:cubic-bezier(.2,.8,.2,1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0A0C10;color:var(--t);font:14px/20px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:22px 14px 50px;display:flex;flex-direction:column;align-items:center;gap:16px}
+h1{font-size:17px;font-weight:600}
+.seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:760px}
+.seg button{background:none;color:var(--t2);border:1px solid var(--bf);border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.seg button.on{color:var(--t);border-color:var(--ac);background:rgba(130,170,255,.12)}
+.wrap{display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+.ph{width:390px;height:800px;border:10px solid #1A1E24;border-radius:48px;overflow:hidden;position:relative;background:var(--sf);box-shadow:0 30px 80px rgba(0,0,0,.55);flex:none}
+.notes{width:330px;font-size:13px;color:var(--t2)}
+.notes h2{font-size:15px;color:var(--t);margin-bottom:6px}.notes li{margin:0 0 6px 16px}
+.main{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);z-index:2;transition:transform .24s var(--e)}
+[data-s=files] .main{transform:translateX(300px)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .24s;z-index:30}
+[data-s=files] .scrim,[data-s=ai] .scrim{opacity:1;pointer-events:auto}
+.sb{height:30px;flex:none;display:flex;justify-content:space-between;padding:10px 24px 0;font-size:12px;font-weight:600}
+.top{height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--t2);font-size:18px;position:relative;flex:none}
+.ib.ai{color:var(--ac);background:rgba(130,170,255,.12)}
+.ib .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--bg)}
+.nm{flex:1;min-width:0}.nm b{display:block;font-size:16px;font-weight:600;line-height:20px}
+.nm small{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--t2);line-height:16px}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:1px 9px;font-size:12px;line-height:18px;background:rgba(130,170,255,.12);color:var(--ac);white-space:nowrap}
+.chip.ok{background:rgba(61,220,132,.12);color:var(--ok)}.chip.er{background:rgba(224,108,117,.14);color:var(--er)}.chip.wa{background:rgba(229,192,123,.14);color:var(--wa)}.chip.n{background:var(--sh);color:var(--t2)}
+.tabs{height:40px;flex:none;display:flex;gap:3px;padding:0 8px;align-items:flex-end;overflow:hidden}
+.tab{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border-radius:10px 10px 0 0;color:var(--t2);font-size:13px;white-space:nowrap;position:relative}
+.tab.on{background:var(--pu);color:var(--t)}.tab.on:after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;border-radius:2px;background:var(--ac)}
+.tab i{font-style:normal;font-size:10px;font-weight:700;width:16px;height:16px;border-radius:5px;display:grid;place-items:center;background:rgba(229,192,123,.16);color:var(--wa)}
+.tab i.x{background:rgba(61,220,132,.14);color:var(--ok)}.tab s{width:7px;height:7px;border-radius:50%;background:var(--wa)}.tab s.e{background:var(--er)}
+.crumb{height:28px;flex:none;background:var(--pu);display:flex;align-items:center;gap:5px;padding:0 14px;font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;border-bottom:1px solid var(--bf)}.crumb b{color:var(--t2);font-weight:500}
+.ed{flex:1;background:var(--pu);overflow:hidden;font:12.5px/22px var(--mono);padding:6px 0;color:var(--df)}
+.ln{display:flex;height:22px;white-space:pre;position:relative}.ln.cur{background:rgba(130,170,255,.07)}
+.ln span.g{width:42px;flex:none;text-align:right;padding-right:12px;color:var(--t3);font-size:11.5px}.ln.cur span.g{color:var(--t2)}
+.ln.err span.g:before{content:"";position:absolute;left:14px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--er)}
+.ln.err .sq{text-decoration:underline wavy var(--er);text-underline-offset:3px}
+.ln.cur .cu:after{content:"";display:inline-block;width:2px;height:16px;background:var(--ac);vertical-align:-3px;animation:b 1s steps(2) infinite}@keyframes b{50%{opacity:0}}
+i{font-style:normal}.kw{color:var(--vi)}.ty{color:var(--wa)}.fn{color:var(--fn)}.st{color:var(--st)}.nu{color:var(--nu)}.cm{color:var(--cm)}
+.sym{display:none;height:42px;flex:none;background:var(--sh);gap:4px;padding:5px 6px;align-items:center;border-top:1px solid var(--bd)}
+.sym b{flex:1;min-width:0;height:32px;border-radius:9px;background:var(--sf);display:grid;place-items:center;font:600 14px var(--mono);color:var(--t)}.sym b:first-child{flex:1.6;color:var(--ac);font:600 12px system-ui}
+.kb{display:none;height:236px;flex:none;background:#10141A;place-items:center;color:var(--t3);font-size:13px}
+[data-s=kbd] .sym{display:flex}[data-s=kbd] .kb{display:grid}[data-s=kbd] .sheet,[data-s=kbd] .fab{display:none}
+.fab{position:absolute;right:16px;bottom:84px;height:48px;padding:0 18px 0 14px;border-radius:16px;background:var(--ok);color:#06210F;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 22px rgba(61,220,132,.25),0 2px 6px rgba(0,0,0,.4);z-index:8;transition:opacity .2s}
+[data-d=half] .fab,[data-d=full] .fab{opacity:0;pointer-events:none}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:rgba(21,25,32,.94);backdrop-filter:blur(14px);border-radius:22px 22px 0 0;box-shadow:0 -1px 0 rgba(255,255,255,.06) inset,0 -10px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;overflow:hidden;transition:height .26s var(--e)}
+.sheet.drag{transition:none}
+[data-d=bar] .sheet{height:72px}[data-d=half] .sheet{height:430px}[data-d=full] .sheet{height:700px}
+.grab{height:20px;flex:none;display:grid;place-items:center;cursor:grab;touch-action:none}.grab i{width:38px;height:4px;border-radius:4px;background:var(--t3);opacity:.7}
+.bar{height:44px;flex:none;display:flex;align-items:center;padding:0 8px;gap:2px}.bar .it{flex:1;display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--t2);line-height:14px;position:relative}.bar .it u{text-decoration:none;font-size:17px;line-height:20px}.bar .it.on{color:var(--ac)}
+.bar .it em{position:absolute;top:-2px;left:56%;font-style:normal;font-size:10px;font-weight:700;background:var(--er);color:#fff;border-radius:9px;padding:0 5px;line-height:15px}
+.bar .st{margin-left:4px}
+[data-d=bar] .bd{display:none}[data-d=half] .bar,[data-d=full] .bar{display:none}
+.bd{flex:1;min-height:0;display:flex;flex-direction:column;padding:0 14px 12px;gap:10px}
+.hd{display:flex;align-items:center;gap:8px}.hd b{font-size:16px;font-weight:600;flex:1}
+.pill{height:34px;padding:0 12px;border-radius:12px;background:var(--sh);display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t)}.pill.ok{background:var(--ok);color:#06210F;font-weight:700}
+.stabs{display:flex;gap:6px}.stabs span{padding:5px 13px;border-radius:999px;font-size:13px;color:var(--t2);border:1px solid var(--bf);cursor:pointer;display:flex;gap:6px}.stabs span.on{color:var(--t);border-color:var(--ac);background:rgba(130,170,255,.12)}.stabs em{font-style:normal;color:var(--er);font-weight:700}
+.ph-r{display:flex;gap:6px}.ph-r span{flex:1;border-radius:12px;background:var(--sh);padding:6px 10px;font-size:12px;color:var(--t2);line-height:16px}.ph-r b{display:block;color:var(--t);font-size:13px}.ph-r .a{box-shadow:0 0 0 1px var(--ok) inset}
+.tr{flex:1;min-height:0;overflow:auto;background:var(--pu);border-radius:14px;padding:10px 12px;font:12px/19px var(--mono);color:var(--t2)}
+.tr .p{color:var(--ac)}.tr .k{color:var(--t)}.tr .e{color:var(--er)}.tr .o{color:var(--ok)}.tr .w{color:var(--wa)}
+.prow{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bf);font-family:system-ui;font-size:13px;line-height:18px;color:var(--t)}.prow small{display:block;color:var(--t2);font:11.5px var(--mono)}
+.pane{display:none;flex:1;min-height:0;flex-direction:column;gap:10px}.pane.on{display:flex}
+.tb{display:flex;align-items:center;gap:6px;flex:none}.tb .sp{flex:1}
+.ibs{width:34px;height:34px;border-radius:11px;background:var(--sh);display:grid;place-items:center;color:var(--t2);font-size:14px;flex:none}
+.fch{display:flex;gap:6px}.fch span{padding:3px 11px;border-radius:999px;font-size:12px;color:var(--t2);background:var(--sh);white-space:nowrap}.fch span.on{background:rgba(130,170,255,.12);color:var(--ac)}
+.sf2{height:34px;border-radius:11px;background:var(--bg);display:flex;align-items:center;padding:0 10px;color:var(--t3);font-size:13px;flex:none}
+.grp{font:600 12px system-ui;color:var(--t2);padding:8px 0 0}.ph-r .x{box-shadow:0 0 0 1px var(--er) inset}.ph-r .z{opacity:.5}.tr .t{color:var(--t3)}
+.pane .sg{flex:none;width:176px}
+.hdr{height:52px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px}
+.rail{display:flex;background:var(--bg);border-radius:14px;padding:3px;gap:2px;flex:none}
+.ri{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;color:var(--t2);font-size:15px;position:relative;cursor:pointer}
+.ri.on{background:var(--sh);color:var(--ac);box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.ri em{position:absolute;top:-4px;right:-4px;font-style:normal;font-size:10px;font-weight:700;background:var(--er);color:#fff;border-radius:9px;padding:0 5px;line-height:15px}
+.hc{flex:1;min-width:0;height:100%;display:flex;align-items:center;gap:8px;cursor:pointer;touch-action:pan-y}
+.hv{display:none;flex:1;min-width:0;align-items:center;gap:8px;animation:sl .22s var(--e)}@keyframes sl{from{opacity:0;transform:translateX(14px)}}
+[data-t=co] .hv.co,[data-t=pr] .hv.pr,[data-t=jo] .hv.jo,[data-t=lc] .hv.lc{display:flex}
+.hv .tx{flex:1;min-width:0}.hv b{display:block;font:600 13px/17px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hv small{display:block;font:11.5px/15px var(--mono);color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pipe{display:flex;gap:3px;flex:none}.pipe i{width:14px;height:5px;border-radius:3px;background:var(--bd)}.pipe i.o{background:var(--ok)}.pipe i.e{background:var(--er)}
+[data-d=half] .pipe,[data-d=full] .pipe{display:none}
+.spk{display:flex;align-items:flex-end;gap:2px;height:22px;flex:none}.spk i{width:3px;border-radius:2px;background:var(--t3)}.spk i.e{background:var(--er)}
+.dl{position:absolute;left:0;top:0;bottom:0;width:300px;z-index:1;background:var(--sf);padding-top:30px;display:flex;flex-direction:column}
+.dh{padding:8px 14px 10px}.sg{display:flex;background:var(--bg);border-radius:12px;padding:3px}.sg span{flex:1;text-align:center;padding:6px 0;border-radius:9px;font-size:13px;color:var(--t2)}.sg span.on{background:var(--sh);color:var(--t);box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+.pj{display:flex;align-items:center;gap:8px;padding:6px 14px}.pj b{flex:1;font-size:15px}.ac{display:flex;gap:2px;padding:0 8px}.ac .ib{width:34px;height:34px;font-size:15px}
+.fi{margin:6px 14px;height:36px;border-radius:12px;background:var(--bg);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--t3);font-size:13px}
+.tree{flex:1;overflow:hidden;padding:4px 8px;font-size:14px}
+.tn{height:38px;display:flex;align-items:center;gap:8px;border-radius:10px;padding-right:8px;color:var(--t);position:relative}.tn.on{background:rgba(130,170,255,.12)}.tn.on:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--ac)}
+.tn.dim{color:var(--t3)}.tn .c{width:14px;color:var(--t3);font-size:10px;text-align:center}.tn i{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:700;background:rgba(229,192,123,.16);color:var(--wa)}.tn i.f{background:rgba(130,170,255,.14);color:var(--ac)}.tn i.l{background:rgba(61,220,132,.14);color:var(--ok)}.tn i.d{background:none;color:var(--t2);font-size:14px}.tn .chip{margin-left:auto}
+.dr{position:absolute;right:0;top:0;bottom:0;width:340px;z-index:40;background:var(--sf);border-left:1px solid var(--bd);display:flex;flex-direction:column;padding-top:30px;transform:translateX(105%);transition:transform .24s var(--e)}
+[data-s=ai] .dr{transform:none}
+.ah{display:flex;align-items:center;gap:6px;padding:6px 10px 10px;border-bottom:1px solid var(--bf)}
+.tl{flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+.um{align-self:flex-end;max-width:84%;background:var(--sh);border-radius:16px 16px 4px 16px;padding:9px 12px;font-size:14px}
+.am{font-size:14px;line-height:21px}
+.th{font-size:12.5px;color:var(--t2);display:flex;gap:6px;align-items:center}
+.tc{background:var(--bg);border:1px solid var(--bf);border-radius:14px;overflow:hidden;font-size:13px}.tc .h{display:flex;align-items:center;gap:8px;padding:9px 12px}.tc .h b{font:600 12.5px var(--mono);color:var(--t)}.tc .h span{color:var(--t2);font-size:12px;margin-left:auto}
+.diff{background:var(--pu);font:11.5px/18px var(--mono);padding:6px 0;border-top:1px solid var(--bf);white-space:pre;overflow:hidden}.diff div{padding:0 12px}.diff .a{background:rgba(61,220,132,.1);color:var(--st)}.diff .r{background:rgba(224,108,117,.1);color:var(--er)}
+.pm{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--bf)}.pm span{flex:1;text-align:center;height:36px;line-height:36px;border-radius:11px;font-weight:600;background:var(--sh)}.pm span.p{background:var(--ac);color:#0B1426}
+.busy{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2);padding:0 14px 6px}.busy s{width:8px;height:8px;border-radius:50%;background:var(--ac);animation:pl 1.2s infinite}@keyframes pl{50%{opacity:.25;transform:scale(.7)}}
+.us{font:11.5px var(--mono);color:var(--t3);padding:0 14px 6px}
+.cmp{margin:0 10px 12px;background:var(--bg);border:1px solid var(--bd);border-radius:18px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.cmp p{color:var(--t3);font-size:14px}.cmp .r{display:flex;gap:6px;align-items:center}.snd{margin-left:auto;width:36px;height:36px;border-radius:12px;background:var(--ac);color:#0B1426;display:grid;place-items:center;font-weight:700}
+</style></head><body>
+<h1>JoIDE — Atelier v2 · preview interactive</h1>
+<div class="seg" id="seg"></div>
+<div class="wrap">
+<div class="ph" id="ph" data-s="edit" data-d="bar" data-t="co">
+ <aside class="dl">
+  <div class="dh"><div class="sg"><span class="on">Fichiers</span><span>Structure</span><span>Recherche</span></div></div>
+  <div class="ac"><div class="ib">＋</div><div class="ib">▣</div><div class="ib">⇤</div><div class="ib">◎</div></div>
+  <div class="fi">⌕ Filtrer les fichiers…</div>
+  <div class="tree">
+   <div class="tn"><span class="c">▾</span><i class="d">▣</i>app</div>
+   <div class="tn" style="padding-left:16px"><span class="c">▾</span><i class="d">▣</i>src/main/java</div>
+   <div class="tn" style="padding-left:32px"><span class="c">▾</span><i class="d">▣</i>jo/compta</div>
+   <div class="tn on" style="padding-left:48px"><span class="c"></span><i>J</i>Facture.java</div>
+   <div class="tn" style="padding-left:48px"><span class="c"></span><i>J</i>Client.java</div>
+   <div class="tn" style="padding-left:16px"><span class="c">▾</span><i class="d">▣</i>res/layout</div>
+   <div class="tn" style="padding-left:32px"><span class="c"></span><i class="l">‹›</i>activity_main.xml</div>
+   <div class="tn dim" style="padding-left:16px"><span class="c">▸</span><i class="d">▣</i>build<span class="chip n">build #5…</span></div>
+   <div class="tn"><span class="c"></span><i class="f">⚙</i>joide.toml</div>
+  </div>
+ </aside>
+ <section class="main">
+  <div class="sb"><span>9:41</span><span>●●● 87 %</span></div>
+  <div class="top"><div class="ib">☰</div><div class="nm"><b>joaccountant</b><small><span class="chip n">3 modules</span><span class="chip ok">● Index prêt</span></small></div><div class="ib ai" data-go="ai">✦<span class="dot"></span></div><div class="ib">⋮</div></div>
+  <div class="tabs"><div class="tab on"><i>J</i>Facture.java<s class="e"></s></div><div class="tab"><i>J</i>Client.java</div><div class="tab"><i class="x">‹›</i>activity_main.xml</div></div>
+  <div class="crumb"><b>app</b>›<b>jo.compta</b>›<b>Facture</b>›<span style="color:var(--fn)">libelle()</span></div>
+  <div class="ed" id="ed"></div>
+  <div class="sym"><b>Tab</b><b>{</b><b>}</b><b>(</b><b>)</b><b>;</b><b>"</b><b>=</b><b>⋯</b></div>
+  <div class="kb">clavier système</div>
+  <div class="fab"><span>▶</span>Construire</div>
+  <div class="sheet" id="sheet">
+   <div class="grab" id="grab"><i></i></div>
+   <div class="hdr">
+    <div class="rail"><div class="ri on" data-t="co" title="Console">▤</div><div class="ri" data-t="pr" title="Problèmes">⚠<em>2</em></div><div class="ri" data-t="jo" title="Journal">≣</div><div class="ri" data-t="lc" title="Logcat">▥</div></div>
+    <div class="hc">
+     <div class="hv co"><div class="tx"><b style="color:var(--er)">✕ Build #4 échoué · 6,2 s</b><small>Facture.java:19 · symbole introuvable</small></div><div class="pipe"><i class="o"></i><i class="e"></i><i></i></div></div>
+     <div class="hv pr"><div class="tx"><b><span style="color:var(--er)">✕ 2</span>&nbsp; <span style="color:var(--wa)">▲ 1</span></b><small>Facture.java:19 · numero introuvable</small></div><div class="ibs">↓</div></div>
+     <div class="hv jo"><div class="tx"><b><span style="color:var(--ok)">●</span> INDEX · prêt</b><small>10:41:02 · 1 284 fichiers · 3 modules</small></div></div>
+     <div class="hv lc"><div class="tx"><b><span style="color:var(--ok)">●</span> En direct · pid 4821</b><small style="color:var(--er)">E/AndroidRuntime NullPointerException</small></div><div class="spk"><i style="height:6px"></i><i style="height:9px"></i><i style="height:5px"></i><i style="height:12px"></i><i style="height:8px"></i><i style="height:7px"></i><i style="height:14px"></i><i style="height:6px"></i><i class="e" style="height:22px"></i></div></div>
+    </div>
+   </div>
+   <div class="bd">
+    <div class="pane on" id="co">
+     <div class="tb"><div class="fch"><span class="on">Tout</span><span>Erreurs 1</span><span>Système</span></div><span class="sp"></span><div class="ibs">⌫</div><div class="ibs">⧉</div></div>
+     <div class="ph-r"><span class="a"><b>Résolution</b>✓ 0,8 s</span><span class="x"><b>Compilation</b>✕ 4,1 s</span><span class="z"><b>Assemblage</b>— ignoré</span></div>
+     <div class="tr"><div class="p">▸ Résolution des dépendances</div><div>12 exécutées · 3 du cache · 2 à jour</div><div class="p">▸ Compilation :app</div><div class="k">compileJava jo/compta/Facture.java</div><div class="w">Facture.java:14 avertissement : champ inutilisé</div><div class="e">Facture.java:19 erreur : symbole introuvable « numero »</div><div class="e">Build #4 échoué · 6,2 s</div></div></div>
+    <div class="pane" id="pr">
+     <div class="tb"><div class="sg"><span>Fichier</span><span class="on">Projet</span></div><span class="sp"></span><div class="fch"><span class="on">Erreurs</span><span class="on">Avert.</span></div></div>
+     <div class="tr" style="font-family:system-ui"><div class="grp" style="padding-top:0">Facture.java · 2</div><div class="prow"><span style="color:var(--er)">✕</span><div>Symbole introuvable : numero<small>ligne 19</small></div></div><div class="prow"><span style="color:var(--wa)">▲</span><div>Champ inutilisé : lignes<small>ligne 8</small></div></div><div class="grp">Client.java · 1</div><div class="prow"><span style="color:var(--er)">✕</span><div>Types incompatibles : int → String<small>ligne 7</small></div></div></div></div>
+    <div class="pane" id="jo">
+     <div class="tb"><div class="fch"><span class="on">Tout</span><span>Avert.</span><span>Erreurs</span></div><span class="sp"></span><div class="ibs">⌫</div><div class="ibs">⧉</div></div>
+     <div class="tr"><div><span class="t">10:41:02</span> <span class="p">INDEX</span> Index prêt · 3 modules · 1 284 fichiers</div><div><span class="t">10:41:05</span> <span class="p">SYNC</span> Modèle de langage synchronisé</div><div><span class="t">10:42:11</span> <span class="p">AGENT</span> Tour terminé · 6 requêtes</div><div class="w"><span class="t">10:42:30</span> MCP  Serveur « docs » injoignable</div><div><span class="t">10:43:48</span> <span class="p">BUILD</span> Service :build démarré</div></div></div>
+    <div class="pane" id="lc">
+     <div class="tb"><span class="chip">jo.compta · pid 4821 ▾</span><span class="chip n">Verbose ▾</span><span class="sp"></span><div class="ibs">⏸</div><div class="ibs">⌫</div><div class="ibs">⧉</div></div>
+     <div class="sf2">⌕ Filtrer (tag, texte)…</div>
+     <div class="tr"><div class="o">D/JoCompta  Facture chargée</div><div class="k">I/ActivityManager  Start jo.compta</div><div class="w">W/Choreographer  Sauté 31 images</div><div class="e">E/AndroidRuntime  NullPointerException</div><div class="e">    at jo.compta.Facture.libelle(Facture.java:19)</div></div></div>
+   </div>
+  </div>
+  <div class="scrim" data-go="edit"></div>
+ </section>
+ <aside class="dr">
+  <div class="ah"><b style="flex:1;font-size:16px;padding-left:4px">Agent</b><span class="chip">gemini-2.5-pro ▾</span><span class="chip n">Demander ▾</span><div class="ib" style="width:32px;height:32px">⟲</div><div class="ib" data-go="edit" style="width:32px;height:32px">✕</div></div>
+  <div class="tl">
+   <div class="um">Corrige l’erreur de libellé dans Facture.</div>
+   <div class="th">▸ Réflexion · 4 s</div>
+   <div class="tc"><div class="h"><span style="margin:0;color:var(--ok)">✓</span><b>read_file</b>Facture.java<span>14 lignes ▸</span></div></div>
+   <div class="tc"><div class="h"><span style="margin:0;color:var(--ac)">●</span><b>edit_file</b>Facture.java<span>à approuver</span></div>
+    <div class="diff"><div class="r">- return numero + "-" + 2026;</div><div class="a">+ return reference + "-" + 2026;</div></div>
+    <div class="pm"><span>Refuser</span><span class="p">Appliquer</span></div></div>
+   <div class="am">Le champ <b>numero</b> n’existe pas : la classe expose <b>reference</b>.</div>
+  </div>
+  <div class="busy"><s></s>Écriture… 12 s</div>
+  <div class="us">14 120 in · 903 out · 11 240 cached</div>
+  <div class="cmp"><span class="chip n" style="align-self:flex-start">Facture.java ✕</span><p>Demander à l’agent…</p><div class="r"><div class="ib" style="width:32px;height:32px">＋</div><div class="snd">↑</div></div></div>
+ </aside>
+</div>
+<div class="notes" id="notes"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),ph=$('#ph');
+const code=['package jo.compta;','','import java.math.BigDecimal;','','/** Une facture client. */','public final class Facture {','  private final String reference;','  private final List<Ligne> lignes;','','  public BigDecimal calculerTotal() {','    BigDecimal total = BigDecimal.ZERO;','    for (Ligne l : lignes) {','      total = total.add(l.montant());','    }','    return total.setScale(2);','  }','','  public String libelle() {','    return numero + "-" + 2026;','  }','}'];
+const hl=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/(\/\*\*.*\*\/)|("[^"]*")|\b(package|import|public|private|final|class|return|for|new)\b|\b([A-Z][A-Za-z]+)\b|\b(\d+)\b|\b([a-z]\w*)(?=\()/g,(m,c,st,k,t,n)=>c?`<i class=cm>${m}</i>`:st?`<i class=st>${m}</i>`:k?`<i class=kw>${m}</i>`:t?`<i class=ty>${m}</i>`:n?`<i class=nu>${m}</i>`:`<i class=fn>${m}</i>`);
+$('#ed').innerHTML=code.map((l,i)=>{const n=i+1,e=n==19?' err':'',c=n==11?' cur':'';let h=hl(l);if(n==19)h=h.replace('numero','<span class=sq>numero</span>');return`<div class="ln${e}${c}"><span class=g>${n}</span><span class=cu>${h}</span></div>`}).join('');
+const S={edit:['bar','Replié · Console','Replié, l’en-tête est celui de la section : verdict du dernier build, première erreur, trois segments de pipeline (résolution · compilation · assemblage).','co'],
+rpr:['bar','Replié · Problèmes','Compteurs LSP ✕ / ▲, première erreur du fichier, bouton ↓ « problème suivant » sans déplier.','pr'],
+rjo:['bar','Replié · Journal','Dernier événement de l’IDE (index, synchro, agent, MCP) avec heure et chiffres.','jo'],
+rlc:['bar','Replié · Logcat','État du flux, dernière ligne en couleur de niveau et mini-histogramme du débit (barre rouge = erreur).','lc'],
+console:['half','Déplié · Console','Même en-tête, puis outils de la section : filtres Tout/Erreurs/Système, vider, copier ; phases, transcript.','co'],
+problemes:['half','Déplié · Problèmes','Outils : Fichier/Projet et filtres de gravité (sans chiffres : ils sont dans l’en-tête). Lignes groupées par fichier.','pr'],
+journal:['half','Déplié · Journal','Outils : niveau, vider, copier. Aucun message de build ni de LSP.','jo'],
+logcat:['half','Déplié · Logcat','Outils : processus, niveau, pause, vider, copier, filtre texte.','lc'],
+full:['full','Plein','90 %. L’en-tête reste figé en haut : on change de section par le rail ou en glissant l’en-tête.'],
+files:['bar','Tiroir fichiers','Poussé 300 dp, voile 50 %. Sélecteur, actions, filtre, arbre (pas de rangée projet).'],
+ai:['bar','Tiroir agent','340 dp : puces modèle + mode, réflexion pliée, cartes d’outils, diff avant permission, activité, usage, composeur.'],
+kbd:['bar','Clavier','Feuille et FAB masqués ; barre de symboles : Tab, { } ( ) ; " = et ⋯.']};
+function go(k){const[s,d]=S[k];if(S[k][3])tab(S[k][3]);ph.dataset.s=['files','ai','kbd'].includes(k)?k:'edit';ph.dataset.d=d;[...$('#seg').children].forEach(b=>b.classList.toggle('on',b.dataset.k==k));$('#notes').innerHTML=`<h2>${S[k][1]}</h2><ul><li>${S[k][2]}</li></ul>`}
+$('#seg').innerHTML=Object.keys(S).map(k=>`<button data-k=${k}>${S[k][1]}</button>`).join('');
+$('#seg').onclick=e=>e.target.dataset.k&&go(e.target.dataset.k);
+document.querySelectorAll('[data-go]').forEach(e=>e.onclick=()=>go(e.dataset.go));
+document.querySelector('.top .ib').onclick=()=>go('files');
+function tab(t){ph.dataset.t=t;document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==t));document.querySelectorAll('.ri').forEach(x=>x.classList.toggle('on',x.dataset.t==t))}
+document.querySelectorAll('.ri').forEach(x=>x.onclick=e=>{e.stopPropagation();tab(x.dataset.t)});
+const T=['co','pr','jo','lc'];let sx=0;
+$('.hc').onpointerdown=e=>sx=e.clientX;
+$('.hc').onpointerup=e=>{const dx=e.clientX-sx;if(Math.abs(dx)>40)tab(T[(T.indexOf(ph.dataset.t)+(dx<0?1:3))%4]);else ph.dataset.d=ph.dataset.d=='bar'?'half':'bar'};
+const sh=$('#sheet');let y0,h0;
+$('#grab').onpointerdown=e=>{y0=e.clientY;h0=sh.offsetHeight;sh.classList.add('drag');e.target.setPointerCapture?.(e.pointerId);$('#grab').onpointermove=m=>{sh.style.height=Math.max(72,Math.min(700,h0+y0-m.clientY))+'px'};$('#grab').onpointerup=u=>{$('#grab').onpointermove=null;sh.classList.remove('drag');const h=sh.offsetHeight,moved=Math.abs(u.clientY-y0)>6;sh.style.height='';const cur=ph.dataset.d;const order=['bar','half','full'];const hs=[72,430,700];let k=moved?hs.indexOf(hs.reduce((a,b)=>Math.abs(b-h)<Math.abs(a-h)?b:a)):(order.indexOf(cur)+1)%3;go(['edit','console','full'][k])}};
+go('edit');
+</script></body></html>

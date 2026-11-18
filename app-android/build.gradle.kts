@@ -198,6 +198,12 @@ android {
     buildFeatures {
         // lot M : la classe BuildConfig porte le SHA du build
         buildConfig = true
+        // Lot L1 de l'atelier v2 (ADR-083) : ViewBinding — la SEULE
+        // dépendance AndroidX tolérée (androidx.databinding:viewbinding,
+        // Apache-2.0, NOTICE + docs/third-party.md). Aucun layout pour
+        // l'instant : aucune classe *Binding générée, aucun risque ;
+        // les lots L2-L6 gonflent les écrans depuis res/layout/.
+        viewBinding = true
     }
     if (signatureCi) {
         signingConfigs {
@@ -977,7 +983,20 @@ val verifierOmbreApk = tasks.register("verifierOmbreApk") {
         val requis = listOf(
                 "Ljo/joide/build/android/tools/ApksigSigner;",
                 "Ljo/joide/app/android/ChargeurDexAndroid;",
-                "Ljo/joide/build/android/dex/Dexer;")
+                "Ljo/joide/build/android/dex/Dexer;",
+                // lot XXI — le pack bundletool lie ces types PAR NOM à
+                // travers le mur de chargeurs (son adaptateur écrit la
+                // charge du module via packaging.ApkWriter, et compile
+                // contre l'interface BundleAssembler + son BaseModule) :
+                // un renommage R8 les rend introuvables au pack —
+                // « Failed resolution of: …ApkWriter » (terrain du
+                // 2026-11-18). MurEtancheTest garde les imports du jeu
+                // tools dans la surface gardée ; ces sondes prouvent
+                // l'APK construit.
+                "Ljo/joide/build/android/packaging/ApkWriter;",
+                "Ljo/joide/build/android/packaging/ApkWriter\$Entry;",
+                "Ljo/joide/build/android/bundle/BundleAssembler;",
+                "Ljo/joide/build/android/bundle/BundleAssembler\$BaseModule;")
         val fautes = mutableListOf<String>()
         ZipFile(apk).use { zip ->
             // ISO-8859-1 : correspondance bijective octet ↔ caractère —

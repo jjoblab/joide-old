@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jetons Graphite — palette SOBRE (ADR-083, lot L1 de l'atelier v2).
+  Graphite.java reste la source de vérité : JetonsXmlTest vérifie
+  l'égalité de chaque valeur. Les layouts ne lisent JAMAIS ces
+  couleurs directement — ils passent par ?attr/jo_* (themes.xml).
+  Tonaux : couleur à 12 % (14 % pour erreur/alerte) sur la surface.
+-->
+<resources>
+    <!-- rôles d'UI (Graphite.SOMBRE) -->
+    <color name="jo_fond">#0E1116</color>
+    <color name="jo_surface">#151920</color>
+    <color name="jo_surface_haute">#1B212A</color>
+    <color name="jo_puits">#0B0E12</color>
+    <color name="jo_bord">#262D38</color>
+    <color name="jo_bord_fin">#1D232C</color>
+    <color name="jo_texte">#E7ECF3</color>
+    <color name="jo_texte2">#9AA6B5</color>
+    <color name="jo_texte3">#64707F</color>
+    <color name="jo_accent">#82AAFF</color>
+    <color name="jo_reussite">#3DDC84</color>
+    <color name="jo_alerte">#E5C07B</color>
+    <color name="jo_erreur">#E06C75</color>
+    <color name="jo_violet">#C678DD</color>
+    <color name="jo_texte_sur_accent">#0B1424</color>
+    <color name="jo_texte_sur_reussite">#07130C</color>
+    <!-- rideau/voile au-dessus du contenu poussé (Graphite.rideau) -->
+    <color name="jo_rideau">#7A0B0E12</color>
+
+    <!-- tonaux (calculés sur la surface ; voir ADR-083) -->
+    <color name="jo_accent_tonal">#222A3B</color>
+    <color name="jo_reussite_tonal">#1A302C</color>
+    <color name="jo_alerte_tonal">#32302D</color>
+    <color name="jo_erreur_tonal">#31252C</color>
+    <color name="jo_violet_tonal">#2A2437</color>
+    <!-- ligne courante de l'éditeur : accent 7 % sur le puits -->
+    <color name="jo_accent_ligne">#131923</color>
+
+    <!-- syntaxe (Graphite.SOMBRE.syntaxe) -->
+    <color name="jo_syntaxe_mot_cle">#C678DD</color>
+    <color name="jo_syntaxe_type">#E5C07B</color>
+    <color name="jo_syntaxe_fonction">#61AFEF</color>
+    <color name="jo_syntaxe_chaine">#98C379</color>
+    <color name="jo_syntaxe_nombre">#D19A66</color>
+    <color name="jo_syntaxe_commentaire">#7C8695</color>
+    <color name="jo_syntaxe_defaut">#D6DAE3</color>
+
+    <!-- rôles d'UI — palette CLAIRE (Graphite.CLAIR, ADR-048) ; le
+         mode clair détaillé reste hors périmètre du chantier v2,
+         mais ses jetons existent et le thème clair les pose -->
+    <color name="jo_fond_clair">#F3F6FA</color>
+    <color name="jo_surface_clair">#FFFFFF</color>
+    <color name="jo_surface_haute_clair">#E9EEF6</color>
+    <color name="jo_puits_clair">#FFFFFF</color>
+    <color name="jo_bord_clair">#D9E1EC</color>
+    <color name="jo_bord_fin_clair">#E5EBF3</color>
+    <color name="jo_texte_clair">#1C2430</color>
+    <color name="jo_texte2_clair">#5A6B80</color>
+    <color name="jo_texte3_clair">#8A97A8</color>
+    <color name="jo_accent_clair">#2E63D6</color>
+    <color name="jo_reussite_clair">#0D7D45</color>
+    <color name="jo_alerte_clair">#8A6A16</color>
+    <color name="jo_erreur_clair">#C73540</color>
+    <color name="jo_violet_clair">#A026AA</color>
+    <color name="jo_texte_sur_accent_clair">#FFFFFF</color>
+    <color name="jo_texte_sur_reussite_clair">#FFFFFF</color>
+    <color name="jo_rideau_clair">#3D1C2430</color>
+
+    <!-- tonaux CLAIRS : mêmes règles de mélange, sur la surface claire -->
+    <color name="jo_accent_tonal_clair">#E6ECFA</color>
+    <color name="jo_reussite_tonal_clair">#E2EFE9</color>
+    <color name="jo_alerte_tonal_clair">#EFEADE</color>
+    <color name="jo_erreur_tonal_clair">#F7E3E4</color>
+    <color name="jo_violet_tonal_clair">#F4E5F5</color>
+    <color name="jo_accent_ligne_clair">#F0F4FC</color>
+
+    <!-- syntaxe claire (Graphite.CLAIR.syntaxe) -->
+    <color name="jo_syntaxe_mot_cle_clair">#A026AA</color>
+    <color name="jo_syntaxe_type_clair">#B45309</color>
+    <color name="jo_syntaxe_fonction_clair">#2E63D6</color>
+    <color name="jo_syntaxe_chaine_clair">#22863A</color>
+    <color name="jo_syntaxe_nombre_clair">#C25314</color>
+    <color name="jo_syntaxe_commentaire_clair">#667385</color>
+    <color name="jo_syntaxe_defaut_clair">#384556</color>
+</resources>

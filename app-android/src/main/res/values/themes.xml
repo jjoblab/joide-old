@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Thèmes JoIDE (ADR-083, lot L1 de l'atelier v2). Parent : le thème
+  du CADRE (android:Theme.Material.NoActionBar) — pas Material
+  Components (zéro AndroidX UI, ADR-É2 amendée par l'ADR-083).
+  L'application se fait par setTheme() AVANT l'inflation, selon
+  Reglages sombre/clair/système (ADR-048).
+-->
+<resources>
+    <style name="Theme.JoIDE.Sombre" parent="android:Theme.Material.NoActionBar">
+        <item name="jo_fond">@color/jo_fond</item>
+        <item name="jo_surface">@color/jo_surface</item>
+        <item name="jo_surface_haute">@color/jo_surface_haute</item>
+        <item name="jo_puits">@color/jo_puits</item>
+        <item name="jo_bord">@color/jo_bord</item>
+        <item name="jo_bord_fin">@color/jo_bord_fin</item>
+        <item name="jo_texte">@color/jo_texte</item>
+        <item name="jo_texte2">@color/jo_texte2</item>
+        <item name="jo_texte3">@color/jo_texte3</item>
+        <item name="jo_accent">@color/jo_accent</item>
+        <item name="jo_reussite">@color/jo_reussite</item>
+        <item name="jo_alerte">@color/jo_alerte</item>
+        <item name="jo_erreur">@color/jo_erreur</item>
+        <item name="jo_violet">@color/jo_violet</item>
+        <item name="jo_texte_sur_accent">@color/jo_texte_sur_accent</item>
+        <item name="jo_texte_sur_reussite">@color/jo_texte_sur_reussite</item>
+        <item name="jo_rideau">@color/jo_rideau</item>
+
+        <item name="jo_accent_tonal">@color/jo_accent_tonal</item>
+        <item name="jo_reussite_tonal">@color/jo_reussite_tonal</item>
+        <item name="jo_alerte_tonal">@color/jo_alerte_tonal</item>
+        <item name="jo_erreur_tonal">@color/jo_erreur_tonal</item>
+        <item name="jo_violet_tonal">@color/jo_violet_tonal</item>
+        <item name="jo_accent_ligne">@color/jo_accent_ligne</item>
+
+        <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle</item>
+        <item name="jo_syntaxe_type">@color/jo_syntaxe_type</item>
+        <item name="jo_syntaxe_fonction">@color/jo_syntaxe_fonction</item>
+        <item name="jo_syntaxe_chaine">@color/jo_syntaxe_chaine</item>
+        <item name="jo_syntaxe_nombre">@color/jo_syntaxe_nombre</item>
+        <item name="jo_syntaxe_commentaire">@color/jo_syntaxe_commentaire</item>
+        <item name="jo_syntaxe_defaut">@color/jo_syntaxe_defaut</item>
+
+        <item name="android:windowBackground">@color/jo_fond</item>
+        <item name="android:statusBarColor">@color/jo_fond</item>
+        <item name="android:navigationBarColor">@color/jo_fond</item>
+    </style>
+
+    <style name="Theme.JoIDE.Clair" parent="android:Theme.Material.NoActionBar">
+        <item name="jo_fond">@color/jo_fond_clair</item>
+        <item name="jo_surface">@color/jo_surface_clair</item>
+        <item name="jo_surface_haute">@color/jo_surface_haute_clair</item>
+        <item name="jo_puits">@color/jo_puits_clair</item>
+        <item name="jo_bord">@color/jo_bord_clair</item>
+        <item name="jo_bord_fin">@color/jo_bord_fin_clair</item>
+        <item name="jo_texte">@color/jo_texte_clair</item>
+        <item name="jo_texte2">@color/jo_texte2_clair</item>
+        <item name="jo_texte3">@color/jo_texte3_clair</item>
+        <item name="jo_accent">@color/jo_accent_clair</item>
+        <item name="jo_reussite">@color/jo_reussite_clair</item>
+        <item name="jo_alerte">@color/jo_alerte_clair</item>
+        <item name="jo_erreur">@color/jo_erreur_clair</item>
+        <item name="jo_violet">@color/jo_violet_clair</item>
+        <item name="jo_texte_sur_accent">@color/jo_texte_sur_accent_clair</item>
+        <item name="jo_texte_sur_reussite">@color/jo_texte_sur_reussite_clair</item>
+        <item name="jo_rideau">@color/jo_rideau_clair</item>
+
+        <item name="jo_accent_tonal">@color/jo_accent_tonal_clair</item>
+        <item name="jo_reussite_tonal">@color/jo_reussite_tonal_clair</item>
+        <item name="jo_alerte_tonal">@color/jo_alerte_tonal_clair</item>
+        <item name="jo_erreur_tonal">@color/jo_erreur_tonal_clair</item>
+        <item name="jo_violet_tonal">@color/jo_violet_tonal_clair</item>
+        <item name="jo_accent_ligne">@color/jo_accent_ligne_clair</item>
+
+        <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle_clair</item>
+        <item name="jo_syntaxe_type">@color/jo_syntaxe_type_clair</item>
+        <item name="jo_syntaxe_fonction">@color/jo_syntaxe_fonction_clair</item>
+        <item name="jo_syntaxe_chaine">@color/jo_syntaxe_chaine_clair</item>
+        <item name="jo_syntaxe_nombre">@color/jo_syntaxe_nombre_clair</item>
+        <item name="jo_syntaxe_commentaire">@color/jo_syntaxe_commentaire_clair</item>
+        <item name="jo_syntaxe_defaut">@color/jo_syntaxe_defaut_clair</item>
+
+        <item name="android:windowBackground">@color/jo_fond_clair</item>
+        <item name="android:statusBarColor">@color/jo_fond_clair</item>
+        <item name="android:navigationBarColor">@color/jo_fond_clair</item>
+    </style>
+</resources>

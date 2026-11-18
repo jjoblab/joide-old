@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Attributs de thème JoIDE (ADR-083, lot L1 de l'atelier v2). Les
+  layouts n'utilisent QUE ces ?attr/jo_* — jamais une couleur codée
+  en dur (franchise §0.4 du prompt v2). Posés par Theme.JoIDE.Sombre
+  et Theme.JoIDE.Clair (themes.xml) depuis colors.xml, dont les
+  valeurs restent égales à Graphite.java (JetonsXmlTest).
+-->
+<resources>
+    <attr name="jo_fond" format="color" />
+    <attr name="jo_surface" format="color" />
+    <attr name="jo_surface_haute" format="color" />
+    <attr name="jo_puits" format="color" />
+    <attr name="jo_bord" format="color" />
+    <attr name="jo_bord_fin" format="color" />
+    <attr name="jo_texte" format="color" />
+    <attr name="jo_texte2" format="color" />
+    <attr name="jo_texte3" format="color" />
+    <attr name="jo_accent" format="color" />
+    <attr name="jo_reussite" format="color" />
+    <attr name="jo_alerte" format="color" />
+    <attr name="jo_erreur" format="color" />
+    <attr name="jo_violet" format="color" />
+    <attr name="jo_texte_sur_accent" format="color" />
+    <attr name="jo_texte_sur_reussite" format="color" />
+    <attr name="jo_rideau" format="color" />
+
+    <attr name="jo_accent_tonal" format="color" />
+    <attr name="jo_reussite_tonal" format="color" />
+    <attr name="jo_alerte_tonal" format="color" />
+    <attr name="jo_erreur_tonal" format="color" />
+    <attr name="jo_violet_tonal" format="color" />
+    <attr name="jo_accent_ligne" format="color" />
+
+    <attr name="jo_syntaxe_mot_cle" format="color" />
+    <attr name="jo_syntaxe_type" format="color" />
+    <attr name="jo_syntaxe_fonction" format="color" />
+    <attr name="jo_syntaxe_chaine" format="color" />
+    <attr name="jo_syntaxe_nombre" format="color" />
+    <attr name="jo_syntaxe_commentaire" format="color" />
+    <attr name="jo_syntaxe_defaut" format="color" />
+</resources>

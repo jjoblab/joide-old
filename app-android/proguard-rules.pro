@@ -21,6 +21,16 @@
 -keep class jo.joide.build.android.dex.** { *; }
 -keep class jo.joide.build.android.bundle.** { *; }
 -keep class jo.joide.build.android.sign.** { *; }
+# L'écrivain d'archives alignées fait aussi partie du mur (lot XXI) :
+# l'adaptateur bundletool DU PACK l'appelle PAR NOM pour écrire la
+# charge du module de base — le terrain du 2026-11-18 : « bundle
+# [debug] : NoClassDefFoundError: Failed resolution of:
+# Ljo/joide/build/android/packaging/ApkWriter; » — la classe vivait
+# bien dans l'APK (PackageTask l'atteint) mais R8 l'avait RENOMMÉE :
+# le pack, lui, lie le nom original à travers le chargeur parent.
+# MurEtancheTest (build-android) vérifie que les imports du jeu de
+# sources tools restent dans cette surface gardée.
+-keep class jo.joide.build.android.packaging.** { *; }
 
 # Le pont Android des packs (ChargeurDexAndroid, DexClassLoader) :
 # découvert par ServiceLoader — le nom de l'implémentation et du

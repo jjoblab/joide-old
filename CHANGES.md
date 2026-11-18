@@ -1,3 +1,84 @@
+# CHANGES — Atelier v2, lot L1 : ADR-083 ViewBinding + jetons XML + thème + icônes (2026-11-18)
+
+**Le chantier** (prompt `prompt-agent-atelier-v2.md`, maquette
+contractuelle `docs/ecrans/design/atelier-v2.html`, 370 dp, 1 px = 1 dp) :
+l'atelier passe à de **vrais layouts XML + ViewBinding** pour toute
+l'application, en six lots L1-L6. Le lot L1 pose les fondations —
+aucun écran migré encore, aucun comportement changé.
+
+**Ce que le lot pose** :
+1. **ADR-083** (`docs/adr/083-atelier-v2-layouts-viewbinding.md`) :
+   amendement de « zéro AndroidX » (docs/ecrans/002-systeme-design.md)
+   pour la SEULE dépendance `androidx.databinding:viewbinding`
+   (Apache-2.0, `NOTICE` + `docs/third-party.md`) — bibliothèque de
+   liaison sans composant d'UI, classes `*Binding` générées depuis
+   nos layouts. L'« ADR-067 » du prompt (rédigé contre son propre
+   arbre) devient ADR-083 ici. Divergence tranchée et ancrée : le
+   prompt cite « texte sur réussite #06210F / accent #0B1426 »,
+   `Graphite` porte `#07130C` / `#0B1424` — Graphite source de
+   vérité (§1 du prompt), le test l'égalise.
+2. **`viewBinding = true`** (app-android) — aucun layout encore :
+   zéro classe générée, zéro risque.
+3. **Jetons XML** : `res/values/colors.xml` (palette sombre ET claire
+   + tonaux calculés : 12 % sur la surface, 14 % erreur/alerte, ligne
+   courante 7 % sur le puits), `res/values/attrs.xml` (les `?attr/jo_*`
+   — les layouts ne liront JAMAIS une couleur directe),
+   `res/values/themes.xml` (`Theme.JoIDE.Sombre` / `Theme.JoIDE.Clair`,
+   parent `android:Theme.Material.NoActionBar` du cadre).
+4. **`JetonsXmlTest`** (4 tests JVM) : chaque jeton de colors.xml
+   égale `Graphite.sombre()`/`clair()` ; les tonaux se recalculent ;
+   les thèmes posent CHAQUE attribut déclaré et ne référencent que
+   des couleurs existantes — les deux représentations ne peuvent
+   plus diverger.
+5. **21 icônes vectorielles** `res/drawable/ic_*.xml` (cadre seul,
+   teinte à l'usage par `android:tint="?attr/jo_*"`) — menu, agent,
+   options, fermer, rail de sections (console/problèmes/journal/
+   logcat), FAB, envoi, arrêt, tiroirs, recherche, étoile, historique.
+
+**La suite** : L2 (barre supérieure, onglets, fil d'Ariane, barre de
+symboles) → L3 (FeuilleBasse + sections + relais Logcat) → L4 (tiroir
+fichiers) → L5 (tiroir agent) → L6 (extraction des contrôleurs,
+EcranAtelier < 500 lignes, grand écran).
+
+# CHANGES — Lot XXI : le mur de chargeurs garde ses noms — l'APK ne renomme plus ce que le pack bundletool lie (2026-11-18)
+
+**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
+resolution of: Ljo/joide/build/android/packaging/ApkWriter; » — le
+build passe la compilation Kotlin (le lot XX/h tient : 8 tâches
+exécutées, 5 à jour) et meurt à l'assemblage du bundle, SUR
+L'APPAREIL seulement.
+
+**La cause** : l'adaptateur `BundletoolAssembler` vit DANS le pack
+bundletool (jeu de sources `tools`, dexé dans l'archive publiée) et
+charge PAR NOM à travers le chargeur parent. Depuis le refactor de
+l'écrivain zip aligné, il référence `packaging.ApkWriter` — une
+classe du moteur. Dans l'APK minifié (les DEUX variantes le sont,
+doctrine lot VIII), R8 garde la classe (PackageTask l'atteint
+statiquement) mais la RENOMME : le pack, lui, lie le nom original →
+`Failed resolution`. Au bureau et en CI, l'adaptateur charge du
+classpath complet où tout porte son nom — d'où le vert partiel.
+C'est exactement la raison d'être des règles `-keep` de
+`dex.**`/`bundle.**`/`sign.**` : `packaging.**` manquait à l'appel.
+
+**Les corrections** :
+1. `-keep class jo.joide.build.android.packaging.** { *; }`
+   (app-android/proguard-rules.pro, raison documentée).
+2. Sondes `verifierOmbreApk` complétées : `ApkWriter`,
+   `ApkWriter$Entry`, `BundleAssembler`, `BundleAssembler$BaseModule`
+   doivent exister SOUS LEUR NOM dans le dex de l'APK.
+3. **`MurEtancheTest`** (nouveau, build-android) : dérive la surface
+   gardée DES règles -keep elles-mêmes et vérifie que chaque
+   référence `jo.joide.*` du jeu de sources `tools` y tombe — un
+   nouvel import hors surface échoue AU BUREAU, plus jamais sur
+   l'appareil.
+
+**La preuve** : build-android vert (dont MurEtancheTest) ; la CI
+(le workflow apk exécute désormais `verifierOmbreApk` après
+l'assemblage) vérifie sur l'APK minifié que les quatre types
+sont présents sous leur nom dans le dex — la reproduction locale
+a buté sur les limites de débit de Maven Central (429), pas sur
+le code.
+
 # CHANGES — Lot XX/h : la doctrine CodeAssist — le R.jar n'entre plus dans le classpath de kotlinc (2026-11-18)
 
 **Le terrain** : « Classpath entry points to a non-existent location:
