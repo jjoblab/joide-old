@@ -36,3 +36,39 @@ sera vérifié dans SA phase (§4.2 du prompt : jamais d'API inventée).
 | P5 | aapt2, D8/R8, apksig, bundletool | exécution aapt2 depuis nativeLibraryDir à valider sur appareil |
 | P6 | — (daemon, Binder/AIDL) | |
 | P7 | — (lecteur statique Gradle maison) | |
+
+## Fabrication des packs différés (lot XXI/b, 2026-11-18)
+
+Les packs dex (`*.dex.zip` de la release `toolchain-v1`) sont
+AUTOSUFFISANTS : l'adaptateur du pack charge PAR NOM à travers le
+chargeur parent (le mur de chargeurs, ADR-067) — une dépendance qui
+voyage « à côté » n'existe pas pour le pack. Le terrain a tranché :
+le pack bundletool d'origine ne portait ni protobuf ni guava
+(descripteurs référencés, définitions absentes) et
+`bundle[debug]` mourait de `NoClassDefFoundError:
+Lcom/google/protobuf/GeneratedMessageV3;` sur l'appareil.
+
+Procédure (script : `scripts/fabrique-pack-bundletool.sh`) :
+
+1. Purifier le jar de bundletool (D8 refuse une archive mixte — le
+   jar embarque des dex de fixtures de test sous
+   `com/android/tools/build/bundletool/archive/dex/*/`).
+2. `d8 --release --min-api 28 --lib android.jar` sur le jar purifié
+   + TOUTES les dépendances runtime du POM (bundletool 1.18.3 :
+   guava 32.0.1-jre, protobuf-java 3.22.3, protobuf-java-util 3.22.3,
+   failureaccess, listenablefuture, jsr305, error_prone_annotations,
+   checker-qual — versions exactes de l'ère guava-32, du cache gradle).
+3. **Vérifier les DÉFINITIONS** (jamais les références) : `dexdump -f`
+   doit montrer `Class descriptor` pour `GeneratedMessageV3`,
+   `BuildBundleCommand`, `ValidateBundleCommand`, `ImmutableList`,
+   `InternalFutureFailureAccess`. Un marqueur qui n'est qu'un
+   descripteur référencé = l'omission qui a coûté le lot.
+4. Archive déterministe (entrées triées, horodatages fixes), taille
+   et SHA-256 épinglés dans `PacksOutils`.
+5. Publier comme NOUVEAU fichier versionné (règle dorée : un artefact
+   publié ne change jamais) — `bundletool-1.18.3.1.dex.zip`, l'ancien
+   reste en place.
+
+Note d'exécution : `set -o pipefail` + `grep -q` tue dexdump par
+SIGPIPE dès le premier match (141) et transforme un succès en échec —
+le vérificateur lit avec `grep -c` jusqu'à la fin.

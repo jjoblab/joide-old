@@ -56,12 +56,28 @@ public final class PacksOutils {
     static final String SHA_R8
             = "756614a3cca7c9b34894fe802bb14edbc4b67dfc170ee90f682ea752d98cb18a";
 
-    /** Taille attendue du pack bundletool+guava (octets). */
-    static final long TAILLE_BUNDLETOOL = 5_039_808L;
+    /** Taille attendue du pack bundletool complet (octets) — LOT
+     *  XXI/b : le pack d'origine (bundletool-1.18.3.dex.zip) ne
+     *  portait que bundletool SANS ses dépendances runtime — ni
+     *  protobuf-java (les 60 descripteurs com/google/protobuf/* des
+     *  dex n'étaient que des références, jamais des définitions), ni
+     *  même guava (aucune définition d'ImmutableList) ; le chemin
+     *  bundle étant nouveau, l'omission n'avait jamais explosé : le
+     *  terrain du 2026-11-18, « bundle[debug] : NoClassDefFoundError:
+     *  Failed resolution of: Lcom/google/protobuf/GeneratedMessageV3; ».
+     *  Doctrine (manière CodeAssist, précédent du pack Kotlin qui
+     *  porte STAX) : un pack est AUTOSUFFISANT — l'adaptateur du pack
+     *  charge PAR NOM à travers le chargeur parent, jamais une
+     *  dépendance ne voyage à côté. Règle dorée : l'artefact publié
+     *  ne change JAMAIS — le pack corrigé vit dans le NOUVEAU fichier
+     *  versionné bundletool-1.18.3.1.dex.zip (l'ancien reste en place),
+     *  fabriqué par scripts/fabrique-pack-bundletool.sh avec
+     *  vérification dexdump des DÉFINITIONS avant publication. */
+    static final long TAILLE_BUNDLETOOL = 5_679_361L;
 
-    /** SHA-256 attendu du pack bundletool+guava. */
+    /** SHA-256 attendu du pack bundletool complet. */
     static final String SHA_BUNDLETOOL
-            = "6106e065272fb8d675e5fa681e640287e89ccaaca3dcb4c73a4172afe03a67b3";
+            = "c1c133f009b6345297ab9a19f7c010eba1a9ae22a0c3dd3f6fc358d54d4257ca";
 
     /** Taille attendue du pack du compilateur Kotlin (octets) —
      *  le pack ART-patché du lot XI, la PILE STAX du lot XV (l'API
@@ -120,12 +136,16 @@ public final class PacksOutils {
             TAILLE_R8, SHA_R8, BASE_URL_DEFAUT + "/r8-"
                     + ToolchainLocator.R8_VERSION + ".dex.zip");
 
-    /** Le pack bundletool + guava (adaptateur BundletoolAssembler
-     *  inclus). */
+    /** Le pack bundletool complet (adaptateur BundletoolAssembler
+     *  inclus ; LOT XXI/b : bundletool + guava 32.0.1 + protobuf-java
+     *  3.22.3 + protobuf-java-util 3.22.3 + failureaccess +
+     *  listenablefuture + jsr305 + error_prone_annotations +
+     *  checker-qual — les dépendances runtime du POM, toutes dexées
+     *  dans le pack). */
     public static final Pack BUNDLETOOL = new Pack("bundletool",
-            "1.18.3", "bundletool-1.18.3.dex.zip",
+            "1.18.3", "bundletool-1.18.3.1.dex.zip",
             TAILLE_BUNDLETOOL, SHA_BUNDLETOOL,
-            BASE_URL_DEFAUT + "/bundletool-1.18.3.dex.zip");
+            BASE_URL_DEFAUT + "/bundletool-1.18.3.1.dex.zip");
 
     /** Le pack du compilateur Kotlin (lots VII + XI — VM forkée,
      *  ART-patché) : compilateur 2.3.0 réécrit par les sept passes

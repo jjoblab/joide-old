@@ -1,3 +1,53 @@
+# CHANGES — Lot XXI/b : le pack bundletool est AUTOSUFFISANT — protobuf et guava dans le pack versionné (2026-11-18)
+
+**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
+resolution of: Lcom/google/protobuf/GeneratedMessageV3; » — le lot
+XXI/a tient (`ApkWriter` se résout : la progression est réelle), le
+mur est maintenant traversé et l'échec s'est déplacé DANS le pack :
+son adaptateur charge bundletool, bundletool touche protobuf, et le
+pack ne porte ni protobuf ni guava.
+
+**La cause, mesurée** : le pack publié `bundletool-1.18.3.dex.zip`
+(5 039 808 octets, épinglé) définit 15 663 classes — bundletool SEUL.
+Les 60 descripteurs `com/google/protobuf/*` des dex n'étaient que des
+RÉFÉRENCES ; `dexdump` montre ZÉRO définition de
+`GeneratedMessageV3` et ZÉRO définition d'`ImmutableList` (guava
+absente aussi). Le chemin bundle étant nouveau, l'omission n'avait
+jamais explosé. Consultation CodeAssist (tyron12233) : les outils
+voyagent toujours avec la TOTALITÉ de leurs dépendances (leur
+`SharedDexClasspath`/`DexRepository` ne séparent jamais un outil de
+ses deps) — la doctrine du dépôt le disait déjà (le pack Kotlin porte
+STAX et le jar stdlib) : **un pack est autosuffisant**.
+
+**Les corrections** :
+1. `scripts/fabrique-pack-bundletool.sh` (dans le dépôt) : jar
+   bundletool purifié (D8 refuse son archive mixte — des dex de
+   fixtures de test sous `archive/dex/*/`), d8 sur bundletool + TOUTES
+   les deps runtime du POM (guava 32.0.1-jre, protobuf-java 3.22.3,
+   protobuf-java-util 3.22.3, failureaccess, listenablefuture, jsr305,
+   error_prone_annotations 2.18.0, checker-qual 2.5.8), VÉRIFICATION
+   dexdump des définitions (5 marqueurs) avant publication, archive
+   déterministe.
+2. Le pack corrigé vit dans le NOUVEAU fichier versionné
+   **`bundletool-1.18.3.1.dex.zip`** (5 679 361 octets, SHA-256
+   `c1c133f0…4257ca`), publié SUR la release `toolchain-v1` à côté de
+   l'ancien — règle dorée respectée. `PacksOutils.BUNDLETOOL` pointe
+   le nouveau fichier avec ses épingles.
+3. La procédure est documentée dans `docs/toolchain.md` (incl. le
+   piège `pipefail`+`grep -q` → SIGPIPE 141 qui fait passer un
+   succès pour un échec lors de la vérification des marqueurs).
+
+**Anticipation des prochaines erreurs de la série** (recherches
+étendues demandées) : les DEUX commandes bundletool (`BuildBundle`,
+`ValidateBundle`) sont définies dans le pack ✓ ; le chemin R8
+(fat jar, deps relocalisées) et le chemin Kotlin (STAX + stdlib
+embarqués) sont autosuffisants de fait et prouvés sur l'appareil par
+les lots précédents ✓ ; l'adaptateur du pack ne référence plus que
+l'interface SPI + `packaging.ApkWriter`, tous deux gardés non
+renommés dans l'APK par XXI/a ✓ ; le résolveur parent-d'abord rend
+toute collision guava APK (33.x) / pack (32.0.1) bénigne (ABI
+compatible, le pack n'utilise guava que via les API stables).
+
 # CHANGES — Atelier v2, lot L1 : ADR-083 ViewBinding + jetons XML + thème + icônes (2026-11-18)
 
 **Le chantier** (prompt `prompt-agent-atelier-v2.md`, maquette
