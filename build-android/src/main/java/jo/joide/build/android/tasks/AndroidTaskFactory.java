@@ -317,8 +317,17 @@ public final class AndroidTaskFactory {
         if (modulesAvecR.contains(spec.name)) {
             Path rJar = buildDir.resolve("android").resolve(spec.name)
                     .resolve("r.jar");
+            // LOT XX/h — Kind.EXTERNAL_R (la manière CodeAssist) : le
+            // jar nourrit la compilation JAVA et l'empreinte des DEUX
+            // compilations (le manifeste ABI invalide le Kotlin quand
+            // R change), mais JAMAIS le -classpath du compilateur
+            // Kotlin — kotlinc résout R depuis les sources R.java du
+            // gen (voir javaRootsKotlin), pas depuis un jar à ouvrir
+            // (« Classpath entry points to a non-existent location:
+            // app/r.jar », le terrain du 2026-11-18, devient
+            // structurellement impossible)
             ClasspathEntry rEntry = new ClasspathEntry(
-                    ClasspathEntry.Kind.EXTERNAL, spec.name + ":R.jar",
+                    ClasspathEntry.Kind.EXTERNAL_R, spec.name + ":R.jar",
                     anchored(rJar),
                     RootedPath.of(RootName.OUT,
                             "android/" + spec.name + "/r.abi.manifest"),
@@ -432,7 +441,8 @@ public final class AndroidTaskFactory {
             // in the JDK path »
             graph.register(JvmCompileTask.create(spec.name, "kotlin",
                     sourceRoots(spec), upstreamKotlin, kotlinDriver(),
-                    sourceRoots(spec), classesKotlin, abiKotlin,
+                    javaRootsKotlin(spec, modulesAvecR.contains(spec.name)),
+                    classesKotlin, abiKotlin,
                     javaStateFile, sourceLevel, true));
             graph.register(JvmCompileTask.create(spec.name, "java",
                     sourceRoots(spec), javaWithOwnKotlin, javaDriver,
@@ -724,6 +734,31 @@ public final class AndroidTaskFactory {
             }
         }
         return false;
+    }
+
+    /**
+     * Les racines Java passées à kotlinc pour la RÉSOLUTION (lot XX/h,
+     * la manière CodeAssist « Kotlin keeps resolving it from R.java
+     * source ») : les .java du module, PLUS le répertoire gen des
+     * sources R.java quand le module en porte. {@code KotlinArgs}
+     * passe chaque fichier .java individuellement au compilateur —
+     * {@code R} se résout depuis la SOURCE, jamais depuis un jar à
+     * ouvrir ; le R.jar reste classpath de la compilation Java et
+     * empreinte des deux compilations.
+     *
+     * @param spec  module compilé
+     * @param avecR le module porte des ressources (un gen existe)
+     * @return les racines de résolution de la compilation Kotlin
+     */
+    private List<RootedPath> javaRootsKotlin(AndroidModuleSpec spec,
+                                             boolean avecR) {
+        if (!avecR) {
+            return sourceRoots(spec);
+        }
+        List<RootedPath> roots = new ArrayList<>(sourceRoots(spec));
+        roots.add(RootedPath.of(RootName.OUT,
+                "android/" + spec.name + "/gen"));
+        return roots;
     }
 
     private RootedPath anchored(Path path) {

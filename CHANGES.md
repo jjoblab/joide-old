@@ -1,3 +1,52 @@
+# CHANGES — Lot XX/h : la doctrine CodeAssist — le R.jar n'entre plus dans le classpath de kotlinc (2026-11-18)
+
+**Le terrain** : « Classpath entry points to a non-existent location:
+app/r.jar » survit aux lots XX/d (bytecode), XX/e (reset ouvrière),
+XX/f (jar standard) et XX/g (le moteur regarde le disque — les sorties
+manquantes se restaurent maintenant). Sur directive, consultation de
+CodeAssist (tyron12233/CodeAssist, AndroidBuildSystem.kt) :
+
+> `// The Java compile resolves R from the generated R.jar
+> (Kotlin keeps resolving it from R.java source).`
+> `val compileClasspath = kotlinClasspath + listOf(layout.rJar) + …`
+
+**CodeAssist ne met JAMAIS le R.jar dans le classpath Kotlin** : le
+jar nourrit la compilation Java, le dexage et la preview — le
+compilateur Kotlin résout `R` depuis les SOURCES R.java générées,
+passées comme fichiers de résolution. Pour kotlinc, aucun jar à
+ouvrir : l'erreur devient structurellement impossible. joide, lui,
+poussait le r.jar dans les DEUX classpaths (upstreamJava ET
+upstreamKotlin).
+
+**Les corrections** :
+1. `ClasspathEntry.Kind.EXTERNAL_R` (build-jvm) : le R.jar du module
+   — classpath de la compilation Java, empreinte PARTOUT (le
+   manifeste ABI invalide toujours le Kotlin quand R change).
+2. `IncrementalJvmCompile.compileRequest` : l'entrée EXTERNAL_R SAUTE
+   le -classpath quand `language` vaut « kotlin » — la requête Kotlin
+   ne voit plus jamais le jar.
+3. `AndroidTaskFactory` : `rEntry` passe à EXTERNAL_R ; les racines
+   de résolution Kotlin (`javaRootsKotlin`) gagnent le gen du module
+   (`android/<name>/gen`, les R.java d'aapt2) — `KotlinArgs` passe
+   chaque fichier .java individuellement, `R` se résout depuis la
+   source, la manière CodeAssist.
+4. `RJarResolutionSourceTest` (nouveau, 3 tests) : la requête Kotlin
+   ne porte pas le jar et porte le gen ; la requête Java garde le
+   jar ; l'empreinte Kotlin regarde toujours `r.abi.manifest`.
+
+**La preuve** : les pipelines Android (vrais compilateurs, Kotlin
+référençant `R` intra- et inter-module) passent SANS aucun jar R
+dans le classpath kotlinc — build-jvm 68, build-android et
+build-daemon verts.
+
+| Zone | Fichiers | Nature du changement |
+|---|---|---|
+| build-jvm | `ClasspathEntry` | `Kind.EXTERNAL_R` ; `isModule` au doigt |
+| build-jvm | `IncrementalJvmCompile` | le saut EXTERNAL_R côté Kotlin ; `compileRequest` visible pour les tests |
+| build-android | `AndroidTaskFactory` | `rEntry` EXTERNAL_R ; `javaRootsKotlin` (+gen) |
+| build-jvm | `RJarResolutionSourceTest` | la doctrine vérifiée au niveau requête |
+| Racine | `CHANGES.md` | le présent fichier |
+
 # CHANGES — Lot XX/g : le moteur regarde le disque — un « Clean » qui garde le store ne condamne plus les builds (2026-11-18)
 
 **Le terrain** : l'erreur « Classpath entry points to a non-existent

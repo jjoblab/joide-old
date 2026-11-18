@@ -328,7 +328,9 @@ final class IncrementalJvmCompile {
         return TaskExecution.ok();
     }
 
-    private CompileRequest compileRequest(TaskContext context,
+    /** Visible pour les tests : la doctrine R.jar (lot XX/h) s'y
+     *  vérifie au niveau de la requête. */
+    CompileRequest compileRequest(TaskContext context,
                                           List<Path> batchFiles,
                                           Path outDir) {
         CompileRequest.Builder builder = CompileRequest.builder();
@@ -336,6 +338,17 @@ final class IncrementalJvmCompile {
             builder.source(file);
         }
         for (ClasspathEntry entry : classpath) {
+            // LOT XX/h — la manière CodeAssist (AndroidBuildSystem :
+            // « Kotlin keeps resolving it from R.java source ») : le
+            // R.jar n'entre JAMAIS dans le classpath du compilateur
+            // KOTLIN — kotlinc résout R depuis les sources R.java
+            // générées (les racines de résolution ci-dessous). L'entrée
+            // reste EMPREINTÉE (le manifeste ABI invalide toujours le
+            // Kotlin quand R change) et le classpath JAVA la garde.
+            if ("kotlin".equals(language)
+                    && entry.kind == ClasspathEntry.Kind.EXTERNAL_R) {
+                continue;
+            }
             builder.classpath(context.resolve(entry.location));
         }
         for (RootedPath root : javaSourceRootsForResolution) {

@@ -27,7 +27,17 @@ public final class ClasspathEntry {
         /** Sortie Kotlin d'un module du projet. */
         MODULE_KOTLIN,
         /** Jar ou répertoire hors du build (bibliothèque). */
-        EXTERNAL
+        EXTERNAL,
+        /** Le R.jar du module (lot XX/h, la manière CodeAssist) :
+         *  classpath de la compilation JAVA et entrée d'empreinte
+         *  partout — mais JAMAIS dans le -classpath du compilateur
+         *  KOTLIN : kotlinc résout R depuis les sources R.java
+         *  générées (les racines de résolution), pas depuis un jar
+         *  à ouvrir — « Classpath entry points to a non-existent
+         *  location: app/r.jar » devient structurellement impossible
+         *  (le terrain du 2026-11-18 : le jar existe côté moteur et
+         *  côté daemon, kotlinc dexé ne l'ouvre jamais). */
+        EXTERNAL_R
     }
 
     /** Origine. */
@@ -62,6 +72,6 @@ public final class ClasspathEntry {
 
     /** @return vrai si l'entrée provient d'un module du projet */
     public boolean isModule() {
-        return kind != Kind.EXTERNAL;
+        return kind == Kind.MODULE_JAVA || kind == Kind.MODULE_KOTLIN;
     }
 }
