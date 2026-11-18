@@ -1,3 +1,31 @@
+# CHANGES — ADR-084 + correction du crash du thème des écrans (2026-11-18)
+
+**Le crash du terrain** (« Failed to resolve attribute at index 5 »
+sur `jo_texte` à l'ouverture d'un projet, thème framework) : le
+manifeste déclare un thème FRAMEWORK et le kit programmatique n'a
+jamais dépendu du thème — tout se peint depuis l'objet palette. Les
+layouts XML des lots L2+ sont les PREMIERS à lire les `?attr/jo_*` :
+sans thème d'application posé avant inflation, la résolution échoue
+au premier TextView. **Le fix** : `GraphiteVue.resTheme(Context)`
+résout la RESSOURCE de thème depuis les réglages (même résolution que
+`palette()`) et la nouvelle `ActiviteJoide` le pose AVANT toute
+inflation ; les quatre écrans en héritent. Poussé 2b195ba, CI verte.
+
+**ADR-084** (`docs/adr/084-relais-logcat-flux-par-apk-signe.md`) : le
+relais de journal du Logcat vit DANS l'APK construit (brique
+`jo.joide:relais-logcat`, ajoutée par l'utilisateur — rien d'injecté
+à l'insu) et pousse ses lots vers le provider IDE
+`joide.logcat` (exporté, permission SIGNATURE
+`joide.permission.RELAIS_LOGCAT` — l'IDE signe l'APK construit,
+ADR-047, donc la frontière d'UID se franchit par la signature).
+Implémenté côté IDE : `RelaisLogcatProvider` (protocole
+`call("ecrire")`, lots « N|Tag|Message »), le tampon thread-safe
+`FluxLogcat` (+ `FluxLogcatTest` : protocole, plafond 400 annoncé,
+lignes mal formées sautées, auditeur notifié), le branchement de la
+section Logcat de l'atelier (tampon → `EtatLogcat` → zone vivante et
+histogramme). La brique utilisateur reste le lot suivant : la section
+garde ses états honnêtes (« En attente d'application ») d'ici là.
+
 # CHANGES — Atelier v2, lots L3 et L4 : FeuilleBasse + sections + tiroir fichiers (2026-11-18)
 
 **Lot L3 — la feuille basse et ses quatre sections** (§3.6) :

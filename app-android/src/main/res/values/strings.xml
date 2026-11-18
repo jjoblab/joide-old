@@ -403,4 +403,7 @@
     <string name="atelier_renommer">Rename</string>
     <string name="atelier_supprimer">Delete</string>
     <string name="atelier_sorties_en_cours">build #… running</string>
+    <string name="atelier_logcat_inactif">Waiting for app</string>
+    <string name="atelier_logcat_relais">Add the jo.joide:relais-logcat brick to your app to see its log here</string>
+    <string name="atelier_logcat_vivant">Live · %1$s</string>
 </resources>

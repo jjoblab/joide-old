@@ -403,4 +403,7 @@
     <string name="atelier_supprimer">Supprimer</string>
     <string name="atelier_sorties_en_cours">build #… en cours</string>
     <string name="console_etat_vide">aucun build dans cette session</string>
+    <string name="atelier_logcat_inactif">En attente d'application</string>
+    <string name="atelier_logcat_relais">Ajoutez la brique jo.joide:relais-logcat à votre application pour voir son journal ici</string>
+    <string name="atelier_logcat_vivant">En direct · %1$s</string>
 </resources>

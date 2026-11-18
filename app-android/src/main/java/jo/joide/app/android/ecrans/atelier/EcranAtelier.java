@@ -66,6 +66,7 @@ import jo.joide.app.android.atelier.ModeleOnglets;
 import jo.joide.app.android.atelier.EtatFeuille;
 import jo.joide.app.android.atelier.EtatJournal;
 import jo.joide.app.android.atelier.EtatLogcat;
+import jo.joide.app.android.logcat.FluxLogcat;
 import jo.joide.app.android.atelier.EtatProblemes;
 import jo.joide.app.android.ui.atelier.BarreHaut;
 import jo.joide.app.android.ui.atelier.BarreOnglets;
@@ -557,9 +558,15 @@ public final class EcranAtelier extends ActiviteJoide {
 
             @Override
             public void surLogcat(boolean actif) {
-                // le relais de journal se tranche dans l'ADR dédié ;
-                // la section porte d'ores et déjà son état honnête
-                // (« Application non lancée »)
+                // ADR-084 : le relais de journal (brique utilisateur,
+                // permission signature) pousse dans FluxLogcat ; la
+                // section lit le tampon quand elle est ouverte
+                if (!actif) {
+                    FluxLogcat.tampon().poserAuditeur(null);
+                    return;
+                }
+                FluxLogcat.tampon().poserAuditeur(this::surFluxRelais);
+                viderFluxDansEtatLogcat();
             }
         });
         feuille.poserContenu(EtatFeuille.Section.CONSOLE, vueConsole);
@@ -1280,6 +1287,67 @@ public final class EcranAtelier extends ActiviteJoide {
                 : Arborescence.nomAffiche(premier.chemin()) + ":"
                 + premier.ligne() + " · " + premier.message();
         feuille.poserVerdictProblemes(verdict, detail);
+    }
+
+    /**
+     * ADR-084 — l'auditeur du flux du relais : les lignes déposées
+     * depuis le fil Binder passent sur le fil UI (post) avant toute
+     * manipulation de vue.
+     */
+    private final FluxLogcat.Auditeur auditeurFluxLogcat =
+            new FluxLogcat.Auditeur() {
+                @Override
+                public void surLignes() {
+                    runOnUiThread(this::lireFluxRelais);
+                }
+            };
+
+    /** Lit le tampon du relais et alimente l'état de la section. */
+    private void lireFluxRelais() {
+        for (FluxLogcat.LigneRelais ligne
+                : FluxLogcat.tampon().lire()) {
+            etatLogcat.recevoir(ligne.niveau(), ligne.tag(),
+                    ligne.message(), System.currentTimeMillis());
+        }
+        if (listeLogcat != null) {
+            listeLogcat.maj(etatLogcat);
+        }
+        majVerdictLogcat();
+    }
+
+    /** Au branchement (ouverture de la section) : ce qui est déjà en
+     *  tampon entre dans l'état, puis le verdict suit. */
+    private void viderFluxDansEtatLogcat() {
+        runOnUiThread(this::lireFluxRelais);
+    }
+
+    /** La zone vivante du logcat (§3.6) : flux vivant ou état vide
+     *  honnête, dernière ligne colorée par niveau, histogramme. */
+    private void majVerdictLogcat() {
+        if (feuille == null) {
+            return;
+        }
+        EtatLogcat.Ligne derniere = etatLogcat.derniere();
+        if (derniere == null) {
+            feuille.poserVerdictLogcat(
+                    getString(R.string.atelier_logcat_inactif),
+                    palette.texteSecondaire,
+                    getString(R.string.atelier_logcat_relais),
+                    palette.texteEstompe,
+                    etatLogcat.histogramme(System.currentTimeMillis()));
+            return;
+        }
+        int couleur = switch (derniere.niveau()) {
+            case E -> palette.erreur;
+            case W -> palette.alerte;
+            case D -> palette.reussite;
+            default -> palette.texte;
+        };
+        feuille.poserVerdictLogcat(
+                getString(R.string.atelier_logcat_vivant, derniere.tag()),
+                couleur,
+                derniere.message(), couleur,
+                etatLogcat.histogramme(System.currentTimeMillis()));
     }
 
     private void majFilAriane() {
