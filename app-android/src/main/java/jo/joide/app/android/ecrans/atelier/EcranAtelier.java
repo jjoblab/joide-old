@@ -235,6 +235,8 @@ public final class EcranAtelier extends ActiviteJoide {
     private List<String> fichiersArbre = List.of();
     private boolean sortiesPresentes;
     volatile boolean buildEnCours;
+    /** L6 : l'orchestration du build vit hors de l'écran. */
+    private ControleurBuild controleurBuild;
     Reglages.Source sourceReglages;
 
     // ---- l'agent (lot P, ADR-É11) ----

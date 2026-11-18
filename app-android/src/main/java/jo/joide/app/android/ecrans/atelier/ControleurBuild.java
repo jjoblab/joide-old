@@ -56,7 +56,7 @@ final class ControleurBuild {
             // (avant : APK produit non signé, ininstallable)
             java.nio.file.Path keystoreDebug =
                     jo.joide.app.android.PreparationChaine
-                            .assurerKeystoreDebug(this);
+                            .assurerKeystoreDebug(atelier);
             SpecsBuild.Constitution constitution = SpecsBuild
                     .constituer(atelier.modele, externals, atelier.racineProjet,
                             atelier.racineProjet.resolve("build-joide"),
@@ -96,7 +96,7 @@ final class ControleurBuild {
         // doit pas faire croire que le processus démarre
         BuildService.effacerErreur(atelier.getFilesDir());
         BuildService.effacerVie(atelier.getFilesDir());
-        atelier.startForegroundService(new Intent(this, BuildService.class));
+        atelier.startForegroundService(new Intent(atelier, BuildService.class));
         Socket socket = null;
         DaemonClient client = null;
         long limite = System.currentTimeMillis() + atelier.ATTENTE_PORT_MS;
@@ -157,7 +157,7 @@ final class ControleurBuild {
             // avant publication) repart avec cette demande, jamais
             // une attente muette jusqu'au délai
             if (System.currentTimeMillis() >= prochaineRedemande) {
-                atelier.startForegroundService(new Intent(this,
+                atelier.startForegroundService(new Intent(atelier,
                         BuildService.class));
                 prochaineRedemande =
                         System.currentTimeMillis() + atelier.REDEMANDE_SERVICE_MS;
