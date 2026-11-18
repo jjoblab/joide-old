@@ -89,6 +89,49 @@ public final class FeuilleBasse extends LinearLayout {
         appliquerDetente(false);
     }
 
+    /**
+     * Le CÂBLAGE DU PARENT (le 2026-11-18 : « pas de layout parent
+     * pour les activités » — le diagnostic de l'utilisateur). Les
+     * détentes MI et PLEINE sont des FRACTIONS de la hauteur utile,
+     * fournie par personne : la feuille vivait avec 0 et tout
+     * dépliage la réduisait à zéro pixel. La feuille se câble
+     * ELLE-MÊME à son parent : la zone utile = la feuille + les
+     * voisins à poids (le corps qui se resserre quand elle s'ouvre)
+     * — leur somme est constante à n'importe quelle détente, donc
+     * mesurable à chaque mise en page, convertie en dp.
+     */
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        final ViewGroup parent = (ViewGroup) getParent();
+        if (parent == null) {
+            return;
+        }
+        parent.addOnLayoutChangeListener(
+                (vue, gauche, haut, droite, bas, og, oh, od, ob) -> {
+                    int pixels = 0;
+                    for (int i = 0; i < parent.getChildCount(); i++) {
+                        View enfant = parent.getChildAt(i);
+                        if (enfant == this) {
+                            pixels += getHeight();
+                            continue;
+                        }
+                        ViewGroup.LayoutParams params =
+                                enfant.getLayoutParams();
+                        if (params instanceof LinearLayout.LayoutParams
+                                && ((LinearLayout.LayoutParams) params)
+                                        .weight > 0f) {
+                            pixels += enfant.getHeight();
+                        }
+                    }
+                    if (pixels > 0) {
+                        poserHauteurUtile(Math.round(pixels
+                                / getResources().getDisplayMetrics()
+                                        .density));
+                    }
+                });
+    }
+
     /** Pose l'auditeur (l'écran garde le câblage). */
     public void setAuditeur(Auditeur ecouteur) {
         auditeur = ecouteur;
@@ -101,8 +144,14 @@ public final class FeuilleBasse extends LinearLayout {
         majCorps();
     }
 
-    /** La hauteur utile (l'écran la fournit après mise en page). */
+    /** La hauteur utile (l'écran la fournit après mise en page).
+     *  Idempotent : pendant une traîne ou une animation, chaque
+     *  frame relance la mise en page — la valeur inchangée NE doit
+     *  PAS reposer la détente (la feuille reviendrait d'un coup). */
     public void poserHauteurUtile(int hauteurUtileDp) {
+        if (this.hauteurUtileDp == hauteurUtileDp) {
+            return;
+        }
         this.hauteurUtileDp = hauteurUtileDp;
         appliquerDetente(false);
     }
