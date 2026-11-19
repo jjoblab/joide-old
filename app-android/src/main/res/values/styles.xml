@@ -108,6 +108,19 @@
         <item name="android:textColor">?attr/jo_accent</item>
     </style>
 
+    <!-- Bouton Réussite (lot A7, ADR-085 décision 12) : l'action
+         « Appliquer » du popup de permission sur diff — la maquette
+         agent.html (.btn-appliquer : fond reussite, texte sur
+         reussite). Même gabarit que les boutons Jo (52, retrait 24). -->
+    <style name="Widget.Jo.Button.Reussite" parent="Widget.Material3.Button">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Corps</item>
+        <item name="android:minHeight">@dimen/jo_bouton_hauteur</item>
+        <item name="android:paddingLeft">@dimen/jo_bouton_retrait</item>
+        <item name="android:paddingRight">@dimen/jo_bouton_retrait</item>
+        <item name="android:textColor">?attr/jo_texte_sur_reussite</item>
+        <item name="backgroundTint">?attr/jo_reussite</item>
+    </style>
+
     <!-- Champ Graphite (ADR-085 D2, lot A2) : le kit Champ est un fond
          surface, liseré bord-fin 1 dp, rayon 12, hint estompé, texte
          corps — TextInputLayout OutlinedBox habillé aux mêmes jetons

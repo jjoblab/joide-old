@@ -1,3 +1,62 @@
+# CHANGES — plus aucun dialogue : popups XML à deux gabarits, découpage du contrôleur agent, contrats typés (2026-11-19)
+
+**Lot A7 de l'ADR-085 (D3, décision 12)** : `ui/Dialogue.java` (9
+fabriques `AlertDialog`, 58 usages sur neuf fichiers) est **SUPPRIMÉE**
+— grep Annexe B des dialogues : **0** sur les sources principales.
+Chaque cas modal devient un **popup `popup_*.xml` gonflé par binding**,
+deux gabarits stricts : **ANCRÉ** (`PopupAncre` GÉNÉRALISÉE — plus
+aucune vue fabriquée, la carte porte le fond par le drawable
+`carte_popup`, dimensions par `@dimen` : `popup_menu_noeud` devient LE
+gabarit de tous les menus ancrés — arbre, options/ajouts de l'agent,
+mode de permission, ⋮ de l'atelier et de l'accueil, carte projet, clés
+des paramètres, dimensions de l'aperçu) et **CENTRÉ AVEC VOILE**
+(`PopupCentre`, nouveau : fenêtre focusable bornée, clavier
+`INPUT_METHOD_NEEDED`+`ADJUST_RESIZE` des saisies, pane TalkBack,
+focus initial) pour confirmation (`popup_confirmation`), destructive
+deux actions (`popup_destructive`), information (`popup_information`),
+saisie (`popup_saisie`, champ inclus), écran texte
+(`popup_page_texte`, remplace `page_texte_param`), permission sur diff
+déplié (`popup_permission_diff` — fermer = REFUSER), usages
+(`popup_usages`), historique (`popup_historique`), connexions MCP
+(`popup_connexions_mcp`). **Le voile** (question ouverte de la
+décision 12, tranchée et consignée à l'ADR-085) : **vue-voile du layout
+racine** `voile_popup` (`?attr/jo_rideau`, cliquable, dernier enfant)
+sur les quatre écrans porteurs — `FLAG_DIM_BEHIND` est impraticable
+(`PopupWindow` n'expose pas sa fenêtre ; le drapeau est un drapeau de
+dialogue, interdit). **`PortePopups`** porte le registre des fenêtres
+d'un écran et les corps communs ; **`EtatPopups`** (pur, testé JVM)
+porte l'**ordre du retour système** — le popup se ferme EN PREMIER,
+avant tiroir agent, feuille, tiroirs, confirmation et sortie
+(`EtatPopupsTest` : 6 tests) — et les **brouillons de saisie** (le popup
+n'est jamais restauré : `fichiers.nouveau`, `fichiers.renomme`,
+`agent.modele`, `agent.url`). Fermeture explicite **`onPause`/
+`onDestroy`** (les trois écrans) et **`onConfigurationChanged`** (atelier,
+armé pour A8). **Découpage de `ControleurAgent`** (1 843 → **590 l.** :
+service, tour, pièces jointes, permission) : `ControleurModelesAgent`
+(**597**), `ControleurUsagesAgent` (**151**),
+`ControleurHistoriqueAgent` (**200**), `ControleurConnexionsMcp`
+(**241**) — tous < 600 ; **0 vue du cadre instanciée dans les
+contrôleurs** (les 3 `EditText` de `ControleurFichiers` d'hier
+disparaissent — le champ vit dans `champ_saisie_param` réorienté) et
+dans `VueAgent` (le transcript migre en `item_*` : vide, borne, lignes
+tonales, usages, erreurs, questions). **Contrats typés** (décision 13,
+passation A6) : `Ecrans.CHOISIR_IMAGE`/`PRENDRE_PHOTO` enregistrés
+AVANT `onCreate`, délégués par l'hôte — les codes 47101/47102 et
+`onActivityResult` disparaissent. Filet : les quatre listes
+d'exceptions d'`ArchitectureVuesTest` **VIDES** + l'assertion
+« `Dialogue.java` reste supprimée » ; +21 jetons (CIBLE 48 dp comprise)
+et `Widget.Jo.Button.Reussite`, parité `ThemesM3Test`. Circonstance :
+travail A7 non committé d'un agent interrompu, **audité face au
+prompt** (greps d'acceptation, lecture ciblée des gabarits, du montage
+et du découpage), 8 coquilles de commentaires corrigées, validation
+**re-exécutée** (`--rerun` : **371 tests verts**, 0 échec ;
+`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
+exactement, aucune nouvelle). Module : 84 → **22** vues instanciées
+(48 `ControleurAgent` → 0, 10 `VueAgent` → 0 ; restent le kit `ui/`
+racine, A9), `palette.*` 218 → 205, `dp(` 245 → 152, 65 → 87 layouts,
+APK 15 798 411 → **15 844 349 o** (+0,04 Mio, aucune dépendance
+nouvelle).
+
 # CHANGES — la racine de l'atelier quitte le code : layouts racine + w720dp, puits et ViewStub, hôte étroit, onglets recyclés (2026-11-19)
 
 **Lot A6 de l'ADR-085** : `EcranAtelier` (1 526 → **180 l.**) devient

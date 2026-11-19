@@ -13,7 +13,6 @@ import jo.joide.app.android.atelier.EtatLogcat;
 import jo.joide.app.android.atelier.EtatProblemes;
 import jo.joide.app.android.atelier.ModeleOnglets;
 import jo.joide.app.android.logcat.FluxLogcat;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.ide.editeur.SceneEditeur;
 
 /**
@@ -42,11 +41,11 @@ final class ControleurEdition {
         EtatAtelier.Ouverture ouverture =
                 hote.etat().ouvrir(relatif);
         if (!ouverture.faite()) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.atelier_etat_vide_titre),
                     hote.texte(R.string.atelier_onglets_plafond,
                             EtatAtelier.ONGLETS_MAX),
-                    R.string.action_ok);
+                    hote.texte(R.string.action_ok));
             return;
         }
         if (ouverture.evince() != null) {
@@ -65,11 +64,10 @@ final class ControleurEdition {
                 contenu = FichiersProjet.lire(hote.racineProjet(),
                         relatif);
             } catch (IOException e) {
-                hote.executerSurFilUi(() -> Dialogue.information(
-                        hote.contexte(), hote.palette(),
+                hote.executerSurFilUi(() -> hote.popups().information(
                         hote.texte(R.string.import_echoue_titre),
                         hote.texte(R.string.lecture_echouee, relatif),
-                        R.string.action_ok));
+                        hote.texte(R.string.action_ok)));
                 return;
             }
             hote.executerSurFilUi(() -> {
@@ -448,10 +446,10 @@ final class ControleurEdition {
                 || !java.util.Arrays.asList(
                         hote.fichiersArbre().toArray())
                         .contains(chemin)) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.console_probleme_ouvrir),
                     hote.texte(R.string.console_cible_introuvable, chemin),
-                    R.string.action_ok);
+                    hote.texte(R.string.action_ok));
             return;
         }
         ouvrirFichier(chemin, ligne);

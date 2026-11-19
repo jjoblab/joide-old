@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LE MODÈLE
+  PERSONNALISÉ (lot S conservé) : le fournisseur courant se lit, le
+  nom libre et l'URL OpenAI-compatible s'écrivent au tap sur Valider —
+  le couple part au service sans quitter la conversation. Les deux
+  champs se gonflent de champ_saisie_param par <include> (ids
+  d'include distincts, le binding typé désambiguïse — motif A4) ;
+  « Gérer les clés » ouvre les réglages IA. Le popup porte le
+  clavier (PopupCentre : INPUT_METHOD_NEEDED + ADJUST_RESIZE) ; le
+  brouillon de saisie vit dans l'Etat* (décision 12).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:strokeWidth="@dimen/jo_ligne"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="@dimen/jo_pad_popup_cote"
+            android:paddingRight="@dimen/jo_pad_popup_cote"
+            android:paddingTop="@dimen/jo_pad_popup_haut"
+            android:paddingBottom="@dimen/jo_ecart_popup_boutons">
+
+            <TextView
+                android:id="@+id/titre_saisie_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:text="@string/agent_fournisseur_section"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+
+            <TextView
+                android:id="@+id/valeur_fournisseur_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:text="@string/parametres_modele_ia"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+
+            <include
+                android:id="@+id/champ_modele_popup"
+                layout="@layout/champ_saisie_param"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_pad_ligne_tonale" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:text="@string/parametres_url_ia"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+
+            <include
+                android:id="@+id/champ_url_popup"
+                layout="@layout/champ_saisie_param"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_pad_ligne_tonale" />
+
+            <TextView
+                android:id="@+id/gerer_cles_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:minHeight="@dimen/jo_hauteur_cible"
+                android:gravity="center_vertical"
+                android:text="@string/agent_cles_gerer"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_accent" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/annuler_saisie_modele"
+                    style="@style/Widget.Jo.Button.Tonal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/valider_saisie_modele"
+                    style="@style/Widget.Jo.Button.Primaire"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/jo_ecart_popup_boutons" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

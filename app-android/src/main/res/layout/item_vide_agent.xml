@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085) — L'ÉTAT VIDE du transcript de l'agent : la bulle
+  estompée et la consigne au corps centré (le bloc vide d'hier,
+  gonflé par binding — plus aucune vue instanciée dans la vue).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingTop="@dimen/jo_pad_vide_agent">
+
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/bulle_vide_agent"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        app:jo_icone_glyphe="bulle"
+        app:jo_icone_couleur="?attr/jo_texte3"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/consigne_vide_agent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
+        android:gravity="center"
+        android:text="@string/agent_vide"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte3" />
+</LinearLayout>

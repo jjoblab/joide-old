@@ -1,12 +1,12 @@
 package jo.joide.app.android.ecrans.parametres;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import java.io.ByteArrayOutputStream;
@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +31,6 @@ import com.google.android.material.button.MaterialButton;
 import jo.joide.app.android.BuildConfig;
 import jo.joide.app.android.R;
 import jo.joide.app.android.databinding.ActivityParametresBinding;
-import jo.joide.app.android.databinding.ChampSaisieParamBinding;
 import jo.joide.app.android.databinding.ItemParamActionBinding;
 import jo.joide.app.android.databinding.ItemParamCommutateurBinding;
 import jo.joide.app.android.databinding.ItemParamGroupeBinding;
@@ -39,7 +39,6 @@ import jo.joide.app.android.databinding.ItemParamMesureBinding;
 import jo.joide.app.android.databinding.ItemParamNuancierBinding;
 import jo.joide.app.android.databinding.ItemParamSegmentBinding;
 import jo.joide.app.android.databinding.ItemParamStepperBinding;
-import jo.joide.app.android.databinding.PageTexteParamBinding;
 import jo.joide.app.android.parametres.ClesChiffrees;
 import jo.joide.app.android.parametres.EtatParametres;
 import jo.joide.app.android.parametres.JournalDiagnostic;
@@ -48,10 +47,10 @@ import jo.joide.app.android.parametres.MesuresStockage;
 import jo.joide.app.android.parametres.PreferencesAndroid;
 import jo.joide.app.android.parametres.Reglages;
 import jo.joide.app.android.ui.ActiviteJoide;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Nuancier;
+import jo.joide.app.android.ui.PortePopups;
 import jo.joide.app.android.ui.Stepper;
 
 /**
@@ -75,10 +74,13 @@ import jo.joide.app.android.ui.Stepper;
  * {@link MesuresStockage}. {@code MaterialButtonToggleGroup} remplace
  * le kit Segment, {@code MaterialSwitch} le kit Interrupteur (D2) ;
  * {@link Stepper} et {@link Nuancier} restent (sans équivalent
- * Material). Les dialogues existants (clés IA, licences, journal,
- * vidage) restent en l'état jusqu'au lot A7 — aucun nouveau dialogue
- * n'est introduit (D3) ; leurs corps de saisie et leurs pages de texte
- * sont gonflés depuis des layouts, plus jamais instanciés en code.</p>
+ * Material). Lot A7 (ADR-085 décision 12, D3) : les dialogues d'hier
+ * (clés IA, modèle, URL, licences, journal, vidage) deviennent des
+ * POPUPS — le menu de clé ANCRÉ à sa rangée, la saisie, la
+ * confirmation et l'information centrées sur le voile du layout racine,
+ * la page de texte (licences, NOTICE) centrée — portées par le
+ * PORTE-POPUPS de l'écran (fermées en onPause/onDestroy, plus AUCUN
+ * dialogue).</p>
  */
 public final class EcranParametres extends ActiviteJoide {
 
@@ -114,6 +116,10 @@ public final class EcranParametres extends ActiviteJoide {
     /** Le stockage chiffré des clés d'API (lot P). */
     private ClesChiffrees cles;
 
+    /** Le porte-popups de l'écran (menus ancrés, cartes centrées sur
+     *  le voile du layout racine — lot A7, ADR-085 décision 12). */
+    private PortePopups popups;
+
     private String requete = "";
 
     /** Les mesures disque, lues sur le fil de fond (null : pas lues). */
@@ -128,6 +134,7 @@ public final class EcranParametres extends ActiviteJoide {
         reglages = Reglages.lire(source);
         cles = KeystoreCles.sur(this);
         ecran = monter(ActivityParametresBinding::inflate);
+        popups = new PortePopups(ecran.voilePopup);
         monterStructure();
         monterControles();
         rendre();
@@ -159,7 +166,16 @@ public final class EcranParametres extends ActiviteJoide {
     }
 
     @Override
+    protected void onPause() {
+        // décision 12 : un popup ouvert se ferme EXPLICITEMENT —
+        // jamais une fuite au détachement, jamais restauré
+        popups.fermer();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        popups.fermer();
         fond.shutdownNow();
         super.onDestroy();
     }
@@ -426,17 +442,17 @@ public final class EcranParametres extends ActiviteJoide {
         monterAction(ecran.rangCleAnthropic,
                 R.string.parametres_cle_anthropic);
         ecran.rangCleAnthropic.actionParam.setOnClickListener(
-                vue -> gererCle(FOURNISSEUR_ANTHROPIC));
+                vue -> gererCle(vue, FOURNISSEUR_ANTHROPIC));
         monterAction(ecran.rangCleOpenai, R.string.parametres_cle_openai);
         ecran.rangCleOpenai.actionParam.setOnClickListener(
-                vue -> gererCle(FOURNISSEUR_OPENAI));
+                vue -> gererCle(vue, FOURNISSEUR_OPENAI));
         monterAction(ecran.rangCleGemini, R.string.parametres_cle_gemini);
         ecran.rangCleGemini.actionParam.setOnClickListener(
-                vue -> gererCle(FOURNISSEUR_GEMINI));
+                vue -> gererCle(vue, FOURNISSEUR_GEMINI));
         monterAction(ecran.rangCleOpenrouter,
                 R.string.parametres_cle_openrouter);
         ecran.rangCleOpenrouter.actionParam.setOnClickListener(
-                vue -> gererCle(FOURNISSEUR_OPENROUTER));
+                vue -> gererCle(vue, FOURNISSEUR_OPENROUTER));
         monterAction(ecran.rangModeleIa, R.string.parametres_modele_ia);
         ecran.rangModeleIa.actionParam.setOnClickListener(
                 vue -> gererModeleIa());
@@ -773,77 +789,75 @@ public final class EcranParametres extends ActiviteJoide {
      * honnête — poser/remplacer, effacer si posée, annuler. La clé
      * ne s'affiche JAMAIS en clair, seulement son état.
      */
-    private void gererCle(String fournisseur) {
+    private void gererCle(View ancre, String fournisseur) {
         boolean posee = cles.estPosee(fournisseur);
         CharSequence titre = getString(titreCle(fournisseur));
         if (posee) {
-            Dialogue.menu(this, palette, titre,
-                    new CharSequence[]{
-                            getString(R.string.parametres_cle_remplacer),
-                            getString(R.string.parametres_cle_effacer)},
-                    (dialog, lequel) -> {
-                        if (lequel == 0) {
-                            saisirCle(fournisseur);
-                        } else if (lequel == 1) {
-                            effacerCle(fournisseur, titre);
-                        }
-                    });
+            // le menu de clé, ANCRÉ à la rangée (lot A7) : poser/
+            // remplacer, effacer si posée, annuler — le tap FERME le
+            // menu PUIS agit
+            List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+            entrees.add(new PortePopups.EntreeMenu(
+                    getString(R.string.parametres_cle_remplacer),
+                    () -> saisirCle(fournisseur)));
+            entrees.add(new PortePopups.EntreeMenu(
+                    getString(R.string.parametres_cle_effacer),
+                    () -> effacerCle(fournisseur, titre)));
+            popups.menu(ancre, titre, 240, entrees);
         } else {
             saisirCle(fournisseur);
         }
     }
 
+    /** La saisie d'une clé : la SAISIE centrée sur voile (lot A7,
+     *  clavier requis) — le champ du popup (champ_saisie_param),
+     *  monospace, jamais une clé affichée en clair. */
     private void saisirCle(String fournisseur) {
-        ChampSaisieParamBinding saisie =
-                ChampSaisieParamBinding.inflate(getLayoutInflater());
-        saisie.editionSaisie.setHint(R.string.parametres_cle_indice);
-        saisie.editionSaisie.setTypeface(
-                GraphiteVue.police(this, 400, true));
-        Dialogue.saisie(this, palette, getString(titreCle(fournisseur)),
-                saisie.getRoot(), R.string.action_annuler,
-                R.string.action_ok,
-                (dialog, lequel) -> {
-                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
-                        String valeur = saisie.editionSaisie.getText()
-                                .toString().trim();
-                        if (valeur.isEmpty()) {
-                            Dialogue.information(this, palette,
-                                    getString(R.string.parametres_section_ia),
-                                    getString(R.string.parametres_cle_vide),
-                                    R.string.action_ok);
-                            return;
-                        }
-                        try {
-                            cles.poser(fournisseur, valeur);
-                            // la relecture (le 2026-11-18) : « posée »
-                            // doit VRAIMENT vouloir dire posée — un
-                            // coffre qui refuse la relecture est nommé,
-                            // jamais avalé
-                            if (!valeur.equals(cles.lire(fournisseur))) {
-                                Dialogue.information(this, palette,
-                                        getString(R.string.parametres_section_ia),
-                                        getString(R.string.parametres_cle_echec),
-                                        R.string.action_ok);
-                                return;
-                            }
-                        } catch (IOException e) {
-                            Dialogue.information(this, palette,
-                                    getString(R.string.parametres_section_ia),
-                                    getString(R.string.parametres_cle_echec),
-                                    R.string.action_ok);
-                            return;
-                        }
-                        rendre();
-                    }
-                });
+        EditText champ = popups.saisie(getString(titreCle(fournisseur)),
+                null, getString(R.string.action_annuler),
+                getString(R.string.action_ok),
+                saisie -> poserCle(fournisseur, saisie.getText()
+                        .toString().trim()));
+        champ.setHint(R.string.parametres_cle_indice);
+        champ.setTypeface(GraphiteVue.police(this, 400, true));
     }
 
+    /** La clé validée : posée au coffre, RELUE (le 2026-11-18 : «
+     *  posée » doit VRAIMENT vouloir dire posée — un coffre qui
+     *  refuse la relecture est nommé, jamais avalé). */
+    private void poserCle(String fournisseur, String valeur) {
+        if (valeur.isEmpty()) {
+            popups.information(getString(R.string.parametres_section_ia),
+                    getString(R.string.parametres_cle_vide),
+                    getString(R.string.action_ok));
+            return;
+        }
+        try {
+            cles.poser(fournisseur, valeur);
+            if (!valeur.equals(cles.lire(fournisseur))) {
+                popups.information(
+                        getString(R.string.parametres_section_ia),
+                        getString(R.string.parametres_cle_echec),
+                        getString(R.string.action_ok));
+                return;
+            }
+        } catch (IOException e) {
+            popups.information(getString(R.string.parametres_section_ia),
+                    getString(R.string.parametres_cle_echec),
+                    getString(R.string.action_ok));
+            return;
+        }
+        rendre();
+    }
+
+    /** L'effacement d'une clé : la CONFIRMATION centrée sur voile
+     *  (lot A7) — le valideur part après la fermeture. */
     private void effacerCle(String fournisseur, CharSequence titre) {
-        Dialogue.confirmation(this, palette, titre,
+        popups.confirmation(titre,
                 getString(R.string.parametres_cle_effacer_confirme),
-                R.string.action_annuler,
-                R.string.parametres_cle_effacer,
-                (dialog, lequel) -> {
+                getString(R.string.action_annuler),
+                getString(R.string.parametres_cle_effacer),
+                () -> {
                     try {
                         cles.effacer(fournisseur);
                     } catch (IOException e) {
@@ -867,70 +881,60 @@ public final class EcranParametres extends ActiviteJoide {
         return R.string.parametres_cle_openai;
     }
 
-    /** Le modèle par défaut : saisie bornée (jamais vide). */
+    /** Le modèle par défaut : la SAISIE centrée sur voile (lot A7),
+     *  préremplie du modèle courant — bornée (jamais vide). */
     private void gererModeleIa() {
-        ChampSaisieParamBinding saisie =
-                ChampSaisieParamBinding.inflate(getLayoutInflater());
-        saisie.editionSaisie.setText(reglages.modeleIa);
-        saisie.editionSaisie.setHint(R.string.parametres_modele_indice);
-        Dialogue.saisie(this, palette,
-                getString(R.string.parametres_modele_ia),
-                saisie.getRoot(), R.string.action_annuler,
-                R.string.action_ok,
-                (dialog, lequel) -> {
-                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
-                        try {
-                            Reglages.ecrireModeleIa(source,
-                                    saisie.editionSaisie.getText()
-                                            .toString());
-                            // lot U/7 : le modèle se retient aussi POUR
-                            // le fournisseur courant — le modèle partagé
-                            // ne traverse jamais les fournisseurs
-                            // (manière CodeAssist)
-                            Reglages.ecrireModelePour(source,
-                                    reglages.fournisseurIa,
-                                    saisie.editionSaisie.getText()
-                                            .toString());
-                        } catch (IllegalArgumentException e) {
-                            Dialogue.information(this, palette,
-                                    getString(R.string.parametres_modele_ia),
-                                    getString(R.string.parametres_valeur_invalide),
-                                    R.string.action_ok);
-                            return;
-                        }
-                        reglages = Reglages.lire(source);
-                        rendre();
+        EditText champ = popups.saisie(
+                getString(R.string.parametres_modele_ia), null,
+                getString(R.string.action_annuler),
+                getString(R.string.action_ok),
+                saisie -> {
+                    String valeur = saisie.getText().toString();
+                    try {
+                        Reglages.ecrireModeleIa(source, valeur);
+                        // lot U/7 : le modèle se retient aussi POUR
+                        // le fournisseur courant — le modèle partagé
+                        // ne traverse jamais les fournisseurs
+                        // (manière CodeAssist)
+                        Reglages.ecrireModelePour(source,
+                                reglages.fournisseurIa, valeur);
+                    } catch (IllegalArgumentException e) {
+                        popups.information(
+                                getString(R.string.parametres_modele_ia),
+                                getString(R.string.parametres_valeur_invalide),
+                                getString(R.string.action_ok));
+                        return;
                     }
+                    reglages = Reglages.lire(source);
+                    rendre();
                 });
+        champ.setText(reglages.modeleIa);
+        champ.setHint(R.string.parametres_modele_indice);
     }
 
-    /** L'URL de base OpenAI-compatible : vide ou http(s), bornée. */
+    /** L'URL de base OpenAI-compatible : la SAISIE centrée sur voile
+     *  (lot A7), préremplie — vide ou http(s), bornée. */
     private void gererUrlIa() {
-        ChampSaisieParamBinding saisie =
-                ChampSaisieParamBinding.inflate(getLayoutInflater());
-        saisie.editionSaisie.setText(reglages.urlIa);
-        saisie.editionSaisie.setHint(R.string.parametres_url_indice);
-        Dialogue.saisie(this, palette,
-                getString(R.string.parametres_url_ia),
-                saisie.getRoot(), R.string.action_annuler,
-                R.string.action_ok,
-                (dialog, lequel) -> {
-                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
-                        try {
-                            Reglages.ecrireUrlIa(source,
-                                    saisie.editionSaisie.getText()
-                                            .toString());
-                        } catch (IllegalArgumentException e) {
-                            Dialogue.information(this, palette,
-                                    getString(R.string.parametres_url_ia),
-                                    getString(R.string.parametres_valeur_invalide),
-                                    R.string.action_ok);
-                            return;
-                        }
-                        reglages = Reglages.lire(source);
-                        rendre();
+        EditText champ = popups.saisie(
+                getString(R.string.parametres_url_ia), null,
+                getString(R.string.action_annuler),
+                getString(R.string.action_ok),
+                saisie -> {
+                    try {
+                        Reglages.ecrireUrlIa(source,
+                                saisie.getText().toString());
+                    } catch (IllegalArgumentException e) {
+                        popups.information(
+                                getString(R.string.parametres_url_ia),
+                                getString(R.string.parametres_valeur_invalide),
+                                getString(R.string.action_ok));
+                        return;
                     }
+                    reglages = Reglages.lire(source);
+                    rendre();
                 });
+        champ.setText(reglages.urlIa);
+        champ.setHint(R.string.parametres_url_indice);
     }
 
     private void ouvrirDepot() {
@@ -938,10 +942,10 @@ public final class EcranParametres extends ActiviteJoide {
             startActivity(new Intent(Intent.ACTION_VIEW,
                     Uri.parse(DEPOT)));
         } catch (android.content.ActivityNotFoundException e) {
-            Dialogue.information(this, palette,
+            popups.information(
                     getString(R.string.parametres_depot),
                     getString(R.string.parametres_depot_echoue, DEPOT),
-                    R.string.action_ok);
+                    getString(R.string.action_ok));
         }
     }
 
@@ -973,11 +977,11 @@ public final class EcranParametres extends ActiviteJoide {
                         return;
                     }
                     if (lignes.isEmpty()) {
-                        Dialogue.information(this, palette,
+                        popups.information(
                                 getString(R.string.parametres_journal),
                                 getString(
                                         R.string.parametres_journal_vide),
-                                R.string.action_ok);
+                                getString(R.string.action_ok));
                     } else {
                         montrerTexte(
                                 getString(R.string.parametres_journal),
@@ -989,23 +993,21 @@ public final class EcranParametres extends ActiviteJoide {
                     if (isDestroyed()) {
                         return;
                     }
-                    Dialogue.information(this, palette,
+                    popups.information(
                             getString(R.string.parametres_journal),
                             getString(R.string.parametres_journal_echoue,
                                     String.valueOf(e.getMessage())),
-                            R.string.action_ok);
+                            getString(R.string.action_ok));
                 });
             }
         });
     }
 
-    /** Un écran texte : dialogue à vue défilante, police mono — jamais un texte coupé. */
+    /** Un écran texte : la PAGE centrée sur voile (lot A7, ADR-É8 —
+     *  police mono, jamais un texte coupé) : licences, NOTICE, journal
+     *  de diagnostic. */
     private void montrerTexte(CharSequence titre, String texte) {
-        PageTexteParamBinding page =
-                PageTexteParamBinding.inflate(getLayoutInflater());
-        page.textePage.setText(texte);
-        Dialogue.saisieTexte(this, palette, titre, page.getRoot(),
-                R.string.action_ok, null);
+        popups.page(titre, texte, getString(R.string.action_ok));
     }
 
     private String lireAsset(String chemin) {
@@ -1065,18 +1067,20 @@ public final class EcranParametres extends ActiviteJoide {
         return Paths.get(getFilesDir().getAbsolutePath(), "m2");
     }
 
+    /** Le vidage de CIDX ou de m2 : la CONFIRMATION centrée sur voile
+     *  (lot A7) — le valideur part après la fermeture. */
     private void confirmerVidage(String cle) {
         boolean cidx = EtatParametres.R_CIDX.equals(cle);
-        Dialogue.confirmation(this, palette,
+        popups.confirmation(
                 getString(cidx
                         ? R.string.parametres_vider_cidx_titre
                         : R.string.parametres_vider_m2_titre),
                 getString(cidx
                         ? R.string.parametres_vider_cidx_message
                         : R.string.parametres_vider_m2_message),
-                R.string.action_annuler,
-                R.string.parametres_vider,
-                (dialog, lequel) -> fond.execute(() -> {
+                getString(R.string.action_annuler),
+                getString(R.string.parametres_vider),
+                () -> fond.execute(() -> {
                     Path cible = cidx ? dossierCidx() : dossierM2();
                     try {
                         MesuresStockage.vider(cible);
@@ -1085,12 +1089,11 @@ public final class EcranParametres extends ActiviteJoide {
                             if (isDestroyed()) {
                                 return;
                             }
-                            Dialogue.information(
-                                    this, palette,
+                            popups.information(
                                     getString(R.string.import_echoue_titre),
                                     getString(R.string.parametres_vider_echoue,
                                             String.valueOf(e.getMessage())),
-                                    R.string.action_ok);
+                                    getString(R.string.action_ok));
                         });
                     }
                     runOnUiThread(this::mesurerStockage);

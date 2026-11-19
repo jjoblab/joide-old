@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — UN SERVEUR MCP : nom au corps, état
+  publié en légende (se teinte à l'erreur si le serveur approuvé a
+  échoué — couleur par ligne, décision 8), motif, et les actions
+  visibles selon l'état : la signature OAuth (se connecter, lot U) et
+  la reconnexion. La carte porte le fond de ligne_popup.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/ligne_popup"
+    android:padding="@dimen/jo_pad_ligne_popup"
+    android:layout_marginTop="@dimen/jo_ecart_ligne_popup"
+    android:layout_marginBottom="@dimen/jo_ecart_ligne_popup">
+
+    <TextView
+        android:id="@+id/nom_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte" />
+
+    <TextView
+        android:id="@+id/statut_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte3" />
+
+    <TextView
+        android:id="@+id/connecter_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:minHeight="@dimen/jo_hauteur_cible"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_accent"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/reconnecter_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/jo_hauteur_cible"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_accent"
+        android:visibility="gone" />
+</LinearLayout>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — le REMPLISSAGE de la bande d'usage :
+  la couleur par défaut est l'accent ; le bind la TEINTE par la bande
+  (BandesUsage.bandeDe : alerte 70-90 %, erreur au-delà) — une couleur
+  calculée par ligne, décision 8 de l'ADR.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_accent" />
+    <corners android:radius="@dimen/jo_rayon_bande_usage" />
+</shape>

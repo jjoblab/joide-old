@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085) — LE PIED D'USAGE de fin de tour (la légende
+  discrète de la manière CodeAssist) : les jetons compacts (« 940 »,
+  « 8.4k », « 1.2M »), la ligne qui monte sans prendre la place — une
+  ligne, ellipse de fin ; le libellé se formule au bind.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_usage_agent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/jo_pad_ligne_tonale"
+    android:textAppearance="@style/TextAppearance.Jo.Legende"
+    android:textColor="?attr/jo_texte3"
+    android:maxLines="1"
+    android:ellipsize="end" />

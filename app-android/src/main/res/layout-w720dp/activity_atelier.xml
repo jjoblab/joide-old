@@ -200,4 +200,15 @@
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="@dimen/jo_fab_bas"
         android:layout_marginEnd="@dimen/jo_fab_droite" />
+
+    <!-- le VOILE des popups centrés (lot A7, ADR-085 décision 12) :
+        même vue qu'en écran compact — PopupCentre la montre/cache -->
+    <View
+        android:id="@+id/voile_popup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/jo_rideau"
+        android:clickable="true"
+        android:focusable="false"
+        android:visibility="gone" />
 </FrameLayout>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LES
+  CONNEXIONS MCP (ADR-063/064) : les serveurs déclarés par le projet,
+  leur état publié, le geste d'approbation qui seul connecte — un
+  dépôt cloné n'est pas un choix de l'utilisateur. L'avertissement
+  dit l'état (approuvé ou non), l'action active/désactive (persistée
+  par projet, liée à la signature du .mcp.json — lot T, ADR-065), le
+  compte des outils suit ; les serveurs se gonflent
+  d'item_serveur_connexions par binding (déclarés par le projet,
+  bornés par le .mcp.json lu à 64 Kio).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:strokeWidth="@dimen/jo_ligne"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/jo_pad_popup">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/titre_connexions"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:paddingStart="@dimen/jo_pad_ligne_tonale"
+                    android:paddingEnd="@dimen/jo_pad_ligne_tonale"
+                    android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                    android:textColor="?attr/jo_texte" />
+
+                <jo.joide.app.android.ui.Icone
+                    android:id="@+id/fermer_connexions"
+                    android:layout_width="@dimen/jo_hauteur_cible"
+                    android:layout_height="@dimen/jo_hauteur_cible"
+                    app:jo_icone_glyphe="croix"
+                    app:jo_icone_couleur="?attr/jo_texte2"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@string/action_annuler" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/vide_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/jo_pad_ligne_popup"
+                android:paddingBottom="@dimen/jo_pad_ligne_popup"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte3"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/avertissement_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/jo_ecart_ligne_popup"
+                android:paddingBottom="@dimen/jo_ecart_ligne_popup"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte2" />
+
+            <TextView
+                android:id="@+id/action_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/jo_hauteur_cible"
+                android:gravity="center_vertical"
+                android:paddingBottom="@dimen/jo_pad_ligne_popup"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_accent" />
+
+            <TextView
+                android:id="@+id/compte_outils_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/jo_pad_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/serveurs_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

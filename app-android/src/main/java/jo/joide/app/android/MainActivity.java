@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -24,7 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.accueil.AdaptateurAccueil;
-import jo.joide.app.android.accueil.AgeRelatif;
 import jo.joide.app.android.accueil.ClassifieurProjet;
 import jo.joide.app.android.accueil.EtatAccueil;
 import jo.joide.app.android.accueil.ElementAccueil;
@@ -32,9 +32,9 @@ import jo.joide.app.android.accueil.ProjetsRecents;
 import jo.joide.app.android.accueil.TypeProjet;
 import jo.joide.app.android.databinding.ActivityAccueilBinding;
 import jo.joide.app.android.ecrans.Ecrans;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.PortePopups;
 import jo.joide.model.Workspace;
 import jo.joide.model.WorkspaceLoader;
 import jo.joide.platform.Clock;
@@ -47,14 +47,17 @@ import jo.joide.platform.Clock;
  *
  * <p>Coque mince (décision 2) : la hiérarchie vit dans
  * {@code activity_accueil.xml} (barre d'application, champ de recherche
- * Material, progression, RecyclerView), la liste dans
- * {@link AdaptateurAccueil} (ListAdapter/DiffUtil, view-holders
+ * Material, progression, RecyclerView + LE VOILE des popups centrés), la
+ * liste dans {@link AdaptateurAccueil} (ListAdapter/DiffUtil, view-holders
  * {@code *Binding}) ; le tri, la fusion de la reprise, le filtrage et le
  * compteur vivent dans {@link EtatAccueil} (purs, testés JVM), la
  * persistance dans {@link ProjetsRecents}, la classification dans
- * {@link ClassifieurProjet}. Les actions ⋮ et les dialogues existants
- * restent en {@link Dialogue} jusqu'au lot A7 (D3 : les usages existants
- * deviennent des popups ; aucun nouveau dialogue n'est introduit).</p>
+ * {@link ClassifieurProjet}. Lot A7 (ADR-085 décision 12, D3) : les
+ * dialogues d'hier deviennent des POPUPS — les menus (⋮ de l'écran, ⋮
+ * d'une carte de projet) ANCRÉS à leur bouton, l'information, la saisie
+ * de renommage et la confirmation destructive centrées sur le voile,
+ * portées par le PORTE-POPUPS de l'écran (fermées en onPause/onDestroy ;
+ * le retour système ferme d'abord un popup ouvert).</p>
  */
 public final class MainActivity extends ActiviteJoide {
 
@@ -79,6 +82,10 @@ public final class MainActivity extends ActiviteJoide {
     private AdaptateurAccueil adaptateur;
     private Graphite.Palette palette;
 
+    /** Le porte-popups de l'écran (menus ancrés, cartes centrées sur
+     *  le voile du layout racine — lot A7, ADR-085 décision 12). */
+    private PortePopups popups;
+
     private List<ProjetsRecents.Entree> entrees = List.of();
     private String filtre = "";
     private boolean importEnCours;
@@ -89,6 +96,7 @@ public final class MainActivity extends ActiviteJoide {
         palette = GraphiteVue.palette(this);
         GraphiteVue.fondEcran(this, palette);
         ecran = monter(ActivityAccueilBinding::inflate);
+        popups = new PortePopups(ecran.voilePopup);
         adaptateur = new AdaptateurAccueil(new Hote());
         ecran.listeAccueil.setLayoutManager(new LinearLayoutManager(this));
         ecran.listeAccueil.setAdapter(adaptateur);
@@ -174,7 +182,7 @@ public final class MainActivity extends ActiviteJoide {
         return DateTimeFormatter.ofPattern(motif, locale).format(jour);
     }
 
-    // ---- Actions (les dialogues existants attendent A7, D3) ----
+    // ---- Actions (les popups du lot A7, D3 : plus AUCUN dialogue) ----
 
     private void nouveauProjet() {
         startActivity(Ecrans.creation(this));
@@ -193,18 +201,18 @@ public final class MainActivity extends ActiviteJoide {
     private void menuApplication() {
         // ADR-É3 : à propos, paramètres et journal ; le journal vit
         // désormais DANS les paramètres (lot M, ADR-É8) — aucune
-        // entrée morte.
-        Dialogue.menu(this, palette, getString(R.string.app_name),
-                new CharSequence[]{
-                        getString(R.string.parametres_titre),
-                        getString(R.string.accueil_menu_a_propos)},
-                (dialog, lequel) -> {
-                    if (lequel == 0) {
-                        startActivity(Ecrans.parametres(this));
-                    } else {
-                        aPropos();
-                    }
-                });
+        // entrée morte. Lot A7 : le menu ANCRÉ au bouton ⋮ — le tap
+        // FERME le menu PUIS agit (jamais une action morte derrière
+        // un menu resté ouvert)
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        entrees.add(new PortePopups.EntreeMenu(
+                getString(R.string.parametres_titre),
+                () -> startActivity(Ecrans.parametres(this))));
+        entrees.add(new PortePopups.EntreeMenu(
+                getString(R.string.accueil_menu_a_propos),
+                this::aPropos));
+        popups.menu(ecran.actionMenu, getString(R.string.app_name),
+                240, entrees);
     }
 
     private void aPropos() {
@@ -215,9 +223,9 @@ public final class MainActivity extends ActiviteJoide {
         } catch (android.content.pm.PackageManager.NameNotFoundException e) {
             // impossible pour son propre paquet : la version reste « ? »
         }
-        Dialogue.information(this, palette, getString(R.string.app_name),
+        popups.information(getString(R.string.app_name),
                 getString(R.string.accueil_a_propos_message, version),
-                R.string.action_ok);
+                getString(R.string.action_ok));
     }
 
     private void ouvrir(ProjetsRecents.Entree entree) {
@@ -229,10 +237,10 @@ public final class MainActivity extends ActiviteJoide {
             entrees = ProjetsRecents.retirer(entrees, entree.id());
             persister();
             rendre();
-            Dialogue.information(this, palette,
-                    R.string.accueil_dossier_perdu_titre,
-                    R.string.accueil_dossier_perdu_message,
-                    R.string.action_ok);
+            popups.information(
+                    getString(R.string.accueil_dossier_perdu_titre),
+                    getString(R.string.accueil_dossier_perdu_message),
+                    getString(R.string.action_ok));
             return;
         }
         long maintenant = Clock.system().wallTimeMillis();
@@ -247,48 +255,54 @@ public final class MainActivity extends ActiviteJoide {
                 null));
     }
 
-    private void menuProjet(ProjetsRecents.Entree entree) {
-        Dialogue.menu(this, palette, entree.nomAffiche(),
-                new CharSequence[]{
-                        getString(R.string.accueil_menu_renommer),
-                        getString(R.string.accueil_menu_supprimer)},
-                (dialog, lequel) -> {
-                    if (lequel == 0) {
-                        renommer(entree);
-                    } else {
-                        supprimer(entree);
-                    }
-                });
+    /** Le menu ⋮ d'un projet, ANCRÉ au bouton ⋮ de sa carte (lot A7 :
+     *  le popup s'accroche à la vue qui l'appelle — renommer,
+     *  supprimer). */
+    private void menuProjet(View ancre, ProjetsRecents.Entree entree) {
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        entrees.add(new PortePopups.EntreeMenu(
+                getString(R.string.accueil_menu_renommer),
+                () -> renommer(entree)));
+        entrees.add(new PortePopups.EntreeMenu(
+                getString(R.string.accueil_menu_supprimer),
+                () -> supprimer(entree)));
+        popups.menu(ancre, entree.nomAffiche(), 220, entrees);
     }
 
+    /** Le renommage d'un projet : la SAISIE centrée sur voile (lot
+     *  A7, clavier requis — le champ vient du popup, prérempli du nom
+     *  affiché). */
     private void renommer(ProjetsRecents.Entree entree) {
-        jo.joide.app.android.ui.Champ champ =
-                new jo.joide.app.android.ui.Champ(this);
-        champ.setEtiquette(R.string.accueil_nom_etiquette);
-        champ.edition().setText(entree.nomAffiche());
-        Dialogue.saisie(this, palette,
+        android.widget.EditText champ = popups.saisie(
                 getString(R.string.accueil_renommer_titre,
                         entree.nomAffiche()),
-                champ, R.string.action_annuler, R.string.accueil_menu_renommer,
-                (dialog, lequel) -> {
-                    CharSequence valeur = champ.valeur();
+                getString(R.string.accueil_nom_etiquette),
+                getString(R.string.action_annuler),
+                getString(R.string.accueil_menu_renommer),
+                saisie -> {
+                    CharSequence valeur = saisie.getText();
                     entrees = ProjetsRecents.renommer(entrees, entree.id(),
                             valeur == null ? "" : valeur.toString());
                     persister();
                     rendre();
                 });
+        champ.setText(entree.nomAffiche());
     }
 
+    /** La suppression d'un projet : la DESTRUCTIVE centrée sur voile
+     *  (lot A7) — retirer de la liste (les fichiers restent) et
+     *  effacer du stockage (les fichiers disparaissent) sont DEUX
+     *  actions (ADR-É3). */
     private void supprimer(ProjetsRecents.Entree entree) {
-        Dialogue.destructive(this, palette,
+        popups.destructive(
                 getString(R.string.accueil_supprimer_titre,
                         entree.nomAffiche()),
                 getString(R.string.accueil_supprimer_message),
-                R.string.action_annuler,
-                R.string.accueil_supprimer_retirer,
-                R.string.accueil_supprimer_effacer,
-                (dialog, lequel) -> retirerDeLaListe(entree),
-                (dialog, lequel) -> effacerDuStockage(entree));
+                getString(R.string.action_annuler),
+                getString(R.string.accueil_supprimer_retirer),
+                getString(R.string.accueil_supprimer_effacer),
+                () -> retirerDeLaListe(entree),
+                () -> effacerDuStockage(entree));
     }
 
     private void retirerDeLaListe(ProjetsRecents.Entree entree) {
@@ -305,10 +319,10 @@ public final class MainActivity extends ActiviteJoide {
             try {
                 supprimerRecursif(cible);
             } catch (IOException e) {
-                runOnUiThread(() -> Dialogue.information(this, palette,
-                        R.string.accueil_suppression_echouee_titre,
-                        R.string.accueil_suppression_echouee,
-                        R.string.action_ok));
+                runOnUiThread(() -> popups.information(
+                        getString(R.string.accueil_suppression_echouee_titre),
+                        getString(R.string.accueil_suppression_echouee),
+                        getString(R.string.action_ok)));
             }
         });
     }
@@ -344,9 +358,9 @@ public final class MainActivity extends ActiviteJoide {
                 montrerProgression(getString(R.string.import_en_cours));
                 fond.execute(() -> importerGradle(arbre));
             }
-            default -> Dialogue.information(this, palette,
-                    R.string.projet_inconnu, R.string.projet_inconnu,
-                    R.string.action_ok);
+            default -> popups.information(getString(R.string.projet_inconnu),
+                    getString(R.string.projet_inconnu),
+                    getString(R.string.action_ok));
         }
     }
 
@@ -432,9 +446,8 @@ public final class MainActivity extends ActiviteJoide {
         runOnUiThread(() -> {
             importEnCours = false;
             ecran.ligneProgression.setVisibility(View.GONE);
-            Dialogue.information(this, palette,
-                    getString(R.string.import_echoue_titre), message,
-                    R.string.action_ok);
+            popups.information(getString(R.string.import_echoue_titre),
+                    message, getString(R.string.action_ok));
             rendre();
         });
     }
@@ -478,7 +491,16 @@ public final class MainActivity extends ActiviteJoide {
     }
 
     @Override
+    protected void onPause() {
+        // décision 12 : un popup ouvert se ferme EXPLICITEMENT —
+        // jamais une fuite au détachement, jamais restauré
+        popups.fermer();
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
+        popups.fermer();
         fond.shutdown();
         super.onDestroy();
     }
@@ -492,8 +514,8 @@ public final class MainActivity extends ActiviteJoide {
         }
 
         @Override
-        public void menuProjet(ProjetsRecents.Entree entree) {
-            MainActivity.this.menuProjet(entree);
+        public void menuProjet(View ancre, ProjetsRecents.Entree entree) {
+            MainActivity.this.menuProjet(ancre, entree);
         }
 
         @Override

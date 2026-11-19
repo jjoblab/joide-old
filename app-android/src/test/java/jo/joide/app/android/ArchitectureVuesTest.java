@@ -24,16 +24,18 @@ import org.junit.jupiter.api.Test;
  * <ul>
  * <li>les ÉCRANS ({@code MainActivity} et tout fichier sous
  * {@code ecrans/}) n'instancient aucune vue du cadre, d'AndroidX ou de
- * Material en code — les exceptions nommées sont les écrans encore
- * programmatiques ;</li>
+ * Material en code — depuis le lot A7 la liste d'exceptions est
+ * VIDE ;</li>
  * <li>depuis le lot A5, les VUES DE ZONE de l'atelier (vues et
  * adaptateurs, hors kit {@code ui/} racine) n'instancient aucune vue
- * non plus — exceptions nommées décroissantes ;</li>
+ * non plus — depuis le lot A7 (popups de l'agent) la liste est
+ * VIDE ;</li>
  * <li>aucune classe de dialogue interdite (D3 : {@code AlertDialog},
- * {@code DialogFragment}, …) hors fichiers excusés — {@code ui/Dialogue.java}
- * est l'unique excusé tant qu'elle existe (supprimée en A7) ;</li>
- * <li>les usages de la classe maison {@code Dialogue.} ne vivent que dans
- * les fichiers excusés (58 usages à l'origine, neuf fichiers) ;</li>
+ * {@code DialogFragment}, …) — depuis le lot A7, PLUS AUCUNE,
+ * {@code ui/Dialogue.java} est supprimée ;</li>
+ * <li>les usages de la classe maison {@code Dialogue.} ne vivent plus
+ * NULLE PART — depuis le lot A7 la liste d'excusés est VIDE (le
+ * pattern reste : toute régression échoue) ;</li>
  * <li>les imports AndroidX/Material restent dans la liste blanche de
  * l'ADR-085 — {@code androidx.compose} et
  * {@code androidx.fragment.app.DialogFragment} interdits absolus ;</li>
@@ -95,41 +97,26 @@ class ArchitectureVuesTest {
 
     /**
      * Liste d'exceptions DÉCROISSANTE — écrans qui instancient encore des
-     * vues en code (état mesuré au commit de base, lot A0) : à vider au
-     * fil des lots A5/A6 (atelier), A7 (contrôleurs agent) — le pilote
-     * A2 (accueil, rappel MCP), les paramètres A3, la création A4 et
-     * l'atelier A6 (écran, vue d'écran, session) sont sortis de la
-     * liste.
+     * vues en code : VIDE depuis le lot A7 (contrôleurs de l'atelier
+     * compris — popups XML, sélecteur de modèles, saisies).
      */
-    private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of(
-            "ecrans/atelier/ControleurAgent.java",
-            "ecrans/atelier/ControleurFichiers.java");
+    private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of();
 
     /**
      * Liste d'exceptions DÉCROISSANTE — fichiers portant encore des
-     * classes de dialogue interdites : {@code ui/Dialogue.java} seule
-     * (ses neuf fabriques gonflent des AlertDialog) — supprimée en A7.
+     * classes de dialogue interdites : VIDE depuis le lot A7
+     * ({@code ui/Dialogue.java} est supprimée, D3).
      */
-    private static final Set<String> FICHIERS_EXCUSSES_DIALOGUES = Set.of(
-            "ui/Dialogue.java");
+    private static final Set<String> FICHIERS_EXCUSSES_DIALOGUES =
+            Set.of();
 
     /**
      * Liste d'exceptions DÉCROISSANTE — fichiers consommant encore la
      * classe maison {@code Dialogue.} (58 usages mesurés au lot A0) :
-     * chaque popup du lot A7 en retire un, la liste finit vide.
+     * VIDE depuis le lot A7 — le pattern reste armé, toute
+     * régression échoue.
      */
-    private static final Set<String> FICHIERS_EXCUSSES_MAISON = Set.of(
-            "MainActivity.java",
-            "ecrans/parametres/EcranParametres.java",
-            "ecrans/atelier/EcranAtelier.java",
-            "ecrans/atelier/VueAtelier.java",
-            "ecrans/atelier/SessionAtelier.java",
-            "ecrans/atelier/ControleurAgent.java",
-            "ecrans/atelier/ControleurEdition.java",
-            "ecrans/atelier/ControleurFichiers.java",
-            "atelier/VueApercu.java",
-            "atelier/VueArbre.java",
-            "atelier/agent/VueAgent.java");
+    private static final Set<String> FICHIERS_EXCUSSES_MAISON = Set.of();
 
     /**
      * Liste d'exceptions DÉCROISSANTE — layouts portant encore une couleur
@@ -141,16 +128,17 @@ class ArchitectureVuesTest {
 
     /**
      * Liste d'exceptions DÉCROISSANTE — vues de zone et adaptateurs
-     * (hors écrans, hors kit {@code ui/} racine : le kit décroît par
-     * remplacement Material au fil des lots, A9) qui instancient encore
-     * des vues en code : le lot A5 a sorti {@code VueConsole},
-     * {@code VueApercu}, {@code VueArbre} et les trois listes de la
-     * feuille ; le lot A6 a sorti la feuille basse (histogramme au
-     * Canvas) et la bande d'onglets (RecyclerView fermable) ; reste
-     * l'agent (A7 — popups et découpage du contrôleur).
+     * (hors écrans, hors kit {@code ui/} racine) qui instancient encore
+     * des vues en code : VIDE depuis le lot A7 — le lot A5 a sorti
+     * {@code VueConsole}, {@code VueApercu}, {@code VueArbre} et les
+     * trois listes de la feuille ; le lot A6 a sorti la feuille basse
+     * (histogramme au Canvas) et la bande d'onglets (RecyclerView
+     * fermable) ; le lot A7 a sorti l'agent (transcript et popups en
+     * {@code item_*}/{@code popup_*} gonflés par binding — seules les
+     * PUCES du kit, vues maison déclarables, restent posées par code,
+     * hors filet).
      */
-    private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of(
-            "atelier/agent/VueAgent.java");
+    private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of();
 
     /**
      * Lot A5 (ADR-085, critère du lot) : HORS écrans et hors kit, les
@@ -190,8 +178,9 @@ class ArchitectureVuesTest {
                 }
             }
         }
-        assertTrue(Files.isRegularFile(ui.resolve("Dialogue.java")),
-                "le kit ui/ racine reste la référence du filtre");
+        assertFalse(Files.isRegularFile(ui.resolve("Dialogue.java")),
+                "ui/Dialogue.java doit rester SUPPRIMÉE (D3, lot A7 : "
+                        + "plus aucune classe maison de dialogue)");
         assertTrue(fautes.isEmpty(),
                 () -> "vues instanciées en code dans des vues de zone "
                         + "HORS liste d'exceptions (ADR-085 lot A5 : la "
@@ -332,9 +321,9 @@ class ArchitectureVuesTest {
             }
         }
         assertTrue(fautes.isEmpty(),
-                () -> "usages de la classe maison Dialogue hors fichiers "
-                        + "excusés (D3 : les usages deviennent des popups, "
-                        + "Dialogue.java disparaît en A7) : " + fautes);
+                () -> "usages de la classe maison Dialogue (D3, lot A7 : "
+                        + "Dialogue.java est supprimée, tout usage est une "
+                        + "régression à corriger en popup) : " + fautes);
         assertTrue(exceptionsObsoletes.isEmpty(),
                 () -> "exceptions obsolètes — le fichier n'utilise plus "
                         + "Dialogue, RETIRE-le de FICHIERS_EXCUSSES_MAISON : "

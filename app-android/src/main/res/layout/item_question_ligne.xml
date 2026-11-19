@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085) — UNE QUESTION de la carte QUESTIONS : la demande
+  numérotée au corps, la rangée des puces d'options en dessous (choix,
+  Autre, Passer — les Puce du kit se posent au bind, elles portent
+  l'état pointé). Le fond de la carte et le bord accent se posent au
+  bind (GradientDrawable d'hier) ; la rangée respire de 7/2 (l'état
+  d'hier).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/demande_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte" />
+
+    <LinearLayout
+        android:id="@+id/options_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="7dp"
+        android:paddingBottom="2dp" />
+</LinearLayout>

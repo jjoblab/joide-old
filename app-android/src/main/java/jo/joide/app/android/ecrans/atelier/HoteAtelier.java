@@ -4,8 +4,10 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.view.View;
-import android.view.Window;
+
+import androidx.activity.result.ActivityResultLauncher;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -19,6 +21,7 @@ import jo.joide.app.android.atelier.EtatApercu;
 import jo.joide.app.android.atelier.EtatAtelier;
 import jo.joide.app.android.atelier.EtatJournal;
 import jo.joide.app.android.atelier.EtatLogcat;
+import jo.joide.app.android.atelier.EtatPopups;
 import jo.joide.app.android.atelier.EtatProblemes;
 import jo.joide.app.android.atelier.VueApercu;
 import jo.joide.app.android.atelier.VueArbre;
@@ -29,6 +32,7 @@ import jo.joide.app.android.console.EtatConsole;
 import jo.joide.app.android.parametres.Reglages;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.Pilule;
+import jo.joide.app.android.ui.PortePopups;
 import jo.joide.app.android.ui.Puce;
 import jo.joide.app.android.ui.TiroirPousse;
 import jo.joide.app.android.ui.atelier.BarreOnglets;
@@ -54,9 +58,12 @@ import jo.joide.model.Workspace;
  * atteignaient hier — l'état d'UI, l'état de la session (lecture ET
  * pose : le montage de session vit hors de l'écran), les zones, les
  * mises à jour et les services d'activité (contexte, fil UI,
- * navigation, services). Elle RÉTRÉCIRA : le lot A7 découpe
- * {@code ControleurAgent} (le gros consommateur), A8/A9 consolident
- * — chaque retrait retire un membre.</p>
+ * navigation, services, contrats de résultat). Le lot A7 y ajoute
+ * le PORTE-POPUPS (menus ancrés, cartes centrées sur voile) et son
+ * état pur ({@link EtatPopups} : ordre du retour, brouillons de
+ * saisie), et retire la demande de résultat dépréciée (contrats
+ * typés d'{@code Ecrans}) ; A8/A9 consolident — chaque retrait
+ * retire un membre.</p>
  */
 public interface HoteAtelier {
 
@@ -65,7 +72,8 @@ public interface HoteAtelier {
     // touchent JAMAIS l'activité directement)
     // ------------------------------------------------------------------
 
-    /** Le contexte de l'écran (Dialogues d'aujourd'hui, inflateurs). */
+    /** Le contexte de l'écran (les popups s'y gonflent, les services
+     *  s'y lient). */
     Context contexte();
 
     /** Exécute l'action sur le fil de l'UI. */
@@ -76,9 +84,6 @@ public interface HoteAtelier {
 
     /** La chaîne localisée mise en forme. */
     String texte(int id, Object... args);
-
-    /** La fenêtre de l'écran (l'ancrage des menus). */
-    Window fenetre();
 
     /** Le répertoire des fichiers privés (cache m2, cidx, outillage). */
     File dossierFichiers();
@@ -92,9 +97,14 @@ public interface HoteAtelier {
     /** Ouvre un écran (paramètres, navigateur OAuth). */
     void ouvrirEcran(Intent intention);
 
-    /** Ouvre une activité en attente de résultat (SAF/caméra, A7 les
-     *  remplace par les contrats d'{@code Ecrans}). */
-    void ouvrirEcranPourResultat(Intent intention, int requete);
+    /** Le contrat SAF d'image du tiroir agent (Ecrans.CHOISIR_IMAGE,
+     *  décision 13 — lot A7 : le code 47101 disparaît). */
+    ActivityResultLauncher<String> choisirImageAgent();
+
+    /** Le contrat de photo caméra du tiroir agent
+     *  (Ecrans.PRENDRE_PHOTO, décision 13 — lot A7 : le code 47102
+     *  disparaît). */
+    ActivityResultLauncher<Uri> prendrePhotoAgent();
 
     /** Démarre un service de premier plan. */
     void demarrerServiceAvantPlan(Intent intention);
@@ -134,6 +144,14 @@ public interface HoteAtelier {
 
     /** Remplace l'état du tiroir agent (le journal rejoué). */
     void poserEtatAgent(EtatAgentChat etat);
+
+    /** L'état des popups de l'atelier (ordre du retour, brouillons
+     *  de saisie — pur, testé JVM, lot A7). */
+    EtatPopups etatPopups();
+
+    /** Le porte-popups de l'atelier (menus ancrés, cartes centrées
+     *  sur voile — la voie d'appel uniforme du lot A7). */
+    PortePopups popups();
 
     /** La palette Graphite courante. */
     Graphite.Palette palette();

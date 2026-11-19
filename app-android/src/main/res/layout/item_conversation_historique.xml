@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — UNE CONVERSATION de l'historique :
+  le titre (au plus deux lignes, ellipse de fin), la méta (courante ·
+  n échanges · date heure), les actions « Reprendre » (accent, la
+  ligne entière reprend) et « Supprimer » (erreur, demande nommée et
+  confirmée). La carte COURANTE porte surface haute + liseré accent
+  (drawable ligne_popup_active) — le fond se pose au bind (l'état de la
+  ligne décide), la méta active se teinte à l'accent (couleur par
+  ligne, décision 8).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/ligne_popup"
+    android:padding="@dimen/jo_pad_ligne_popup"
+    android:layout_marginTop="@dimen/jo_ecart_ligne_popup"
+    android:layout_marginBottom="@dimen/jo_ecart_ligne_popup">
+
+    <TextView
+        android:id="@+id/titre_conversation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte"
+        android:maxLines="2"
+        android:ellipsize="end" />
+
+    <TextView
+        android:id="@+id/meta_conversation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte3" />
+
+    <TextView
+        android:id="@+id/reprendre_conversation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:minHeight="@dimen/jo_hauteur_cible"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_accent" />
+
+    <TextView
+        android:id="@+id/supprimer_conversation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:minHeight="@dimen/jo_hauteur_cible"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_erreur" />
+</LinearLayout>

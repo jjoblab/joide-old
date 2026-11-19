@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — la CARTE des popups ANCRÉS : le fond
+  surface, le liseré bord-fin 1 dp et le rayon carte que le code
+  d'hier (PopupAncre.montrer) posait en GradientDrawable — la carte
+  vit désormais dans le layout popup_*.xml lui-même.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="@dimen/jo_rayon_carte" />
+</shape>

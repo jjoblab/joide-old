@@ -9,13 +9,19 @@
   liste plate recyclée) ; l'état « aucun résultat » est une vue
   fonctionnelle, pas un blanc. Un layout d'item par Genre de
   EtatParametres.Rangee : groupe (en-tête), segment, stepper,
-  commutateur, nuancier, mesure, action, info.
+  commutateur, nuancier, mesure, action, info. Lot A7 : le VOILE des
+  popups centrés (menus de clé ancrés, saisie/confirmation/information
+  centrés) couvre tout, dernier enfant du cadre racine.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -282,4 +288,17 @@
             android:layout_height="match_parent"
             android:visibility="gone" />
     </FrameLayout>
-</LinearLayout>
+    </LinearLayout>
+
+    <!-- le VOILE des popups centrés (lot A7, ADR-085 décision 12) :
+         rideau Graphite montré par PopupCentre, cliquable (retient le
+         toucher hors de la carte). Dernier enfant : il couvre tout. -->
+    <View
+        android:id="@+id/voile_popup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/jo_rideau"
+        android:clickable="true"
+        android:focusable="false"
+        android:visibility="gone" />
+</FrameLayout>

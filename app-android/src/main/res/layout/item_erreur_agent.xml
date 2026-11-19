@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 — la carte ERREUR : voile erreur 7 %, bord erreur 40 %,
-  rayon 12 ; titre, détail, action actionnable (un verbe par genre)
-  posés par code depuis la carte.
+  Lot L5 (carte ERREUR), complétée au lot A7 (ADR-085) : voile erreur
+  7 %, bord erreur 40 %, rayon 12 (le fond et le bord se posent au
+  bind — GradientDrawable d'hier) ; TITRE, DÉTAIL et ACTION
+  actionnable (un verbe par genre, CLE_MANQUANTE → réglages,
+  MODELE_INCONNU → sélecteur) — plus aucune vue instanciée en code.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -11,4 +13,31 @@
     android:paddingStart="11dp"
     android:paddingEnd="11dp"
     android:paddingTop="10dp"
-    android:paddingBottom="10dp" />
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/titre_erreur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_erreur" />
+
+    <TextView
+        android:id="@+id/detail_erreur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:layout_marginBottom="@dimen/jo_pad_ligne_tonale"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte2" />
+
+    <TextView
+        android:id="@+id/action_erreur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/jo_hauteur_cible"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_accent"
+        android:visibility="gone" />
+</LinearLayout>

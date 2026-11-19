@@ -21,11 +21,13 @@ import java.util.Set;
  * perte possible, le point compte les fichiers touchés de la
  * session).</p>
  *
- * <p>Ordre de fermeture du retour système (ADR-É5) : dialogue ouvert
- * (le cadre l'absorbe avant l'activité) puis console, tiroir (écran
- * compact seulement : amarré en grand écran, ce n'est pas une
- * surcouche), aperçu plein écran, confirmation de fermeture du
- * projet, accueil — le dernier état ne saute jamais d'étape.</p>
+ * <p>Ordre de fermeture du retour système (ADR-É5, précisé au lot A7
+ * de l'ADR-085) : popup ouvert (décision 12 — le popup se ferme EN
+ * PREMIER, avant toute surcouche), tiroir agent (la surcouche la plus
+ * récente, ADR-É11 point 1), console, tiroir (écran compact seulement :
+ * amarré en grand écran, ce n'est pas une surcouche), aperçu plein
+ * écran, confirmation de fermeture du projet, accueil — le dernier
+ * état ne saute jamais d'étape.</p>
  */
 public final class EtatAtelier {
 
@@ -37,6 +39,13 @@ public final class EtatAtelier {
 
     /** Ce que le retour système doit faire — jamais deux choses. */
     public enum ActionRetour {
+        /** Fermer le popup ouvert (lot A7, ADR-085 décision 12 : le
+         *  popup se ferme EN PREMIER, avant feuille et tiroirs). */
+        FERMER_POPUP,
+        /** Fermer le tiroir agent (la surcouche la plus récente,
+         *  ADR-É11 point 1 — l'ordre d'ADR-É5 le place avant les
+         *  surcouches de l'état). */
+        FERMER_TIROIR_AGENT,
         /** Replier la console dépliée. */
         FERMER_CONSOLE,
         /** Fermer le tiroir arborescence (écran compact). */

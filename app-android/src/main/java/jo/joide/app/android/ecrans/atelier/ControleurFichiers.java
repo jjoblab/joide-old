@@ -1,9 +1,8 @@
 package jo.joide.app.android.ecrans.atelier;
 
-import android.content.DialogInterface;
-import android.view.View;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,25 +14,35 @@ import jo.joide.app.android.FichiersProjet;
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.Arborescence;
 import jo.joide.app.android.atelier.NouveauNom;
-import jo.joide.app.android.ui.Dialogue;
-import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Pilule;
-import jo.joide.app.android.ui.PopupAncre;
+import jo.joide.app.android.ui.PortePopups;
 import jo.joide.ide.langages.EtatIndex;
 
 /**
  * L6 — le contrôleur de l'arbre de fichiers : rechargement, rendu,
  * menu contextuel (dupliquer, renommer, supprimer), création,
  * localisation, pilule d'index. La vérité reste dans le Workspace et
- * le disque ; les corps viennent de l'écran d'hier sans changement de
- * comportement (extraction mécanique, mêmes commentaires).
+ * le disque.
+ *
+ * <p>Lot A7 (ADR-085, D3) : le menu contextuel devient le MENU ANCRÉ
+ * ({@code popup_menu_noeud} gonflé par le porte-popups), les saisies
+ * et confirmations deviennent les cartes centrées
+ * ({@code popup_saisie}/{@code popup_confirmation} sur voile) — les
+ * {@code EditText} d'hier disparaissent du contrôleur (le champ vit
+ * dans {@code champ_saisie_param} inclus par le popup), le brouillon
+ * de saisie vit dans {@code EtatPopups} (l'état pur). Plus AUCUNE vue
+ * du cadre n'est instanciée ici.</p>
  *
  * <p>Lot A6 (ADR-085 décision 3) : le contrôleur dépend de
- * {@link HoteAtelier} — plus un champ d'écran. Les menus du lot L4
- * (popup et dialogue) restent TELS QUELS : le lot A7 les migre en
- * {@code popup_*.xml}.</p>
+ * {@link HoteAtelier} — plus un champ d'écran.</p>
  */
 final class ControleurFichiers {
+
+    /** La clé du brouillon de la saisie « Nouveau fichier/dossier ». */
+    private static final String BROUILLON_NOUVEAU = "fichiers.nouveau";
+
+    /** La clé du brouillon de la saisie « Renommer ». */
+    private static final String BROUILLON_RENOMME = "fichiers.renomme";
 
     private final HoteAtelier hote;
 
@@ -87,48 +96,29 @@ final class ControleurFichiers {
      * appui long) : des VERBES RÉELS — nouveau fichier/dossier ici,
      * renommer (déplacement), dupliquer (copie « (copie) »),
      * supprimer (confirmation, l'onglet ouvert se ferme). Franchise :
-     * jamais un item mort.
+     * jamais un item mort. Lot A7 : le MENU DE NŒUD ancré, gonflé de
+     * {@code popup_menu_noeud} par le porte-popups.
      */
     void montrerMenuContextuel(String chemin, boolean dossier) {
-        List<String> verbes = new ArrayList<>();
-        List<Runnable> actions = new ArrayList<>();
-        verbes.add(hote.texte(R.string.atelier_nouveau_fichier));
-        actions.add(() -> proposerNouveau(true));
-        verbes.add(hote.texte(R.string.atelier_nouveau_dossier));
-        actions.add(() -> proposerNouveau(false));
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        entrees.add(new PortePopups.EntreeMenu(
+                hote.texte(R.string.atelier_nouveau_fichier),
+                () -> proposerNouveau(true)));
+        entrees.add(new PortePopups.EntreeMenu(
+                hote.texte(R.string.atelier_nouveau_dossier),
+                () -> proposerNouveau(false)));
         if (!dossier) {
-            verbes.add(hote.texte(R.string.atelier_dupliquer));
-            actions.add(() -> dupliquerEntree(chemin));
-            verbes.add(hote.texte(R.string.atelier_renommer));
-            actions.add(() -> renommerEntree(chemin));
+            entrees.add(new PortePopups.EntreeMenu(
+                    hote.texte(R.string.atelier_dupliquer),
+                    () -> dupliquerEntree(chemin)));
+            entrees.add(new PortePopups.EntreeMenu(
+                    hote.texte(R.string.atelier_renommer),
+                    () -> renommerEntree(chemin)));
         }
-        verbes.add(hote.texte(R.string.atelier_supprimer));
-        actions.add(() -> supprimerEntree(chemin, dossier));
-        // lot A6 (reprise d'audit) : les noms restent NON qualifiés —
-        // le filet ArchitectureVuesTest compte CES vues (exception
-        // décroissante, le lot A7 les sort en popup_*.xml) ; une forme
-        // qualifiée serait une évasion du filet, pas une correction
-        LinearLayout contenu = new LinearLayout(hote.contexte());
-        contenu.setOrientation(LinearLayout.VERTICAL);
-        for (int i = 0; i < verbes.size(); i++) {
-            String verbe = verbes.get(i);
-            Runnable action = actions.get(i);
-            View ligne = PopupAncre.ligneMenu(
-                    hote.contexte(), hote.palette(), verbe,
-                    () -> {
-                        fenetreMenuArbre.dismiss();
-                        action.run();
-                    });
-            contenu.addView(ligne);
-        }
-        android.view.View vueArbreAncre = hote.fenetre()
-                .getDecorView()
-                .findViewById(android.R.id.content);
-        fenetreMenuArbre = PopupAncre.montrer(
-                hote.vueArbre() != null ? hote.vueArbre()
-                        : vueArbreAncre,
-                hote.palette(), contenu,
-                GraphiteVue.dp(hote.contexte(), 220));
+        entrees.add(new PortePopups.EntreeMenu(
+                hote.texte(R.string.atelier_supprimer),
+                () -> supprimerEntree(chemin, dossier)));
+        hote.popups().menu(hote.vueArbre(), null, 220, entrees);
     }
 
     /** Duplique un fichier du projet : la copie vit à côté. */
@@ -145,59 +135,66 @@ final class ControleurFichiers {
                     java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             rechargerArbre();
         } catch (java.io.IOException e) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.atelier_dupliquer),
-                    String.valueOf(e.getMessage()), R.string.action_ok);
+                    String.valueOf(e.getMessage()),
+                    hote.texte(R.string.action_ok));
         }
     }
 
-    /** Renomme un fichier du projet (déplacement au même dossier) :
-     *  la saisie suit le même dialogue que la création, la validation
-     *  NouveauNom incluse. */
+    /**
+     * Renomme un fichier du projet (déplacement au même dossier) :
+     * la saisie suit le même popup que la création, la validation
+     * NouveauNom incluse — le BROUILLON vit dans l'état pur (le popup
+     * n'est jamais restauré, le texte frappé survit).
+     */
     private void renommerEntree(String chemin) {
-        EditText saisie = new EditText(hote.contexte());
-        saisie.setHint(R.string.atelier_renommer);
-        Dialogue.saisie(hote.contexte(), hote.palette(),
-                hote.texte(R.string.atelier_renommer),
-                saisie, R.string.action_annuler, R.string.action_ok,
-                (dialog, lequel) -> {
-                    if (lequel != DialogInterface.BUTTON_POSITIVE) {
-                        return;
-                    }
-                    String nom = saisie.getText().toString().trim();
-                    NouveauNom.Raison raison = NouveauNom.valider(nom);
-                    if (raison != null) {
-                        Dialogue.information(hote.contexte(),
-                                hote.palette(),
-                                hote.texte(R.string.atelier_renommer),
-                                texteRaisonNom(raison),
-                                R.string.action_ok);
-                        return;
-                    }
-                    try {
-                        java.nio.file.Path source =
-                                java.nio.file.Path.of(chemin);
-                        java.nio.file.Files.move(source,
-                                source.resolveSibling(nom),
-                                java.nio.file.StandardCopyOption
-                                        .ATOMIC_MOVE);
-                        rechargerArbre();
-                    } catch (java.io.IOException e) {
-                        Dialogue.information(hote.contexte(),
-                                hote.palette(),
-                                hote.texte(R.string.atelier_renommer),
-                                String.valueOf(e.getMessage()),
-                                R.string.action_ok);
-                    }
-                });
+        EditText champ = hote.popups().saisie(
+                hote.texte(R.string.atelier_renommer), null,
+                hote.texte(R.string.action_annuler),
+                hote.texte(R.string.action_ok),
+                saisie -> renommer(chemin, saisie.getText()
+                        .toString().trim()));
+        champ.setHint(R.string.atelier_renommer);
+        String brouillon = hote.etatPopups().brouillon(BROUILLON_RENOMME);
+        if (brouillon != null) {
+            champ.setText(brouillon);
+        }
+        champ.addTextChangedListener(brouillon(BROUILLON_RENOMME));
+    }
+
+    /** Le renommage validé : la règle NouveauNom puis le déplacement. */
+    private void renommer(String chemin, String nom) {
+        hote.etatPopups().oublierBrouillon(BROUILLON_RENOMME);
+        NouveauNom.Raison raison = NouveauNom.valider(nom);
+        if (raison != null) {
+            hote.popups().information(
+                    hote.texte(R.string.atelier_renommer),
+                    texteRaisonNom(raison),
+                    hote.texte(R.string.action_ok));
+            return;
+        }
+        try {
+            java.nio.file.Path source = java.nio.file.Path.of(chemin);
+            java.nio.file.Files.move(source,
+                    source.resolveSibling(nom),
+                    java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            rechargerArbre();
+        } catch (java.io.IOException e) {
+            hote.popups().information(
+                    hote.texte(R.string.atelier_renommer),
+                    String.valueOf(e.getMessage()),
+                    hote.texte(R.string.action_ok));
+        }
     }
 
     /** Supprime (confirmation ; l'onglet ouvert se ferme, §3.8). */
     private void supprimerEntree(String chemin, boolean dossier) {
-        Dialogue.confirmation(hote.contexte(), hote.palette(),
+        hote.popups().confirmation(
                 hote.texte(R.string.atelier_supprimer), chemin,
-                R.string.action_annuler, R.string.action_ok,
-                (dialog, lequel) -> {
+                hote.texte(R.string.action_annuler),
+                hote.texte(R.string.action_ok),
+                () -> {
                     try {
                         java.nio.file.Path cible =
                                 java.nio.file.Path.of(chemin);
@@ -214,11 +211,10 @@ final class ControleurFichiers {
                         }
                         rechargerArbre();
                     } catch (java.io.IOException e) {
-                        Dialogue.information(hote.contexte(),
-                                hote.palette(),
+                        hote.popups().information(
                                 hote.texte(R.string.atelier_supprimer),
                                 String.valueOf(e.getMessage()),
-                                R.string.action_ok);
+                                hote.texte(R.string.action_ok));
                     }
                 });
     }
@@ -265,45 +261,72 @@ final class ControleurFichiers {
         }
     }
 
-    /** La fenêtre du menu contextuel de l'arbre (fermée sur action). */
-    private android.widget.PopupWindow fenetreMenuArbre;
-
+    /**
+     * La création d'un fichier ou d'un dossier : la saisie centrée
+     * ({@code popup_saisie}, clavier requis), le BROUILLON vit dans
+     * l'état pur.
+     */
     void proposerNouveau(boolean fichier) {
         String dossier = hote.etat().actif() == null
                 ? "" : Arborescence.dossierDe(hote.etat().actif());
         String affichage = dossier.isEmpty()
                 ? String.valueOf(
                 hote.racineProjet().getFileName()) : dossier;
-        EditText saisie = new EditText(hote.contexte());
-        saisie.setHint(fichier
+        EditText champ = hote.popups().saisie(
+                hote.texte(R.string.atelier_nouveau_dans, affichage),
+                null,
+                hote.texte(R.string.action_annuler),
+                hote.texte(R.string.action_ok),
+                saisie -> creerEntree(
+                        saisie.getText().toString().trim(),
+                        fichier, dossier));
+        champ.setHint(fichier
                 ? R.string.atelier_nouveau_fichier
                 : R.string.atelier_nouveau_dossier);
-        Dialogue.saisie(hote.contexte(), hote.palette(),
-                hote.texte(R.string.atelier_nouveau_dans, affichage),
-                saisie, R.string.action_annuler, R.string.action_ok,
-                (dialog, lequel) -> {
-                    if (lequel == DialogInterface.BUTTON_POSITIVE) {
-                        creerEntree(saisie.getText().toString().trim(),
-                                fichier, dossier);
-                    }
-                });
+        String brouillon = hote.etatPopups().brouillon(BROUILLON_NOUVEAU);
+        if (brouillon != null) {
+            champ.setText(brouillon);
+        }
+        champ.addTextChangedListener(brouillon(BROUILLON_NOUVEAU));
+    }
+
+    /** Le relais de brouillon : chaque frappe vit dans l'état pur. */
+    private TextWatcher brouillon(String cle) {
+        return new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s,
+                    int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s,
+                    int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                hote.etatPopups().poserBrouillon(cle, s.toString());
+            }
+        };
     }
 
     private void creerEntree(String nom, boolean fichier, String dossier) {
+        hote.etatPopups().oublierBrouillon(BROUILLON_NOUVEAU);
         NouveauNom.Raison raison = NouveauNom.valider(nom);
         if (raison != null) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.atelier_nouveau),
-                    texteRaisonNom(raison), R.string.action_ok);
+                    texteRaisonNom(raison),
+                    hote.texte(R.string.action_ok));
             return;
         }
         Path cible = hote.racineProjet().resolve(
                 dossier.isEmpty() ? nom : dossier + nom);
         if (Files.exists(cible)) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.atelier_nouveau),
                     hote.texte(R.string.atelier_existe_deja, nom),
-                    R.string.action_ok);
+                    hote.texte(R.string.action_ok));
             return;
         }
         try {
@@ -314,11 +337,11 @@ final class ControleurFichiers {
                 Files.createDirectories(cible);
             }
         } catch (IOException e) {
-            Dialogue.information(hote.contexte(), hote.palette(),
+            hote.popups().information(
                     hote.texte(R.string.atelier_nouveau),
                     hote.texte(R.string.atelier_creation_echouee,
                             String.valueOf(e.getMessage())),
-                    R.string.action_ok);
+                    hote.texte(R.string.action_ok));
             return;
         }
         rechargerArbre();
@@ -365,12 +388,12 @@ final class ControleurFichiers {
         }
         EtatIndex index = hote.moteurs().etatIndex();
         majPiluleIndex();
-        Dialogue.information(hote.contexte(), hote.palette(),
+        hote.popups().information(
                 hote.texte(R.string.atelier_index, index.phase()),
                 hote.texte(R.string.atelier_index_detail, index.phase(),
                         index.total(), index.faits(),
                         index.avertissements().size(),
                         index.erreurs().size()),
-                R.string.action_ok);
+                hote.texte(R.string.action_ok));
     }
 }

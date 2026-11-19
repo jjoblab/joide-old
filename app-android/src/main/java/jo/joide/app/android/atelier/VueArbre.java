@@ -7,13 +7,14 @@ import android.widget.LinearLayout;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.Arborescence.Noeud;
 import jo.joide.app.android.databinding.VueArbreBinding;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.PortePopups;
 
 /**
  * Le tiroir arborescence de l'atelier (lot J, ADR-É5 ; lot A5,
@@ -64,6 +65,10 @@ public final class VueArbre extends LinearLayout {
     private AuditeurArbre auditeur;
     private boolean sortiesEnCours;
 
+    /** Le porte-popups de l'atelier (le menu « Nouveau » s'y
+     *  ANCRE — lot A7, registre partagé avec l'écran). */
+    private PortePopups popups;
+
     public VueArbre(Context contexte) {
         this(contexte, null);
     }
@@ -109,6 +114,12 @@ public final class VueArbre extends LinearLayout {
         auditeur = ecouteur;
     }
 
+    /** Pose le porte-popups de l'atelier (lot A7 : le menu
+     *  « Nouveau » s'y ANCRE — la vue ne porte jamais la fenêtre). */
+    public void poserPopups(PortePopups porte) {
+        popups = porte;
+    }
+
     /** Estompe les sorties pendant qu'elles se construisent (leçon 5). */
     public void setSortiesEnCours(boolean enCours) {
         this.sortiesEnCours = enCours;
@@ -121,17 +132,28 @@ public final class VueArbre extends LinearLayout {
                 PLAFOND_NOEUDS));
     }
 
+    /** « Nouveau » (lot J) : le MENU ANCRÉ à la tête de l'arbre
+     *  (lot A7 — le tap FERME le menu PUIS agit, jamais une action
+     *  morte derrière un menu resté ouvert). */
     private void proposerNouveau() {
         Context contexte = getContext();
-        String fichier = contexte.getString(R.string.atelier_nouveau_fichier);
-        String dossier = contexte.getString(R.string.atelier_nouveau_dossier);
-        Dialogue.menu(contexte, GraphiteVue.palette(contexte),
-                contexte.getString(R.string.atelier_nouveau),
-                new CharSequence[]{fichier, dossier},
-                (dialog, lequel) -> {
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        entrees.add(new PortePopups.EntreeMenu(
+                contexte.getString(R.string.atelier_nouveau_fichier),
+                () -> {
                     if (auditeur != null) {
-                        auditeur.surNouveau(lequel == 0);
+                        auditeur.surNouveau(true);
                     }
-                });
+                }));
+        entrees.add(new PortePopups.EntreeMenu(
+                contexte.getString(R.string.atelier_nouveau_dossier),
+                () -> {
+                    if (auditeur != null) {
+                        auditeur.surNouveau(false);
+                    }
+                }));
+        popups.menu(binding.nouveauArbre,
+                contexte.getString(R.string.atelier_nouveau), 220,
+                entrees);
     }
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit ANCRÉ) — LE MENU DE NŒUD : la
+  carte qui tombe de la vue qui l'appelle. Généralisée : c'est LE
+  gabarit de tous les menus ancrés de l'application (menu contextuel
+  de l'arbre — le menu de nœud d'origine, options et ajouts de
+  l'agent, mode de permission, ⋮ de l'atelier et de l'accueil, menu
+  d'une carte projet, clés des paramètres, dimensions de l'aperçu,
+  « Nouveau » de l'arbre). Le titre est OPTIONNEL (gone tant qu'il
+  n'est pas posé) ; les lignes se gonflent d'item_ligne_menu par
+  binding (liste courte et bornée, motif A3/A4 des contentions). Le
+  popup se ferme au tap extérieur et au retour (PopupAncre) ; le
+  ScrollView borne les listes longues. Aucune décision ici : le
+  contenu vient de l'appelant.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/carte_popup"
+        android:padding="@dimen/jo_pad_popup">
+
+        <TextView
+            android:id="@+id/titre_menu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="@dimen/jo_pad_ligne_menu"
+            android:paddingRight="@dimen/jo_pad_ligne_menu"
+            android:paddingTop="@dimen/jo_ecart_ligne_menu"
+            android:paddingBottom="@dimen/jo_ecart_ligne_menu"
+            android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+            android:textColor="?attr/jo_texte"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/lignes_menu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+</ScrollView>

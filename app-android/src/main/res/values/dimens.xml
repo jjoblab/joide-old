@@ -240,4 +240,35 @@
     <dimen name="jo_ecart_banniere_compat">7dp</dimen>
     <dimen name="jo_fab_bas">84dp</dimen>
     <dimen name="jo_fab_droite">20dp</dimen>
+
+    <!-- Les popups (lot A7, ADR-085 décision 12 — les valeurs du code
+         d'hier font l'identité) : la CARTE ANCRÉE garde son retrait 8
+         et sa chute 4 sous l'ancre (PopupAncre) ; les cartes centrées
+         reprennent les retraits du Dialogue d'hier (24 de côté, 20 en
+         tête) ; la ligne de menu garde 14/11 (cible 48 dp) ; les lignes
+         de liste des popups (conversations, serveurs) 10 avec écart
+         4 ; la bande d'usage 6 dp de haut au rayon 3 ; le diff de
+         permission respire de 6 ; la carte d'usages respire de 6 et
+         sa ligne de conversation de 10 ; l'écart tonale 2 (marges des
+         lignes serrées du diff) ; l'état vide du transcript respire
+         de 28 — mêmes jetons, conformité §6. -->
+    <dimen name="jo_pad_popup">8dp</dimen>
+    <dimen name="jo_ecart_popup_ancre">4dp</dimen>
+    <dimen name="jo_pad_popup_cote">24dp</dimen>
+    <dimen name="jo_pad_popup_haut">20dp</dimen>
+    <dimen name="jo_ecart_popup_message">6dp</dimen>
+    <dimen name="jo_ecart_popup_boutons">8dp</dimen>
+    <dimen name="jo_pad_ligne_menu">14dp</dimen>
+    <dimen name="jo_ecart_ligne_menu">11dp</dimen>
+    <dimen name="jo_hauteur_cible">48dp</dimen>
+    <dimen name="jo_pad_ligne_popup">10dp</dimen>
+    <dimen name="jo_ecart_ligne_popup">4dp</dimen>
+    <dimen name="jo_hauteur_bande_usage">6dp</dimen>
+    <dimen name="jo_rayon_bande_usage">3dp</dimen>
+    <dimen name="jo_ecart_diff_permission">6dp</dimen>
+    <dimen name="jo_hauteur_diff_permission">320dp</dimen>
+    <dimen name="jo_pad_ligne_tonale">2dp</dimen>
+    <dimen name="jo_ecart_ligne_tonale">2dp</dimen>
+    <dimen name="jo_pad_usages_popup">6dp</dimen>
+    <dimen name="jo_pad_vide_agent">28dp</dimen>
 </resources>

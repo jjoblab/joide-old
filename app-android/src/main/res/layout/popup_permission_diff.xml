@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LA
+  PERMISSION SUR DIFF DÉPLIÉ (§011 point 3, maquette agent.html) : le
+  sur-titre alerte, l'outil et sa cible, le DIFF déplié (borné par le
+  gate : 400 lignes, 20 000 caractères — la hauteur est plafonnée à
+  320 dp et le texte défile dedans, l'ancrage de la maquette : le
+  contrôleur pose le mouvement de défilement), la note « fermer =
+  refuser » (le défaut sûr), Refuser tonal / Appliquer réussite plein
+  (.btn-refuser/.btn-appliquer de la maquette). La fermeture par
+  retour, voile ou bouton appelle l'annuleur (refuser) — jamais un
+  consentement silencieux.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:strokeWidth="@dimen/jo_ligne"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="@dimen/jo_pad_popup_cote"
+            android:paddingRight="@dimen/jo_pad_popup_cote"
+            android:paddingTop="@dimen/jo_pad_popup_haut"
+            android:paddingBottom="@dimen/jo_ecart_popup_boutons">
+
+            <TextView
+                android:id="@+id/sur_titre_permission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_alerte"
+                android:textAllCaps="true" />
+
+            <TextView
+                android:id="@+id/outil_permission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/cible_permission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+                android:textColor="?attr/jo_texte3"
+                android:singleLine="true"
+                android:ellipsize="start" />
+
+            <TextView
+                android:id="@+id/diff_permission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_diff_permission"
+                android:maxHeight="@dimen/jo_hauteur_diff_permission"
+                android:scrollbars="vertical"
+                android:background="?attr/jo_puits"
+                android:paddingLeft="@dimen/jo_pad_ligne_menu"
+                android:paddingRight="@dimen/jo_pad_ligne_menu"
+                android:paddingTop="@dimen/jo_pad_ligne_tonale"
+                android:paddingBottom="@dimen/jo_pad_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+                android:textColor="?attr/jo_texte2"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/note_permission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3"
+                android:text="@string/agent_permission_fermer" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/refuser_permission"
+                    style="@style/Widget.Jo.Button.Tonal"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/appliquer_permission"
+                    style="@style/Widget.Jo.Button.Reussite"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/jo_ecart_popup_boutons" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085) — UNE LIGNE TONALE du transcript (fichiers changés,
+  attente, compaction) : mono compact estompé sur les retraits d'hier
+  (2 dp) — le libellé se formule au bind depuis l'état.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_ligne_tonale"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/jo_pad_ligne_tonale"
+    android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+    android:textColor="?attr/jo_texte3" />

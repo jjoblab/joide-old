@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — L'ÉCRAN
+  TEXTE : licences et NOTICE, journal de diagnostic (« jamais un texte
+  coupé », ADR-É8). Reprend le corps de page_texte_param du lot A3
+  (vue défilante, texte mono compact aux couleurs du code d'hier :
+  typographie CodeCompact, texte secondaire, marges 20/10/20/20) — le
+  layout de corps est FOLDÉ ici : un seul consommateur, une seule
+  écriture ; une action fermante.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="vertical"
+    android:overScrollMode="ifContentScrolls">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:strokeWidth="@dimen/jo_ligne"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="@dimen/jo_pad_popup_cote"
+            android:paddingRight="@dimen/jo_pad_popup_cote"
+            android:paddingTop="@dimen/jo_pad_popup_haut"
+            android:paddingBottom="@dimen/jo_ecart_popup_boutons">
+
+            <TextView
+                android:id="@+id/titre_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/texte_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:paddingLeft="@dimen/jo_pad_texte_page"
+                android:paddingTop="@dimen/jo_pad_texte_page_haut"
+                android:paddingRight="@dimen/jo_pad_texte_page"
+                android:paddingBottom="@dimen/jo_pad_texte_page"
+                android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+                android:textColor="?attr/jo_texte2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/fermer_page"
+                style="@style/Widget.Jo.Button.Tonal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="@dimen/jo_ecart_popup_boutons" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — UNE LIGNE DE MENU ANCRÉ : le libellé
+  au corps, les touches respirées de la carte de PopupAncre d'hier
+  (14/11), l'appui marqué surface haute (drawable ligne_menu), la
+  cible ≥ 48 dp (décision 12 : accessibilité). Une ligne, un verbe —
+  le libellé et l'action se posent au bind par l'appelant.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_ligne_menu"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/jo_hauteur_cible"
+    android:gravity="center_vertical"
+    android:paddingLeft="@dimen/jo_pad_ligne_menu"
+    android:paddingRight="@dimen/jo_pad_ligne_menu"
+    android:paddingTop="@dimen/jo_ecart_ligne_menu"
+    android:paddingBottom="@dimen/jo_ecart_ligne_menu"
+    android:background="@drawable/ligne_menu"
+    android:textAppearance="@style/TextAppearance.Jo.Corps"
+    android:textColor="?attr/jo_texte"
+    android:singleLine="true"
+    android:ellipsize="end" />

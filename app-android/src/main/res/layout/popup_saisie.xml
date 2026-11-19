@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LA SAISIE :
+  titre (le nom du projet, le dossier visé), étiquette OPTIONNELLE
+  (gone tant qu'elle n'est pas posée), le champ gonflé de
+  champ_saisie_param par <include> (l'EditText du lot A3 — le popup
+  porte le clavier : PopupCentre demande INPUT_METHOD_NEEDED +
+  ADJUST_RESIZE et donne le focus au champ), Annuler tonal / Valider
+  plein. L'état de saisie vit dans l'Etat* (décision 12 : le popup
+  n'est jamais restauré) ; le hint se pose au bind (le cas tranche :
+  clé, modèle, URL, nom).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:cardElevation="0dp"
+        app:cardUseCompatPadding="false"
+        app:strokeWidth="@dimen/jo_ligne"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="@dimen/jo_pad_popup_cote"
+            android:paddingRight="@dimen/jo_pad_popup_cote"
+            android:paddingTop="@dimen/jo_pad_popup_haut"
+            android:paddingBottom="@dimen/jo_ecart_popup_boutons">
+
+            <TextView
+                android:id="@+id/titre_saisie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/etiquette_saisie"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message"
+                android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+                android:textColor="?attr/jo_texte3"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/champ_saisie_popup"
+                layout="@layout/champ_saisie_param"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_message" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/annuler_saisie"
+                    style="@style/Widget.Jo.Button.Tonal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/valider_saisie"
+                    style="@style/Widget.Jo.Button.Primaire"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/jo_ecart_popup_boutons" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</ScrollView>

@@ -28,6 +28,7 @@ import jo.joide.app.android.atelier.EtatAtelier;
 import jo.joide.app.android.atelier.EtatFeuille;
 import jo.joide.app.android.atelier.EtatJournal;
 import jo.joide.app.android.atelier.EtatLogcat;
+import jo.joide.app.android.atelier.EtatPopups;
 import jo.joide.app.android.atelier.EtatProblemes;
 import jo.joide.app.android.atelier.VueApercu;
 import jo.joide.app.android.atelier.VueArbre;
@@ -44,10 +45,10 @@ import jo.joide.app.android.databinding.VueConsoleZoneBinding;
 import jo.joide.app.android.logcat.FluxLogcat;
 import jo.joide.app.android.parametres.PreferencesAndroid;
 import jo.joide.app.android.parametres.Reglages;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Fab;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.Pilule;
+import jo.joide.app.android.ui.PortePopups;
 import jo.joide.app.android.ui.Puce;
 import jo.joide.app.android.ui.TiroirPousse;
 import jo.joide.app.android.ui.atelier.BarreOnglets;
@@ -71,6 +72,16 @@ import jo.joide.ide.editeur.SceneEditeur;
  * {@code ViewStub} (console, aperçu, tiroir agent — montées à la
  * demande). Elle implémente {@link HoteAtelier} : les contrôleurs ne
  * référencent plus l'écran, la session vit dans {@link SessionAtelier}.
+ *
+ * <p>Lot A7 (ADR-085 décisions 12 et 13) : elle porte le
+ * PORTE-POPUPS de l'atelier (le voile du layout racine, les menus
+ * ancrés et les cartes centrées — l'écran les ferme en
+ * {@code onPause}/{@code onDestroy}) et son état pur
+ * {@link EtatPopups} (l'ordre du retour : un popup ouvert se ferme EN
+ * PREMIER ; les brouillons de saisie). Le découpage de
+ * {@code ControleurAgent} y vit : les contrôleurs MODELS, USAGES,
+ * HISTORIQUE et CONNEXIONS sont montés ici et passés au contrôleur
+ * de l'agent.</p>
  *
  * <p>Cette classe n'est PAS une vue Android : c'est la collaboratrice
  * de la coque, construite avec le binding monté. La doctrine P8 reste
@@ -109,9 +120,17 @@ final class VueAtelier implements HoteAtelier {
     /** La session (montage, fermeture, état de l'IDE monté). */
     private final SessionAtelier session;
 
+    /** Le porte-popups de l'atelier (menus ancrés, cartes centrées
+     *  sur le voile du layout racine — lot A7, décision 12). */
+    private final PortePopups popups;
+
+    /** L'état des popups (ordre du retour, brouillons — lot A7). */
+    private final EtatPopups etatPopups = new EtatPopups();
+
     /** Les contrôleurs (l'écran ne les connaît que par la vue). */
     private final ControleurBuild controleurBuild;
     private final ControleurAgent controleurAgent;
+    private final ControleurModelesAgent controleurModelesAgent;
     private final ControleurEdition controleurEdition;
     private final ControleurFichiers controleurFichiers;
 
@@ -141,8 +160,21 @@ final class VueAtelier implements HoteAtelier {
         etat = new EtatAtelier(EtatAtelier.estGrandEcran(
                 ecran.getResources().getConfiguration().screenWidthDp));
         session = new SessionAtelier(ecran, this);
+        // le porte-popups : le voile déclaré DERNIER enfant du layout
+        // racine couvre tout (les deux tailles) — les cartes centrées
+        // vivent dans leur PROPRE fenêtre au-dessus (lot A7)
+        popups = new PortePopups(binding.voilePopup);
         controleurBuild = new ControleurBuild(this);
-        controleurAgent = new ControleurAgent(this);
+        controleurModelesAgent = new ControleurModelesAgent(this);
+        ControleurUsagesAgent controleurUsagesAgent =
+                new ControleurUsagesAgent(this);
+        ControleurHistoriqueAgent controleurHistoriqueAgent =
+                new ControleurHistoriqueAgent(this);
+        ControleurConnexionsMcp controleurConnexionsMcp =
+                new ControleurConnexionsMcp(this);
+        controleurAgent = new ControleurAgent(this,
+                controleurModelesAgent, controleurUsagesAgent,
+                controleurHistoriqueAgent, controleurConnexionsMcp);
         controleurEdition = new ControleurEdition(this);
         controleurFichiers = new ControleurFichiers(this);
         // la bannière de compatibilité : le fond est un MÉLANGE calculé
@@ -171,6 +203,10 @@ final class VueAtelier implements HoteAtelier {
         conteneur.addView(vueArbre,
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
+        // le menu « Nouveau » de l'arbre s'ancre à sa tête : le
+        // PORTE-POPUPS de l'atelier le porte (registre partagé — le
+        // retour système le ferme en premier, lot A7)
+        vueArbre.poserPopups(popups);
         vueArbre.setAuditeur(new VueArbre.AuditeurArbre() {
             @Override
             public void surDossier(String chemin, boolean ouvrir) {
@@ -215,7 +251,7 @@ final class VueAtelier implements HoteAtelier {
         binding.barreHaut.binding.cadreBoutonAgent.setOnClickListener(
                 vue -> controleurAgent.ouvrirAgent());
         binding.barreHaut.binding.boutonOptions.setOnClickListener(
-                vue -> ecran.ouvrirMenu());
+                vue -> ouvrirMenu());
 
         // ---- la bande d'onglets (RecyclerView fermable, lot A6)
         binding.barreOnglets.setAuditeur(new BarreOnglets.Auditeur() {
@@ -469,6 +505,10 @@ final class VueAtelier implements HoteAtelier {
         }
         vueApercu = VueApercuZoneBinding.bind(
                 binding.stubApercu.inflate()).getRoot();
+        // le menu des dimensions de l'aperçu s'ancre à sa puce : le
+        // PORTE-POPUPS de l'atelier le porte (registre partagé,
+        // lot A7)
+        vueApercu.poserPopups(popups);
         vueApercu.setAuditeur(new VueApercu.AuditeurApercu() {
             @Override
             public void surRafraichir() {
@@ -554,8 +594,15 @@ final class VueAtelier implements HoteAtelier {
             }
 
             @Override
+            public void ouvrirMode() {
+                // lot A7 : le menu ANCRÉ des modes (la puce d'en-tête
+                // ne décide RIEN du contenu — décision 12)
+                controleurAgent.ouvrirMenuMode();
+            }
+
+            @Override
             public void ouvrirModele() {
-                controleurAgent.ouvrirModeleAgent();
+                controleurModelesAgent.ouvrir();
             }
 
             @Override
@@ -877,17 +924,78 @@ final class VueAtelier implements HoteAtelier {
         };
     }
 
-    /** Le vidage demandé de la console (confirmation honnête). */
+    /** Le vidage demandé de la console (confirmation honnête —
+     *  carte centrée sur voile, lot A7 : le valideur part APRÈS la
+     *  fermeture). */
     private void confirmerVidage() {
-        Dialogue.confirmation(ecran, palette,
-                R.string.console_vider_titre,
-                R.string.console_vider_message,
-                R.string.action_annuler,
-                R.string.console_vider,
-                (dialog, lequel) -> {
+        popups.confirmation(ecran.getString(R.string.console_vider_titre),
+                ecran.getString(R.string.console_vider_message),
+                ecran.getString(R.string.action_annuler),
+                ecran.getString(R.string.console_vider),
+                () -> {
                     etatConsole.vider();
                     majConsole();
                 });
+    }
+
+    // ------------------------------------------------------------------
+    // Le menu ⋮ de la barre haute et la fermeture du projet (les
+    // dialogues d'hier du contrôle → popups, lot A7, décision 12)
+    // ------------------------------------------------------------------
+
+    /** Le menu ⋮ ancré à son bouton (lot M, ADR-É8) : la case
+     *  « en processus » du lot F vit désormais dans Paramètres — ici
+     *  il reste demander à l'IA, les réglages, fermer le projet. */
+    private void ouvrirMenu() {
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        entrees.add(new PortePopups.EntreeMenu(
+                ecran.getString(R.string.agent_demander_ia),
+                () -> controleurAgent.demanderIa()));
+        entrees.add(new PortePopups.EntreeMenu(
+                ecran.getString(R.string.parametres_titre),
+                () -> ecran.startActivity(new Intent(ecran,
+                        jo.joide.app.android.ecrans.parametres
+                                .EcranParametres.class))));
+        entrees.add(new PortePopups.EntreeMenu(
+                ecran.getString(R.string.atelier_fermer_projet),
+                this::demanderFermeture));
+        popups.menu(binding.barreHaut.binding.boutonOptions,
+                racineProjet() == null ? ""
+                        : String.valueOf(racineProjet().getFileName()),
+                240, entrees);
+    }
+
+    /** La confirmation de fermeture du projet : le compte de fichiers
+     *  modifiés de la session — jamais un texte générique qui cache
+     *  (carte centrée sur voile, lot A7). */
+    void demanderFermeture() {
+        popups.confirmation(
+                ecran.getString(R.string.atelier_fermer_titre),
+                ecran.getString(R.string.atelier_fermer_message,
+                        etat.nombreModifies()),
+                ecran.getString(R.string.action_annuler),
+                ecran.getString(R.string.atelier_fermer_projet),
+                () -> ecran.finish());
+    }
+
+    // ------------------------------------------------------------------
+    // Le retour système et le porte-popups (l'ordre vit dans l'état
+    // pur EtatPopups, testé JVM — décision 12)
+    // ------------------------------------------------------------------
+
+    /** Ce que le retour système fait : le popup ouvert se ferme EN
+     *  PREMIER (avant tiroir agent, feuille, tiroir, aperçu,
+     *  confirmation et sortie), puis l'ordre d'ADR-É5. */
+    EtatAtelier.ActionRetour surRetourSysteme() {
+        return etatPopups.surRetour(popups.ouvert(),
+                tiroirAgentOuvert(), etat);
+    }
+
+    /** Ferme tout popup ouvert (onPause/onDestroy de l'écran —
+     *  idempotent, jamais restauré : l'état de saisie vit dans
+     *  EtatPopups). */
+    void fermerPopups() {
+        popups.fermer();
     }
 
     /** Le contrôleur agent (le retour système et le menu y passent). */
@@ -901,8 +1009,10 @@ final class VueAtelier implements HoteAtelier {
         return binding.tiroir;
     }
 
-    /** Ferme tout : service agent, IDE, exécuteurs (onDestroy). */
+    /** Ferme tout : popups, service agent, IDE, exécuteurs
+     *  (onDestroy — les popups ne fuient jamais au détachement). */
     void fermer() {
+        popups.fermer();
         controleurAgent.debrancherService();
         session.fermerIde();
         fond.shutdown();
@@ -934,11 +1044,6 @@ final class VueAtelier implements HoteAtelier {
     }
 
     @Override
-    public android.view.Window fenetre() {
-        return ecran.getWindow();
-    }
-
-    @Override
     public java.io.File dossierFichiers() {
         return ecran.getFilesDir();
     }
@@ -960,11 +1065,21 @@ final class VueAtelier implements HoteAtelier {
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public void ouvrirEcranPourResultat(Intent intention, int requete) {
-        // déprécié consenti (A1) : le contrat typé Ecrans.CHOISIR_IMAGE
-        // prend le relais au lot A7 (ADR-085 décision 13)
-        ecran.startActivityForResult(intention, requete);
+    public androidx.activity.result.ActivityResultLauncher<String>
+    choisirImageAgent() {
+        // le CONTRAT TYPÉ d'Ecrans.CHOISIR_IMAGE vit dans l'écran
+        // (registerForActivityResult doit précéder onCreate) — l'hôte
+        // le délègue au contrôleur (décision 13 : le code 47101
+        // disparaît)
+        return ecran.contratChoisirImage();
+    }
+
+    @Override
+    public androidx.activity.result.ActivityResultLauncher<android.net.Uri>
+    prendrePhotoAgent() {
+        // le CONTRAT TYPÉ d'Ecrans.PRENDRE_PHOTO — idem (le code 47102
+        // disparaît)
+        return ecran.contratPrendrePhoto();
     }
 
     @Override
@@ -1027,6 +1142,16 @@ final class VueAtelier implements HoteAtelier {
     @Override
     public void poserEtatAgent(EtatAgentChat etat) {
         etatAgent = etat;
+    }
+
+    @Override
+    public EtatPopups etatPopups() {
+        return etatPopups;
+    }
+
+    @Override
+    public PortePopups popups() {
+        return popups;
     }
 
     @Override

@@ -566,6 +566,85 @@ class ThemesM3Test {
     }
 
     @Test
+    void lesJetonsDuLotA7OntLeursDimens() throws Exception {
+        // ADR-085 §2 : tout nouveau jeton reçoit sa parité — lot A7
+        // (popups, D3) ; les valeurs du CODE d'hier (Dialogue et les
+        // popups d'PopupAncre) font l'identité : les retraits du
+        // dialogue (24 de côté, 20 en tête), la carte ancrée (8, chute
+        // 4), la ligne de menu (14/11, cible 48), les lignes de liste
+        // (10, écart 4), la bande d'usage (6 au rayon 3), le diff de
+        // permission (écart 6, hauteur plafonnée 320) et les lignes
+        // tonales du transcript (2)
+        Map<String, String> dimens = enfants(
+                document(RES.resolve("values").resolve("dimens.xml")
+                        .toFile()),
+                "dimen");
+
+        // La carte ANCRÉE (PopupAncre d'hier) : retrait 8, chute 4 sous
+        // l'ancre — la carte porte désormais le fond du layout
+        assertEquals("8dp", dimens.get("jo_pad_popup"),
+                "le retrait de la carte ancrée");
+        assertEquals("4dp", dimens.get("jo_ecart_popup_ancre"),
+                "la chute sous l'ancre (et l'écart des boutons)");
+
+        // Les cartes CENTRÉES : les retraits du Dialogue d'hier (24 de
+        // côté, 20 en tête), le message respire de 6, les boutons de 8
+        assertEquals("24dp", dimens.get("jo_pad_popup_cote"),
+                "le retrait latéral des cartes centrées (Dialogue)");
+        assertEquals("20dp", dimens.get("jo_pad_popup_haut"),
+                "le retrait de tête des cartes centrées (Dialogue)");
+        assertEquals("6dp", dimens.get("jo_ecart_popup_message"),
+                "l'aération du message (et du diff de permission)");
+        assertEquals("8dp", dimens.get("jo_ecart_popup_boutons"),
+                "l'écart des boutons");
+
+        // La ligne de MENU (PopupAncre.ligneMenu d'hier) : 14 de côté,
+        // 11 d'aération — la cible ≥ 48 dp (décision 12)
+        assertEquals("14dp", dimens.get("jo_pad_ligne_menu"),
+                "le retrait latéral d'une ligne de menu");
+        assertEquals("11dp", dimens.get("jo_ecart_ligne_menu"),
+                "l'aération d'une ligne de menu");
+        assertEquals("48dp", dimens.get("jo_hauteur_cible"),
+                "la cible minimum de toucher (accessibilité, décision 12)");
+
+        // Les lignes de LISTE (conversations, serveurs) : 10 d'aération,
+        // 4 d'écart
+        assertEquals("10dp", dimens.get("jo_pad_ligne_popup"),
+                "l'aération d'une ligne de liste (et la conversation "
+                        + "d'usages)");
+        assertEquals("4dp", dimens.get("jo_ecart_ligne_popup"),
+                "l'écart des lignes de liste");
+
+        // La BANDE D'USAGE (ADR-062) : 6 de haut au rayon 3
+        assertEquals("6dp", dimens.get("jo_hauteur_bande_usage"),
+                "la hauteur de la bande d'occupation");
+        assertEquals("3dp", dimens.get("jo_rayon_bande_usage"),
+                "le rayon de la bande d'occupation");
+
+        // Le DIFF DE PERMISSION (§011) : écart 6, hauteur plafonnée
+        // 320 — le texte défile dedans
+        assertEquals("6dp", dimens.get("jo_ecart_diff_permission"),
+                "la respiration du diff de permission");
+        assertEquals("320dp", dimens.get("jo_hauteur_diff_permission"),
+                "le plafond de hauteur du diff déplié");
+
+        // Les lignes TONALES du transcript (fichiers changés,
+        // attente, compaction) : retraits et marges de 2
+        assertEquals("2dp", dimens.get("jo_pad_ligne_tonale"),
+                "le retrait d'une ligne tonale");
+        assertEquals("2dp", dimens.get("jo_ecart_ligne_tonale"),
+                "la marge d'une ligne tonale");
+
+        // La carte d'USAGES respire de 6 (le marge d'hier du corps) ;
+        // l'état VIDE du transcript respire de 28 (le padding du bloc
+        // vide d'hier)
+        assertEquals("6dp", dimens.get("jo_pad_usages_popup"),
+                "le retrait de la carte d'usages");
+        assertEquals("28dp", dimens.get("jo_pad_vide_agent"),
+                "la respiration de l'état vide du transcript");
+    }
+
+    @Test
     void lesSelecteursDeCouleurNePortentQueDesAttrsJo()
             throws Exception {
         // lots A3/A4/A5 : les teintes des bascules, du commutateur, des

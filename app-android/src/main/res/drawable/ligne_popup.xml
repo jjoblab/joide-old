@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — la LIGNE DE LISTE d'un popup centré
+  (conversation de l'historique, serveur MCP) : le fond surface, le
+  liseré bord-fin et le rayon composant que le code d'hier posait en
+  GradientDrawable.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="@dimen/jo_rayon_composant" />
+</shape>

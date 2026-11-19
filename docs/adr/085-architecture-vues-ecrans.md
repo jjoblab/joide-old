@@ -288,6 +288,43 @@ foi) ; la conclusion de chaque évaluation :
   défilement n'est spécifié (pas d'`AppBarLayout`). À rediscuter en A9
   si le kit décroît.
 
+### Évaluations du lot A7 (le voile de la décision 12 — « choisir, justifier, uniformiser »)
+
+La décision 12 laissait le voile ouvert entre
+`FLAG_DIM_BEHIND` sur la fenêtre du popup **ou** vue-voile du layout
+racine. Le lot tranche et consigne :
+
+- **Vue-voile du layout racine, RETENUE** (l'autre voie est
+  **impraticable**) : `PopupWindow` n'expose PAS sa fenêtre — aucun
+  `getWindow()` public, aucun drapeau posable ; `FLAG_DIM_BEHIND`
+  s'applique à une fenêtre de DIALOGUE, interdite par D3. Le voile est
+  donc une vue `voile_popup` déclarée DERNIER enfant du layout racine
+  de chaque écran porteur (accueil, atelier compact, atelier
+  `w720dp`, paramètres) : `?attr/jo_rideau`, cliquable (elle RETIENT le
+  toucher hors de la carte — pas de fermeture au dehors pour ce qui
+  exige une réponse), `gone` au repos ; `PopupCentre` la montre et la
+  cache. La carte centrée vit dans sa PROPRE fenêtre au-dessus du
+  voile (`PopupWindow` focusable — le retour la ferme en premier).
+- **Un seul porte-popups par écran** (`PortePopups`) : le registre des
+  fenêtres ouvertes (ancrées et centrées), les corps communs gonflés
+  de `popup_*.xml` par binding (menu ancré, information,
+  confirmation, destructive, saisie, écran texte) — l'ordre du retour
+  (popup AVANT feuille/tiroirs) se lit du registre et vit dans
+  l'état pur `EtatPopups` (testé JVM) ; la fermeture de cycle de vie
+  (`onPause`/`onDestroy`/`onConfigurationChanged`) est UN appel
+  idempotent.
+- **La carte porte le fond, le cadre reste transparent** : cartes
+  centrées en `MaterialCardView` (surface, liseré bord-fin, rayon
+  carte — `popup_confirmation`, `popup_saisie`, …), cartes ancrées en
+  drawable `carte_popup` (`popup_menu_noeud`) : le `GradientDrawable`
+  fabriqué en code par `PopupAncre` d'hier vit désormais en XML
+  (décision « le voile/la carte portent le fond » du prompt §4.4).
+- Les listes courtes et bornées des popups (entrées de menu, lignes
+  de conversation, serveurs) restent des inflations par binding au
+  lieu d'un `RecyclerView` (décision 11 : « une liste courte et
+  statique peut rester dans le layout », le plafond des menus et des
+  conversations est déjà borné par construction).
+
 ## Gabarit cible
 
 ```

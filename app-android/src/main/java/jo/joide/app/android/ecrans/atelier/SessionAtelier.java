@@ -12,7 +12,6 @@ import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatJournal;
 import jo.joide.app.android.parametres.Reglages;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.deps.cache.DependencyCache;
 import jo.joide.deps.repo.HttpTransport;
@@ -221,11 +220,10 @@ final class SessionAtelier {
                 Files.write(racineProjet.resolve(entree.getKey()),
                         entree.getValue().getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
-                hote.executerSurFilUi(() -> Dialogue.information(
-                        hote.contexte(), hote.palette(),
+                hote.executerSurFilUi(() -> hote.popups().information(
                         hote.texte(R.string.import_echoue_titre),
                         hote.texte(R.string.ecriture_echouee),
-                        R.string.action_ok));
+                        hote.texte(R.string.action_ok)));
                 return;
             }
         }

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — UN COMPTEUR D'OCCUPATION des usages :
+  le nom au corps, le pourcentage en légende estompée, la bande sous
+  le seuil : piste surface haute (piste_bande_usage), remplissage dont
+  le POIDS et la TEINTE se posent au bind (la fraction de la fenêtre,
+  la bande qui décide la couleur — accent, alerte, erreur ; une
+  couleur calculée par ligne, décision 8 de l'ADR).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/jo_pad_ligne_tonale">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/nom_compteur"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/pourcentage_compteur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte3" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_hauteur_bande_usage"
+        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:orientation="horizontal"
+        android:background="@drawable/piste_bande_usage">
+
+        <View
+            android:id="@+id/remplissage_compteur"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/remplissage_bande_usage" />
+
+        <View
+            android:id="@+id/reste_compteur"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+    </LinearLayout>
+</LinearLayout>

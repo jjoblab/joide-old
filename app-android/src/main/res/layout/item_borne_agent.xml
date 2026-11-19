@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085) — L'ANNONCE DU PLAFOND du transcript (« n messages
+  évacués ») : la légende estompée insérée en tête de colonne — le
+  libellé se formule au bind (le compte d'évictions décide).
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_borne_agent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textAppearance="@style/TextAppearance.Jo.Legende"
+    android:textColor="?attr/jo_texte3" />

@@ -41,8 +41,9 @@ public final class AdaptateurAccueil extends
         /** Ouvrir le projet d'une carte. */
         void ouvrir(ProjetsRecents.Entree entree);
 
-        /** Ouvrir le menu ⋮ d'un projet. */
-        void menuProjet(ProjetsRecents.Entree entree);
+        /** Ouvrir le menu ⋮ d'un projet, ANCRÉ au bouton ⋮ de sa
+         *  carte (lot A7 : le popup s'accroche à la vue qui l'appelle). */
+        void menuProjet(View ancre, ProjetsRecents.Entree entree);
 
         /** Créer un projet (premier plan de l'accueil). */
         void nouveauProjet();
@@ -157,7 +158,7 @@ public final class AdaptateurAccueil extends
             binding.carteProjet.setOnClickListener(
                     v -> auditeur.ouvrir(projetDe(binding)));
             binding.actionMenuProjet.setOnClickListener(
-                    v -> auditeur.menuProjet(projetDe(binding)));
+                    v -> auditeur.menuProjet(v, projetDe(binding)));
             return new CaseProjet(binding);
         }
         return new CaseAucun(ItemAucunResultatBinding.inflate(gonfleur,

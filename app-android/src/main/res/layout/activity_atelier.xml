@@ -156,4 +156,20 @@
         android:layout_gravity="bottom|end"
         android:layout_marginBottom="@dimen/jo_fab_bas"
         android:layout_marginEnd="@dimen/jo_fab_droite" />
+
+    <!-- le VOILE des popups centrés (lot A7, ADR-085 décision 12) :
+        rideau Graphite sur TOUT l'écran quand un popup exige une
+        réponse (confirmation, saisie, permission, usages, historique,
+        connexions) — PopupCentre le montre et le cache ; cliquable,
+        il retient le toucher hors de la carte (le popup vit dans sa
+        propre fenêtre, AU-DESSUS du voile). Dernier enfant : il
+        couvre tout. -->
+    <View
+        android:id="@+id/voile_popup"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?attr/jo_rideau"
+        android:clickable="true"
+        android:focusable="false"
+        android:visibility="gone" />
 </FrameLayout>

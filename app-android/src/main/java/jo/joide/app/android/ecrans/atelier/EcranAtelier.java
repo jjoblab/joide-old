@@ -1,9 +1,10 @@
 package jo.joide.app.android.ecrans.atelier;
 
-import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
 
 import java.nio.file.Paths;
 
@@ -12,7 +13,6 @@ import jo.joide.app.android.R;
 import jo.joide.app.android.databinding.ActivityAtelierBinding;
 import jo.joide.app.android.ecrans.Ecrans;
 import jo.joide.app.android.ui.ActiviteJoide;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 
@@ -23,8 +23,16 @@ import jo.joide.app.android.ui.GraphiteVue;
  * vit dans {@code activity_atelier.xml} (+ {@code layout-w720dp} :
  * le grand écran n'est plus assemblé en code), le câblage et les
  * mises à jour dans {@link VueAtelier}, la session (moteurs, sync,
- * scène, aperçu) dans {@link SessionAtelier}, les quatre contrôleurs
+ * scène, aperçu) dans {@link SessionAtelier}, les contrôleurs
  * dépendent de {@link HoteAtelier} — plus aucun champ partagé.
+ *
+ * <p>Lot A7 (ADR-085 décisions 12 et 13) : les résultats SAF/caméra
+ * du tiroir agent passent par les CONTRATS TYPÉS
+ * {@link Ecrans#CHOISIR_IMAGE} et {@link Ecrans#PRENDRE_PHOTO} — plus
+ * de codes 47101/47102 ni d'{@code onActivityResult} déprécié ; le
+ * retour système ferme un popup ouvert EN PREMIER (l'ordre vit dans
+ * l'état pur, testé JVM) ; les popups ouverts se ferment explicitement
+ * en {@code onPause}/{@code onDestroy}/{@code onConfigurationChanged}.</p>
  *
  * <p>L'atelier remplace l'empilement programmatique de P8 — barre
  * supérieure exacte (nom du projet, puce modules, pilule d'état de
@@ -39,6 +47,41 @@ public final class EcranAtelier extends ActiviteJoide {
 
     /** La vue d'écran de l'atelier (binding, zones, mises à jour). */
     private VueAtelier vue;
+
+    /**
+     * Le contrat SAF d'image du tiroir agent (décision 13 — lot A7) :
+     * le code 47101 disparaît, l'image choisie arrive typée.
+     */
+    private final ActivityResultLauncher<String> choisirImage =
+            registerForActivityResult(Ecrans.CHOISIR_IMAGE,
+                    uri -> {
+                        if (vue != null) {
+                            vue.controleurAgent().surImageChoisie(uri);
+                        }
+                    });
+
+    /**
+     * Le contrat de photo caméra du tiroir agent (décision 13 — lot
+     * A7) : le code 47102 disparaît, la photo prise arrive typée.
+     */
+    private final ActivityResultLauncher<Uri> prendrePhoto =
+            registerForActivityResult(Ecrans.PRENDRE_PHOTO,
+                    prise -> {
+                        if (vue != null) {
+                            vue.controleurAgent().surPhotoPrise(
+                                    Boolean.TRUE.equals(prise));
+                        }
+                    });
+
+    /** Le launcher du contrat d'image (l'hôte le délègue à l'agent). */
+    ActivityResultLauncher<String> contratChoisirImage() {
+        return choisirImage;
+    }
+
+    /** Le launcher du contrat de photo (l'hôte le délègue à l'agent). */
+    ActivityResultLauncher<Uri> contratPrendrePhoto() {
+        return prendrePhoto;
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -78,35 +121,25 @@ public final class EcranAtelier extends ActiviteJoide {
                 getIntent().getStringExtra(Ecrans.EXTRA_FICHIER));
     }
 
-    @Override
-    protected void onActivityResult(int requete, int resultat,
-                                    Intent donnees) {
-        super.onActivityResult(requete, resultat, donnees);
-        vue.controleurAgent().surResultatActivite(requete, resultat,
-                donnees);
-    }
-
     // ------------------------------------------------------------------
-    // Retour système : les surcouches une à une (ADR-É5) — l'ordre est
-    // inchangé (les popups rejoignent au lot A7). Décision 13 de
-    // l'ADR-085 : le OnBackPressedDispatcher remplace l'override
-    // déprécié (motif des lots A2-A4) ; le callback est TOUJOURS
-    // armé — l'atelier consomme chaque retour, la sortie passe
-    // par la confirmation ou QUITTER
+    // Retour système : les surcouches une à une (ADR-É5) — l'ordre
+    // VIT dans l'état pur (EtatPopups.surRetour, testé JVM) : le
+    // popup d'abord (décision 12 du lot A7), puis le tiroir agent,
+    // puis les surcouches de l'état (feuille, tiroir, aperçu,
+    // confirmation, sortie). Décision 13 : le
+    // OnBackPressedDispatcher remplace l'override déprécié ; le
+    // callback est TOUJOURS armé — l'atelier consomme chaque retour,
+    // la sortie passe par la confirmation ou QUITTER
     // ------------------------------------------------------------------
 
     private final OnBackPressedCallback retourSysteme =
             new OnBackPressedCallback(true) {
                 @Override
                 public void handleOnBackPressed() {
-                    // le tiroir agent est la surcouche la plus
-                    // récente : le retour la ferme d'abord
-                    // (ADR-É11 point 1, ordre ADR-É5)
-                    if (vue.tiroirAgentOuvert()) {
-                        vue.controleurAgent().fermerAgent();
-                        return;
-                    }
-                    switch (vue.etat().surRetour()) {
+                    switch (vue.surRetourSysteme()) {
+                        case FERMER_POPUP -> vue.fermerPopups();
+                        case FERMER_TIROIR_AGENT ->
+                                vue.controleurAgent().fermerAgent();
                         case FERMER_CONSOLE -> {
                             vue.etat().replierConsole();
                             vue.majVolets();
@@ -121,56 +154,37 @@ public final class EcranAtelier extends ActiviteJoide {
                             vue.etat().fermerApercuPleinEcran();
                             vue.majVolets();
                         }
-                        case DEMANDER_FERMETURE -> demanderFermeture();
+                        case DEMANDER_FERMETURE -> vue.demanderFermeture();
                         case QUITTER -> finish();
-                        default -> finish();
                     }
                 }
             };
 
     // ------------------------------------------------------------------
-    // Le menu ⋮ et la fermeture du projet
+    // Cycle de vie : les popups se ferment EXPLICITEMENT (décision
+    // 12 — jamais une fuite au détachement, jamais restaurés)
     // ------------------------------------------------------------------
 
-    /** Le menu ⋮ de la barre haute (la vue d'écran y entre). */
-    void ouvrirMenu() {
-        // lot M (ADR-É8) : la case « en processus » du lot F vit
-        // désormais dans Paramètres — ici il reste fermer le projet
-        // et le chemin vers les réglages
-        String fermer = getString(R.string.atelier_fermer_projet);
-        Dialogue.menu(this, vue.palette(),
-                vue.racineProjet() == null ? ""
-                        : String.valueOf(
-                        vue.racineProjet().getFileName()),
-                new CharSequence[]{
-                        getString(R.string.agent_demander_ia),
-                        getString(R.string.parametres_titre), fermer},
-                (dialog, lequel) -> {
-                    if (lequel == 0) {
-                        vue.controleurAgent().demanderIa();
-                    } else if (lequel == 1) {
-                        startActivity(new Intent(this,
-                                jo.joide.app.android.ecrans.parametres
-                                        .EcranParametres.class));
-                    } else if (lequel == 2) {
-                        demanderFermeture();
-                    }
-                });
+    @Override
+    protected void onPause() {
+        vue.fermerPopups();
+        super.onPause();
     }
 
-    private void demanderFermeture() {
-        Dialogue.confirmation(this, vue.palette(),
-                getString(R.string.atelier_fermer_titre),
-                getString(R.string.atelier_fermer_message,
-                        vue.etat().nombreModifies()),
-                R.string.action_annuler,
-                R.string.atelier_fermer_projet,
-                (dialog, lequel) -> finish());
+    /**
+     * Un changement de configuration FERME les popups ouverts
+     * (décision 12 — jamais restaurés). Frontière du lot : le manifest
+     * ne porte pas encore {@code configChanges} (lot A8) — un
+     * changement de géométrie recrée aujourd'hui l'activité et
+     * {@code onDestroy} ferme déjà tout ; l'override armé ici devient
+     * porteur le jour où A8 déclare les changements retenus.
+     */
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration
+                                              nouvelle) {
+        vue.fermerPopups();
+        super.onConfigurationChanged(nouvelle);
     }
-
-    // ------------------------------------------------------------------
-    // Cycle de vie
-    // ------------------------------------------------------------------
 
     @Override
     protected void onDestroy() {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — la ligne COURANTE d'une liste de
+  popup (conversation active de l'historique) : fond surface haute,
+  liseré accent — l'état d'hier posé par GradientDrawable.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface_haute" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_accent" />
+    <corners android:radius="@dimen/jo_rayon_composant" />
+</shape>

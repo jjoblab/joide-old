@@ -7,15 +7,16 @@ import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.EtatApercu.Banniere;
 import jo.joide.app.android.databinding.ItemBanniereApercuBinding;
 import jo.joide.app.android.databinding.VueApercuBinding;
-import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.PortePopups;
 
 /**
  * Le volet d'aperçu de mise en page (lot L, ADR-É7 ; lot A5, ADR-085 —
@@ -64,6 +65,10 @@ public final class VueApercu extends LinearLayout {
 
     private final Graphite.Palette palette;
     private AuditeurApercu auditeur;
+
+    /** Le porte-popups de l'atelier (le menu des dimensions s'y
+     *  ANCRE — lot A7, registre partagé avec l'écran). */
+    private PortePopups popups;
 
     /** Vrai pendant la pose de l'état (les écouteurs se taisent). */
     private boolean poseEnCours;
@@ -131,6 +136,12 @@ public final class VueApercu extends LinearLayout {
     /** L'auditeur des actions. */
     public void setAuditeur(AuditeurApercu ecouteur) {
         this.auditeur = ecouteur;
+    }
+
+    /** Pose le porte-popups de l'atelier (lot A7 : le menu des
+     *  dimensions s'y ANCRE — la vue ne porte jamais la fenêtre). */
+    public void poserPopups(PortePopups porte) {
+        popups = porte;
     }
 
     /**
@@ -236,23 +247,31 @@ public final class VueApercu extends LinearLayout {
         };
     }
 
+    /** Les dimensions cibles (lot L) : le MENU ANCRÉ à la puce des
+     *  dimensions (lot A7 — le tap FERME le menu PUIS agit). */
     private void choisirDimensions() {
         Context contexte = getContext();
-        String[] libelles = {
-                contexte.getString(R.string.apercu_dims_telephone),
-                contexte.getString(R.string.apercu_dims_grand),
-                contexte.getString(R.string.apercu_dims_tablette),
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        int[][] dimensions = {{360, 640}, {412, 915}, {600, 1024}};
+        int[] libelles = {
+                R.string.apercu_dims_telephone,
+                R.string.apercu_dims_grand,
+                R.string.apercu_dims_tablette,
         };
-        int[] largeurs = {360, 412, 600};
-        int[] hauteurs = {640, 915, 1024};
-        Dialogue.menu(contexte, palette,
-                contexte.getString(R.string.apercu_dims_titre),
-                libelles, (dialog, lequel) -> {
-                    if (auditeur != null) {
-                        auditeur.surDimensions(largeurs[lequel],
-                                hauteurs[lequel]);
-                    }
-                });
+        for (int i = 0; i < dimensions.length; i++) {
+            final int largeur = dimensions[i][0];
+            final int hauteur = dimensions[i][1];
+            entrees.add(new PortePopups.EntreeMenu(
+                    contexte.getString(libelles[i]),
+                    () -> {
+                        if (auditeur != null) {
+                            auditeur.surDimensions(largeur, hauteur);
+                        }
+                    }));
+        }
+        popups.menu(binding.puceDimensions,
+                contexte.getString(R.string.apercu_dims_titre), 220,
+                entrees);
     }
 
     /**

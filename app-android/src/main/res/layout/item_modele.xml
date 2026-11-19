@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A7 (ADR-085 décision 12) — UNE LIGNE DE MODÈLE du sélecteur :
+  le nom au corps (une ligne, ellipse de fin), la COCHE accent du
+  modèle courant (visible au bind), l'ÉTOILE du favori (teinte au
+  bind : alerte si favori, bord sinon — couleur par ligne, décision
+  8 ; cible ≥ 48 dp). Le tap choisit ; l'étoile bascule.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="@dimen/jo_hauteur_cible"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/ligne_menu"
+    android:paddingLeft="@dimen/jo_pad_ligne_menu"
+    android:paddingRight="@dimen/jo_pad_ligne_menu"
+    android:paddingTop="@dimen/jo_ecart_ligne_menu"
+    android:paddingBottom="@dimen/jo_ecart_ligne_menu">
+
+    <TextView
+        android:id="@+id/nom_modele"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte"
+        android:singleLine="true"
+        android:ellipsize="end" />
+
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/coche_modele"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginEnd="@dimen/jo_ecart_popup_boutons"
+        app:jo_icone_glyphe="coche"
+        app:jo_icone_couleur="?attr/jo_accent"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/etoile_modele"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="@dimen/jo_pad_ligne_tonale"
+        app:jo_icone_glyphe="etoile"
+        app:jo_icone_couleur="?attr/jo_bord"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="@string/agent_modeles_favori" />
+</LinearLayout>

@@ -19,12 +19,17 @@ import jo.joide.agent.Permissions;
 import jo.joide.agent.UsageLlm;
 import jo.joide.app.android.R;
 import jo.joide.app.android.databinding.ComposeurAgentBinding;
+import jo.joide.app.android.databinding.ItemBorneAgentBinding;
 import jo.joide.app.android.databinding.ItemErreurAgentBinding;
+import jo.joide.app.android.databinding.ItemLigneTonaleAgentBinding;
 import jo.joide.app.android.databinding.ItemMsgAgentBinding;
 import jo.joide.app.android.databinding.ItemMsgUtilisateurBinding;
 import jo.joide.app.android.databinding.ItemOutilBinding;
 import jo.joide.app.android.databinding.ItemQuestionBinding;
+import jo.joide.app.android.databinding.ItemQuestionLigneBinding;
 import jo.joide.app.android.databinding.ItemRaisonnementBinding;
+import jo.joide.app.android.databinding.ItemUsageAgentBinding;
+import jo.joide.app.android.databinding.ItemVideAgentBinding;
 import jo.joide.app.android.databinding.TiroirAgentBinding;
 import jo.joide.app.android.ui.Bouton;
 import jo.joide.app.android.ui.Champ;
@@ -74,6 +79,13 @@ public final class VueAgent extends LinearLayout {
          * décide rien.
          */
         void ouvrirModele();
+
+        /**
+         * Le menu de MODE de permission (lot A7 : la puce d'en-tête
+         * ouvre le menu ANCRÉ — l'atelier compose, la vue ne décide
+         * rien du contenu).
+         */
+        void ouvrirMode();
 
         /**
          * Le menu de l'agent (lot S, ADR-064) : nouvelle
@@ -215,6 +227,12 @@ public final class VueAgent extends LinearLayout {
         return puceModele;
     }
 
+    /** L'ancre de la puce de MODE de permission (le menu ancré des
+     *  modes, lot A7 — la puce d'en-tête ne décide RIEN du contenu). */
+    public View ancreMode() {
+        return puceMode;
+    }
+
     /**
      * Pose l'état et redessine le transcript (la vue ne garde rien).
      *
@@ -272,32 +290,21 @@ public final class VueAgent extends LinearLayout {
             colonneCartes.addView(vue);
         }
         if (etat.cartes().isEmpty()) {
-            LinearLayout vide = new LinearLayout(contexte);
-            vide.setOrientation(LinearLayout.VERTICAL);
-            vide.setGravity(Gravity.CENTER_HORIZONTAL);
-            vide.setPadding(0, GraphiteVue.dp(contexte, 28), 0, 0);
-            Icone bulle = new Icone(contexte);
-            bulle.setGlyphe(Icone.Glyphe.BULLE);
-            bulle.setCouleur(palette.texteEstompe);
-            vide.addView(bulle, new LinearLayout.LayoutParams(
-                    GraphiteVue.dp(contexte, 34),
-                    GraphiteVue.dp(contexte, 34)));
-            TextView consigne = new TextView(contexte);
-            GraphiteVue.typographie(consigne, Graphite.CORPS);
-            consigne.setTextColor(palette.texteEstompe);
-            consigne.setGravity(Gravity.CENTER);
-            consigne.setText(R.string.agent_vide);
-            consigne.setPadding(0, GraphiteVue.dp(contexte, 8), 0, 0);
-            vide.addView(consigne);
-            colonneCartes.addView(vide);
+            // l'état vide du transcript (lot A7 : gonflé de
+            // item_vide_agent par binding — plus aucune vue du cadre
+            // instanciée ici)
+            ItemVideAgentBinding vide = ItemVideAgentBinding.inflate(
+                    LayoutInflater.from(contexte), colonneCartes, true);
+            vide.bulleVideAgent.setCouleur(palette.texteEstompe);
+            vide.consigneVideAgent.setTextColor(palette.texteEstompe);
         }
         if (etat.plafondAnnonce()) {
-            TextView borne = new TextView(contexte);
-            GraphiteVue.typographie(borne, Graphite.LEGENDE);
-            borne.setTextColor(palette.texteEstompe);
-            borne.setText(getContext().getString(
+            ItemBorneAgentBinding borne = ItemBorneAgentBinding.inflate(
+                    LayoutInflater.from(contexte), colonneCartes, false);
+            borne.texteBorneAgent.setTextColor(palette.texteEstompe);
+            borne.texteBorneAgent.setText(getContext().getString(
                     R.string.agent_plafond, etat.evictions()));
-            colonneCartes.addView(borne, 0);
+            colonneCartes.addView(borne.getRoot(), 0);
         }
         boolean enCours = etat.etat() == TourEtat.EN_COURS;
         envoyer.setEnabled(!enCours);
@@ -464,28 +471,25 @@ public final class VueAgent extends LinearLayout {
 
     private View ligneTonale(String texte) {
         Context contexte = getContext();
-        TextView vue = new TextView(contexte);
-        vue.setTypeface(GraphiteVue.police(contexte, 400, true));
-        vue.setTextSize(11f);
-        vue.setTextColor(palette.texteEstompe);
-        vue.setText(texte);
-        vue.setPadding(GraphiteVue.dp(contexte, 2),
-                GraphiteVue.dp(contexte, 2),
-                GraphiteVue.dp(contexte, 2),
-                GraphiteVue.dp(contexte, 2));
-        return vue;
+        // lot A7 : gonflé d'item_ligne_tonale_agent par binding — la
+        // mono compact estompée d'hier vit dans le layout
+        ItemLigneTonaleAgentBinding ligne =
+                ItemLigneTonaleAgentBinding.inflate(
+                        LayoutInflater.from(contexte), colonneCartes,
+                        false);
+        ligne.texteLigneTonale.setText(texte);
+        return ligne.getRoot();
     }
 
     private View carteUsage(Carte carte) {
         Context contexte = getContext();
         // la légende discrète de fin de tour (la manière CodeAssist) :
         // les jetons compacts (« 940 », « 8.4k », « 1.2M »), la ligne
-        // qui monte tendance sans prendre la place
-        TextView vue = new TextView(contexte);
-        GraphiteVue.typographie(vue, Graphite.LEGENDE);
-        vue.setTextColor(palette.texteEstompe);
-        vue.setMaxLines(1);
-        vue.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        // qui monte tendance sans prendre la place — lot A7 : gonflée
+        // d'item_usage_agent par binding
+        ItemUsageAgentBinding vue = ItemUsageAgentBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        vue.texteUsageAgent.setTextColor(palette.texteEstompe);
         UsageLlm u = carte.usage;
         StringBuilder ligne = new StringBuilder();
         if (u.entrees > 0) {
@@ -514,10 +518,8 @@ public final class VueAgent extends LinearLayout {
                     .append(contexte.getString(R.string.agent_usage_requete,
                             carte.requetes));
         }
-        vue.setText(ligne);
-        vue.setPadding(0, GraphiteVue.dp(contexte, 2), 0,
-                GraphiteVue.dp(contexte, 2));
-        return vue;
+        vue.texteUsageAgent.setText(ligne);
+        return vue.getRoot();
     }
 
     /** Les jetons compacts (« 940 », « 8.4k », « 1.2M ») du pied. */
@@ -527,40 +529,28 @@ public final class VueAgent extends LinearLayout {
 
     private View carteErreur(Carte carte) {
         Context contexte = getContext();
-        LinearLayout bloc = ItemErreurAgentBinding.inflate(
-                LayoutInflater.from(contexte), colonneCartes,
-                false).getRoot();
+        // lot A7 : titre, détail et ACTION vivent dans le layout
+        // d'item — plus aucune vue du cadre instanciée ici
+        ItemErreurAgentBinding item = ItemErreurAgentBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        LinearLayout bloc = item.getRoot();
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(0x12E06C75);
         fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
         fond.setStroke(GraphiteVue.dp(contexte, 1), 0x66E06C75);
         bloc.setBackground(fond);
-        TextView titre = new TextView(contexte);
-        GraphiteVue.typographie(titre, Graphite.CORPS);
-        titre.setTextColor(palette.erreur);
-        titre.setText(texteErreur(carte));
-        bloc.addView(titre);
-        TextView detail = new TextView(contexte);
-        GraphiteVue.typographie(detail, Graphite.LEGENDE);
-        detail.setTextColor(palette.texteSecondaire);
-        detail.setText(carte.detail);
-        detail.setPadding(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.addView(detail);
+        item.titreErreur.setText(texteErreur(carte));
+        item.detailErreur.setText(carte.detail);
         if (carte.action == ActionErreur.OUVRIR_REGLAGES
                 || carte.action == ActionErreur.CHANGER_MODELE) {
-            TextView action = new TextView(contexte);
-            GraphiteVue.typographie(action, Graphite.CORPS);
-            action.setTextColor(palette.accent);
-            action.setText(carte.action == ActionErreur
+            item.actionErreur.setVisibility(VISIBLE);
+            item.actionErreur.setText(carte.action == ActionErreur
                     .OUVRIR_REGLAGES
                     ? R.string.agent_ouvrir_reglages
                     : R.string.agent_changer_modele);
-            action.setPadding(0, GraphiteVue.dp(contexte, 6), 0, 0);
-            action.setOnClickListener(vue ->
+            item.actionErreur.setOnClickListener(vue ->
                     ouvrirReglagesIa());
-            bloc.addView(action);
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
@@ -583,22 +573,21 @@ public final class VueAgent extends LinearLayout {
         bloc.setBackground(fond);
         for (int i = 0; i < carte.questions.size(); i++) {
             EtatAgentChat.Question question = carte.questions.get(i);
-            TextView demande = new TextView(contexte);
-            GraphiteVue.typographie(demande, Graphite.CORPS);
-            demande.setTextColor(palette.texte);
-            demande.setText(contexte.getString(
+            // lot A7 : la demande et sa rangée d'options vivent dans
+            // item_question_ligne gonflé par binding (les Puce du kit
+            // restent posées par code : elles portent l'état pointé)
+            ItemQuestionLigneBinding ligne =
+                    ItemQuestionLigneBinding.inflate(
+                            LayoutInflater.from(contexte), bloc, true);
+            if (i > 0) {
+                ligne.getRoot().setPadding(0,
+                        GraphiteVue.dp(contexte, 10), 0, 0);
+            }
+            ligne.demandeQuestion.setText(contexte.getString(
                     R.string.agent_question_numero, i + 1,
                             carte.questions.size())
                     + " " + question.question);
-            if (i > 0) {
-                demande.setPadding(0, GraphiteVue.dp(contexte, 10), 0,
-                        0);
-            }
-            bloc.addView(demande);
-            LinearLayout options = new LinearLayout(contexte);
-            options.setOrientation(LinearLayout.HORIZONTAL);
-            options.setPadding(0, GraphiteVue.dp(contexte, 7), 0,
-                    GraphiteVue.dp(contexte, 2));
+            LinearLayout options = ligne.optionsQuestion;
             for (int choix = 0; choix < question.options.size()
                     + 2; choix++) {
                 Puce puce = new Puce(contexte);
@@ -623,7 +612,6 @@ public final class VueAgent extends LinearLayout {
                 });
                 options.addView(puce, margeParams(contexte));
             }
-            bloc.addView(options);
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
@@ -653,26 +641,13 @@ public final class VueAgent extends LinearLayout {
         }
     }
 
-    /** La puce de mode de permission (ADR-É11 point 3). */
+    /** La puce de mode de permission (ADR-É11 point 3) : l'atelier
+     *  compose le menu ANCRÉ des modes (lot A7 — la vue ne décide
+     *  RIEN du contenu). */
     private void auditeurMode() {
-        jo.joide.app.android.ui.Dialogue.menu(getContext(), palette,
-                getContext().getString(R.string.agent_permission_titre),
-                new CharSequence[]{
-                        getContext().getString(
-                                R.string.agent_mode_demande),
-                        getContext().getString(
-                                R.string.agent_mode_auto),
-                        getContext().getString(
-                                R.string.agent_mode_plan)},
-                (dialog, lequel) -> {
-                    if (auditeur != null) {
-                        auditeur.poserMode(switch (lequel) {
-                            case 0 -> Permissions.Mode.DEMANDE_CHAQUE;
-                            case 1 -> Permissions.Mode.ACCEPTATION_AUTO;
-                            default -> Permissions.Mode.PLAN_SEULEMENT;
-                        });
-                    }
-                });
+        if (auditeur != null) {
+            auditeur.ouvrirMode();
+        }
     }
 
     private String texteMode(Permissions.Mode mode) {

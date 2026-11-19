@@ -1,86 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L6 — le sélecteur de modèle (la manière CodeAssist, §3.9) : la
-  coque du popup ancré à la puce du tiroir — titre + fermer, la
-  rangée des fournisseurs qui défile (les puces restent posées par
-  code : elles portent l'état pointé), l'état de clé du fournisseur
-  pointé, la recherche en pilule discrète, la liste (favoris, récents,
-  suggestions — remplie par code). Aucune décision ici : le contenu
+  Lot L6 (la manière CodeAssist, §3.9), gabarit ANCRÉ du lot A7
+  (ADR-085 décision 12) : le SÉLECTEUR DE MODÈLE accroché à la puce
+  du tiroir — la carte vit dans CE layout (popup_*.xml : le fond
+  surface, liseré bord-fin, rayon carte de PopupAncre d'hier), titre +
+  fermer, la rangée des fournisseurs qui défile (les puces restent
+  posées par code : elles portent l'état pointé), l'état de clé du
+  fournisseur pointé, la recherche en pilule discrète, la liste
+  (favoris, récents, suggestions — remplie d'item_modele et
+  d'item_entete_section par code). Aucune décision ici : le contenu
   vient de Reglages et du stockage chiffré.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:scrollbars="none"
+    android:overScrollMode="ifContentScrolls">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/agent_modele_titre"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="?attr/jo_texte" />
-
-        <jo.joide.app.android.ui.Icone
-            android:id="@+id/btn_fermer_modeles"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/action_annuler" />
-    </LinearLayout>
-
-    <HorizontalScrollView
-        android:id="@+id/defile_fournisseurs"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:clipToPadding="false">
+        android:orientation="vertical"
+        android:background="@drawable/carte_popup"
+        android:padding="@dimen/jo_pad_popup">
 
         <LinearLayout
-            android:id="@+id/rangee_fournisseurs"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/etat_cles"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="14dp"
-        android:paddingEnd="14dp"
-        android:paddingTop="4dp"
-        android:textSize="11sp"
-        android:textColor="?attr/jo_texte2" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/agent_modele_titre"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
 
-    <EditText
-        android:id="@+id/recherche_modeles"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:background="@drawable/agent_composeur_fond"
-        android:hint="@string/agent_modeles_recherche"
-        android:textSize="14sp"
-        android:inputType="text"
-        android:maxLines="1"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:importantForAutofill="no" />
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/btn_fermer_modeles"
+                android:layout_width="@dimen/jo_hauteur_cible"
+                android:layout_height="@dimen/jo_hauteur_cible"
+                app:jo_icone_glyphe="croix"
+                app:jo_icone_couleur="?attr/jo_texte2"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/action_annuler" />
+        </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/liste_modeles"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" />
-</LinearLayout>
+        <HorizontalScrollView
+            android:id="@+id/defile_fournisseurs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/rangee_fournisseurs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/etat_cles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/jo_pad_ligne_menu"
+            android:paddingEnd="@dimen/jo_pad_ligne_menu"
+            android:paddingTop="@dimen/jo_pad_ligne_tonale"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte2" />
+
+        <EditText
+            android:id="@+id/recherche_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
+            android:background="@drawable/agent_composeur_fond"
+            android:hint="@string/agent_modeles_recherche"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:importantForAutofill="no" />
+
+        <LinearLayout
+            android:id="@+id/liste_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- l'état vide de la recherche (sections vides sans filtre) :
+             le libellé se pose au bind -->
+        <TextView
+            android:id="@+id/vide_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/jo_pad_ligne_menu"
+            android:paddingEnd="@dimen/jo_pad_ligne_menu"
+            android:paddingTop="@dimen/jo_ecart_ligne_menu"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte3"
+            android:visibility="gone" />
+
+        <!-- le modèle hors catalogue reste atteignable : le geste
+             personnalisé garde son popup (nom, URL de base) -->
+        <TextView
+            android:id="@+id/personnalise_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingLeft="@dimen/jo_pad_ligne_menu"
+            android:paddingRight="@dimen/jo_pad_ligne_menu"
+            android:text="@string/agent_modeles_personnalise"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_accent" />
+    </LinearLayout>
+</ScrollView>
