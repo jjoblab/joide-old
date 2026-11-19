@@ -81,8 +81,12 @@ public final class EtatProblemes {
      *  saute jamais vers un avertissement : §3.6 dit « erreur
      *  suivante dans l'éditeur »). */
     public Probleme suivant(String cheminActif, int ligneActuelle) {
+        // lot C1 : collect(toList()) (API 24) et non toList() (API 34) —
+        // minSdk 28, le saut « problème suivant » ne doit pas mourir
+        // d'un NoSuchMethodError sur Android 13
         List<Probleme> erreurs = problemes.stream()
-                .filter(Probleme::erreur).toList();
+                .filter(Probleme::erreur)
+                .collect(java.util.stream.Collectors.toList());
         if (erreurs.isEmpty()) {
             return null;
         }

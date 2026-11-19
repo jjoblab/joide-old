@@ -414,4 +414,23 @@
     <string name="agent_composeur_placeholder">Ask the agent…</string>
     <string name="agent_historique">History</string>
     <string name="action_fermer">Close</string>
+
+    <!-- Lot C1 — l'écran de crash : la détection de TOUT type de
+         plantage (exception non interceptée, gel de l'interface).
+         L'écran vit SOUS le thème du cadre (pas Graphite) : ces
+         chaînes sont ses seules ressources, les couleurs restent
+         en code (un écran d'urgence ne dépend d'aucune couleur
+         applicative). -->
+    <string name="crash_titre">JoIDE stopped</string>
+    <string name="crash_sous_titre">The full crash report is below — it stays on disk and detects every crash type.</string>
+    <string name="crash_type">Type</string>
+    <string name="crash_message">Message</string>
+    <string name="crash_pile">Stack trace</string>
+    <string name="crash_aucun">No crash recorded</string>
+    <string name="crash_rapports_precedents">%1$d earlier reports</string>
+    <string name="crash_relancer">Restart JoIDE</string>
+    <string name="crash_effacer">Clear reports</string>
+    <string name="crash_quitter">Quit</string>
+    <string name="crash_precedent">Earlier</string>
+    <string name="crash_suivant">Later</string>
 </resources>

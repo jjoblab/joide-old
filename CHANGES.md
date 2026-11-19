@@ -1,3 +1,60 @@
+# CHANGES — le garde-crash : l'activité qui détecte TOUT type de plantage, la dette NewApi éteinte (2026-11-19)
+
+**Lot C1 (garde-crash) — la demande du terrain du 2026-11-19** : « créé
+une activity crash que détecte tout le type de crash ». L'application
+plantait (tiroir agent, saisie des clés, feuille de build muette)
+SANS trace récupérable ; le garde en écrit désormais une pour CHAQUE
+type de panne, et la montre.
+**`AppJoide`** (nouvelle `Application` au manifeste) pose le garde
+AVANT toute activité, dans TOUT processus (le démon `:build` compris).
+**`GardienCrash`** — trois voies de détection : 1) les exceptions non
+interceptées SUR TOUT FIL (`Thread.setDefaultUncaughtExceptionHandler`)
+avec la classe exacte (NPE, InflateException, NoSuchMethodError,
+OOM…) et la pile complète, PLUS la pile du fil principal (le contexte
+quand un fil de fond casse) ; 2) le GEL du fil d'interface (classe ANR)
+par chien de garde : une impulsion au fil principal toutes les 2 s, non
+courue en 8 s = gel — la PILE du fil principal bloqué est capturée DEPUIS
+le chien (LE diagnostic : où il est coincé), débogueur branché = jamais
+de faux gel ; 3) les fractures des processus secondaires (`:build`) :
+rapport écrit SANS voler l'atelier vivant — l'ACCUEIL le montre au
+retour (`MainActivity.onResume` + marqueur `.vus` : un plantage ne
+meurt jamais en silence, la feuille de build muette de la remontée
+trouve enfin son auteur).
+**`EcranCrash`** (l'écran demandé) : UI **100 % programmatique** sous
+thème du CADRE (`Theme.Material.NoActionBar`, pas Graphite) — l'écran
+d'urgence doit survivre à un thème cassé, CAUSE POSSIBLE du plantage
+qu'il montre ; type NOMMÉ + classe + message + moment + fil, pile
+complète monospace sélectionnable, historique des 20 derniers rapports
+(plus ancien/plus récent), actions Relancer / Effacer / Quitter ;
+repli nu (TextView) si même son montage échoue ; lancement en tâche
+neuve par le garde PUIS mort propre du processus (600 ms de souse à
+AMS) — le système relance l'écran dans un processus frais, jamais un
+zombie. **`RapportCrash`** : le cœur PUR (testé JVM, 6 tests) — format
+`joide.crash/1` (en-tête, identité, piles, version/Android/appareil),
+CLASSIFICATION du genre (FRACTURE avec classe exacte vs
+GEL_INTERFACE), cause première dépliée, nom de fichier classé par
+moment ; écriture atomique, plafond 20 rapports.
+**Écart motivé au filet** : `ZONES_EXCUSSEES_VUES` porte
+`crash/EcranCrash.java` (l'unique vue du produit qui DOIT se passer du
+Graphite — consigné dans le filet et ici).
+**La dette NewApi éteinte (8 erreurs de lint — crashs RÉELS en
+`NoSuchMethodError` sur appareils ≤ Android 13/14)** : `Path.of` →
+`Paths.get` (×3, `ControleurFichiers` : dupliquer/renommer/supprimer),
+`Stream.toList` → `collect(toList())` (`EtatProblemes.suivant` : le ↓
+« problème suivant »), `readAllBytes` → lecture bornée à la main (×2,
+`ProprietesConstruction` : EXTRACTION D'OUTILLAGE à l'OUVERTURE DE
+L'ATELIER — Android ≤ 12L ne pouvait PAS OUVRIR l'atelier),
+`transferTo` → copie à la main (`PreparationChaine` : keystore),
+`Files.readString` → `readAllBytes`+UTF-8 (`SpecsBuild.identifiantPaquet`
+: LE BUILD SUR ANDROID ≤ 13 mourait à la lecture du manifeste du projet
+— la « feuille qui n'affiche rien pour build » de la remontée).
+Lint : **11 → 3 erreurs** (les 3 restantes : `DiffUtilEquals` faux
+positifs connus sur les records). Mesures : tests 370 → **376** (6
+nouveaux, 0 échec) ; APK 15 848 929 → **15 868 489 o** (+19 560 o :
+le garde) ; manifeste `android:name=".AppJoide"` + l'activité de crash
+(non exportée, hors recents). Chaînes `crash_*` paritaires (FR/EN).
+Docs : `PHASE-C1-RAPPORT.md` à la racine.
+
 # CHANGES — le kit ne garde que l'irremplaçable, une seule voie de thémage, exceptions vides (2026-11-19)
 
 **Lot A9 de l'ADR-085 (consolidation, le chantier est clos — statut

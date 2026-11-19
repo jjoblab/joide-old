@@ -54,7 +54,13 @@ public final class PreparationChaine {
             try (InputStream entree = contexte.getAssets()
                     .open(ASSET_KEYSTORE);
                  OutputStream sortie = Files.newOutputStream(temporaire)) {
-                entree.transferTo(sortie);
+                // lot C1 : copie à la main (API 1) — transferTo
+                // exige l'API 33, minSdk 28
+                byte[] morceau = new byte[65_536];
+                int lus;
+                while ((lus = entree.read(morceau)) > 0) {
+                    sortie.write(morceau, 0, lus);
+                }
             }
             if (Files.size(temporaire) == 0) {
                 Files.deleteIfExists(temporaire);

@@ -19,6 +19,7 @@
         android:protectionLevel="signature" />
 
     <application
+        android:name=".AppJoide"
         android:label="@string/app_name"
         android:icon="@android:drawable/sym_def_app_icon"
         android:theme="@android:style/Theme.Material.NoActionBar"
@@ -101,6 +102,22 @@
             android:name=".ecrans.parametres.EcranParametres"
             android:label="@string/parametres_titre"
             android:exported="false" />
+
+        <!-- Lot C1 (garde-crash) : l'écran de CRASH, non exporté, hors
+             recents — la demande du terrain 2026-11-19 (« une activity
+             crash que détecte tout le type crash »). Thème du CADRE
+             (pas Graphite : l'écran d'urgence doit survivre à un thème
+             cassé — la cause possible du plantage qu'il doit montrer).
+             Lancé en tâche neuve par le garde après le rapport écrit,
+             puis le processus meurt : le système relance cet écran
+             dans un processus neuf, jamais un zombie. -->
+        <activity
+            android:name=".crash.EcranCrash"
+            android:label="@string/crash_titre"
+            android:theme="@android:style/Theme.Material.NoActionBar"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:allowTaskReparenting="false" />
 
         <!-- Démon de build en processus séparé (§6.7, ADR-043) :
              service de premier plan, socket locale sur le rebouclage,

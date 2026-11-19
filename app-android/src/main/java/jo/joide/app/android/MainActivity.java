@@ -129,6 +129,15 @@ public final class MainActivity extends ActiviteJoide {
         // le retour d'un autre écran (création, atelier) peut avoir
         // changé la liste : elle se relit, la salutation se recale
         recharger();
+        // lot C1 (garde-crash) : un plantage JAMAIS VU se montre au
+        // retour — le démon :build meurt en silence pendant un build
+        // (l'écran de crash ne vole pas l'atelier vivant), son rapport
+        // attend ici ; l'ouverture ne se répète pas (marqueur posé
+        // par l'écran consulté)
+        if (jo.joide.app.android.crash.GardienCrash.rapportsNouveaux()) {
+            startActivity(new android.content.Intent(this,
+                    jo.joide.app.android.crash.EcranCrash.class));
+        }
     }
 
     // ---- État ----

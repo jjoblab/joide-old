@@ -74,6 +74,21 @@ public final class ProprietesConstruction {
         extraireStubs(contexte);
     }
 
+    /** La lecture intégrale d'un flux (API 1) : readAllBytes exige
+     *  l'API 33 — les assets d'outillage (jar, keystore) se lisent à
+     *  la main, minSdk 28 (lot C1, la dette NewApi du lint). */
+    private static byte[] lireTout(InputStream entree)
+            throws IOException {
+        java.io.ByteArrayOutputStream tampon =
+                new java.io.ByteArrayOutputStream();
+        byte[] morceau = new byte[65_536];
+        int lus;
+        while ((lus = entree.read(morceau)) > 0) {
+            tampon.write(morceau, 0, lus);
+        }
+        return tampon.toByteArray();
+    }
+
     /** Le jar du plugin Compose : asset extrait une fois (la
      *  fraîcheur tenant à la taille), publié par renommage — la
      *  manière CodeAssist (jar bundlé, extrait sur disque). */
@@ -85,7 +100,9 @@ public final class ProprietesConstruction {
             byte[] contenu;
             try (InputStream asset = contexte.getAssets()
                     .open(ASSET_PLUGIN_COMPOSE)) {
-                contenu = asset.readAllBytes();
+                // lot C1 : lecture bornée à la main — readAllBytes
+                // exige l'API 33, minSdk 28
+                contenu = lireTout(asset);
             }
             if (!Files.isRegularFile(cible)
                     || Files.size(cible) != contenu.length) {
@@ -118,7 +135,9 @@ public final class ProprietesConstruction {
             byte[] contenu;
             try (InputStream asset = contexte.getAssets()
                     .open(ASSET_STUBS)) {
-                contenu = asset.readAllBytes();
+                // lot C1 : lecture bornée à la main — readAllBytes
+                // exige l'API 33, minSdk 28
+                contenu = lireTout(asset);
             }
             if (!Files.isRegularFile(cible)
                     || Files.size(cible) != contenu.length) {

@@ -151,8 +151,18 @@ class ArchitectureVuesTest {
      * {@code item_*}/{@code popup_*} gonflés par binding — seules les
      * PUCES du kit, vues maison déclarables, restent posées par code,
      * hors filet).
+     *
+     * <p>Lot C1 (garde-crash, 2026-11-19) : UNE entrée motivée —
+     * l'écran de crash. L'URGENCE ne gonfle RIEN du thème applicatif :
+     * il doit montrer le plantage même quand la CAUSE est le thème
+     * ({@code ?attr/jo_*} non résolu) ou un layout — d'où une UI 100 %
+     * programmatique sous thème du CADRE, déclarée au manifeste. Ce
+     * n'est pas une dérive : c'est la seule vue du produit qui DOIT
+     * se passer du Graphite. La liste ne peut que décroître ailleurs.
+     * </p>
      */
-    private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of();
+    private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of(
+            "crash/EcranCrash.java");
 
     /**
      * Lot A5 (ADR-085, critère du lot) : HORS écrans et hors kit, les

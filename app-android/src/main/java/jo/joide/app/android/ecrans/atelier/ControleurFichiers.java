@@ -124,7 +124,10 @@ final class ControleurFichiers {
     /** Duplique un fichier du projet : la copie vit à côté. */
     private void dupliquerEntree(String chemin) {
         try {
-            java.nio.file.Path source = java.nio.file.Path.of(chemin);
+            // Paths.get (API 26) et non Path.of (API 34) : minSdk 28,
+            // un Android 13 ne doit pas mourir d'un NoSuchMethodError
+            // au premier duplicata (lot C1, la dette NewApi du lint)
+            java.nio.file.Path source = java.nio.file.Paths.get(chemin);
             String nom = source.getFileName().toString();
             int point = nom.lastIndexOf('.');
             String copie = point < 0 ? nom + " (copie)"
@@ -175,7 +178,8 @@ final class ControleurFichiers {
             return;
         }
         try {
-            java.nio.file.Path source = java.nio.file.Path.of(chemin);
+            // lot C1 : Paths.get (API 26), Path.of exige l'API 34
+            java.nio.file.Path source = java.nio.file.Paths.get(chemin);
             java.nio.file.Files.move(source,
                     source.resolveSibling(nom),
                     java.nio.file.StandardCopyOption.ATOMIC_MOVE);
@@ -196,8 +200,10 @@ final class ControleurFichiers {
                 hote.texte(R.string.action_ok),
                 () -> {
                     try {
+                        // lot C1 : Paths.get (API 26), Path.of exige
+                        // l'API 34
                         java.nio.file.Path cible =
-                                java.nio.file.Path.of(chemin);
+                                java.nio.file.Paths.get(chemin);
                         if (dossier) {
                             supprimerRecursivement(cible);
                         } else {

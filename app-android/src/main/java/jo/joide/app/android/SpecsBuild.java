@@ -395,8 +395,13 @@ public final class SpecsBuild {
                                             BuildSpec.ModuleSpec module) {
         if (module.manifest != null) {
             try {
-                String texte = Files.readString(
-                        projet.resolve(module.manifest));
+                // lot C1 : readAllBytes + UTF-8 (API 26) — readString
+                // exige l'API 33, minSdk 28 : un build sur Android 13
+                // ne doit pas mourir d'un NoSuchMethodError à la
+                // lecture du manifeste du projet construit
+                String texte = new String(java.nio.file.Files
+                        .readAllBytes(projet.resolve(module.manifest)),
+                        java.nio.charset.StandardCharsets.UTF_8);
                 java.util.regex.Matcher m = java.util.regex.Pattern
                         .compile("package\\s*=\\s*\"([^\"]+)\"")
                         .matcher(texte);
