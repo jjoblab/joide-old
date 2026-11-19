@@ -4,6 +4,9 @@
   SANS bulle ; le CARET 7×14 dp qui clignote pendant l'écriture ; le
   pied porte le bouton COPIER (la coche revient 1,5 s) et la légende
   des jetons (« 940 in · 8.4k out » — l'usage du tour).
+  Terrain du 2026-11-22 : la réponse vit en BLOCS Markdown (RenduMarkdown)
+  — paragraphes, titres, listes, citations, blocs de code monospace —
+  le conteneur reçoit les vues, la vue ne décide rien de la découpe.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,13 +14,11 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/texte_reponse"
+    <LinearLayout
+        android:id="@+id/blocs_reponse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="15sp"
-        android:lineHeight="22sp"
-        android:textColor="?attr/jo_texte" />
+        android:orientation="vertical" />
 
     <!-- le caret de frappe : 7×14 dp au rayon 2, la couleur pulse
          tant que le tour écrit (la teinte se pose par code) -->

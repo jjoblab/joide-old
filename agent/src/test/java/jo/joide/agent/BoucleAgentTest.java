@@ -175,7 +175,7 @@ class BoucleAgentTest {
     }
 
     @Test
-    void laLimiteDeDebitSePatienteVisiblementPuisReussit() {
+    void laLimiteDeDebitSePatienteProperementPuisReussit() {
         OutilMemoire lecture = new OutilMemoire("read_file", false,
                 "ok");
         ErreursLlm.ErreurLlm limite = new ErreursLlm.ErreurLlm(
@@ -198,20 +198,51 @@ class BoucleAgentTest {
                 evenements::add);
         assertEquals(EvenementAgent.RaisonFin.TERMINE,
                 resultat.raison,
-                "après trois attentes visibles, la réponse passe");
-        long attentes = evenements.stream()
-                .filter(e -> e.genre == EvenementAgent.Genre.ATTENTE)
-                .count();
-        assertTrue(attentes >= 4,
-                "le décompte annulable est émis : " + attentes
-                        + " événements d'attente");
-        // le décompte DÉCROÎT : 2 puis 1, par attente
-        List<Long> decomptes = evenements.stream()
+                "après trois attentes patientées, la réponse passe");
+        // terrain du 2026-11-22 : UNE ligne par pause — la carte par
+        // seconde d'hier spammait le transcript ; trois pauses, trois
+        // événements, chacun énonce SON délai
+        List<Long> attentes = evenements.stream()
                 .filter(e -> e.genre == EvenementAgent.Genre.ATTENTE)
                 .map(e -> e.secondes).toList();
-        assertTrue(decomptes.contains(2L) && decomptes.contains(1L),
-                "chaque attente énonce son délai et décompte : "
-                        + decomptes);
+        assertEquals(List.of(2L, 2L, 2L), attentes,
+                "une ligne par pause, le délai énoncé : " + attentes);
+    }
+
+    @Test
+    void lErreurNEstAnnonceeQuUneFois() {
+        // terrain du 2026-11-22 (« le cadre erreur est affiché 2
+        // fois ») : la boucle ANNONCE l'événement puis marque
+        // l'erreur — le service qui rattrape ne re-consignera pas
+        OutilMemoire lecture = new OutilMemoire("read_file", false,
+                "ok");
+        ErreursLlm.ErreurLlm limite = new ErreursLlm.ErreurLlm(
+                ErreursLlm.Genre.LIMITE_DEBIT,
+                "rate limited (429)", 1);
+        FournisseurScripte fournisseur = new FournisseurScripte(
+                List.of(), List.of(),
+                List.of(limite, limite, limite, limite, limite,
+                        limite, limite));
+        BoucleAgent.Config config = new BoucleAgent.Config(4, 128, 3,
+                60, false);
+        BoucleAgent boucle = boucle(fournisseur,
+                new ExecuteurOutils(new PortMemoire(lecture)), config);
+        List<EvenementAgent> evenements = new ArrayList<>();
+        try {
+            boucle.tour("fais", HistoriqueAgent.vide(),
+                    Permissions.Mode.ACCEPTATION_AUTO, null, null,
+                    CancelToken.NEVER, evenements::add);
+            throw new AssertionError("devrait lever");
+        } catch (ErreursLlm.ErreurLlm erreur) {
+            assertEquals(ErreursLlm.Genre.LIMITE_DEBIT, erreur.genre);
+            assertEquals(1, evenements.stream()
+                    .filter(e -> e.genre == EvenementAgent.Genre.ERREUR)
+                    .count(), "l'erreur est un ÉVÉNEMENT, émis UNE "
+                    + "seule fois");
+            assertTrue(erreur.dejaAnnoncee,
+                    "l'erreur est marquée : le service ne la "
+                            + "re-consignera pas");
+        }
     }
 
     @Test

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Terrain du 2026-11-22 — le bloc de CITATION Markdown : la barre
+  accent 3 dp à gauche, les blocs internes dans le conteneur (la
+  marge interne suit, 10 dp).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <View
+        android:id="@+id/barre_bloc_citation"
+        android:layout_width="3dp"
+        android:layout_height="match_parent"
+        android:background="?attr/jo_accent" />
+
+    <LinearLayout
+        android:id="@+id/conteneur_bloc_citation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="10dp" />
+</LinearLayout>

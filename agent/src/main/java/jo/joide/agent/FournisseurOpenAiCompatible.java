@@ -25,6 +25,15 @@ import jo.joide.platform.CancelToken;
  * signature opaque taguée {@code openai:*} — jamais confondue avec
  * celle d'un autre fournisseur ; elle repart telle quelle au tour
  * suivant.</p>
+ *
+ * <p>Le terrain du 2026-11-22 : les arguments d'un appel d'outil
+ * partaient en OBJET — la spécification Chat Completions exige une
+ * CHAÎNE JSON ({@code arguments}), un serveur Go qui la dé-sérialise
+ * en string répond exactement « json: cannot unmarshal object »
+ * (400 malformed_json, la « réponse illisible » d'hier) : ils repartent
+ * en texte brut, tels que le modèle les a dits ; et {@code tools}
+ * ne part JAMAIS vide — un tableau vide est refusé par des
+ * passerelles.</p>
  */
 public final class FournisseurOpenAiCompatible implements FournisseurLlm {
 
@@ -79,7 +88,12 @@ public final class FournisseurOpenAiCompatible implements FournisseurLlm {
         Map<String, Object> corps = new LinkedHashMap<>();
         corps.put("model", requete.modele);
         corps.put("messages", messages);
-        corps.put("tools", outilsOpenAi(requete.outils));
+        // le terrain du 2026-11-22 : un tableau tools VIDE est refusé
+        // par des passerelles — le champ ne part que s'il porte des
+        // outils (la passation du plafond d'itérations n'en porte pas)
+        if (!requete.outils.isEmpty()) {
+            corps.put("tools", outilsOpenAi(requete.outils));
+        }
         if (requete.plafondSortie > 0) {
             corps.put("max_tokens", requete.plafondSortie);
         }
@@ -246,6 +260,13 @@ public final class FournisseurOpenAiCompatible implements FournisseurLlm {
         final StringBuilder arguments = new StringBuilder();
     }
 
+    /** Les arguments bruts d'un appel, en CHAÎNE (jamais ré-écrits,
+     * «{}» s'ils sont muets) — la forme que Chat Completions exige. */
+    static String argumentsTexte(String arguments) {
+        String brut = arguments == null ? "" : arguments.trim();
+        return brut.isEmpty() ? "{}" : brut;
+    }
+
     /** Traduit l'historique neutre en messages Chat Completions. */
     static List<Object> messagesOpenAi(List<MessageAgent> messages) {
         List<Object> sortie = new ArrayList<>();
@@ -264,9 +285,14 @@ public final class FournisseurOpenAiCompatible implements FournisseurLlm {
                         Map<String, Object> fonction =
                                 new LinkedHashMap<>();
                         fonction.put("name", partie.nomOutil);
+                        // la spécification Chat Completions : arguments
+                        // est une CHAÎNE JSON — le terrain du
+                        // 2026-11-22 (« json: cannot unmarshal object »
+                        // en 400 malformed_json) venait de l'OBJET
+                        // d'hier ; le texte repart TEL QUEL, jamais
+                        // ré-écrit
                         fonction.put("arguments",
-                                FournisseurAnthropic.argumentsObjet(
-                                        partie.arguments));
+                                argumentsTexte(partie.arguments));
                         Map<String, Object> appel =
                                 new LinkedHashMap<>();
                         appel.put("id", partie.idAppel);

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Terrain du 2026-11-22 — la pastille d'attente UNIQUE au dessin de la
+  maquette (.attente) : pilule alignée à gauche, fond alerte 8 %, bord
+  alerte 30 %, rayon 999, point 8 dp qui PULSE pendant la pause ; la
+  teinte du point et le fond se posent par code (la palette vit dans
+  Graphite). Une seule pastille par pause — jamais une carte par seconde.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="5dp"
+    android:paddingBottom="5dp">
+
+    <View
+        android:id="@+id/point_attente"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/point_attente_agent" />
+
+    <TextView
+        android:id="@+id/texte_attente"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?attr/jo_alerte"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:importantForAccessibility="no" />
+</LinearLayout>

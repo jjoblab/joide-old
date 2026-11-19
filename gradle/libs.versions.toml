@@ -32,7 +32,7 @@ apksig = "9.5.1"
 bundletool = "1.18.3"
 # bundletool déclare ses dépendances en portée runtime seulement :
 # guava est requise à la compilation (API ImmutableList) ; les sept
-# autres du POM (protobuf-java, protobuf-java-util, failureaccess,
+# premières du POM (protobuf-java, protobuf-java-util, failureaccess,
 # listenablefuture, jsr305, error_prone_annotations, checker-qual)
 # ne vivent que dans le PACK dex différé (lot XXI/b) — jamais dexées
 # dans l'APK, jamais compilées : le pack est autosuffisant.
@@ -46,6 +46,17 @@ listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
 jsr305 = "3.0.2"
 errorProneAnnotations = "2.18.0"
 checkerQual = "2.5.8"
+# Lot XXIII — les SIX dépendances runtime RESTANTES du POM de
+# bundletool 1.18.3 (terrain du 2026-11-22 : le pack .2 les oubliait,
+# le bouton build mourrait en NoClassDefFoundError
+# com/android/aapt/Resources$XmlNode — aapt2-proto porte les classes
+# com.android.aapt du manifeste proto) : versions EXACTES du POM.
+aapt2Proto = "7.3.0-alpha07-8248216"
+dagger = "2.28.3"
+javaxInject = "1"
+jose4j = "0.9.5"
+slf4j = "1.7.30"
+autoValueAnnotations = "1.6.2"
 # Modules Android P8 (ADR-015) : même Gradle 9.8.2 que celeris — le couple
 # AGP 9.5.0 / Gradle 9.8.2 est celui de la brique, prouvé en famille.
 agp = "9.5.0"
@@ -127,6 +138,18 @@ listenablefuture = { module = "com.google.guava:listenablefuture", version.ref =
 jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
 error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorProneAnnotations" }
 checker-qual = { module = "org.checkerframework:checker-qual", version.ref = "checkerQual" }
+# Lot XXIII — la fermeture runtime RESTANTE du POM de bundletool
+# 1.18.3 (aapt2-proto : les classes com.android.aapt du manifeste
+# proto — le terrain du 2026-11-22, NoClassDefFoundError
+# Resources$XmlNode du bouton build ; puis dagger, javax.inject,
+# jose4j, slf4j-api et auto-value-annotations) : jamais compilées,
+# jamais dexées dans l'APK — le pack bundletool les porte.
+aapt2-proto = { module = "com.android.tools.build:aapt2-proto", version.ref = "aapt2Proto" }
+dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }
+jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+auto-value-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "autoValueAnnotations" }
 # Éditeur (celeris) : le POM d'android-host tire android-view (et par lui
 # core-text, core-syntax, core-language, core-intelligence) ; les
 # dépendances ci-dessous ne listent que ce qu'ide-integration nomme.

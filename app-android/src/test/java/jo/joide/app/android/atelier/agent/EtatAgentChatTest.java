@@ -22,7 +22,7 @@ import jo.joide.app.android.atelier.agent.EtatAgentChat.TourEtat;
 
 /**
  * L'état du tiroir agent éprouvé par événements (lot P, ADR-É11) :
- * le transcript se CONSTRUIT, rien ne se déduit ; les quatorze
+ * le transcript se CONSTRUIT, rien ne se déduit ; les QUINZE
  * genres d'erreur ont leur verbe ; fermer la permission = refuser ;
  * le journal se REJOUE à l'identique (un écran qui revient retrouve
  * l'état exact).
@@ -90,21 +90,37 @@ class EtatAgentChatTest {
     }
 
     @Test
-    void attenteEtCompactionSontVisiblesEtChiffrees() {
+    void attenteEtCompactionSontUniquesEtChiffrees() {
         EtatAgentChat etat = new EtatAgentChat();
         etat.envoyer("q");
+        // terrain du 2026-11-22 : UNE pastille par pause — les pauses
+        // consécutives RAFRAÎCHISSENT la même pastille, jamais une
+        // carte par seconde
         etat.surEvenement(EvenementAgent.attente(12));
+        List<Carte> apresPause = etat.cartes();
+        assertEquals(Genre.ATTENTE, apresPause.get(1).genre);
+        assertEquals(12, apresPause.get(1).secondes);
+        assertEquals(2, apresPause.size(),
+                "une seule pastille pour la pause");
+        assertTrue(etat.contientAttente());
+        etat.surEvenement(EvenementAgent.attente(30));
+        apresPause = etat.cartes();
+        assertEquals(2, apresPause.size(),
+                "la pause suivante RAFRAÎCHIT la même pastille");
+        assertEquals(30, apresPause.get(1).secondes);
+        // le premier événement de progression RETIRE la pastille :
+        // la compaction (qui suit une pause) ne la garde pas
         etat.surEvenement(EvenementAgent.compaction(128_400, 61_200));
         List<Carte> cartes = etat.cartes();
-        assertEquals(Genre.ATTENTE, cartes.get(1).genre);
-        assertEquals(12, cartes.get(1).secondes);
-        assertEquals(Genre.COMPACTION, cartes.get(2).genre);
-        assertEquals(128_400, cartes.get(2).avant);
-        assertEquals(61_200, cartes.get(2).apres);
+        assertFalse(etat.contientAttente(),
+                "la pastille ne survit pas à la progression");
+        assertEquals(Genre.COMPACTION, cartes.get(1).genre);
+        assertEquals(128_400, cartes.get(1).avant);
+        assertEquals(61_200, cartes.get(1).apres);
     }
 
     @Test
-    void lesQuatorzeGenresOntLeurVerbe() {
+    void lesQuinzeGenresOntLeurVerbe() {
         for (ErreursLlm.Genre genre : ErreursLlm.Genre.values()) {
             EtatAgentChat etat = new EtatAgentChat();
             etat.envoyer("q");
@@ -226,8 +242,11 @@ class EtatAgentChatTest {
     void lePlafondDeCartesSeviqueEtSannonce() {
         EtatAgentChat etat = new EtatAgentChat();
         etat.envoyer("q");
+        // terrain du 2026-11-22 : l'attente ne crée plus de carte par
+        // seconde — le plafond s'éprouve sur les cartes FICHIERS
         for (int i = 0; i < EtatAgentChat.PLAFOND_CARTES + 10; i++) {
-            etat.surEvenement(EvenementAgent.attente(i));
+            etat.surEvenement(EvenementAgent.fichiersChanges(
+                    "a" + i + ".java"));
         }
         assertTrue(etat.cartes().size()
                 <= EtatAgentChat.PLAFOND_CARTES + 1,

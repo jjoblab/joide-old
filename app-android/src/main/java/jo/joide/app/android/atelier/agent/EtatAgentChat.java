@@ -178,6 +178,7 @@ public final class EtatAgentChat {
     private TourEtat etat = TourEtat.VIDE;
     private Carte reponseCourante;
     private Carte raisonnementCourant;
+    private Carte attenteCourante;
     private int evictions;
     private boolean plafondAnnonce;
     private Permissions.Mode mode = Permissions.Mode.DEMANDE_CHAQUE;
@@ -222,6 +223,17 @@ public final class EtatAgentChat {
     /** @return la demande de permission en attente, ou null */
     public Permissions.DemandeEcriture permissionEnAttente() {
         return permissionEnAttente;
+    }
+
+    /**
+     * Vrai si une pastille d'attente (limite de débit) vit
+     * actuellement — la pause coule : le caret de rédaction se tait,
+     * la ligne d'activité dit l'attente.
+     *
+     * @return vrai pendant une pause de limite de débit
+     */
+    public boolean contientAttente() {
+        return attenteCourante != null;
     }
 
     /** @return le préremplissage du composeur (« Demander à l'IA »), ou null */
@@ -272,6 +284,7 @@ public final class EtatAgentChat {
         etat = TourEtat.EN_COURS;
         reponseCourante = null;
         raisonnementCourant = null;
+        attenteCourante = null;
     }
 
     /**
@@ -297,6 +310,14 @@ public final class EtatAgentChat {
      * @param evenement l'événement du service
      */
     public void surEvenement(EvenementAgent evenement) {
+        // la pastille d'attente vit SEULEMENT pendant sa pause : tout
+        // événement de progression (texte, outil, fin, erreur…) la
+        // retire — jamais une pastille qui traîne dans l'historique
+        if (evenement.genre != EvenementAgent.Genre.ATTENTE
+                && attenteCourante != null) {
+            cartes.remove(attenteCourante);
+            attenteCourante = null;
+        }
         switch (evenement.genre) {
             case TEXTE_DELTA -> {
                 if (reponseCourante == null) {
@@ -348,9 +369,17 @@ public final class EtatAgentChat {
                 ajouter(carte);
             }
             case ATTENTE -> {
-                Carte carte = new Carte(Genre.ATTENTE);
-                carte.secondes = evenement.secondes;
-                ajouter(carte);
+                // la pastille UNIQUE du terrain du 2026-11-22 : une
+                // carte PAR SECONDE spammait le transcript (« peu
+                // professionnel ») — la pause s'énonce UNE fois, la
+                // même carte se RAFRAÎCHIT si une nouvelle pause
+                // suit, et le premier événement de progression la
+                // RETIRE (le transcript ne garde rien des pauses)
+                if (attenteCourante == null) {
+                    attenteCourante = new Carte(Genre.ATTENTE);
+                    ajouter(attenteCourante);
+                }
+                attenteCourante.secondes = evenement.secondes;
             }
             case COMPACTATION -> {
                 Carte carte = new Carte(Genre.COMPACTION);

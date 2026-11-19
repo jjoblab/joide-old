@@ -128,14 +128,21 @@ class MaquetteAgentTest {
         String maquette = maquette();
         assertTrue(maquette.contains("reprise dans 12"));
         assertTrue(maquette.contains("Historique compacté"));
+        // terrain du 2026-11-22 : la pastille d'attente est UNIQUE
+        // (rafrîchie par pause consécutive) et ne survit pas à la
+        // progression — la compaction qui suit la retire
         EtatAgentChat etat = new EtatAgentChat();
         etat.envoyer("q");
         etat.surEvenement(EvenementAgent.attente(12));
+        etat.surEvenement(EvenementAgent.attente(30));
+        List<Carte> pause = etat.cartes();
+        assertEquals(2, pause.size(), "une seule pastille, rafrîchie");
+        assertEquals(Genre.ATTENTE, pause.get(1).genre);
+        assertEquals(30, pause.get(1).secondes);
         etat.surEvenement(EvenementAgent.compaction(128_400, 61_200));
         List<Carte> cartes = etat.cartes();
-        assertEquals(Genre.ATTENTE, cartes.get(1).genre);
-        assertEquals(12, cartes.get(1).secondes);
-        assertEquals(Genre.COMPACTION, cartes.get(2).genre);
+        assertEquals(Genre.COMPACTION, cartes.get(1).genre,
+                "la pastille part avec la progression");
     }
 
     @Test

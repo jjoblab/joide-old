@@ -1,3 +1,108 @@
+# CHANGES — le 429 patienté proprement, le 400 dit enfin son nom, la réponse rendue lisible, le pack qui porte TOUT le POM (2026-11-22)
+
+**Lot C9 — le rapport du terrain, mot pour mot.** « Les réponses sont
+pas tous bien représentés que se soit dans le section thinking ou
+encore dans le chat, elle doit être plus moderne, plus intelligente,
+rendus propre. Il y a un message spam limite de débit reprise dans
+n(S) — c'est peu professionnel et en plus le cadre erreur est affiché
+2 fois. Limite de débit (429) — le délai passé, la reprise sert /
+rate limited (429): wait the announced delay then retry. Réponse
+illisible (données cassées ou incohérentes) unexpected response (400)
+: malformed_json, json: cannot unmarshal object… app:bundle[debug] :
+NoClassDefFoundError: Failed resolution of:
+Lcom/android/aapt/Resources$XmlNode; » Quatre terrains, quatre
+correctifs — chacun vérifié contre le code de l'IDE de référence
+(consultation autorisée par le propriétaire).
+
+**Le 429 patienté PROPREMENT.** La boucle émettait un événement
+d'attente PAR SECONDE — l'état en faisait une carte tonale CHACUNE :
+trente secondes de limite de débit laissaient trente lignes « Limite
+de débit — reprise dans N s » dans le transcript (le terrain :
+« un message spam… peu professionnel »). Le geste de l'IDE de
+référence (AgentLoop → Waiting, UNE ligne) arrive : la pause
+s'énonce UNE SEULE fois par attente (BoucleAgent.attendre émet
+l'événement AVEC son délai avant de dormir), l'état tient UNE
+PASTILLE qui se RAFRAÎCHIT si une pause suivante arrive, et le
+premier événement de progression (texte, outil, fin, erreur) la
+RETIRE — le transcript ne garde RIEN des pauses. La pastille vit au
+dessin de la maquette `.attente` : pilule alignée à gauche, fond
+alerte 8 %, bord alerte 30 %, rayon 999, point 8 dp qui PULSE tant
+que le tour vit (item_attente_agent.xml, drawable
+point_attente_agent.xml). Le libellé final du genre s'assainit :
+« Limite de débit (429) — les reprises automatiques sont épuisées,
+réessaie dans un moment ».
+
+**Le cadre erreur affiché 2 fois — jamais plus.** La boucle ANNONÇAIT
+l'événement d'erreur à l'écouteur puis LEVAIT l'exception ; le
+service, qui rattrape tout tour finissait par la re-consigner : DEUX
+cartes d'erreur identiques (le terrain : « le cadre erreur est
+affiché 2 fois »). L'erreur porte maintenant le drapeau transitif
+`dejaAnnoncee` : la boucle le pose en annonçant, le service le lit
+avant de consigner — UNE carte, la fin de tour suit. Le détail de la
+carte devient le DIAGNOSTIC TECHNIQUE : monospace discret sous la
+raison française (jamais une seconde phrase de même taille — le
+terrain voyait « Limite de débit (429) — le délai passé… » suivi
+de « rate limited (429): wait the announced delay… », deux fois la
+même chose).
+
+**Le 400 dit enfin son nom.** « Provider returned error (400) :
+malformed_json, json: cannot unmarshal object… » s'affichait en
+« Réponse illisible (données cassées ou incohérentes) » — le
+serveur a LU la requête et l'a REFUSÉE : la taxonomy gagne le
+QUINZIÈME genre REQUETE_REFUSEE (« Requête refusée par le
+fournisseur (400) — vérifier le modèle et la passerelle »), le
+diagnostic brut du fournisseur voyage dans le message (SAUF le
+wording « too long » : un 400 qui dit la fenêtre reste un contexte
+trop long). Mais la CAUSE était à nous : les arguments d'un appel
+d'outil partaient en OBJET dans tool_calls[].function.arguments —
+la spécification Chat Completions exige une CHAÎNE JSON, un serveur
+Go qui dé-sérialise en string répond exactement « json: cannot
+unmarshal object » : le round 2 d'un tour à outils mourrait à la
+PREMIÈRE re-requête (hello passait, tout travail réel non). Les
+arguments repartent en TEXTE BRUT tel que le modèle les a dits
+(«{}» s'ils sont muets), et le champ `tools` ne part JAMAIS vide (un
+tableau vide est refusé par des passerelles — la passation du
+plafond d'itérations n'en porte pas).
+
+**La réponse rendue LISIBLE — le rendu Markdown arrive.** Le
+transcript affichait la réponse et la réflexion en TEXTE BRUT : les
+titres, listes, code et gras du modèle s'imprimaient en marqueurs
+visibles (le terrain : « pas bien représentés… plus moderne, plus
+intelligent, rendus propre »). Le moteur `RenduMarkdown` (pur, testé
+JVM : AUCUNE dépendance Android) découpe en BLOCS — titres à
+l'échelle, paragraphes, listes à puces ET ordonnées avec
+imbrication, citations à barre accent, séparateurs, blocs de code
+clôturés avec LANGUE — et nettoie l'inline en MARQUAGES (gras,
+italique, code en ligne, liens avec cible). La vue traduit :
+paragraphes aux spans, blocs de code monospace sur conteneur haut
+rayon 10 avec étiquette de langue et bouton COPIER, citations
+imbriquées, listes indentées — la réponse ET la réflexion (en note
+13 sp secondaire). Une clôture manquée va jusqu'à la fin, un
+marqueur non apparié reste du texte : JAMAIS un mot perdu.
+
+**Le pack bundletool porte TOUT le POM (lot XXIII).** Le bouton build
+mourrait : « app:bundle[debug] : NoClassDefFoundError: Failed
+resolution of: Lcom/android/aapt/Resources$XmlNode; » — le pack .2
+du lot XXII portait bundletool + sa fermeture GUAVA mais PAS les SIX
+dépendances runtime RESTANTES du POM de bundletool 1.18.3 :
+aapt2-proto (7.3.0-alpha07-8248216 — les classes com.android.aapt du
+manifeste PROTO, le XmlNode du terrain !), dagger 2.28.3,
+javax.inject 1, jose4j 0.9.5, slf4j-api 1.7.30,
+auto-value-annotations 1.6.2. Le NOUVEAU pack versionné
+bundletool-1.18.3.3.dex.zip (règle dorée tenue : les .0/.1/.2
+restent en place) porte les QUINZE jars assainis + L'ADAPTATEUR,
+d'un seul D8 — 5 992 495 octets, SHA-256
+151eb62e8ac980321e0240d21ff7b7a9dea02d2af1496f460af8af7371284615,
+épinglés dans PacksOutils.java (définitions vérifiées au dexdump :
+com/android/aapt/Resources$XmlNode DÉFINI, l'adaptateur DÉFINI,
+BuildBundleCommand DÉFINI, slf4j.Logger DÉFINI). Six entrées
+rejoignent le catalogue, la tâche :app-android:dexPacksOutils prend
+l'ordre canonique complet (elle reproduit l'artefact octet pour
+octet), le script scripts/fabrique-pack-bundletool.sh suit (le
+marqueur XmlNode entre dans ses définitions exigées). Le pack est à
+publier dans la release toolchain-v1 (l'appareil le télécharge
+épinglé par taille et empreinte).
+
 # CHANGES — la réponse illisible démasquée, le bouton build rendu au pack qui porte son adaptateur (2026-11-22)
 
 **Lot C8 — le rapport du terrain : « Réponse illisible (données cassées

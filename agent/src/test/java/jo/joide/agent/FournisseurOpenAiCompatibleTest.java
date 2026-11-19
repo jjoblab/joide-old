@@ -219,4 +219,50 @@ class FournisseurOpenAiCompatibleTest {
         assertTrue(corps.contains("data:image/jpeg;base64,Zm9vYmFy"),
                 "l'image part en data URI d'un message utilisateur");
     }
+
+    @Test
+    void lesArgumentsDAppelPartentEnChaineJson() {
+        // terrain du 2026-11-22 : l'OBJET d'hier faisait répondre les
+        // serveurs Go « json: cannot unmarshal object » (400
+        // malformed_json) — la spécification Chat Completions exige
+        // une CHAÎNE, le texte brut du modèle repart tel quel
+        MessageAgent appel = new MessageAgent(
+                MessageAgent.Role.ASSISTANT,
+                List.of(PartieContenu.appel("call_9", "read_file",
+                        "{\"path\":\"src/A.java\"}")));
+        String corps = jo.joide.deps.json.JsonEcrire.valeur(
+                FournisseurOpenAiCompatible.messagesOpenAi(
+                        List.of(appel)));
+        assertTrue(corps.contains(
+                "\"arguments\":\"{\\\"path\\\":\\\"src/A.java\\\"}\""),
+                "les arguments partent en CHAÎNE JSON : " + corps);
+        // les arguments muets ne partent jamais vides
+        MessageAgent muet = new MessageAgent(
+                MessageAgent.Role.ASSISTANT,
+                List.of(PartieContenu.appel("call_x", "read_file", "")));
+        corps = jo.joide.deps.json.JsonEcrire.valeur(
+                FournisseurOpenAiCompatible.messagesOpenAi(
+                        List.of(muet)));
+        assertTrue(corps.contains("\"arguments\":\"{}\""),
+                "les arguments muets valent {} : " + corps);
+    }
+
+    @Test
+    void leChampToolsNePartJamaisVide() {
+        // terrain du 2026-11-22 : un tableau tools VIDE est refusé par
+        // des passerelles — le champ ne part que s'il porte des outils
+        FauxTransport transport = new FauxTransport(List.of());
+        FournisseurOpenAiCompatible fournisseur =
+                new FournisseurOpenAiCompatible(null, "cle");
+        try {
+            fournisseur.envoyer(transport, new RequeteLlm("gpt-x",
+                    "S", List.of(), "", List.of(), 1),
+                    CancelToken.NEVER, null);
+        } catch (RuntimeException e) {
+            // le flux scripté est vide : seule la REQUÊTE compte
+        }
+        String corps = transport.requetes.get(0).corps();
+        assertFalse(corps.contains("\"tools\""),
+                "sans outils, le champ tools ne part pas : " + corps);
+    }
 }

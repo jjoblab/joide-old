@@ -478,6 +478,18 @@ dependencies {
     jarsOutils(libs.jsr305)
     jarsOutils(libs.error.prone.annotations)
     jarsOutils(libs.checker.qual)
+    // Lot XXIII — les SIX dépendances runtime RESTANTES du POM de
+    // bundletool 1.18.3 (terrain du 2026-11-22 : le pack .2 les
+    // oubliait, le bouton build mourrait en NoClassDefFoundError
+    // com/android/aapt/Resources$XmlNode — aapt2-proto porte les
+    // classes com.android.aapt du manifeste proto) : jamais compilées
+    // dans l'APK, jamais dexées hors du pack.
+    jarsOutils(libs.aapt2.proto)
+    jarsOutils(libs.dagger)
+    jarsOutils(libs.javax.inject)
+    jarsOutils(libs.jose4j)
+    jarsOutils(libs.slf4j.api)
+    jarsOutils(libs.auto.value.annotations)
     jarAdaptateurs(project(mapOf("path" to ":build-android",
             "configuration" to "toolsApi")))
     // Lot VII : le compilateur Kotlin et sa FERMETURE RUNTIME (les
@@ -557,7 +569,10 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         // lot XXII : la fermeture runtime du pack, l'ordre CANONIQUE du
         // dexage (le même que la fabrication publiée) — jamais
         // jarsOutils.resolve() brut, l'ordre du résolveur n'est pas le
-        // nôtre et l'artefact doit se reproduire octet pour octet
+        // nôtre et l'artefact doit se reproduire octet pour octet.
+        // lot XXIII : les SIX dépendances runtime RESTANTES du POM
+        // (aapt2-proto d'abord — com.android.aapt, le terrain du
+        // 2026-11-22 : NoClassDefFoundError Resources$XmlNode)
         val jarsBundletool = listOf(
                 jars.first { it.name.startsWith("bundletool-") },
                 guavaJar,
@@ -570,7 +585,14 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
                 jars.first { it.name.startsWith("jsr305-") },
                 jars.first {
                     it.name.startsWith("error_prone_annotations-") },
-                jars.first { it.name.startsWith("checker-qual-") })
+                jars.first { it.name.startsWith("checker-qual-") },
+                jars.first { it.name.startsWith("aapt2-proto-") },
+                jars.first { it.name.startsWith("dagger-") },
+                jars.first { it.name.startsWith("javax.inject-") },
+                jars.first { it.name.startsWith("jose4j-") },
+                jars.first { it.name.startsWith("slf4j-api-") },
+                jars.first {
+                    it.name.startsWith("auto-value-annotations-") })
         val adaptateursJar = jarAdaptateurs.resolve().single()
         val androidJar = sdkRepertoire.resolve("platforms")
                 .listFiles { f: File -> f.name.startsWith("android-") }
@@ -702,13 +724,16 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         val atelier = File(temporaryDir, "atelier")
         val packR8 = File(entreprise, r8Jar.name.removeSuffix(".jar")
                 + ".dex.zip")
-        // lot XXII : le nom VERSIONNÉ (règle dorée : un artefact publié
+        // lot XXIII : le nom VERSIONNÉ (règle dorée : un artefact publié
         // ne change JAMAIS — le pack corrigé vit dans le NOUVEAU fichier
-        // bundletool-1.18.3.2.dex.zip, les .0 et .1 restent en place) ;
-        // PacksOutils.BUNDLETOOL pointe le même nom
+        // bundletool-1.18.3.3.dex.zip, les .0/.1/.2 restent en place) ;
+        // PacksOutils.BUNDLETOOL pointe le même nom — le terrain du
+        // 2026-11-22 : le pack .2 oubliait les six dépendances runtime
+        // restantes du POM (aapt2-proto !), le NoClassDefFoundError
+        // com/android/aapt/Resources$XmlNode du bouton build
         val packBundletool = File(entreprise,
                 "bundletool-" + libs.versions.bundletool.get()
-                        + ".2.dex.zip")
+                        + ".3.dex.zip")
 
         // les jars assainis (dex embarqué de bundletool, multi-release
         // de guava) : le pack reste DÉTERMINISTE — mêmes entrées, même

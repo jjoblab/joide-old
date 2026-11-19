@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Terrain du 2026-11-22 — le POINT PULSANT de la pastille d'attente :
+     cercle 8 dp, couleur alerte (la pulsation vit par code : la couleur
+     glisse alerte → texte et retour tant que la pause coule). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="?attr/jo_alerte" />
+    <size android:width="8dp" android:height="8dp" />
+</shape>

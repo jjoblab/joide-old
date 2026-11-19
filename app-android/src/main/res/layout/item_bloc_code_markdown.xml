@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Terrain du 2026-11-22 — le bloc de CODE Markdown : conteneur haut
+  rayon 10 (fond posé par code, GradientDrawable), étiquette de langue,
+  texte monospace défilant borné 320 dp, pied copier.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/racine_bloc_code"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="10dp">
+
+    <TextView
+        android:id="@+id/langue_bloc_code"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:textColor="?attr/jo_texte2"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/code_bloc_code"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?attr/jo_texte" />
+
+    <LinearLayout
+        android:id="@+id/pied_bloc_code"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end"
+        android:paddingTop="4dp">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/copier_bloc_code"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            app:jo_icone_glyphe="copier"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/agent_copier" />
+    </LinearLayout>
+</LinearLayout>

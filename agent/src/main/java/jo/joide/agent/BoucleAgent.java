@@ -22,11 +22,13 @@ import jo.joide.platform.Clock;
  *   <li>l'historique est APPEND-ONLY — la réparation en début de
  *       tour (appels interrompus appariés) est la seule reprise en
  *       main, et la compaction la seule réécriture sanctionnée ;</li>
- *   <li>les échecs transitaires se patientent VISIBLEMENT : une
- *       limite de débit attend son délai (jusqu'à six fois par tour,
- *       décompte annulable émis en événement), le réseau et le 5xx
- *       retentent deux fois avec jitter (jamais une meute
- *       synchronisée) ;</li>
+ *   <li>les échecs transitaires se patientent PROPREMENT : une
+ *       limite de débit attend son délai (jusqu'à six fois par tour)
+ *       en émettant UNE SEULE ligne d'attente PAR pause — le décompte
+ *       vivant appartient à l'horloge du tiroir, jamais au transcript
+ *       (terrain du 2026-11-22 : la carte par seconde spamait le
+ *       tiroir) ; le réseau et le 5xx retentent deux fois avec jitter
+ *       (jamais une meute synchronisée) ;</li>
  *   <li>le plafond d'itérations se termine en PASSATION : un dernier
  *       tour SANS outils demande l'état — changé, vérifié, restant —
  *       l'utilisateur reçoit un état exploitable, pas une erreur
@@ -308,10 +310,14 @@ public final class BoucleAgent {
     }
 
     /**
-     * Envoie la requête, avec la patience VISIBLE des échecs
-     * transitaires : la limite de débit attend son délai (décompte
-     * annulable), le réseau et le 5xx retentent deux fois avec
-     * jitter. Chaque autre erreur finit le tour en disant quoi faire.
+     * Envoie la requête, avec la patience PROPRE des échecs
+     * transitaires : la limite de débit attend son délai (UNE ligne
+     * d'attente par pause, l'horloge du tiroir fait vivre le temps),
+     * le réseau et le 5xx retentent deux fois avec jitter. Chaque
+     * autre erreur finit le tour en disant quoi faire — une seule
+     * fois : l'événement émis ici marque l'erreur, le service qui
+     * rattrape ne la re-consigne pas (terrain du 2026-11-22 :
+     * « le cadre erreur est affiché 2 fois »).
      */
     private MessageAgent envoyerAvecPatience(RequeteLlm requete,
                                              HistoriqueAgent historique,
@@ -346,6 +352,7 @@ public final class BoucleAgent {
                     ecouteur.surEvenement(EvenementAgent.erreur(
                             erreur));
                 }
+                erreur.dejaAnnoncee = true;
                 throw erreur;
             }
         }
@@ -381,12 +388,16 @@ public final class BoucleAgent {
     private void attendre(long secondes, CancelToken jeton,
                           EcouteurAgent ecouteur) {
         long restantes = Math.max(1, secondes);
+        // UNE ligne par pause (terrain du 2026-11-22 : une carte par
+        // seconde spammait le tiroir — « peu professionnel ») : la
+        // pause s'énonce une fois avec son délai, l'horloge du tiroir
+        // fait vivre l'attente, la ligne repart au prochain événement
+        if (ecouteur != null) {
+            ecouteur.surEvenement(
+                    EvenementAgent.attente(restantes));
+        }
         while (restantes > 0) {
             jeton.checkCancelled();
-            if (ecouteur != null) {
-                ecouteur.surEvenement(
-                        EvenementAgent.attente(restantes));
-            }
             veille.accept(1000L);
             restantes--;
         }

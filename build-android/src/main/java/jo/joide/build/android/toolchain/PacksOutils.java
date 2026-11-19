@@ -57,26 +57,30 @@ public final class PacksOutils {
             = "756614a3cca7c9b34894fe802bb14edbc4b67dfc170ee90f682ea752d98cb18a";
 
     /** Taille attendue du pack bundletool complet (octets) — LOT
-     *  XXI/b puis LOT XXII : le pack 1.18.3.1 (fabrication du script
-     *  seul) portait bundletool + toutes ses dépendances runtime MAIS
-     *  PAS l'adaptateur jo/joide/build/android/tools/BundletoolAssembler
-     *  — le lot VIII l'a retiré de l'APK précisément parce que le pack
-     *  doit le porter : le terrain du 2026-11-22, « embedded build
-     *  tool unavailable: BundletoolAssembler — ClassNotFoundException »,
-     *  le bouton build mort. Règle dorée tenue (un artefact publié ne
-     *  change JAMAIS) : le pack corrigé vit dans le NOUVEAU fichier
-     *  versionné bundletool-1.18.3.2.dex.zip (les .1 et .0 restent en
-     *  place), bundletool + guava 32.0.1 + protobuf-java 3.22.3 +
-     *  protobuf-java-util 3.22.3 + failureaccess + listenablefuture +
-     *  jsr305 + error_prone_annotations + checker-qual + L'ADAPTATEUR,
-     *  tout dexé ENSEMBLE par le D8 du jar r8 du catalogue (le même
-     *  geste que la tâche :app-android:dexPacksOutils, qui reproduit
+     *  XXIII (terrain du 2026-11-22 : « app:bundle[debug] :
+     *  NoClassDefFoundError: Lcom/android/aapt/Resources$XmlNode; »
+     *  — le pack .2 du lot XXII portait bundletool + sa fermeture
+     *  GUAVA mais PAS les SIX dépendances runtime restantes du POM :
+     *  aapt2-proto (les classes com.android.aapt du manifeste
+     *  proto !), dagger, javax.inject, jose4j, slf4j-api,
+     *  auto-value-annotations — le BuildBundleCommand mourrait au
+     *  premier XmlNode). Règle dorée tenue : le pack corrigé vit
+     *  dans le NOUVEAU fichier versionné
+     *  bundletool-1.18.3.3.dex.zip (.0/.1/.2 restent en place) :
+     *  bundletool + guava 32.0.1 + protobuf-java 3.22.3 +
+     *  protobuf-java-util 3.22.3 + failureaccess + listenablefuture
+     *  + jsr305 + error_prone_annotations + checker-qual +
+     *  aapt2-proto 7.3.0-alpha07-8248216 + dagger 2.28.3 +
+     *  javax.inject 1 + jose4j 0.9.5 + slf4j-api 1.7.30 +
+     *  auto-value-annotations 1.6.2 + L'ADAPTATEUR, tout dexé
+     *  ENSEMBLE par le D8 du jar r8 du catalogue (le même geste que
+     *  la tâche :app-android:dexPacksOutils, qui reproduit
      *  l'artefact octet pour octet). */
-    static final long TAILLE_BUNDLETOOL = 5_655_184L;
+    static final long TAILLE_BUNDLETOOL = 5_992_495L;
 
     /** SHA-256 attendu du pack bundletool complet. */
     static final String SHA_BUNDLETOOL
-            = "f5b09784a56d4b5552d8dddf999389ddd77440a218d7b39e4d740f27d9d5300a";
+            = "151eb62e8ac980321e0240d21ff7b7a9dea02d2af1496f460af8af7371284615";
 
     /** Taille attendue du pack du compilateur Kotlin (octets) —
      *  le pack ART-patché du lot XI, la PILE STAX du lot XV (l'API
@@ -137,16 +141,22 @@ public final class PacksOutils {
 
     /** Le pack bundletool complet (adaptateur BundletoolAssembler
      *  inclus ; LOT XXI/b pour les dépendances runtime du POM, LOT
-     *  XXII pour l'adaptateur lui-même : bundletool + guava 32.0.1 +
-     *  protobuf-java 3.22.3 + protobuf-java-util 3.22.3 +
-     *  failureaccess + listenablefuture + jsr305 +
-     *  error_prone_annotations + checker-qual, toutes dexées dans le
-     *  pack AVEC l'adaptateur — le BuildRunner charge la classe PAR
-     *  NOM dans le chargeur du pack, jamais par ServiceLoader). */
+     *  XXII pour l'adaptateur lui-même, LOT XXIII pour les SIX
+     *  dépendances runtime RESTANTES du POM — aapt2-proto d'abord :
+     *  le terrain du 2026-11-22, le NoClassDefFoundError
+     *  com/android/aapt/Resources$XmlNode du bouton build) :
+     *  bundletool + guava 32.0.1 + protobuf-java 3.22.3 +
+     *  protobuf-java-util 3.22.3 + failureaccess + listenablefuture +
+     *  jsr305 + error_prone_annotations + checker-qual + aapt2-proto
+     *  7.3.0-alpha07-8248216 + dagger 2.28.3 + javax.inject 1 +
+     *  jose4j 0.9.5 + slf4j-api 1.7.30 + auto-value-annotations
+     *  1.6.2, toutes dexées dans le pack AVEC l'adaptateur — le
+     *  BuildRunner charge la classe PAR NOM dans le chargeur du
+     *  pack, jamais par ServiceLoader). */
     public static final Pack BUNDLETOOL = new Pack("bundletool",
-            "1.18.3", "bundletool-1.18.3.2.dex.zip",
+            "1.18.3", "bundletool-1.18.3.3.dex.zip",
             TAILLE_BUNDLETOOL, SHA_BUNDLETOOL,
-            BASE_URL_DEFAUT + "/bundletool-1.18.3.2.dex.zip");
+            BASE_URL_DEFAUT + "/bundletool-1.18.3.3.dex.zip");
 
     /** Le pack du compilateur Kotlin (lots VII + XI — VM forkée,
      *  ART-patché) : compilateur 2.3.0 réécrit par les sept passes

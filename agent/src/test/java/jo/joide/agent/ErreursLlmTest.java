@@ -124,8 +124,10 @@ class ErreursLlmTest {
     }
 
     @Test
-    void quatorzeGenresExactementEtChacunTranche() {
-        assertEquals(14, ErreursLlm.Genre.values().length);
+    void quinzeGenresExactementEtChacunTranche() {
+        // terrain du 2026-11-22 : REQUETE_REFUSEE (400) rejoint la
+        // taxonomy — un 400 n'est pas une « réponse illisible »
+        assertEquals(15, ErreursLlm.Genre.values().length);
         long retentables = java.util.Arrays.stream(
                         ErreursLlm.Genre.values())
                 .filter(g -> g.retentable).count();
@@ -192,5 +194,27 @@ class ErreursLlmTest {
                 "rate limit hit: quota exceeded for requests per minute");
         assertEquals(ErreursLlm.Genre.LIMITE_DEBIT, erreur.genre);
         assertTrue(erreur.genre.retentable);
+    }
+
+    @Test
+    void un400EstUneRequêteRefuseePasUneRéponseIllisible() {
+        // terrain du 2026-11-22 : « Provider returned error (400)
+        // malformed_json : json: cannot unmarshal object … »
+        // s'affichait en « réponse illisible » — le serveur a LU la
+        // requête et l'a REFUSÉE : le genre l'énonce, le diagnostic
+        // du fournisseur voyage dans le message
+        ErreursLlm.ErreurLlm erreur = ErreursLlm.classifier(400,
+                Map.of(),
+                "{\"error\":{\"message\":\"Provider returned error\","
+                        + "\"code\":400,\"metadata\":{\"raw\":"
+                        + "\"{\\\"error\\\":{\\\"code\\\":"
+                        + "\\\"malformed_json\\\",\\\"message\\\":"
+                        + "\\\"json: cannot unmarshal object\\\"}}\"}}}");
+        assertEquals(ErreursLlm.Genre.REQUETE_REFUSEE, erreur.genre);
+        assertFalse(erreur.genre.retentable,
+                "retenter une requête refusée ne sert à rien");
+        assertTrue(erreur.getMessage().contains("malformed_json"),
+                "le diagnostic brut du fournisseur voyage : "
+                        + erreur.getMessage());
     }
 }

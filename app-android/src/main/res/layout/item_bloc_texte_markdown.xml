@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Terrain du 2026-11-22 — le bloc de TEXTE Markdown (paragraphe, titre,
+  élément de liste) : la typographie (taille, graisse, couleur, spans)
+  se pose PAR CODE — la hiérarchie vit en XML (ADR-085 : aucune vue
+  du cadre instanciée en code).
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_bloc_texte"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textColor="?attr/jo_texte" />

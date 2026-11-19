@@ -51,12 +51,11 @@
             android:importantForAccessibility="no" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/contenu_raisonnement"
+    <LinearLayout
+        android:id="@+id/conteneur_raisonnement"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:textSize="13sp"
-        android:textColor="?attr/jo_texte2"
+        android:orientation="vertical"
         android:visibility="gone" />
 </LinearLayout>

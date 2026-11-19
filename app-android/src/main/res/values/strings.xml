@@ -37,7 +37,7 @@
     <string name="agent_erreur_generique">The request failed</string>
     <string name="agent_erreur_reseau">Network unreachable — retrying may be enough</string>
     <string name="agent_erreur_delai">Timed out before the first response — retrying may be enough</string>
-    <string name="agent_erreur_limite_debit">Rate limit (429) — waits its delay, then retries</string>
+    <string name="agent_erreur_limite_debit">Rate limit (429) — automatic retries are exhausted, try again in a moment</string>
     <string name="agent_erreur_limite_jour">Daily limit of the provider reached</string>
     <string name="agent_erreur_quota">Credit or quota exhausted — retrying will not help</string>
     <string name="agent_erreur_contexte">Context too long — compact or trim, then retry</string>
@@ -46,6 +46,7 @@
     <string name="agent_erreur_cle_invalide">API key rejected (401) — check it in the AI settings</string>
     <string name="agent_erreur_cle_droit">Key not allowed for this model (403) — use another key or model</string>
     <string name="agent_erreur_contenu">Content refused by the provider safety filter — rephrase</string>
+    <string name="agent_erreur_requete">Request rejected by the provider (400) — check the model and gateway</string>
     <string name="agent_erreur_serveur">Provider error (5xx) — retrying may be enough</string>
     <string name="agent_erreur_illisible">Unreadable response (broken or inconsistent data)</string>
     <string name="agent_erreur_flux">Stream cut mid-response</string>

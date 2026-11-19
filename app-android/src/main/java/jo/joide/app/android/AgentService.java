@@ -947,7 +947,14 @@ public final class AgentService extends Service {
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ANNULE), null));
         } else {
-            consigner(new Entree(EvenementAgent.erreur(erreur), null));
+            // le terrain du 2026-11-22 (« le cadre erreur est affiché
+            // 2 fois ») : la boucle qui ANNONCE l'événement avant de
+            // lever marque l'erreur — le service ne la re-consigne
+            // PAS, il ne reste que la fin de tour
+            if (!erreur.dejaAnnoncee) {
+                consigner(new Entree(EvenementAgent.erreur(erreur),
+                        null));
+            }
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ERREUR), null));
         }
@@ -968,7 +975,10 @@ public final class AgentService extends Service {
                     : new ErreursLlm.ErreurLlm(
                             ErreursLlm.Genre.REPONSE_ILLISIBLE,
                             diagnosticInattendu(probleme), -1);
-            consigner(new Entree(EvenementAgent.erreur(erreur), null));
+            if (!erreur.dejaAnnoncee) {
+                consigner(new Entree(EvenementAgent.erreur(erreur),
+                        null));
+            }
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ERREUR), null));
         }

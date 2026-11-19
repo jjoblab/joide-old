@@ -37,7 +37,7 @@
     <string name="agent_erreur_generique">La requête a échoué</string>
     <string name="agent_erreur_reseau">Réseau injoignable — retenter peut suffire</string>
     <string name="agent_erreur_delai">Délai dépassé avant la première réponse — retenter peut suffire</string>
-    <string name="agent_erreur_limite_debit">Limite de débit (429) — le délai passé, la reprise sert</string>
+    <string name="agent_erreur_limite_debit">Limite de débit (429) — les reprises automatiques sont épuisées, réessaie dans un moment</string>
     <string name="agent_erreur_limite_jour">Limite journalière du fournisseur atteinte</string>
     <string name="agent_erreur_quota">Crédit ou quota épuisé — retenter ne sert à rien</string>
     <string name="agent_erreur_contexte">Contexte trop long — compacter ou réduire, puis retenter</string>
@@ -46,6 +46,7 @@
     <string name="agent_erreur_cle_invalide">Clé API refusée (401) — la vérifier dans les réglages IA</string>
     <string name="agent_erreur_cle_droit">Clé sans droit sur ce modèle (403) — changer de clé ou de modèle</string>
     <string name="agent_erreur_contenu">Contenu refusé par le garde-fou du fournisseur — reformuler</string>
+    <string name="agent_erreur_requete">Requête refusée par le fournisseur (400) — vérifier le modèle et la passerelle</string>
     <string name="agent_erreur_serveur">Erreur du fournisseur (5xx) — retenter peut suffire</string>
     <string name="agent_erreur_illisible">Réponse illisible (données cassées ou incohérentes)</string>
     <string name="agent_erreur_flux">Flux coupé en pleine écriture</string>

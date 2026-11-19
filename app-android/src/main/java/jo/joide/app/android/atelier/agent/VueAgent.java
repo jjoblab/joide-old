@@ -3,12 +3,16 @@ package jo.joide.app.android.atelier.agent;
 import android.content.Context;
 import android.text.SpannableString;
 import android.text.Spanned;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
+import android.text.style.URLSpan;
+import android.text.style.UnderlineSpan;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -22,7 +26,12 @@ import jo.joide.agent.Permissions;
 import jo.joide.agent.UsageLlm;
 import jo.joide.app.android.R;
 import jo.joide.app.android.databinding.ComposeurAgentBinding;
+import jo.joide.app.android.databinding.ItemAttenteAgentBinding;
 import jo.joide.app.android.databinding.ItemBorneAgentBinding;
+import jo.joide.app.android.databinding.ItemBlocCitationMarkdownBinding;
+import jo.joide.app.android.databinding.ItemBlocCodeMarkdownBinding;
+import jo.joide.app.android.databinding.ItemBlocSeparateurMarkdownBinding;
+import jo.joide.app.android.databinding.ItemBlocTexteMarkdownBinding;
 import jo.joide.app.android.databinding.ItemErreurAgentBinding;
 import jo.joide.app.android.databinding.ItemLigneTonaleAgentBinding;
 import jo.joide.app.android.databinding.ItemMsgAgentBinding;
@@ -39,6 +48,7 @@ import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Icone;
 import jo.joide.app.android.ui.Puce;
+import jo.joide.app.android.ui.RenduMarkdown;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.ActionErreur;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.Carte;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.EtatOutil;
@@ -432,8 +442,7 @@ public final class VueAgent extends LinearLayout {
             case RAISONNEMENT -> carteRaisonnement(carte);
             case OUTIL -> carteOutil(carte);
             case FICHIERS -> ligneTonale(carte.detail);
-            case ATTENTE -> ligneTonale(contexte.getString(
-                    R.string.agent_attente, carte.secondes));
+            case ATTENTE -> carteAttente(carte);
             case COMPACTION -> ligneTonale(contexte.getString(
                     R.string.agent_compaction, carte.avant,
                     carte.apres));
@@ -470,20 +479,25 @@ public final class VueAgent extends LinearLayout {
         return item.getRoot();
     }
 
-    /** La réponse de l'agent : pleine largeur ; le CARET clignote
-     *  pendant que le tour écrit ; le pied porte le bouton COPIER et
-     *  la légende des jetons quand le tour est fini. */
+    /** La carte de RÉPONSE au rendu MODERNE (terrain du 2026-11-22 :
+     *  « plus moderne, plus intelligent, rendu propre ») : le texte
+     *  de l'agent vit en BLOCS Markdown — paragraphes aux spans
+     *  (gras, italique, code en ligne, liens), titres à l'échelle,
+     *  listes à puces, citations à barre accent, blocs de code
+     *  monospace sur conteneur haut avec bouton copier — le geste
+     *  de l'IDE de référence (AssistantMarkdown + CodeSample). Le
+     *  CARET clignote pendant que le tour écrit ; le pied porte le
+     *  bouton COPIER et la légende des jetons quand le tour est fini. */
     private View carteReponse(Carte carte) {
         Context contexte = getContext();
         ItemMsgAgentBinding item = ItemMsgAgentBinding.inflate(
                 LayoutInflater.from(getContext()),
                 colonneCartes, false);
-        TextView vue = item.texteReponse;
-        GraphiteVue.typographie(vue, Graphite.CORPS);
-        vue.setText(carte.reponse == null ? "" : carte.reponse);
+        remplirMarkdown(item.blocsReponse,
+                carte.reponse == null ? "" : carte.reponse, false);
         boolean enCours = etat.etat() == TourEtat.EN_COURS;
         boolean ecriture = enCours && estDerniereReponse(carte)
-                && !unOutilTourne();
+                && !unOutilTourne() && !etat.contientAttente();
         if (ecriture) {
             // le caret qui clignote : 7×14 dp au rayon 2, la couleur
             // pulse comme la ligne d'activité
@@ -559,10 +573,12 @@ public final class VueAgent extends LinearLayout {
             }
         });
         if (ouverte && carte.raisonnement.length() > 0) {
-            TextView texte = item.contenuRaisonnement;
-            GraphiteVue.typographie(texte, Graphite.NOTE);
-            texte.setText(carte.raisonnement.toString());
-            texte.setVisibility(View.VISIBLE);
+            // terrain du 2026-11-22 : le raisonnement vit AUSSI en
+            // blocs Markdown (note 13 sp secondaire — les blocs de code
+            // du raisonnement restent monospace sur conteneur haut)
+            remplirMarkdown(item.conteneurRaisonnement,
+                    carte.raisonnement.toString(), true);
+            item.conteneurRaisonnement.setVisibility(View.VISIBLE);
         }
         return bloc;
     }
@@ -640,8 +656,7 @@ public final class VueAgent extends LinearLayout {
                     case RAISONNEMENT -> carteRaisonnement(carte);
                     case OUTIL -> carteOutil(carte);
                     case FICHIERS -> ligneTonale(carte.detail);
-                    case ATTENTE -> ligneTonale(contexte.getString(
-                            R.string.agent_attente, carte.secondes));
+                    case ATTENTE -> carteAttente(carte);
                     case COMPACTION -> ligneTonale(contexte.getString(
                             R.string.agent_compaction, carte.avant,
                             carte.apres));
@@ -774,6 +789,272 @@ public final class VueAgent extends LinearLayout {
         conteneur.addView(icone, params);
     }
 
+    // ------------------------------------------------------------------
+    // Terrain du 2026-11-22 — la pastille d'attente et le rendu Markdown
+    // ------------------------------------------------------------------
+
+    /**
+     * La PASTILLE d'attente (le dessin de la maquette .attente) :
+     * pilule alignée à gauche, fond alerte 8 %, bord alerte 30 %,
+     * rayon 999, point 8 dp qui PULSE tant que le tour vit — la pause
+     * de limite de débit s'énonce UNE fois par attente (la carte par
+     * seconde d'hier spammait le transcript, « peu professionnel »).
+     */
+    private View carteAttente(Carte carte) {
+        Context contexte = getContext();
+        ItemAttenteAgentBinding item = ItemAttenteAgentBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        LinearLayout pastille = item.getRoot();
+        android.graphics.drawable.GradientDrawable fond =
+                new android.graphics.drawable.GradientDrawable();
+        fond.setColor(Graphite.melange(palette.alerte, 0.08f,
+                palette.surface));
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 999));
+        fond.setStroke(GraphiteVue.dp(contexte, 1),
+                Graphite.melange(palette.alerte, 0.30f, palette.surface));
+        pastille.setBackground(fond);
+        item.texteAttente.setTypeface(GraphiteVue.police(contexte, 400,
+                true));
+        item.texteAttente.setText(getContext().getString(
+                R.string.agent_attente, carte.secondes));
+        // le point qui pulse : la couleur glisse alerte → texte et
+        // retour tant que la pause coule
+        if (etat.etat() == TourEtat.EN_COURS) {
+            demarrerPulsationFond(item.pointAttente);
+        }
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        pastille.setLayoutParams(params);
+        return pastille;
+    }
+
+    /**
+     * Remplit un conteneur avec les BLOCS Markdown d'un texte — le
+     * geste de l'IDE de référence : paragraphes aux spans, titres à
+     * l'échelle, listes, citations, blocs de code monospace avec
+     * bouton copier. Le mode NOTE (la carte de réflexion) met le
+     * texte en 13 sp secondaire. Chaque rafraîchissement repart de
+     * zéro : le conteneur se vide d'abord.
+     *
+     * @param conteneur le conteneur vertical à remplir
+     * @param texte     le texte markdown de l'agent
+     * @param note      vrai pour la typographie note (réflexion)
+     */
+    private void remplirMarkdown(LinearLayout conteneur, String texte,
+                                 boolean note) {
+        Context contexte = getContext();
+        conteneur.removeAllViews();
+        List<RenduMarkdown.Bloc> blocs = RenduMarkdown.analyser(texte);
+        boolean premier = true;
+        for (RenduMarkdown.Bloc bloc : blocs) {
+            for (View vue : vuesBloc(bloc, note)) {
+                LinearLayout.LayoutParams params = new LinearLayout
+                        .LayoutParams(LayoutParams.MATCH_PARENT,
+                        LayoutParams.WRAP_CONTENT);
+                if (!premier) {
+                    params.topMargin = GraphiteVue.dp(contexte,
+                            note ? 5 : 8);
+                }
+                premier = false;
+                conteneur.addView(vue, params);
+            }
+        }
+    }
+
+    /**
+     * Les vues d'un bloc markdown — les LISTES s'aplatissent (un
+     * gonflé par élément, l'indentation porte le niveau), tout le
+     * reste est UNE vue ; la hiérarchie vit en XML (ADR-085 :
+     * item_bloc_*_markdown.xml, gonflés par binding), la typographie
+     * seule se pose par code.
+     */
+    private List<View> vuesBloc(RenduMarkdown.Bloc bloc, boolean note) {
+        Context contexte = getContext();
+        LayoutInflater gonfleur = LayoutInflater.from(contexte);
+        switch (bloc.genre) {
+            case SEPARATEUR -> {
+                return List.of(ItemBlocSeparateurMarkdownBinding
+                        .inflate(gonfleur, colonneCartes, false)
+                        .getRoot());
+            }
+            case CODE -> {
+                return List.of(vueBlocCode(bloc.texte, bloc.langue));
+            }
+            case TITRE -> {
+                ItemBlocTexteMarkdownBinding item =
+                        ItemBlocTexteMarkdownBinding.inflate(gonfleur,
+                                colonneCartes, false);
+                TextView vue = item.texteBlocTexte;
+                int sp = switch (Math.min(6, Math.max(1, bloc.niveau))) {
+                    case 1 -> 20;
+                    case 2 -> 18;
+                    case 3 -> 17;
+                    default -> 15;
+                };
+                vue.setTextSize(note ? Math.max(13, sp - 2) : sp);
+                vue.setTypeface(GraphiteVue.police(contexte, 600, false));
+                vue.setTextColor(palette.texte);
+                RenduMarkdown.Ligne ligneTitre = RenduMarkdown.enLigne(
+                        bloc.texte);
+                vue.setText(ligneTitre.texte());
+                poserSpans(vue, ligneTitre, 0);
+                return List.of(item.getRoot());
+            }
+            case LISTE -> {
+                List<View> elements = new ArrayList<>();
+                for (RenduMarkdown.ElementListe element : bloc.elements) {
+                    ItemBlocTexteMarkdownBinding item =
+                            ItemBlocTexteMarkdownBinding.inflate(
+                                    gonfleur, colonneCartes, false);
+                    TextView vue = item.texteBlocTexte;
+                    vue.setTextSize(note ? 13 : 15);
+                    vue.setTypeface(GraphiteVue.police(contexte, 400,
+                            false));
+                    vue.setTextColor(note ? palette.texteSecondaire
+                            : palette.texte);
+                    vue.setLineSpacing(GraphiteVue.dp(contexte, 4), 1f);
+                    RenduMarkdown.Ligne ligne = RenduMarkdown.enLigne(
+                            element.texte());
+                    String marqueur = element.ordonne()
+                            ? element.numero() + ". "
+                            : "\u2022  ";
+                    vue.setText(marqueur + ligne.texte());
+                    poserSpans(vue, ligne, marqueur.length());
+                    LinearLayout.LayoutParams params = new LinearLayout
+                            .LayoutParams(LayoutParams.MATCH_PARENT,
+                            LayoutParams.WRAP_CONTENT);
+                    params.leftMargin = GraphiteVue.dp(contexte,
+                            12 * element.niveau());
+                    vue.setLayoutParams(params);
+                    elements.add(item.getRoot());
+                }
+                return elements;
+            }
+            case CITATION -> {
+                ItemBlocCitationMarkdownBinding item =
+                        ItemBlocCitationMarkdownBinding.inflate(gonfleur,
+                                colonneCartes, false);
+                LinearLayout interne = item.conteneurBlocCitation;
+                boolean premier = true;
+                for (RenduMarkdown.Bloc sous : bloc.interne) {
+                    for (View vue : vuesBloc(sous, true)) {
+                        LinearLayout.LayoutParams params = new LinearLayout
+                                .LayoutParams(LayoutParams.MATCH_PARENT,
+                                LayoutParams.WRAP_CONTENT);
+                        if (!premier) {
+                            params.topMargin = GraphiteVue.dp(contexte, 4);
+                        }
+                        premier = false;
+                        interne.addView(vue, params);
+                    }
+                }
+                return List.of(item.getRoot());
+            }
+            default -> {
+                ItemBlocTexteMarkdownBinding item =
+                        ItemBlocTexteMarkdownBinding.inflate(gonfleur,
+                                colonneCartes, false);
+                TextView vue = item.texteBlocTexte;
+                vue.setTextSize(note ? 13 : 15);
+                vue.setTypeface(GraphiteVue.police(contexte, 400, false));
+                vue.setTextColor(note ? palette.texteSecondaire
+                        : palette.texte);
+                vue.setLineSpacing(GraphiteVue.dp(contexte, 5), 1f);
+                RenduMarkdown.Ligne ligne = RenduMarkdown.enLigne(
+                        bloc.texte);
+                vue.setText(ligne.texte());
+                poserSpans(vue, ligne, 0);
+                return List.of(item.getRoot());
+            }
+        }
+    }
+
+    /** Le bloc de CODE : conteneur haut rayon 10 (fond par code),
+     *  étiquette de langue, texte monospace défilant borné 320 dp,
+     *  pied copier. */
+    private View vueBlocCode(String code, String langue) {
+        Context contexte = getContext();
+        ItemBlocCodeMarkdownBinding item = ItemBlocCodeMarkdownBinding
+                .inflate(LayoutInflater.from(contexte), colonneCartes,
+                        false);
+        LinearLayout bloc = item.getRoot();
+        android.graphics.drawable.GradientDrawable fond =
+                new android.graphics.drawable.GradientDrawable();
+        fond.setColor(palette.surfaceHaute);
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 10));
+        bloc.setBackground(fond);
+        if (langue != null && !langue.isBlank()) {
+            item.langueBlocCode.setVisibility(VISIBLE);
+            item.langueBlocCode.setTypeface(GraphiteVue.police(contexte,
+                    500, true));
+            item.langueBlocCode.setText(langue.trim().toLowerCase(
+                    java.util.Locale.ROOT));
+        } else {
+            item.langueBlocCode.setVisibility(GONE);
+        }
+        TextView vue = item.codeBlocCode;
+        vue.setTypeface(GraphiteVue.police(contexte, 400, true));
+        vue.setTextColor(palette.texte);
+        vue.setText(code.stripTrailing());
+        vue.setMovementMethod(
+                new android.text.method.ScrollingMovementMethod());
+        vue.setMaxHeight(GraphiteVue.dp(contexte, 320));
+        brancherCopie(item.copierBlocCode, code.stripTrailing());
+        return bloc;
+    }
+
+    /** Pose les marquages d'une ligne sur le TextView (décalage du
+     *  marqueur de liste inclus). */
+    private void poserSpans(TextView vue, RenduMarkdown.Ligne ligne,
+                            int decalage) {
+        if (ligne.marquages().isEmpty()) {
+            return;
+        }
+        CharSequence texte = vue.getText();
+        SpannableString spans = texte instanceof SpannableString deja
+                ? deja : new SpannableString(texte);
+        for (RenduMarkdown.Marquage marquage : ligne.marquages()) {
+            int debut = Math.min(marquage.debut() + decalage,
+                    spans.length());
+            int fin = Math.min(marquage.fin() + decalage,
+                    spans.length());
+            if (debut >= fin) {
+                continue;
+            }
+            switch (marquage.marque()) {
+                case GRAS -> spans.setSpan(
+                        new StyleSpan(android.graphics.Typeface.BOLD),
+                        debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                case ITALIQUE -> spans.setSpan(
+                        new StyleSpan(android.graphics.Typeface.ITALIC),
+                        debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                case CODE -> {
+                    spans.setSpan(new TypefaceSpan("monospace"),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spans.setSpan(new ForegroundColorSpan(
+                                    palette.texte),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spans.setSpan(new BackgroundColorSpan(
+                                    palette.surfaceHaute),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spans.setSpan(new RelativeSizeSpan(0.92f),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                case LIEN -> {
+                    spans.setSpan(new URLSpan(marquage.cible()),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spans.setSpan(new ForegroundColorSpan(palette.accent),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    spans.setSpan(new UnderlineSpan(),
+                            debut, fin, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+            }
+        }
+        vue.setText(spans);
+        vue.setMovementMethod(
+                android.text.method.LinkMovementMethod.getInstance());
+    }
+
     private View ligneTonale(String texte) {
         Context contexte = getContext();
         ItemLigneTonaleAgentBinding ligne =
@@ -844,11 +1125,16 @@ public final class VueAgent extends LinearLayout {
         item.titreErreur.setText(texteErreur(carte));
         // rapporté le 2026-11-21 : le détail muet (« null ») quittait
         // la carte au lieu de l'habiter — la ligne se CACHE quand le
-        // fournisseur n'a rien dit
+        // fournisseur n'a rien dit. Terrain du 2026-11-22 : le détail
+        // devient le DIAGNOSTIC TECHNIQUE — monospace discret sous la
+        // raison française, jamais une seconde phrase de même taille
+        // (« le cadre erreur est affiché 2 fois »)
         if (carte.detail == null || carte.detail.isBlank()) {
             item.detailErreur.setVisibility(View.GONE);
         } else {
             item.detailErreur.setVisibility(View.VISIBLE);
+            item.detailErreur.setTypeface(GraphiteVue.police(contexte,
+                    400, true));
             item.detailErreur.setText(carte.detail);
         }
         if (carte.action == ActionErreur.OUVRIR_REGLAGES
@@ -1043,6 +1329,7 @@ public final class VueAgent extends LinearLayout {
             case CLE_SANS_DROIT -> R.string.agent_erreur_cle_droit;
             case CONTENU_REFUSE -> R.string.agent_erreur_contenu;
             case ERREUR_SERVEUR -> R.string.agent_erreur_serveur;
+            case REQUETE_REFUSEE -> R.string.agent_erreur_requete;
             case REPONSE_ILLISIBLE -> R.string.agent_erreur_illisible;
             case FLUX_INTERROMPU -> R.string.agent_erreur_flux;
         };

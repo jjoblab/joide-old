@@ -9,11 +9,16 @@ import java.util.regex.Pattern;
 
 /**
  * La taxonomie d'erreurs des fournisseurs LLM (ADR-É9, robustesse
- * étage 1) : quatorze genres, chaque genre sait s'il se retente, et
+ * étage 1) : QUINZE genres, chaque genre sait s'il se retente, et
  * chaque message DIT QUOI FAIRE. La classification regarde d'abord
  * les CODES et EN-TÊTES (un 429 avec Retry-After est un fait), le
  * wording du corps ne sert qu'en repli — une reformulation du
  * fournisseur ne casse pas la classification (leçon n° 4).
+ *
+ * <p>Le terrain du 2026-11-22 : un 400 du fournisseur n'est PAS une
+ * « réponse illisible » — le serveur a LU la requête et l'a REFUSÉE
+ * (malformée pour lui) : le genre REQUETE_REFUSEE dit l'honnêteté,
+ * le diagnostic brut du fournisseur voyage dans le message.</p>
  *
  * <p>Le cas d'école de l'ADR-É9 : un 429 peut être une limite à la
  * minute (attendre), la limite du jour (attendre longtemps) ou un
@@ -22,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public final class ErreursLlm {
 
-    /** Les quatorze genres d'erreur. */
+    /** Les quinze genres d'erreur. */
     public enum Genre {
         /** Réseau injoignable — retenter sert. */
         RESEAU(true),
@@ -46,6 +51,9 @@ public final class ErreursLlm {
         CLE_SANS_DROIT(false),
         /** Contenu refusé par le garde-fou du fournisseur — reformuler. */
         CONTENU_REFUSE(false),
+        /** Requête refusée (400) — le fournisseur a LU et REFUSÉ la
+         * requête (malformée pour lui) : retenter ne sert à rien. */
+        REQUETE_REFUSEE(false),
         /** Erreur serveur (5xx) — retenter sert. */
         ERREUR_SERVEUR(true),
         /** Réponse illisible (JSON cassé, événements incohérents). */
@@ -77,6 +85,15 @@ public final class ErreursLlm {
          * ne la traverse pas).
          */
         public final transient QuotaFournisseur quota;
+
+        /**
+         * Vrai si l'événement d'erreur a déjà été ÉMIS vers l'écouteur
+         * avant le jet (la boucle annonce, puis lève — le service qui
+         * rattrape ne la re-consigne PAS : jamais deux cartes, terrain
+         * du 2026-11-22 « le cadre erreur est affiché 2 fois »).
+         * Transient : l'erreur ne traverse aucune sérialisation.
+         */
+        public transient boolean dejaAnnoncee;
 
         /** @param genre le genre @param message le diagnostic (anglais) @param delaiSecondes le délai énoncé ou -1 */
         public ErreurLlm(Genre genre, String message, long delaiSecondes) {
@@ -117,6 +134,26 @@ public final class ErreursLlm {
         long delai = delaiEnTetes(entetes);
         String texte = corps == null ? "" : corps;
         switch (statut) {
+            case 400:
+                // le terrain du 2026-11-22 : « Provider returned error
+                // (400) malformed_json » s'affichait en « réponse
+                // illisible » — le serveur a LU la requête et l'a
+                // REFUSÉE : c'est un fait de REQUÊTE, le genre
+                // l'énonce et le diagnostic brut du fournisseur part
+                // dans le message — SAUF le wording « too long » : un
+                // 400 qui dit la fenêtre reste un contexte trop long
+                if (texte.toLowerCase(Locale.ROOT).contains("too long")
+                        || texte.toLowerCase(Locale.ROOT)
+                        .contains("context length")) {
+                    return new ErreurLlm(Genre.CONTEXTE_TROP_LONG,
+                            "context too long (400): compact and retry",
+                            -1);
+                }
+                return new ErreurLlm(Genre.REQUETE_REFUSEE,
+                        "request rejected (400): the provider read the "
+                                + "request and refused it — "
+                                + resume(texte),
+                        -1);
             case 401:
                 return new ErreurLlm(Genre.CLE_INVALIDE,
                         "API key rejected (401): check the key in "
