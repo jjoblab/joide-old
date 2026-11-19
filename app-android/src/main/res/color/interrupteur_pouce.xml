@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pouce du commutateur des Paramètres (lot A3, D2) : actif → réussite,
+  inactif → texte estompé (les deux pouces d'Interrupteur.java). Teinte
+  le thumb du MaterialSwitch (Widget.Jo.Interrupteur).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_reussite" android:state_checked="true" />
+    <item android:color="?attr/jo_texte3" />
+</selector>

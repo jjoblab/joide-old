@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Carte d'un groupe de réglages (lot A3, maquette parametres.html
+  .groupe) : fond surface, liseré bord-fin 1 dp, rayon carte 16 —
+  portée par le LinearLayout conteneur de chaque section
+  (activity_parametres.xml), padding horizontal 14, jamais vertical.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="?attr/jo_surface" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="@dimen/jo_rayon_carte" />
+</shape>

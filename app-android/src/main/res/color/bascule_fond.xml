@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fond d'une case de bascule (segment des Paramètres, lot A3, ADR-085
+  D2) : la case cochée porte l'accent à 18 % sur la surface haute —
+  le mélange exact de ChoixSegment (kit Segment d'hier) — la case non
+  cochée reste à la surface haute du conteneur (fond_bascule.xml porte
+  le liseré bord-fin, jamais la case). Un ColorStateList porte l'alpha,
+  Graphite demeure la source des jetons (?attr, aucune littérale).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.18" android:color="?attr/jo_accent" android:state_checked="true" />
+    <item android:color="?attr/jo_surface_haute" />
+</selector>

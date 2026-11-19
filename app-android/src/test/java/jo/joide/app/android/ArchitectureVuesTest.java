@@ -98,7 +98,6 @@ class ArchitectureVuesTest {
      */
     private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of(
             "ecrans/creation/EcranCreation.java",
-            "ecrans/parametres/EcranParametres.java",
             "ecrans/atelier/EcranAtelier.java",
             "ecrans/atelier/ControleurAgent.java",
             "ecrans/atelier/ControleurFichiers.java");

@@ -352,7 +352,6 @@
     <string name="parametres_theme_legende">Sombre par défaut ; les deux palettes sont livrées.</string>
     <string name="parametres_accent">Accent</string>
     <string name="parametres_taille_ui">Taille de police UI</string>
-    <string name="parametres_echelle_legende">Pourcentage de la taille de base, appliqué à la réouverture des écrans.</string>
     <string name="parametres_taille_code">Taille du code</string>
     <string name="parametres_numeros">Numéros de ligne</string>
     <string name="parametres_retour_ligne">Retour à la ligne</string>
@@ -361,7 +360,6 @@
     <string name="parametres_moteur_processus">En processus</string>
     <string name="parametres_moteur_legende">La mort du service interrompt le build, jamais l\'IDE ; le prochain build le relance.</string>
     <string name="parametres_fils">Fils par build</string>
-    <string name="parametres_fils_legende">Moteur en processus : à chaque build. Service : à son prochain démarrage.</string>
     <string name="parametres_projets">Projets importés</string>
     <string name="parametres_cache_cidx">Cache CIDX</string>
     <string name="parametres_m2">Dépendances (m2)</string>

@@ -122,4 +122,57 @@
         <item name="boxCornerRadiusBottomStart">@dimen/jo_rayon_composant</item>
         <item name="boxCornerRadiusBottomEnd">@dimen/jo_rayon_composant</item>
     </style>
+
+    <!-- Nom de section des Paramètres (lot A3) : la légende Graphite
+         (12/16) en graisse 700, MAJUSCULES espacées de 0,07 — le
+         .nom-sect de la maquette parametres.html. -->
+    <style name="TextAppearance.Jo.NomSection" parent="TextAppearance.Jo.Legende">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.07</item>
+    </style>
+
+    <!-- Titre de la barre des Paramètres (lot A3) : 20/26 gras — le
+         .titre de la sous-barre de la maquette (1 px = 1 dp, 1 px = 1 sp). -->
+    <style name="TextAppearance.Jo.TitreBarre" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/jo_texte_titre_barre</item>
+        <item name="android:lineHeight">@dimen/jo_texte_titre_barre_interligne</item>
+    </style>
+
+    <!-- Bascule des Paramètres (lot A3, D2) : remplace le kit Segment —
+         case pilule SANS liseré propre (le conteneur
+         MaterialButtonToggleGroup porte fond surface haute + liseré
+         bord-fin, drawable fond_bascule), texte légende 12, case cochée
+         = accent 18 % + texte accent (ChoixSegment demeure la source).
+         La graisse 700 de la case cochée ne s'exprime pas en
+         ColorStateList : l'écran la pose (setTypeface au choix). -->
+    <style name="Widget.Jo.Bascule" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Legende</item>
+        <item name="android:textColor">@color/bascule_texte</item>
+        <item name="android:backgroundTint">@color/bascule_fond</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:minHeight">@dimen/jo_min_bascule</item>
+        <item name="android:paddingLeft">@dimen/jo_pad_bascule_cote</item>
+        <item name="android:paddingRight">@dimen/jo_pad_bascule_cote</item>
+        <item name="android:paddingTop">@dimen/jo_pad_bascule_haut</item>
+        <item name="android:paddingBottom">@dimen/jo_pad_bascule_haut</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Jo.Pilule</item>
+    </style>
+
+    <!-- Commutateur des Paramètres (lot A3, D2) : remplace le kit
+         Interrupteur — MaterialSwitch teinté aux couleurs du kit : piste
+         surface haute / réussite 25 %, pouce texte3 / réussite, liseré de
+         piste (trackDecoration) bord / réussite 60 %. Les teintes vivent
+         en res/color (ColorStateList par ?attr, alpha porté). -->
+    <style name="Widget.Jo.Interrupteur" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="thumbTint">@color/interrupteur_pouce</item>
+        <item name="trackTint">@color/interrupteur_piste</item>
+        <item name="trackDecorationTint">@color/interrupteur_lisere</item>
+    </style>
 </resources>

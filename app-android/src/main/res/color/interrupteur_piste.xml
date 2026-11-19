@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Piste du commutateur des Paramètres (lot A3, D2 — remplace le kit
+  Interrupteur) : active → réussite à 25 % sur le fond (mélange exact
+  d'Interrupteur.java), inactive → surface haute. Teinte le track du
+  MaterialSwitch (Widget.Jo.Interrupteur).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.25" android:color="?attr/jo_reussite" android:state_checked="true" />
+    <item android:color="?attr/jo_surface_haute" />
+</selector>

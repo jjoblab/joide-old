@@ -353,7 +353,6 @@
     <string name="parametres_theme_legende">Dark by default; both palettes ship with the app.</string>
     <string name="parametres_accent">Accent</string>
     <string name="parametres_taille_ui">UI text size</string>
-    <string name="parametres_echelle_legende">Percent of the base size, applied when screens reopen.</string>
     <string name="parametres_taille_code">Code text size</string>
     <string name="parametres_numeros">Line numbers</string>
     <string name="parametres_retour_ligne">Word wrap</string>
@@ -362,7 +361,6 @@
     <string name="parametres_moteur_processus">In process</string>
     <string name="parametres_moteur_legende">If the service dies mid-build the build stops, never the IDE; the next build restarts it.</string>
     <string name="parametres_fils">Threads per build</string>
-    <string name="parametres_fils_legende">In-process engine: every build. Service: read at its next start.</string>
     <string name="parametres_projets">Imported projects</string>
     <string name="parametres_cache_cidx">CIDX cache</string>
     <string name="parametres_m2">Dependencies (m2)</string>

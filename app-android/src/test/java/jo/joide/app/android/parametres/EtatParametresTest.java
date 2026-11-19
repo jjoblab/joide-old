@@ -172,4 +172,24 @@ class EtatParametresTest {
         assertEquals(21, vues.size(),
                 "le lot U ajoute la rangée de clé OpenRouter");
     }
+
+    @Test
+    void laDerniereRangeeVivanteArreteLeSeparateurDeCarte() {
+        // lot A3 : le trait de fin de rangée vit DANS chaque item — il
+        // disparaît sous la dernière rangée VIVANTE du groupe (la
+        // maquette : .rangée:last-child sans bord ; le filtrage
+        // déplace cette dernière)
+        assertEquals(EtatParametres.R_M2, EtatParametres.derniereRangee(
+                EtatParametres.filtrer("stockage", LIBELLES).get(0)));
+        assertEquals(EtatParametres.R_NUMEROS,
+                EtatParametres.derniereRangee(
+                        EtatParametres.filtrer("numéros", LIBELLES)
+                                .get(0)));
+        assertEquals(EtatParametres.R_TAILLE_CODE,
+                EtatParametres.derniereRangee(
+                        EtatParametres.filtrer("taille du code", LIBELLES)
+                                .get(0)),
+                "une recherche qui prend la première rangée en fait "
+                        + "aussi la dernière");
+    }
 }

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rangée INFO (lot A3, Genre.INFO — le .rangée/.valeur de la maquette,
+  sans action) : libellé + valeur en lecture seule (note, texte
+  secondaire) : version du build, adresse du dépôt. Séparateur de
+  carte en fin (masqué sous la dernière rangée vivante).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/jo_pad_rangee"
+        android:paddingBottom="@dimen/jo_pad_rangee">
+
+        <TextView
+            android:id="@+id/libelle_param"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/valeur_param"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_texte2" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/separateur_param"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_ligne"
+        android:background="?attr/jo_bord_fin" />
+</LinearLayout>

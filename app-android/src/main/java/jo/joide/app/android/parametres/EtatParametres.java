@@ -185,6 +185,21 @@ public final class EtatParametres {
                 && filtrer(requete, libelles).isEmpty();
     }
 
+    /**
+     * La clé de la dernière rangée VIVANTE d'une section filtrée
+     * (lot A3 : le séparateur de carte s'arrête avant elle — la
+     * maquette ne trace jamais de trait sous la dernière rangée
+     * d'un groupe, et le filtrage déplace cette dernière).
+     *
+     * @param section la section FILTRÉE (rangées vivantes dedans)
+     * @return la clé de sa dernière rangée, ou {@code null} si vide
+     */
+    public static String derniereRangee(Section section) {
+        List<Rangee> rangees = section.rangees();
+        return rangees.isEmpty() ? null
+                : rangees.get(rangees.size() - 1).cle();
+    }
+
     /** Normalisation de recherche : minuscules, sans accent, sans blancs parasites. */
     static String normaliser(String texte) {
         if (texte == null) {

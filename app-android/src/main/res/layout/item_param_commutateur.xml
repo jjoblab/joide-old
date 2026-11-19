@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rangée COMMUTATEUR (lot A3, Genre.COMMUTATEUR — le .rangée/
+  interrupteur de la maquette) : libellé + MaterialSwitch (Widget.Jo.
+  Interrupteur, remplace le kit Interrupteur, ADR-085 D2) teinté piste
+  surface haute / réussite 25 %, pouce texte3 / réussite. L'état et
+  l'auditeur se posent par l'écran ; séparateur de carte en fin.
+  saveEnabled=false : le genre est inclus deux fois (numéros, retour
+  à la ligne) et l'état de VÉRITÉ vit dans Reglages — la pose au
+  montage (setChecked AVANT l'auditeur) survit seule aux recreate()
+  du thème, de l'accent et de l'échelle ; une restauration croisée
+  par id dupliqué est impossible.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/jo_pad_rangee"
+        android:paddingBottom="@dimen/jo_pad_rangee">
+
+        <TextView
+            android:id="@+id/libelle_param"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/commutateur_param"
+            style="@style/Widget.Jo.Interrupteur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:saveEnabled="false" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/separateur_param"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_ligne"
+        android:background="?attr/jo_bord_fin" />
+</LinearLayout>

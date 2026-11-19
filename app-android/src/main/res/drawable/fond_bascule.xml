@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Conteneur de bascule (segment des Paramètres, lot A3, maquette
+  parametres.html .segment) : surface haute, liseré bord-fin 1 dp,
+  rayon pilule, padding 3 dp — les cases MaterialButton
+  (Widget.Jo.Bascule) vivent dedans, l'écart de 3 dp aussi.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="?attr/jo_surface_haute" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="@dimen/jo_rayon_puce" />
+</shape>

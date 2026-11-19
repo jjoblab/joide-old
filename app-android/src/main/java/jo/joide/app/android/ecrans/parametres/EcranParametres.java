@@ -1,24 +1,13 @@
 package jo.joide.app.android.ecrans.parametres;
 
-import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
-
-import jo.joide.app.android.ui.ActiviteJoide;
-import jo.joide.app.android.parametres.ClesChiffrees;
-import jo.joide.app.android.parametres.KeystoreCles;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,49 +17,82 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.android.material.button.MaterialButton;
+
 import jo.joide.app.android.BuildConfig;
 import jo.joide.app.android.R;
+import jo.joide.app.android.databinding.ActivityParametresBinding;
+import jo.joide.app.android.databinding.ChampSaisieParamBinding;
+import jo.joide.app.android.databinding.ItemParamActionBinding;
+import jo.joide.app.android.databinding.ItemParamCommutateurBinding;
+import jo.joide.app.android.databinding.ItemParamGroupeBinding;
+import jo.joide.app.android.databinding.ItemParamInfoBinding;
+import jo.joide.app.android.databinding.ItemParamMesureBinding;
+import jo.joide.app.android.databinding.ItemParamNuancierBinding;
+import jo.joide.app.android.databinding.ItemParamSegmentBinding;
+import jo.joide.app.android.databinding.ItemParamStepperBinding;
+import jo.joide.app.android.databinding.PageTexteParamBinding;
+import jo.joide.app.android.parametres.ClesChiffrees;
 import jo.joide.app.android.parametres.EtatParametres;
 import jo.joide.app.android.parametres.JournalDiagnostic;
+import jo.joide.app.android.parametres.KeystoreCles;
 import jo.joide.app.android.parametres.MesuresStockage;
 import jo.joide.app.android.parametres.PreferencesAndroid;
 import jo.joide.app.android.parametres.Reglages;
-import jo.joide.app.android.ui.Champ;
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ui.Dialogue;
-import jo.joide.app.android.ui.EtatVide;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
-import jo.joide.app.android.ui.Icone;
-import jo.joide.app.android.ui.Interrupteur;
 import jo.joide.app.android.ui.Nuancier;
-import jo.joide.app.android.ui.Segment;
 import jo.joide.app.android.ui.Stepper;
 
 /**
- * L'écran de paramètres (lot M, ADR-É8/054) : plein écran, atteint
- * depuis l'accueil (⋮) et l'atelier (⋮). Recherche en tête, sections
- * en listes, valeurs MESURÉES au disque, actions destructrices à
- * conséquence nominée. Réglages réels seulement : chaque rangée a un
- * consommateur — le thème et l'accent passent par
- * {@code GraphiteVue.palette} (recréation de l'écran), les réglages
- * d'éditeur par la vue celeris à son ouverture suivante, le moteur et
- * les fils par le lanceur de build.
+ * L'écran de paramètres (lot M, ADR-É8/054 ; racine XML au lot A3 de
+ * l'ADR-085) : plein écran, atteint depuis l'accueil (⋮) et l'atelier
+ * (⋮). Recherche en tête, sections en cartes groupées, valeurs
+ * MESURÉES au disque, actions destructrices à conséquence nominée.
+ * Réglages réels seulement : chaque rangée a un consommateur — le
+ * thème, l'accent et l'échelle du texte recréent l'écran, les réglages
+ * d'éditeur se consomment à l'ouverture suivante de la vue celeris, le
+ * moteur et les fils par le lanceur de build.
  *
- * <p>Vue mince : la structure, le filtrage et la franchise vivent
- * dans {@link EtatParametres}, les valeurs et bornes dans
- * {@link Reglages}, les mesures dans {@link MesuresStockage} —
- * l'écran monte, traduit et déroule.</p>
+ * <p>Coque mince (décision 2) : la hiérarchie vit dans
+ * {@code activity_parametres.xml} (un layout d'item par
+ * {@link EtatParametres.Genre} : groupe, segment, stepper,
+ * commutateur, nuancier, mesure, action, info — liste courte et
+ * STATIQUE en NestedScrollView + {@code <include>}, décision 11 : la
+ * recherche ne fait que cacher des rangées) ; la structure, le
+ * filtrage et la franchise vivent dans {@link EtatParametres}, les
+ * valeurs et bornes dans {@link Reglages}, les mesures dans
+ * {@link MesuresStockage}. {@code MaterialButtonToggleGroup} remplace
+ * le kit Segment, {@code MaterialSwitch} le kit Interrupteur (D2) ;
+ * {@link Stepper} et {@link Nuancier} restent (sans équivalent
+ * Material). Les dialogues existants (clés IA, licences, journal,
+ * vidage) restent en l'état jusqu'au lot A7 — aucun nouveau dialogue
+ * n'est introduit (D3) ; leurs corps de saisie et leurs pages de texte
+ * sont gonflés depuis des layouts, plus jamais instanciés en code.</p>
  */
 public final class EcranParametres extends ActiviteJoide {
 
     /** Le dépôt public du projet (rangée « Dépôt », ADR-É8). */
     private static final String DEPOT = "https://github.com/jjoblab/joide";
+
+    /** La clé de sauvegarde de la position de défilement (recreate()). */
+    private static final String CLE_DEFIL = "joide.parametres.defilement";
+
+    /** Les identifiants de fournisseur du stockage chiffré. */
+    private static final String FOURNISSEUR_ANTHROPIC = "anthropic";
+    private static final String FOURNISSEUR_OPENAI = "openai";
+    private static final String FOURNISSEUR_GEMINI = "gemini";
+    private static final String FOURNISSEUR_OPENROUTER = "openrouter";
 
     private final ExecutorService fond = Executors.newSingleThreadExecutor(
             runnable -> {
@@ -79,14 +101,19 @@ public final class EcranParametres extends ActiviteJoide {
                 return fil;
             });
 
+    /** La table clé d'état vers vues d'une rangée (structure statique). */
+    private final Map<String, VuesRangee> rangees = new HashMap<>();
+
+    /** La table clé d'état vers vues d'une section (structure statique). */
+    private final Map<String, VuesSection> sections = new HashMap<>();
+
+    private ActivityParametresBinding ecran;
     private Graphite.Palette palette;
     private Reglages.Source source;
     private Reglages reglages;
     /** Le stockage chiffré des clés d'API (lot P). */
     private ClesChiffrees cles;
 
-    private LinearLayout colonneSections;
-    private EtatVide etatVide;
     private String requete = "";
 
     /** Les mesures disque, lues sur le fil de fond (null : pas lues). */
@@ -100,8 +127,35 @@ public final class EcranParametres extends ActiviteJoide {
         source = PreferencesAndroid.source(this);
         reglages = Reglages.lire(source);
         cles = KeystoreCles.sur(this);
-        setContentView(construireUi());
+        ecran = monter(ActivityParametresBinding::inflate);
+        monterStructure();
+        monterControles();
+        rendre();
         mesurerStockage();
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle etat) {
+        super.onRestoreInstanceState(etat);
+        // le texte restauré du champ de recherche ne déclenche PAS
+        // afterTextChanged : le filtre se relit ici, la recherche
+        // survit donc aux recreate() du thème et de l'accent
+        requete = String.valueOf(ecran.editionRecherche.getText());
+        rendre();
+        if (etat.containsKey(CLE_DEFIL)) {
+            int position = etat.getInt(CLE_DEFIL);
+            // la pose attend le premier passage de mise en page
+            ecran.defilementParametres.post(() ->
+                    ecran.defilementParametres.scrollTo(0, position));
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle etat) {
+        super.onSaveInstanceState(etat);
+        // le NestedScrollView ne sauvegarde pas sa position : les
+        // recreate() du thème, de l'accent et de l'échelle la préservent
+        etat.putInt(CLE_DEFIL, ecran.defilementParametres.getScrollY());
     }
 
     @Override
@@ -111,46 +165,117 @@ public final class EcranParametres extends ActiviteJoide {
     }
 
     // ------------------------------------------------------------------
-    // Construction
+    // Structure statique : clé d'état vers vues (le XML fait la mise
+    // en page, l'écran traduit les clés ; les valeurs vivent au rendu)
     // ------------------------------------------------------------------
 
-    private View construireUi() {
-        LinearLayout racine = new LinearLayout(this);
-        racine.setOrientation(LinearLayout.VERTICAL);
-        racine.setBackgroundColor(palette.fond);
+    /** Les vues d'une rangée : racine (visibilité) et séparateur de carte. */
+    private record VuesRangee(View racine, View separateur) {
+    }
 
-        LinearLayout barre = new LinearLayout(this);
-        barre.setOrientation(LinearLayout.HORIZONTAL);
-        barre.setGravity(Gravity.CENTER_VERTICAL);
-        barre.setBackgroundColor(palette.surface);
-        barre.setPadding(GraphiteVue.dp(this, 8),
-                GraphiteVue.dp(this, 10), GraphiteVue.dp(this, 8),
-                GraphiteVue.dp(this, 10));
-        Icone retour = new Icone(this);
-        retour.setGlyphe(Icone.Glyphe.RETOUR);
-        retour.setCouleur(palette.texte);
-        retour.setClickable(true);
-        retour.setContentDescription(getString(
-                R.string.parametres_desc_retour));
-        retour.setOnClickListener(vue -> finish());
-        barre.addView(retour, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(this, 40), GraphiteVue.dp(this, 40)));
-        TextView titre = new TextView(this);
-        titre.setText(R.string.parametres_titre);
-        titre.setTextColor(palette.texte);
-        titre.setTextSize(20f);
-        titre.setTypeface(GraphiteVue.police(this, 700, false));
-        barre.addView(titre, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        racine.addView(barre, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+    /** Les vues d'une section : en-tête nommé et carte conteneur. */
+    private record VuesSection(View entete, LinearLayout carte) {
+    }
 
-        Champ recherche = new Champ(this);
-        recherche.sansEtiquette();
-        recherche.setIndice(R.string.parametres_recherche_indice);
-        recherche.edition().addTextChangedListener(new TextWatcher() {
+    private void monterStructure() {
+        section(EtatParametres.SECT_APPARENCE, ecran.sectApparence,
+                ecran.groupeApparence);
+        section(EtatParametres.SECT_EDITEUR, ecran.sectEditeur,
+                ecran.groupeEditeur);
+        section(EtatParametres.SECT_BUILD, ecran.sectBuild,
+                ecran.groupeBuild);
+        section(EtatParametres.SECT_IA, ecran.sectIa, ecran.groupeIa);
+        section(EtatParametres.SECT_STOCKAGE, ecran.sectStockage,
+                ecran.groupeStockage);
+        section(EtatParametres.SECT_A_PROPOS, ecran.sectAPropos,
+                ecran.groupeAPropos);
+
+        ecran.sectApparence.titreGroupe.setText(
+                R.string.parametres_section_apparence);
+        ecran.sectEditeur.titreGroupe.setText(
+                R.string.parametres_section_editeur);
+        ecran.sectBuild.titreGroupe.setText(
+                R.string.parametres_section_build);
+        ecran.sectIa.titreGroupe.setText(R.string.parametres_section_ia);
+        ecran.sectStockage.titreGroupe.setText(
+                R.string.parametres_section_stockage);
+        ecran.sectAPropos.titreGroupe.setText(
+                R.string.parametres_section_a_propos);
+
+        // la table rangée → vues : structure statique de l'état (les
+        // valeurs vivantes se posent au rendu, jamais ici)
+        rangee(EtatParametres.R_THEME, ecran.rangTheme);
+        rangee(EtatParametres.R_ACCENT, ecran.rangAccent);
+        rangee(EtatParametres.R_ECHELLE_UI, ecran.rangEchelleUi);
+        rangee(EtatParametres.R_TAILLE_CODE, ecran.rangTailleCode);
+        rangee(EtatParametres.R_NUMEROS, ecran.rangNumeros);
+        rangee(EtatParametres.R_RETOUR_LIGNE, ecran.rangRetourLigne);
+        rangee(EtatParametres.R_MOTEUR, ecran.rangMoteur);
+        rangee(EtatParametres.R_FILS, ecran.rangFils);
+        rangee(EtatParametres.R_CLE_ANTHROPIC, ecran.rangCleAnthropic);
+        rangee(EtatParametres.R_CLE_OPENAI, ecran.rangCleOpenai);
+        rangee(EtatParametres.R_CLE_GEMINI, ecran.rangCleGemini);
+        rangee(EtatParametres.R_CLE_OPENROUTER, ecran.rangCleOpenrouter);
+        rangee(EtatParametres.R_MODELE_IA, ecran.rangModeleIa);
+        rangee(EtatParametres.R_URL_IA, ecran.rangUrlIa);
+        rangee(EtatParametres.R_PROJETS, ecran.rangProjets);
+        rangee(EtatParametres.R_CIDX, ecran.rangCidx);
+        rangee(EtatParametres.R_M2, ecran.rangM2);
+        rangee(EtatParametres.R_VERSION, ecran.rangVersion);
+        rangee(EtatParametres.R_LICENCES, ecran.rangLicences);
+        rangee(EtatParametres.R_JOURNAL, ecran.rangJournal);
+        rangee(EtatParametres.R_DEPOT, ecran.rangDepot);
+    }
+
+    private void section(String cle, ItemParamGroupeBinding entete,
+                         LinearLayout carte) {
+        sections.put(cle, new VuesSection(entete.getRoot(), carte));
+    }
+
+    // Les surcharges de rangee : une par genre d'item (le séparateur
+    // de carte vit DANS chaque layout d'item — la structure reste en
+    // XML, l'écran n'en connaît que la table)
+
+    private void rangee(String cle, ItemParamSegmentBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamStepperBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamCommutateurBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamNuancierBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamMesureBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamActionBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void rangee(String cle, ItemParamInfoBinding b) {
+        vues(cle, b.getRoot(), b.separateurParam);
+    }
+
+    private void vues(String cle, View racine, View separateur) {
+        rangees.put(cle, new VuesRangee(racine, separateur));
+    }
+
+    // ------------------------------------------------------------------
+    // Montage des contrôles : textes statiques, états, auditeurs
+    // ------------------------------------------------------------------
+
+    private void monterControles() {
+        ecran.actionRetour.setOnClickListener(vue -> finish());
+
+        ecran.editionRecherche.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int debut,
                                         int nombre, int apres) {
@@ -166,365 +291,361 @@ public final class EcranParametres extends ActiviteJoide {
             @Override
             public void afterTextChanged(Editable s) {
                 requete = String.valueOf(s);
-                reconstruireSections();
+                rendre();
             }
         });
-        LinearLayout.LayoutParams margeRecherche =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-        margeRecherche.leftMargin = GraphiteVue.dp(this, Graphite.MARGE);
-        margeRecherche.rightMargin =
-                GraphiteVue.dp(this, Graphite.MARGE);
-        margeRecherche.bottomMargin = GraphiteVue.dp(this, 14);
-        racine.addView(recherche, margeRecherche);
 
-        FrameLayout corps = new FrameLayout(this);
-        ScrollView defilement = new ScrollView(this);
-        colonneSections = new LinearLayout(this);
-        colonneSections.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(this, Graphite.MARGE);
-        colonneSections.setPadding(marge, 0, marge,
-                GraphiteVue.dp(this, 32));
-        defilement.addView(colonneSections, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        corps.addView(defilement, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
-        etatVide = new EtatVide(this);
-        etatVide.setVisibility(View.GONE);
-        corps.addView(etatVide, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
-        racine.addView(corps, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        return racine;
+        monterTheme();
+        monterAccent();
+        monterEchelleUi();
+        monterEditeur();
+        monterBuild();
+        monterIa();
+        monterStockage();
+        monterAPropos();
     }
 
-    // ------------------------------------------------------------------
-    // Sections et rangées
-    // ------------------------------------------------------------------
-
-    private void reconstruireSections() {
-        colonneSections.removeAllViews();
-        Map<String, String> libelles = libelles();
-        List<EtatParametres.Section> vivantes = EtatParametres.filtrer(
-                requete, libelles::get);
-        boolean aucun = EtatParametres.aucunResultat(requete,
-                libelles::get);
-        etatVide.setVisibility(aucun ? View.VISIBLE : View.GONE);
-        colonneSections.setVisibility(aucun ? View.GONE : View.VISIBLE);
-        if (aucun) {
-            etatVide.setTitre(getString(R.string.parametres_aucun_resultat,
-                    requete));
-            etatVide.setAide(R.string.parametres_aucun_resultat_aide);
-            return;
-        }
-        for (EtatParametres.Section section : vivantes) {
-            colonneSections.addView(titreSection(section.cle()),
-                    margesSection());
-            colonneSections.addView(groupe(section),
-                    new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT));
-        }
+    /** Le segment de thème : trois options, sombre par défaut — le choix recrée l'écran (ADR-048). */
+    private void monterTheme() {
+        ItemParamSegmentBinding theme = ecran.rangTheme;
+        monterSegment(theme, R.string.parametres_theme,
+                new int[]{R.string.parametres_theme_sombre,
+                        R.string.parametres_theme_systeme,
+                        R.string.parametres_theme_clair},
+                R.string.parametres_theme_legende);
+        theme.segmentParam.check(idOption(theme, reglages.theme.ordinal()));
+        poserGrasBascule(theme);
+        theme.segmentParam.addOnButtonCheckedListener(
+                (group, coche, estCoche) -> {
+                    if (!estCoche) {
+                        return;
+                    }
+                    poserGrasBascule(theme);
+                    Reglages.ecrireTheme(source,
+                            Reglages.Theme.values()[
+                                    indexOption(theme, coche)]);
+                    reglages = Reglages.lire(source);
+                    recreate();
+                });
     }
 
-    private TextView titreSection(String cle) {
-        TextView nom = new TextView(this);
-        GraphiteVue.typographie(nom, Graphite.LEGENDE);
-        nom.setTypeface(GraphiteVue.police(this, 700, false));
-        nom.setAllCaps(true);
-        nom.setLetterSpacing(0.07f);
-        nom.setTextColor(palette.texteEstompe);
-        nom.setText(nomSection(cle));
-        return nom;
-    }
-
-    private LinearLayout.LayoutParams margesSection() {
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.leftMargin = GraphiteVue.dp(this, 12);
-        params.bottomMargin = GraphiteVue.dp(this, 4);
-        return params;
-    }
-
-    private LinearLayout groupe(EtatParametres.Section section) {
-        LinearLayout groupe = new LinearLayout(this);
-        groupe.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable fond = new GradientDrawable();
-        fond.setColor(palette.surface);
-        fond.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
-        fond.setCornerRadius(GraphiteVue.dp(this,
-                Graphite.RAYON_CARTE));
-        groupe.setBackground(fond);
-        int interne = GraphiteVue.dp(this, 14);
-        groupe.setPadding(interne, 0, interne, 0);
-        boolean premiere = true;
-        for (EtatParametres.Rangee rangee : section.rangees()) {
-            if (!premiere) {
-                separateur(groupe);
-            }
-            premiere = false;
-            groupe.addView(rangee(rangee));
-        }
-        return groupe;
-    }
-
-    private void separateur(LinearLayout groupe) {
-        View ligne = new View(this);
-        ligne.setBackgroundColor(palette.bordFin);
-        groupe.addView(ligne, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 1));
-    }
-
-    private View rangee(EtatParametres.Rangee rangee) {
-        switch (rangee.genre()) {
-            case SEGMENT:
-                return rangeeSegment(rangee);
-            case STEPPER_ENTIER:
-                return rangeeStepper(rangee, false);
-            case STEPPER_DECIMAL:
-                return rangeeStepper(rangee, true);
-            case COMMUTATEUR:
-                return rangeeCommutateur(rangee);
-            case NUANCIER:
-                return rangeeNuancier();
-            case MESURE_ACTION:
-                return rangeeMesure(rangee, true);
-            case MESURE_SEULE:
-                return rangeeMesure(rangee, false);
-            case ACTION:
-                return rangeeAction(rangee);
-            case INFO:
-                return rangeeInfo(rangee);
-            default:
-                return rangeeAction(rangee);
-        }
-    }
-
-    private View rangeeSegment(EtatParametres.Rangee rangee) {
-        LinearLayout colonne = new LinearLayout(this);
-        colonne.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout haut = new LinearLayout(this);
-        haut.setOrientation(LinearLayout.HORIZONTAL);
-        haut.setGravity(Gravity.CENTER_VERTICAL);
-        haut.setPadding(0, GraphiteVue.dp(this, 9), 0,
-                GraphiteVue.dp(this, 4));
-        haut.addView(libelle(nomRangee(rangee.cle())));
-        if (EtatParametres.R_THEME.equals(rangee.cle())) {
-            Segment segment = new Segment(this);
-            segment.setOptions(List.of(
-                    getString(R.string.parametres_theme_sombre),
-                    getString(R.string.parametres_theme_systeme),
-                    getString(R.string.parametres_theme_clair)),
-                    reglages.theme.ordinal());
-            segment.setAuditeur((s, index) -> {
-                Reglages.Theme choix = Reglages.Theme.values()[index];
-                Reglages.ecrireTheme(source, choix);
-                reglages = Reglages.lire(source);
-                recreate();
-            });
-            haut.addView(segment, pousseADroite());
-        } else {
-            Segment segment = new Segment(this);
-            segment.setOptions(List.of(
-                    getString(R.string.parametres_moteur_service),
-                    getString(R.string.parametres_moteur_processus)),
-                    reglages.moteur.ordinal());
-            segment.setAuditeur((s, index) -> {
-                Reglages.Moteur choix = Reglages.Moteur.values()[index];
-                Reglages.ecrireMoteur(source, choix);
-                reglages = Reglages.lire(source);
-            });
-            haut.addView(segment, pousseADroite());
-        }
-        colonne.addView(haut, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-        colonne.addView(legende(texteLegende(rangee.cle())),
-                new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT));
-        return colonne;
-    }
-
-    private View rangeeStepper(EtatParametres.Rangee rangee,
-                               boolean decimal) {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(rangee.cle())));
-        Stepper stepper = new Stepper(this);
-        if (EtatParametres.R_ECHELLE_UI.equals(rangee.cle())) {
-            stepper.poser(Reglages.ECHELLE_UI_MIN, Reglages.ECHELLE_UI_MAX,
-                    Reglages.ECHELLE_UI_PAS, reglages.echelleUi, false);
-            stepper.setAuditeur(valeur -> {
-                Reglages.ecrireEchelleUi(source,
-                        (int) Math.round(valeur));
-                reglages = Reglages.lire(source);
-                recreate();
-            });
-        } else if (EtatParametres.R_FILS.equals(rangee.cle())) {
-            stepper.poser(Reglages.FILS_MIN, Reglages.FILS_MAX, 1,
-                    reglages.filsParBuild, false);
-            stepper.setAuditeur(valeur -> {
-                Reglages.ecrireFils(source,
-                        (int) Math.round(valeur));
-                reglages = Reglages.lire(source);
-            });
-        } else {
-            stepper.poser(Reglages.TAILLE_CODE_MIN,
-                    Reglages.TAILLE_CODE_MAX, Reglages.TAILLE_CODE_PAS,
-                    reglages.tailleCode, true);
-            stepper.setAuditeur(valeur -> {
-                Reglages.ecrireTailleCode(source, valeur);
-                reglages = Reglages.lire(source);
-            });
-        }
-        ligne.addView(stepper, pousseADroite());
-        return ligne;
-    }
-
-    private View rangeeCommutateur(EtatParametres.Rangee rangee) {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(rangee.cle())));
-        Interrupteur commutateur = new Interrupteur(this);
-        boolean etat = EtatParametres.R_NUMEROS.equals(rangee.cle())
-                ? reglages.numerosLignes : reglages.retourLigne;
-        commutateur.poser(etat);
-        commutateur.setAuditeur(actif -> {
-            if (EtatParametres.R_NUMEROS.equals(rangee.cle())) {
-                Reglages.ecrireNumerosLignes(source, actif);
-            } else {
-                Reglages.ecrireRetourLigne(source, actif);
-            }
-            reglages = Reglages.lire(source);
-        });
-        ligne.addView(commutateur, pousseADroite());
-        return ligne;
-    }
-
-    private View rangeeNuancier() {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(EtatParametres.R_ACCENT)));
-        Nuancier nuancier = new Nuancier(this);
+    /** Le nuancier d'accent : cinq pastilles, un seul jeton appliqué. */
+    private void monterAccent() {
+        ItemParamNuancierBinding accent = ecran.rangAccent;
+        accent.libelleParam.setText(R.string.parametres_accent);
+        Nuancier nuancier = accent.nuancierParam;
         nuancier.poser(Graphite.ACCENTS, reglages.accent, 26);
         nuancier.setAuditeur(index -> {
             Reglages.ecrireAccent(source, index);
             reglages = Reglages.lire(source);
             recreate();
         });
-        ligne.addView(nuancier, pousseADroite());
-        return ligne;
     }
 
-    private View rangeeMesure(EtatParametres.Rangee rangee,
+    /** Le stepper d'échelle du texte UI : 85–130 % par pas de 5 — la pose recrée l'écran. */
+    private void monterEchelleUi() {
+        ItemParamStepperBinding echelle = ecran.rangEchelleUi;
+        monterStepper(echelle, R.string.parametres_taille_ui);
+        Stepper stepper = echelle.stepperParam;
+        stepper.poser(Reglages.ECHELLE_UI_MIN, Reglages.ECHELLE_UI_MAX,
+                Reglages.ECHELLE_UI_PAS, reglages.echelleUi, false);
+        stepper.setAuditeur(valeur -> {
+            Reglages.ecrireEchelleUi(source,
+                    (int) Math.round(valeur));
+            reglages = Reglages.lire(source);
+            recreate();
+        });
+    }
+
+    /** L'éditeur : taille du code (stepper décimal), numéros et retour à la ligne (commutateurs). */
+    private void monterEditeur() {
+        ItemParamStepperBinding taille = ecran.rangTailleCode;
+        monterStepper(taille, R.string.parametres_taille_code);
+        Stepper stepper = taille.stepperParam;
+        stepper.poser(Reglages.TAILLE_CODE_MIN, Reglages.TAILLE_CODE_MAX,
+                Reglages.TAILLE_CODE_PAS, reglages.tailleCode, true);
+        stepper.setAuditeur(valeur -> {
+            Reglages.ecrireTailleCode(source, valeur);
+            reglages = Reglages.lire(source);
+        });
+
+        ItemParamCommutateurBinding numeros = ecran.rangNumeros;
+        monterCommutateur(numeros, R.string.parametres_numeros,
+                reglages.numerosLignes);
+        numeros.commutateurParam.setOnCheckedChangeListener(
+                (bouton, actif) -> {
+                    Reglages.ecrireNumerosLignes(source, actif);
+                    reglages = Reglages.lire(source);
+                });
+
+        ItemParamCommutateurBinding retourLigne = ecran.rangRetourLigne;
+        monterCommutateur(retourLigne, R.string.parametres_retour_ligne,
+                reglages.retourLigne);
+        retourLigne.commutateurParam.setOnCheckedChangeListener(
+                (bouton, actif) -> {
+                    Reglages.ecrireRetourLigne(source, actif);
+                    reglages = Reglages.lire(source);
+                });
+    }
+
+    /** Le build : moteur par défaut (segment, sans recréation), fils (stepper entier). */
+    private void monterBuild() {
+        ItemParamSegmentBinding moteur = ecran.rangMoteur;
+        monterSegment(moteur, R.string.parametres_moteur,
+                new int[]{R.string.parametres_moteur_service,
+                        R.string.parametres_moteur_processus},
+                R.string.parametres_moteur_legende);
+        moteur.segmentParam.check(idOption(moteur,
+                reglages.moteur.ordinal()));
+        poserGrasBascule(moteur);
+        moteur.segmentParam.addOnButtonCheckedListener(
+                (group, coche, estCoche) -> {
+                    if (!estCoche) {
+                        return;
+                    }
+                    poserGrasBascule(moteur);
+                    Reglages.ecrireMoteur(source,
+                            Reglages.Moteur.values()[
+                                    indexOption(moteur, coche)]);
+                    reglages = Reglages.lire(source);
+                });
+
+        ItemParamStepperBinding fils = ecran.rangFils;
+        monterStepper(fils, R.string.parametres_fils);
+        Stepper stepper = fils.stepperParam;
+        stepper.poser(Reglages.FILS_MIN, Reglages.FILS_MAX, 1,
+                reglages.filsParBuild, false);
+        stepper.setAuditeur(valeur -> {
+            Reglages.ecrireFils(source, (int) Math.round(valeur));
+            reglages = Reglages.lire(source);
+        });
+    }
+
+    /** L'agent IA : les clés des fournisseurs, le modèle, l'URL (actions à état). */
+    private void monterIa() {
+        monterAction(ecran.rangCleAnthropic,
+                R.string.parametres_cle_anthropic);
+        ecran.rangCleAnthropic.actionParam.setOnClickListener(
+                vue -> gererCle(FOURNISSEUR_ANTHROPIC));
+        monterAction(ecran.rangCleOpenai, R.string.parametres_cle_openai);
+        ecran.rangCleOpenai.actionParam.setOnClickListener(
+                vue -> gererCle(FOURNISSEUR_OPENAI));
+        monterAction(ecran.rangCleGemini, R.string.parametres_cle_gemini);
+        ecran.rangCleGemini.actionParam.setOnClickListener(
+                vue -> gererCle(FOURNISSEUR_GEMINI));
+        monterAction(ecran.rangCleOpenrouter,
+                R.string.parametres_cle_openrouter);
+        ecran.rangCleOpenrouter.actionParam.setOnClickListener(
+                vue -> gererCle(FOURNISSEUR_OPENROUTER));
+        monterAction(ecran.rangModeleIa, R.string.parametres_modele_ia);
+        ecran.rangModeleIa.actionParam.setOnClickListener(
+                vue -> gererModeleIa());
+        monterAction(ecran.rangUrlIa, R.string.parametres_url_ia);
+        ecran.rangUrlIa.actionParam.setOnClickListener(
+                vue -> gererUrlIa());
+    }
+
+    /** Le stockage : mesures au disque, CIDX et m2 avec « Vider » (m2 en rouge, maquette). */
+    private void monterStockage() {
+        monterMesure(ecran.rangProjets, R.string.parametres_projets);
+        monterMesure(ecran.rangCidx, R.string.parametres_cache_cidx);
+        ecran.rangCidx.actionParam.setOnClickListener(
+                vue -> confirmerVidage(EtatParametres.R_CIDX));
+        monterMesure(ecran.rangM2, R.string.parametres_m2);
+        // la maquette : le vidage m2 est ROUGE, le cidx accent — la
+        // couleur se pose par jeton (l'état de la rangée tranche)
+        ecran.rangM2.actionParam.setTextColor(
+                getColor(R.color.jo_erreur));
+        ecran.rangM2.actionParam.setOnClickListener(
+                vue -> confirmerVidage(EtatParametres.R_M2));
+    }
+
+    /** L'à propos : version (info), licences, journal, dépôt (actions). */
+    private void monterAPropos() {
+        ItemParamInfoBinding version = ecran.rangVersion;
+        version.libelleParam.setText(R.string.parametres_version);
+        version.valeurParam.setText(getString(
+                R.string.parametres_version_valeur,
+                BuildConfig.VERSION_NAME, BuildConfig.JOIDE_SHA));
+
+        monterAction(ecran.rangLicences, R.string.parametres_licences);
+        ecran.rangLicences.actionParam.setOnClickListener(
+                vue -> montrerLicences());
+        monterAction(ecran.rangJournal, R.string.parametres_journal);
+        ecran.rangJournal.actionParam.setOnClickListener(
+                vue -> montrerJournal());
+        monterAction(ecran.rangDepot, R.string.parametres_depot);
+        ecran.rangDepot.actionParam.setOnClickListener(
+                vue -> ouvrirDepot());
+    }
+
+    /** Le libellé et les options d'une rangée SEGMENT (texte, légende ; le coche suit). */
+    private void monterSegment(ItemParamSegmentBinding b, int idLibelle,
+                               int[] idOptions, int idLegende) {
+        b.libelleParam.setText(idLibelle);
+        b.optionSegment0.setText(idOptions[0]);
+        b.optionSegment1.setText(idOptions[1]);
+        if (idOptions.length > 2) {
+            b.optionSegment2.setText(idOptions[2]);
+        } else {
+            // le moteur n'a que deux options (la maquette)
+            b.optionSegment2.setVisibility(View.GONE);
+        }
+        b.legendeParam.setText(idLegende);
+    }
+
+    private void monterStepper(ItemParamStepperBinding b, int idLibelle) {
+        b.libelleParam.setText(idLibelle);
+    }
+
+    /** Le libellé et l'état d'un commutateur — l'état AVANT l'auditeur, jamais écrit par le montage. */
+    private void monterCommutateur(ItemParamCommutateurBinding b,
+                                    int idLibelle, boolean etat) {
+        b.libelleParam.setText(idLibelle);
+        b.commutateurParam.setChecked(etat);
+    }
+
+    private void monterAction(ItemParamActionBinding b, int idLibelle) {
+        b.libelleParam.setText(idLibelle);
+    }
+
+    private void monterMesure(ItemParamMesureBinding b, int idLibelle) {
+        b.libelleParam.setText(idLibelle);
+    }
+
+    /**
+     * La graisse de la case cochée (700, maquette) : un
+     * ColorStateList porte la couleur, pas la graisse — l'écran la
+     * pose, comme le kit Segment le faisait en interne.
+     */
+    private void poserGrasBascule(ItemParamSegmentBinding b) {
+        int coche = b.segmentParam.getCheckedButtonId();
+        grasDe(b.optionSegment0, coche);
+        grasDe(b.optionSegment1, coche);
+        if (b.optionSegment2.getVisibility() == View.VISIBLE) {
+            grasDe(b.optionSegment2, coche);
+        }
+    }
+
+    private void grasDe(MaterialButton bouton, int coche) {
+        bouton.setTypeface(GraphiteVue.police(this,
+                bouton.getId() == coche ? 700 : 400, false));
+    }
+
+    private static int idOption(ItemParamSegmentBinding b, int index) {
+        return switch (index) {
+            case 0 -> b.optionSegment0.getId();
+            case 1 -> b.optionSegment1.getId();
+            default -> b.optionSegment2.getId();
+        };
+    }
+
+    private static int indexOption(ItemParamSegmentBinding b, int coche) {
+        if (coche == b.optionSegment0.getId()) {
+            return 0;
+        }
+        if (coche == b.optionSegment1.getId()) {
+            return 1;
+        }
+        return 2;
+    }
+
+    // ------------------------------------------------------------------
+    // Rendu : visibilité par la recherche, valeurs vivantes
+    // ------------------------------------------------------------------
+
+    private void rendre() {
+        Map<String, String> libelles = libelles();
+        List<EtatParametres.Section> vivantes = EtatParametres.filtrer(
+                requete, libelles::get);
+        boolean aucun = EtatParametres.aucunResultat(requete,
+                libelles::get);
+        ecran.etatVideParametres.setVisibility(
+                aucun ? View.VISIBLE : View.GONE);
+        ecran.defilementParametres.setVisibility(
+                aucun ? View.GONE : View.VISIBLE);
+        if (aucun) {
+            ecran.etatVideParametres.setTitre(getString(
+                    R.string.parametres_aucun_resultat, requete));
+            ecran.etatVideParametres.setAide(
+                    R.string.parametres_aucun_resultat_aide);
+            return;
+        }
+        Map<String, EtatParametres.Section> parCle = new HashMap<>();
+        for (EtatParametres.Section section : vivantes) {
+            parCle.put(section.cle(), section);
+        }
+        for (EtatParametres.Section section
+                : EtatParametres.sections()) {
+            poserSection(section, parCle.get(section.cle()));
+        }
+        poserValeurs();
+    }
+
+    /** Pose la visibilité d'une section (en-tête + carte) et de ses rangées. */
+    private void poserSection(EtatParametres.Section structure,
+                              EtatParametres.Section vivante) {
+        VuesSection vue = sections.get(structure.cle());
+        boolean sectionVivante = vivante != null;
+        vue.entete().setVisibility(
+                sectionVivante ? View.VISIBLE : View.GONE);
+        vue.carte().setVisibility(
+                sectionVivante ? View.VISIBLE : View.GONE);
+        if (!sectionVivante) {
+            return;
+        }
+        Set<String> clesVives = new HashSet<>();
+        for (EtatParametres.Rangee rangee : vivante.rangees()) {
+            clesVives.add(rangee.cle());
+        }
+        // le séparateur s'arrête avant la DERNIÈRE rangée vivante
+        String derniere = EtatParametres.derniereRangee(vivante);
+        for (EtatParametres.Rangee rangee : structure.rangees()) {
+            VuesRangee vueRangee = rangees.get(rangee.cle());
+            boolean visible = clesVives.contains(rangee.cle());
+            vueRangee.racine().setVisibility(
+                    visible ? View.VISIBLE : View.GONE);
+            vueRangee.separateur().setVisibility(
+                    visible && !rangee.cle().equals(derniere)
+                            ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /** Les valeurs vivantes : mesures disque, états des clés, modèle, URL. */
+    private void poserValeurs() {
+        poserMesure(ecran.rangProjets, EtatParametres.R_PROJETS, false);
+        poserMesure(ecran.rangCidx, EtatParametres.R_CIDX, true);
+        poserMesure(ecran.rangM2, EtatParametres.R_M2, true);
+
+        ecran.rangCleAnthropic.actionParam.setText(
+                texteAction(EtatParametres.R_CLE_ANTHROPIC));
+        ecran.rangCleOpenai.actionParam.setText(
+                texteAction(EtatParametres.R_CLE_OPENAI));
+        ecran.rangCleGemini.actionParam.setText(
+                texteAction(EtatParametres.R_CLE_GEMINI));
+        ecran.rangCleOpenrouter.actionParam.setText(
+                texteAction(EtatParametres.R_CLE_OPENROUTER));
+        ecran.rangModeleIa.actionParam.setText(
+                texteAction(EtatParametres.R_MODELE_IA));
+        ecran.rangUrlIa.actionParam.setText(
+                texteAction(EtatParametres.R_URL_IA));
+        ecran.rangLicences.actionParam.setText(
+                texteAction(EtatParametres.R_LICENCES));
+        ecran.rangJournal.actionParam.setText(
+                texteAction(EtatParametres.R_JOURNAL));
+        ecran.rangDepot.actionParam.setText(
+                texteAction(EtatParametres.R_DEPOT));
+    }
+
+    private void poserMesure(ItemParamMesureBinding b, String cle,
                               boolean avecAction) {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(rangee.cle())));
-        LinearLayout droite = new LinearLayout(this);
-        droite.setOrientation(LinearLayout.HORIZONTAL);
-        droite.setGravity(Gravity.CENTER_VERTICAL);
-        TextView valeur = new TextView(this);
-        GraphiteVue.typographie(valeur, Graphite.NOTE);
-        valeur.setTextColor(palette.texteSecondaire);
-        Long octetsMesures = octets.get(rangee.cle());
-        valeur.setText(getString(R.string.parametres_mo,
+        Long octetsMesures = octets.get(cle);
+        b.valeurParam.setText(getString(R.string.parametres_mo,
                 MesuresStockage.formaterMo(
                         octetsMesures == null ? 0L : octetsMesures,
                         Locale.getDefault())));
-        droite.addView(valeur);
-        if (avecAction) {
-            TextView action = actionTexte(
-                    getString(R.string.parametres_vider),
-                    EtatParametres.R_M2.equals(rangee.cle())
-                            ? palette.erreur : palette.accent);
-            action.setOnClickListener(vue ->
-                    confirmerVidage(rangee.cle()));
-            LinearLayout.LayoutParams margeAction =
-                    new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT);
-            margeAction.leftMargin = GraphiteVue.dp(this, 12);
-            droite.addView(action, margeAction);
-        }
-        ligne.addView(droite, pousseADroite());
-        return ligne;
-    }
-
-    private View rangeeAction(EtatParametres.Rangee rangee) {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(rangee.cle())));
-        TextView action = actionTexte(
-                texteAction(rangee.cle()), palette.accent);
-        action.setOnClickListener(vue -> activer(rangee.cle()));
-        ligne.addView(action, pousseADroite());
-        return ligne;
-    }
-
-    private View rangeeInfo(EtatParametres.Rangee rangee) {
-        LinearLayout ligne = ligneSimple();
-        ligne.addView(libelle(nomRangee(rangee.cle())));
-        TextView valeur = new TextView(this);
-        GraphiteVue.typographie(valeur, Graphite.NOTE);
-        valeur.setTextColor(palette.texteSecondaire);
-        if (EtatParametres.R_VERSION.equals(rangee.cle())) {
-            valeur.setText(getString(R.string.parametres_version_valeur,
-                    BuildConfig.VERSION_NAME, BuildConfig.JOIDE_SHA));
-        } else {
-            valeur.setText(DEPOT.replace("https://", ""));
-        }
-        ligne.addView(valeur, pousseADroite());
-        return ligne;
-    }
-
-    private LinearLayout ligneSimple() {
-        LinearLayout ligne = new LinearLayout(this);
-        ligne.setOrientation(LinearLayout.HORIZONTAL);
-        ligne.setGravity(Gravity.CENTER_VERTICAL);
-        ligne.setPadding(0, GraphiteVue.dp(this, 9), 0,
-                GraphiteVue.dp(this, 9));
-        return ligne;
-    }
-
-    private TextView libelle(CharSequence texte) {
-        TextView vue = new TextView(this);
-        GraphiteVue.typographie(vue, Graphite.CORPS);
-        vue.setTextColor(palette.texte);
-        vue.setText(texte);
-        return vue;
-    }
-
-    /** Le libellé d'une rangée depuis les ressources. */
-    private TextView libelle(int idRes) {
-        return libelle(getString(idRes));
-    }
-
-    private TextView legende(CharSequence texte) {
-        TextView vue = new TextView(this);
-        GraphiteVue.typographie(vue, Graphite.LEGENDE);
-        vue.setTextColor(palette.texteEstompe);
-        vue.setPadding(0, 0, 0, GraphiteVue.dp(this, 9));
-        vue.setText(texte);
-        return vue;
-    }
-
-    private TextView actionTexte(CharSequence texte, int couleur) {
-        TextView vue = new TextView(this);
-        GraphiteVue.typographie(vue, Graphite.NOTE);
-        vue.setTypeface(GraphiteVue.police(this, 700, false));
-        vue.setTextColor(couleur);
-        vue.setClickable(true);
-        vue.setText(texte);
-        return vue;
-    }
-
-    private LinearLayout.LayoutParams pousseADroite() {
-        return new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
+        b.actionParam.setVisibility(
+                avecAction ? View.VISIBLE : View.GONE);
     }
 
     // ------------------------------------------------------------------
@@ -608,20 +729,6 @@ public final class EcranParametres extends ActiviteJoide {
         }
     }
 
-    private CharSequence texteLegende(String cle) {
-        switch (cle) {
-            case EtatParametres.R_THEME:
-                return getString(R.string.parametres_theme_legende);
-            case EtatParametres.R_MOTEUR:
-                return getString(R.string.parametres_moteur_legende);
-            case EtatParametres.R_FILS:
-                return getString(R.string.parametres_fils_legende);
-            default:
-                return getString(
-                        R.string.parametres_echelle_legende);
-        }
-    }
-
     private CharSequence texteAction(String cle) {
         if (EtatParametres.R_DEPOT.equals(cle)) {
             return DEPOT.replace("https://", "");
@@ -658,36 +765,8 @@ public final class EcranParametres extends ActiviteJoide {
     }
 
     // ------------------------------------------------------------------
-    // Actions
+    // Actions (les dialogues existants attendent A7, D3)
     // ------------------------------------------------------------------
-
-    private void activer(String cle) {
-        if (EtatParametres.R_LICENCES.equals(cle)) {
-            montrerLicences();
-        } else if (EtatParametres.R_JOURNAL.equals(cle)) {
-            montrerJournal();
-        } else if (EtatParametres.R_DEPOT.equals(cle)) {
-            ouvrirDepot();
-        } else if (EtatParametres.R_CLE_ANTHROPIC.equals(cle)) {
-            gererCle(FOURNISSEUR_ANTHROPIC);
-        } else if (EtatParametres.R_CLE_OPENAI.equals(cle)) {
-            gererCle(FOURNISSEUR_OPENAI);
-        } else if (EtatParametres.R_CLE_GEMINI.equals(cle)) {
-            gererCle(FOURNISSEUR_GEMINI);
-        } else if (EtatParametres.R_CLE_OPENROUTER.equals(cle)) {
-            gererCle(FOURNISSEUR_OPENROUTER);
-        } else if (EtatParametres.R_MODELE_IA.equals(cle)) {
-            gererModeleIa();
-        } else if (EtatParametres.R_URL_IA.equals(cle)) {
-            gererUrlIa();
-        }
-    }
-
-    /** Les identifiants de fournisseur du stockage chiffré. */
-    private static final String FOURNISSEUR_ANTHROPIC = "anthropic";
-    private static final String FOURNISSEUR_OPENAI = "openai";
-    private static final String FOURNISSEUR_GEMINI = "gemini";
-    private static final String FOURNISSEUR_OPENROUTER = "openrouter";
 
     /**
      * La clé d'un fournisseur (lot P, ADR-É11 point 9) : menu
@@ -696,14 +775,7 @@ public final class EcranParametres extends ActiviteJoide {
      */
     private void gererCle(String fournisseur) {
         boolean posee = cles.estPosee(fournisseur);
-        CharSequence titre = getString(
-                FOURNISSEUR_ANTHROPIC.equals(fournisseur)
-                        ? R.string.parametres_cle_anthropic
-                        : FOURNISSEUR_GEMINI.equals(fournisseur)
-                                ? R.string.parametres_cle_gemini
-                                : FOURNISSEUR_OPENROUTER.equals(fournisseur)
-                                        ? R.string.parametres_cle_openrouter
-                                        : R.string.parametres_cle_openai);
+        CharSequence titre = getString(titreCle(fournisseur));
         if (posee) {
             Dialogue.menu(this, palette, titre,
                     new CharSequence[]{
@@ -722,24 +794,18 @@ public final class EcranParametres extends ActiviteJoide {
     }
 
     private void saisirCle(String fournisseur) {
-        android.widget.EditText saisie =
-                new android.widget.EditText(this);
-        saisie.setHint(R.string.parametres_cle_indice);
-        saisie.setTypeface(GraphiteVue.police(this, 400, true));
-        Dialogue.saisie(this, palette,
-                getString(
-                        FOURNISSEUR_ANTHROPIC.equals(fournisseur)
-                                ? R.string.parametres_cle_anthropic
-                                : FOURNISSEUR_GEMINI.equals(fournisseur)
-                                        ? R.string.parametres_cle_gemini
-                                        : FOURNISSEUR_OPENROUTER.equals(fournisseur)
-                                                ? R.string.parametres_cle_openrouter
-                                                : R.string.parametres_cle_openai),
-                saisie, R.string.action_annuler, R.string.action_ok,
+        ChampSaisieParamBinding saisie =
+                ChampSaisieParamBinding.inflate(getLayoutInflater());
+        saisie.editionSaisie.setHint(R.string.parametres_cle_indice);
+        saisie.editionSaisie.setTypeface(
+                GraphiteVue.police(this, 400, true));
+        Dialogue.saisie(this, palette, getString(titreCle(fournisseur)),
+                saisie.getRoot(), R.string.action_annuler,
+                R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel == DialogInterface.BUTTON_POSITIVE) {
-                        String valeur = saisie.getText().toString()
-                                .trim();
+                        String valeur = saisie.editionSaisie.getText()
+                                .toString().trim();
                         if (valeur.isEmpty()) {
                             Dialogue.information(this, palette,
                                     getString(R.string.parametres_section_ia),
@@ -755,10 +821,8 @@ public final class EcranParametres extends ActiviteJoide {
                             // jamais avalé
                             if (!valeur.equals(cles.lire(fournisseur))) {
                                 Dialogue.information(this, palette,
-                                        getString(R.string
-                                                .parametres_section_ia),
-                                        getString(
-                                                R.string.parametres_cle_echec),
+                                        getString(R.string.parametres_section_ia),
+                                        getString(R.string.parametres_cle_echec),
                                         R.string.action_ok);
                                 return;
                             }
@@ -769,7 +833,7 @@ public final class EcranParametres extends ActiviteJoide {
                                     R.string.action_ok);
                             return;
                         }
-                        reconstruireSections();
+                        rendre();
                     }
                 });
     }
@@ -785,31 +849,48 @@ public final class EcranParametres extends ActiviteJoide {
                     } catch (IOException e) {
                         // le fichier part au mieux : l'état se relit
                     }
-                    reconstruireSections();
+                    rendre();
                 });
+    }
+
+    /** Le titre de la rangée d'un fournisseur. */
+    private int titreCle(String fournisseur) {
+        if (FOURNISSEUR_ANTHROPIC.equals(fournisseur)) {
+            return R.string.parametres_cle_anthropic;
+        }
+        if (FOURNISSEUR_GEMINI.equals(fournisseur)) {
+            return R.string.parametres_cle_gemini;
+        }
+        if (FOURNISSEUR_OPENROUTER.equals(fournisseur)) {
+            return R.string.parametres_cle_openrouter;
+        }
+        return R.string.parametres_cle_openai;
     }
 
     /** Le modèle par défaut : saisie bornée (jamais vide). */
     private void gererModeleIa() {
-        android.widget.EditText saisie =
-                new android.widget.EditText(this);
-        saisie.setText(reglages.modeleIa);
-        saisie.setHint(R.string.parametres_modele_indice);
+        ChampSaisieParamBinding saisie =
+                ChampSaisieParamBinding.inflate(getLayoutInflater());
+        saisie.editionSaisie.setText(reglages.modeleIa);
+        saisie.editionSaisie.setHint(R.string.parametres_modele_indice);
         Dialogue.saisie(this, palette,
-                getString(R.string.parametres_modele_ia), saisie,
-                R.string.action_annuler, R.string.action_ok,
+                getString(R.string.parametres_modele_ia),
+                saisie.getRoot(), R.string.action_annuler,
+                R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel == DialogInterface.BUTTON_POSITIVE) {
                         try {
                             Reglages.ecrireModeleIa(source,
-                                    saisie.getText().toString());
+                                    saisie.editionSaisie.getText()
+                                            .toString());
                             // lot U/7 : le modèle se retient aussi POUR
                             // le fournisseur courant — le modèle partagé
                             // ne traverse jamais les fournisseurs
                             // (manière CodeAssist)
                             Reglages.ecrireModelePour(source,
                                     reglages.fournisseurIa,
-                                    saisie.getText().toString());
+                                    saisie.editionSaisie.getText()
+                                            .toString());
                         } catch (IllegalArgumentException e) {
                             Dialogue.information(this, palette,
                                     getString(R.string.parametres_modele_ia),
@@ -818,25 +899,27 @@ public final class EcranParametres extends ActiviteJoide {
                             return;
                         }
                         reglages = Reglages.lire(source);
-                        reconstruireSections();
+                        rendre();
                     }
                 });
     }
 
     /** L'URL de base OpenAI-compatible : vide ou http(s), bornée. */
     private void gererUrlIa() {
-        android.widget.EditText saisie =
-                new android.widget.EditText(this);
-        saisie.setText(reglages.urlIa);
-        saisie.setHint(R.string.parametres_url_indice);
+        ChampSaisieParamBinding saisie =
+                ChampSaisieParamBinding.inflate(getLayoutInflater());
+        saisie.editionSaisie.setText(reglages.urlIa);
+        saisie.editionSaisie.setHint(R.string.parametres_url_indice);
         Dialogue.saisie(this, palette,
-                getString(R.string.parametres_url_ia), saisie,
-                R.string.action_annuler, R.string.action_ok,
+                getString(R.string.parametres_url_ia),
+                saisie.getRoot(), R.string.action_annuler,
+                R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel == DialogInterface.BUTTON_POSITIVE) {
                         try {
                             Reglages.ecrireUrlIa(source,
-                                    saisie.getText().toString());
+                                    saisie.editionSaisie.getText()
+                                            .toString());
                         } catch (IllegalArgumentException e) {
                             Dialogue.information(this, palette,
                                     getString(R.string.parametres_url_ia),
@@ -845,7 +928,7 @@ public final class EcranParametres extends ActiviteJoide {
                             return;
                         }
                         reglages = Reglages.lire(source);
-                        reconstruireSections();
+                        rendre();
                     }
                 });
     }
@@ -866,8 +949,13 @@ public final class EcranParametres extends ActiviteJoide {
         fond.execute(() -> {
             String licences = lireAsset("licences/LICENSE") + "\n\n"
                     + lireAsset("licences/NOTICE");
-            runOnUiThread(() -> montrerTexte(
-                    getString(R.string.parametres_licences), licences));
+            runOnUiThread(() -> {
+                if (isDestroyed()) {
+                    return;
+                }
+                montrerTexte(
+                        getString(R.string.parametres_licences), licences);
+            });
         });
     }
 
@@ -881,6 +969,9 @@ public final class EcranParametres extends ActiviteJoide {
                                 .getInputStream());
                 List<String> lignes = JournalDiagnostic.borner(brut);
                 runOnUiThread(() -> {
+                    if (isDestroyed()) {
+                        return;
+                    }
                     if (lignes.isEmpty()) {
                         Dialogue.information(this, palette,
                                 getString(R.string.parametres_journal),
@@ -894,28 +985,26 @@ public final class EcranParametres extends ActiviteJoide {
                     }
                 });
             } catch (IOException e) {
-                runOnUiThread(() -> Dialogue.information(this, palette,
-                        getString(R.string.parametres_journal),
-                        getString(R.string.parametres_journal_echoue,
-                                String.valueOf(e.getMessage())),
-                        R.string.action_ok));
+                runOnUiThread(() -> {
+                    if (isDestroyed()) {
+                        return;
+                    }
+                    Dialogue.information(this, palette,
+                            getString(R.string.parametres_journal),
+                            getString(R.string.parametres_journal_echoue,
+                                    String.valueOf(e.getMessage())),
+                            R.string.action_ok);
+                });
             }
         });
     }
 
     /** Un écran texte : dialogue à vue défilante, police mono — jamais un texte coupé. */
     private void montrerTexte(CharSequence titre, String texte) {
-        ScrollView defilement = new ScrollView(this);
-        TextView contenu = new TextView(this);
-        GraphiteVue.typographie(contenu, Graphite.CODE_COMPACT);
-        contenu.setTextColor(palette.texteSecondaire);
-        int marge = GraphiteVue.dp(this, 20);
-        contenu.setPadding(marge, marge / 2, marge, marge);
-        contenu.setText(texte);
-        defilement.addView(contenu, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-        Dialogue.saisieTexte(this, palette, titre, defilement,
+        PageTexteParamBinding page =
+                PageTexteParamBinding.inflate(getLayoutInflater());
+        page.textePage.setText(texte);
+        Dialogue.saisieTexte(this, palette, titre, page.getRoot(),
                 R.string.action_ok, null);
     }
 
@@ -947,8 +1036,11 @@ public final class EcranParametres extends ActiviteJoide {
                     dossierCidx()));
             mesures.put(EtatParametres.R_M2, mesurer(dossierM2()));
             runOnUiThread(() -> {
+                if (isDestroyed()) {
+                    return;
+                }
                 octets = mesures;
-                reconstruireSections();
+                rendre();
             });
         });
     }
@@ -989,12 +1081,17 @@ public final class EcranParametres extends ActiviteJoide {
                     try {
                         MesuresStockage.vider(cible);
                     } catch (IOException e) {
-                        runOnUiThread(() -> Dialogue.information(
-                                this, palette,
-                                getString(R.string.import_echoue_titre),
-                                getString(R.string.parametres_vider_echoue,
-                                        String.valueOf(e.getMessage())),
-                                R.string.action_ok));
+                        runOnUiThread(() -> {
+                            if (isDestroyed()) {
+                                return;
+                            }
+                            Dialogue.information(
+                                    this, palette,
+                                    getString(R.string.import_echoue_titre),
+                                    getString(R.string.parametres_vider_echoue,
+                                            String.valueOf(e.getMessage())),
+                                    R.string.action_ok);
+                        });
                     }
                     runOnUiThread(this::mesurerStockage);
                 }));

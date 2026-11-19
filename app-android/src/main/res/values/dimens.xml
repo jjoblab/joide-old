@@ -67,4 +67,40 @@
     <dimen name="jo_ecart_entete_interieur">8dp</dimen>
     <dimen name="jo_pad_pilule_cote">8dp</dimen>
     <dimen name="jo_pad_pilule_haut">1dp</dimen>
+
+    <!-- Traits fins (lot A3) : liserés et séparateurs de 1 dp -->
+    <dimen name="jo_ligne">1dp</dimen>
+
+    <!-- Paramètres (lot A3, maquette parametres.html) : la barre du
+         code d'hier (8/10/8/10), les paddings de rangées (9, envers 8),
+         légendes 3, groupes 14, segments 3/6/13, valeur 8 — 1 px = 1 dp -->
+    <dimen name="jo_pad_barre_param_cote">8dp</dimen>
+    <dimen name="jo_pad_barre_param_haut">10dp</dimen>
+    <dimen name="jo_pad_barre_param_bas">10dp</dimen>
+    <dimen name="jo_pad_recherche_param_bas">14dp</dimen>
+    <dimen name="jo_pad_contenu_param_bas">32dp</dimen>
+    <dimen name="jo_ecart_sections_param">8dp</dimen>
+    <dimen name="jo_pad_groupe_cote">14dp</dimen>
+    <dimen name="jo_marge_nom_section">12dp</dimen>
+    <dimen name="jo_ecart_nom_section">4dp</dimen>
+    <dimen name="jo_pad_rangee">9dp</dimen>
+    <dimen name="jo_pad_rangee_envers">8dp</dimen>
+    <dimen name="jo_ecart_legende_param">3dp</dimen>
+    <dimen name="jo_ecart_valeur_param">8dp</dimen>
+    <dimen name="jo_pad_bascule">3dp</dimen>
+    <dimen name="jo_ecart_bascule">3dp</dimen>
+    <dimen name="jo_pad_bascule_cote">13dp</dimen>
+    <dimen name="jo_pad_bascule_haut">6dp</dimen>
+    <dimen name="jo_min_bascule">24dp</dimen>
+    <dimen name="jo_texte_titre_barre">20sp</dimen>
+    <dimen name="jo_texte_titre_barre_interligne">26sp</dimen>
+
+    <!-- Écran texte en dialogue des Paramètres (lot A3) : marges du
+         code d'hier (20 / 10 / 20 / 20) -->
+    <dimen name="jo_pad_texte_page">20dp</dimen>
+    <dimen name="jo_pad_texte_page_haut">10dp</dimen>
+
+    <!-- Cible d'action carrée (icône retour des Paramètres, lot A3 :
+         le 40 dp des actions de l'accueil, ici factorisé) -->
+    <dimen name="jo_action_icone">40dp</dimen>
 </resources>

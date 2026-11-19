@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  En-tête de groupe de réglages (lot A3, ADR-085 — le .nom-sect de la
+  maquette parametres.html) : légende 12 en graisse 700, MAJUSCULES
+  espacées, texte estompé, marge gauche 12 et bas 4. La carte du groupe
+  (fond surface, liseré bord-fin, rayon 16) vit dans
+  activity_parametres.xml : les rangées incluses en sont les enfants
+  directs en XML pur.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/titre_groupe"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginLeft="@dimen/jo_marge_nom_section"
+    android:layout_marginBottom="@dimen/jo_ecart_nom_section"
+    android:textAllCaps="true"
+    android:textAppearance="@style/TextAppearance.Jo.NomSection"
+    android:textColor="?attr/jo_texte3" />

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rangée NUANCIER (lot A3, Genre.NUANCIER — le .rangée-envers/.nuancier
+  de la maquette) : libellé + Nuancier du kit CONSERVÉ (ADR-085 : pas
+  d'équivalent Material) — pastilles, choisie et auditeur se posent par
+  l'écran. Séparateur de carte en fin (masqué sous la dernière vivante).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/jo_pad_rangee"
+        android:paddingBottom="@dimen/jo_pad_rangee">
+
+        <TextView
+            android:id="@+id/libelle_param"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte" />
+
+        <jo.joide.app.android.ui.Nuancier
+            android:id="@+id/nuancier_param"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/separateur_param"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_ligne"
+        android:background="?attr/jo_bord_fin" />
+</LinearLayout>

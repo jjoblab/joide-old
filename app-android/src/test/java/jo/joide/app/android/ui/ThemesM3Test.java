@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -249,7 +250,152 @@ class ThemesM3Test {
         }
     }
 
+    @Test
+    void lesStylesDuLotParametresOntUnParentM3EtDesJetonsExistants()
+            throws Exception {
+        // ADR-085 §2 : tout nouveau jeton reçoit sa parité — lot A3
+        // (maquette parametres.html, 1 px = 1 dp et 1 px = 1 sp)
+        Map<String, Map<String, String>> styles = styles(
+                RES.resolve("values").resolve("styles.xml").toFile());
+        Map<String, String> dimens = enfants(
+                document(RES.resolve("values").resolve("dimens.xml").toFile()),
+                "dimen");
+
+        // Titre de la sous-barre : 20 gras — .titre de la maquette ;
+        // interligne à la cadence Graphite (+6, comme SOUS_TITRE 16/22
+        // et TITRE_ECRAN 28/34 — l'interligne hérité 22 du corps de la
+        // maquette n'est pas un couple Graphite)
+        Map<String, String> barre = styles.get("TextAppearance.Jo.TitreBarre");
+        assertNotNull(barre, "TextAppearance.Jo.TitreBarre doit exister");
+        assertEquals("TextAppearance.Material3.TitleLarge",
+                barre.get("_parent"),
+                "le titre de barre hérite d'un TextAppearance.Material3.*");
+        assertEquals("@dimen/jo_texte_titre_barre",
+                barre.get("android:textSize"));
+        assertEquals("@dimen/jo_texte_titre_barre_interligne",
+                barre.get("android:lineHeight"));
+        assertEquals("20sp", dimens.get("jo_texte_titre_barre"),
+                "le .titre de la maquette : 20 px = 20 sp");
+        assertEquals("26sp", dimens.get("jo_texte_titre_barre_interligne"));
+
+        // Nom de section : l'échelle LEGENDE (12/16 par héritage) en
+        // graisse 700 espacée de 0,07 — le .nom-sect de la maquette
+        Map<String, String> nom = styles.get("TextAppearance.Jo.NomSection");
+        assertNotNull(nom, "TextAppearance.Jo.NomSection doit exister");
+        assertEquals("TextAppearance.Jo.Legende", nom.get("_parent"),
+                "l'échelle du nom de section est la légende Graphite");
+        assertEquals("bold", nom.get("android:textStyle"));
+        assertEquals("0.07", nom.get("android:letterSpacing"));
+
+        // Bascule (Segment remplacé, D2) : case pilule teintée par
+        // ColorStateList, paddings 6/13 et écart 3 de la maquette
+        Map<String, String> bascule = styles.get("Widget.Jo.Bascule");
+        assertNotNull(bascule, "Widget.Jo.Bascule doit exister");
+        assertEquals("Widget.Material3.Button.OutlinedButton",
+                bascule.get("_parent"),
+                "la bascule remplace le kit Segment par un MaterialButton");
+        assertEquals("@color/bascule_texte", bascule.get("android:textColor"));
+        assertEquals("@color/bascule_fond",
+                bascule.get("android:backgroundTint"));
+        assertEquals("@dimen/jo_pad_bascule_cote",
+                bascule.get("android:paddingLeft"));
+        assertEquals("@dimen/jo_pad_bascule_cote",
+                bascule.get("android:paddingRight"));
+        assertEquals("@dimen/jo_pad_bascule_haut",
+                bascule.get("android:paddingTop"));
+        assertEquals("13dp", dimens.get("jo_pad_bascule_cote"),
+                ".segment span : padding 6px 13px de la maquette");
+        assertEquals("6dp", dimens.get("jo_pad_bascule_haut"));
+        assertEquals("3dp", dimens.get("jo_pad_bascule"),
+                ".segment : padding 3px du conteneur");
+        assertEquals("3dp", dimens.get("jo_ecart_bascule"),
+                ".segment : gap 3px de la maquette");
+
+        // Commutateur (Interrupteur remplacé, D2) : MaterialSwitch teinté
+        // par les trois ColorStateList du kit d'hier
+        Map<String, String> interrupteur = styles.get(
+                "Widget.Jo.Interrupteur");
+        assertNotNull(interrupteur, "Widget.Jo.Interrupteur doit exister");
+        assertEquals("Widget.Material3.CompoundButton.MaterialSwitch",
+                interrupteur.get("_parent"),
+                "le commutateur remplace le kit Interrupteur");
+        assertEquals("@color/interrupteur_pouce",
+                interrupteur.get("thumbTint"));
+        assertEquals("@color/interrupteur_piste",
+                interrupteur.get("trackTint"));
+        assertEquals("@color/interrupteur_lisere",
+                interrupteur.get("trackDecorationTint"));
+    }
+
+    @Test
+    void lesSelecteursDeCouleurDuLotParametresNePortentQueDesAttrsJo()
+            throws Exception {
+        // lot A3 : les teintes des bascules et du commutateur vivent en
+        // res/color — chaque couleur est un ?attr/jo_* DECLARÉ comme
+        // couleur de thème (JetonsXmlTest garantit que les thèmes posent
+        // chaque attr) ; jamais une couleur littérale, l'alpha est porté
+        // par l'item
+        Map<String, String> attrs = attrsCouleurDeTheme();
+        Path couleurs = RES.resolve("color");
+        assertTrue(Files.isDirectory(couleurs),
+                "res/color doit exister (teintes du lot A3)");
+        List<String> manquants = new ArrayList<>();
+        try (var parcours = Files.list(couleurs)) {
+            List<Path> selecteurs = parcours.filter(
+                            p -> p.toString().endsWith(".xml"))
+                    .sorted().toList();
+            assertEquals(5, selecteurs.size(),
+                    "les cinq sélecteurs du lot A3 (bascule texte/fond, "
+                            + "interrupteur piste/liséré/pouce)");
+            for (Path selecteur : selecteurs) {
+                NodeList items = document(selecteur.toFile())
+                        .getElementsByTagName("item");
+                assertTrue(items.getLength() > 0,
+                        selecteur + " doit porter des items de couleur");
+                for (int i = 0; i < items.getLength(); i++) {
+                    Element item = (Element) items.item(i);
+                    String couleur = item.getAttribute("android:color");
+                    assertTrue(couleur.startsWith("?attr/jo_"),
+                            selecteur + " : la couleur doit être un "
+                                    + "?attr/jo_* : " + couleur);
+                    String attr = couleur.substring("?attr/jo_".length());
+                    if (!attrs.containsKey("jo_" + attr)) {
+                        manquants.add(selecteur.getFileName()
+                                + " → ?attr/jo_" + attr);
+                    }
+                }
+            }
+        }
+        assertTrue(manquants.isEmpty(),
+                () -> "attrs non déclarés dans attrs.xml (l'inflation "
+                        + "échouerait) : " + manquants);
+    }
+
     // ---- lectures et utilitaires -----------------------------------
+
+    /**
+     * Les attrs de thème jo_* de format couleur, enfants DIRECTS de
+     * {@code <resources>} (les attrs des styleables — glyphe, tuile —
+     * ne sont pas des couleurs de thème).
+     */
+    private static Map<String, String> attrsCouleurDeTheme()
+            throws Exception {
+        Map<String, String> attrs = new LinkedHashMap<>();
+        NodeList noeuds = document(
+                RES.resolve("values").resolve("attrs.xml").toFile())
+                .getElementsByTagName("attr");
+        for (int i = 0; i < noeuds.getLength(); i++) {
+            Element attr = (Element) noeuds.item(i);
+            if (!"resources".equals(attr.getParentNode().getNodeName())) {
+                continue;
+            }
+            String format = attr.getAttribute("format");
+            if (format.contains("color")) {
+                attrs.put(attr.getAttribute("name"), format);
+            }
+        }
+        return attrs;
+    }
 
     /** Le cornerSize @dimen/… d'un style de forme. */
     private static String styleCorner(Map<String, Map<String, String>> styles,

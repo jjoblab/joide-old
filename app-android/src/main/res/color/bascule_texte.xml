@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Texte d'une case de bascule (segment des Paramètres, lot A3) :
+  cochée → accent (la graisse 700 de la maquette ne s'exprime pas dans
+  un ColorStateList : l'écran la pose au moment du choix), non cochée
+  → texte estompé (le texte3 de .segment span, maquette).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_accent" android:state_checked="true" />
+    <item android:color="?attr/jo_texte3" />
+</selector>

@@ -1,3 +1,39 @@
+# CHANGES — les paramètres quittent le code : un layout d'item par genre, bascules et commutateurs Material (2026-11-19)
+
+**Lot A3 de l'ADR-085** : `EcranParametres` devient une coque mince sur
+`activity_parametres.xml` — barre (retour + titre 20 gras), recherche
+`TextInputLayout`, `NestedScrollView` + `<include>` (décision 11 : liste
+courte et STATIQUE — 6 sections, 21 rangées, la recherche ne fait que
+cacher des rangées ; la carte groupée de la maquette ne s'exprimerait pas
+en liste plate recyclée). Un layout d'item par `Genre` d'`EtatParametres.
+Rangee` (`groupe/segment/stepper/commutateur/nuancier/mesure/action/info`),
+le séparateur de carte vit dans l'item et s'arrête avant la dernière
+rangée VIVANTE (nouvelle `EtatParametres.derniereRangee`, testée JVM).
+`MaterialButtonToggleGroup` remplace le kit `Segment` (`Widget.Jo.Bascule` :
+case cochée accent 18 % + texte accent, conteneur `fond_bascule` surface
+haute + liseré bord-fin) et `MaterialSwitch` le kit `Interrupteur`
+(`Widget.Jo.Interrupteur` : piste surface haute/réussite 25 %, pouce
+texte3/réussite, liseré bord/réussite 60 % — teintes en `res/color/` par
+`?attr/jo_*`) ; `Stepper` et `Nuancier` restent (sans équivalent Material).
+Les corps des dialogues existants (clé, modèle, URL, licences, journal) se
+gonflent depuis `champ_saisie_param.xml`/`page_texte_param.xml` — plus
+AUCUNE vue instanciée dans l'écran (185 → 165 vues dans le module), les
+fabriques `Dialogue.*` attendent A7. Les 3 `recreate()` (thème, accent,
+échelle UI) conservent défilement ET recherche (`onSaveInstanceState` ;
+`saveEnabled="false"` sur le commutateur : l'état de vérité relit
+`Reglages` au montage, une restauration croisée par id dupliqué devient
+impossible). Filet : `ArchitectureVuesTest` retire l'écran de ses
+exceptions ; `ThemesM3Test` gagne la parité des nouveaux jetons (styles,
+teintes, paddings 6/13 de la maquette, titre 20/26) et les sélecteurs
+`res/color` ne portent que des `?attr/jo_*` déclarés ; deux chaînes
+orphelines (`parametres_echelle_legende`, `parametres_fils_legende`)
+partent (code mort révélé par la migration, parité values/values-fr
+intacte : 387 = 387). APK 15 581 637 → 15 649 057 o (+0,06 Mio),
+`verifierOmbreApk` vert ; 343 tests verts (0 échec). Écarts documentés au
+rapport (couleur du vidage m2 posée par l'écran — un seul layout par
+genre, barre transparente comme l'accueil, graisse de la case cochée
+posée au choix, `DuplicateIncludedIds` du lint expliqué).
+
 # CHANGES — le pilote des vues Material : l'accueil et le rappel MCP quittent le code (2026-11-19)
 
 **Lot A2 de l'ADR-085** : `MainActivity` et `EcranCallbackMcp` deviennent

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Liseré de piste du commutateur des Paramètres (lot A3, D2) : actif →
+  réussite à 60 %, inactif → bord — les deux liserés d'Interrupteur.java
+  (teinte le trackDecoration du MaterialSwitch : le contour de piste M3
+  joue le trait discret du kit).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.6" android:color="?attr/jo_reussite" android:state_checked="true" />
+    <item android:color="?attr/jo_bord" />
+</selector>

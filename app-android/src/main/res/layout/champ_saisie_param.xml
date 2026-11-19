@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Corps de saisie des dialogues EXISTANTS des Paramètres (lot A3 : clé
+  d'API, modèle IA, URL de base) : l'écran n'instancie plus d'EditText
+  en code — le champ se gonfle par binding et se passe au Dialogue
+  d'hier (qui attend le lot A7/D3 pour devenir popup). Champ nu du
+  cadre (l'état d'hier : sans habillage Graphite), police et hint posés
+  par l'écran (la clé est monospace ; le hint dit le cas — clé, modèle
+  ou URL — d'où un hint hors XML que le lint ne voit pas). Hors
+  autofill : ce champ porte des clés d'API, jamais un mot de passe
+  d'identité à remplir.
+-->
+<EditText xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/edition_saisie"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:importantForAutofill="no"
+    android:imeOptions="actionDone"
+    android:inputType="text" />

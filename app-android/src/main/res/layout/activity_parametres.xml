@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paramètres (ADR-085, lot A3 — maquette parametres.html, ADR-É8) :
+  la racine de l'écran vit en XML. Barre (retour + titre 20 gras),
+  recherche Material (Widget.Jo.Champ), puis le corps : NestedScrollView
+  + <include> (décision 11 : liste courte et STATIQUE — 6 sections,
+  21 rangées, jamais d'insertion — la recherche ne fait que cacher des
+  rangées ; la carte groupée de la maquette ne s'exprimerait pas en
+  liste plate recyclée) ; l'état « aucun résultat » est une vue
+  fonctionnelle, pas un blanc. Un layout d'item par Genre de
+  EtatParametres.Rangee : groupe (en-tête), segment, stepper,
+  commutateur, nuancier, mesure, action, info.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_pad_barre_param_cote"
+        android:paddingTop="@dimen/jo_pad_barre_param_haut"
+        android:paddingRight="@dimen/jo_pad_barre_param_cote"
+        android:paddingBottom="@dimen/jo_pad_barre_param_bas">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_retour"
+            android:layout_width="@dimen/jo_action_icone"
+            android:layout_height="@dimen/jo_action_icone"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/parametres_desc_retour"
+            android:focusable="true"
+            app:jo_icone_couleur="?attr/jo_texte"
+            app:jo_icone_glyphe="retour" />
+
+        <TextView
+            android:id="@+id/titre_param"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/parametres_titre"
+            android:textAppearance="@style/TextAppearance.Jo.TitreBarre"
+            android:textColor="?attr/jo_texte" />
+    </LinearLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/champ_recherche"
+        style="@style/Widget.Jo.Champ"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/jo_marge"
+        android:layout_marginRight="@dimen/jo_marge"
+        android:layout_marginBottom="@dimen/jo_pad_recherche_param_bas">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edition_recherche"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/parametres_recherche_indice"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte"
+            android:textColorHint="?attr/jo_texte3" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <FrameLayout
+        android:id="@+id/corps_parametres"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/defilement_parametres"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:id="@+id/colonne_parametres"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="@dimen/jo_marge"
+                android:paddingRight="@dimen/jo_marge"
+                android:paddingBottom="@dimen/jo_pad_contenu_param_bas">
+
+                <!-- Apparence : thème (segment), accent (nuancier),
+                     échelle du texte UI (stepper) -->
+                <include
+                    android:id="@+id/sect_apparence"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_apparence"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/jo_ecart_sections_param"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_theme"
+                        layout="@layout/item_param_segment" />
+
+                    <include
+                        android:id="@+id/rang_accent"
+                        layout="@layout/item_param_nuancier" />
+
+                    <include
+                        android:id="@+id/rang_echelle_ui"
+                        layout="@layout/item_param_stepper" />
+                </LinearLayout>
+
+                <!-- Éditeur : taille du code (stepper), numéros de ligne
+                     et retour à la ligne (commutateurs) -->
+                <include
+                    android:id="@+id/sect_editeur"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_editeur"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/jo_ecart_sections_param"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_taille_code"
+                        layout="@layout/item_param_stepper" />
+
+                    <include
+                        android:id="@+id/rang_numeros"
+                        layout="@layout/item_param_commutateur" />
+
+                    <include
+                        android:id="@+id/rang_retour_ligne"
+                        layout="@layout/item_param_commutateur" />
+                </LinearLayout>
+
+                <!-- Build : moteur par défaut (segment), fils par build
+                     (stepper) -->
+                <include
+                    android:id="@+id/sect_build"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_build"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/jo_ecart_sections_param"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_moteur"
+                        layout="@layout/item_param_segment" />
+
+                    <include
+                        android:id="@+id/rang_fils"
+                        layout="@layout/item_param_stepper" />
+                </LinearLayout>
+
+                <!-- Agent IA : les clés des fournisseurs, le modèle par
+                     défaut, l'URL de base (actions) -->
+                <include
+                    android:id="@+id/sect_ia"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_ia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/jo_ecart_sections_param"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_cle_anthropic"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_cle_openai"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_cle_gemini"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_cle_openrouter"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_modele_ia"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_url_ia"
+                        layout="@layout/item_param_action" />
+                </LinearLayout>
+
+                <!-- Stockage : mesures réelles au disque, CIDX et m2
+                     avec action « Vider » à conséquence nominée -->
+                <include
+                    android:id="@+id/sect_stockage"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_stockage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/jo_ecart_sections_param"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_projets"
+                        layout="@layout/item_param_mesure" />
+
+                    <include
+                        android:id="@+id/rang_cidx"
+                        layout="@layout/item_param_mesure" />
+
+                    <include
+                        android:id="@+id/rang_m2"
+                        layout="@layout/item_param_mesure" />
+                </LinearLayout>
+
+                <!-- À propos : version, licences et NOTICE, journal de
+                     diagnostic, dépôt -->
+                <include
+                    android:id="@+id/sect_a_propos"
+                    layout="@layout/item_param_groupe" />
+
+                <LinearLayout
+                    android:id="@+id/groupe_a_propos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/carte_groupe_param"
+                    android:orientation="vertical"
+                    android:paddingLeft="@dimen/jo_pad_groupe_cote"
+                    android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_version"
+                        layout="@layout/item_param_info" />
+
+                    <include
+                        android:id="@+id/rang_licences"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_journal"
+                        layout="@layout/item_param_action" />
+
+                    <include
+                        android:id="@+id/rang_depot"
+                        layout="@layout/item_param_action" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <jo.joide.app.android.ui.EtatVide
+            android:id="@+id/etat_vide_parametres"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>
