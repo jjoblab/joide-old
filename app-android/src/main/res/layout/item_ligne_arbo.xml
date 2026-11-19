@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ligne de l'arborescence générée (lot A4, .arbo de la maquette) :
+  code compact 12,5/20 monospace, l'indentation et la COULEUR se
+  posent au bind (racine texte, chemin texte2, annotation en gris de
+  commentaire — les trois teintes du code d'hier).
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/texte_ligne"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:textAppearance="@style/TextAppearance.Jo.CodeCompact" />

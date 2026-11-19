@@ -103,4 +103,51 @@
     <!-- Cible d'action carrée (icône retour des Paramètres, lot A3 :
          le 40 dp des actions de l'accueil, ici factorisé) -->
     <dimen name="jo_action_icone">40dp</dimen>
+
+    <!-- Création (lot A4, maquette creation-projet.html — 1 px = 1 dp,
+         1 px = 1 sp ; les valeurs du CODE d'hier font l'identité,
+         la maquette comble ses trous) : la sous-barre (12/10/16/6),
+         retour 36 + glyphe 20, barre d'étapes (bas 10, numéro 20, écart
+         7, jalon 2 + écart 8), compte en pilule (10/2), le corps
+         (.corps : 4/20/8 — le code d'hier avait perdu les retraits
+         latéraux), les écarts d'hier (recherche 8, puces 10, carte 8,
+         champ 6, note minSdk 10, fiche et arbo 12), la fiche (14/4),
+         l'arborescence (rayon 14, padding 12), la bannière (12/10),
+         le coche de modèle (20), les puces du kit (14/7, écart 6). -->
+    <dimen name="jo_pad_barre_creation_gauche">12dp</dimen>
+    <dimen name="jo_pad_barre_creation_haut">10dp</dimen>
+    <dimen name="jo_pad_barre_creation_droite">16dp</dimen>
+    <dimen name="jo_pad_barre_creation_bas">6dp</dimen>
+    <dimen name="jo_cote_retour_creation">36dp</dimen>
+    <dimen name="jo_cote_icone_retour_creation">20dp</dimen>
+    <dimen name="jo_pad_etapes_creation_bas">10dp</dimen>
+    <dimen name="jo_cote_num_etape">20dp</dimen>
+    <dimen name="jo_ecart_num_etape">7dp</dimen>
+    <dimen name="jo_hauteur_jalon">2dp</dimen>
+    <dimen name="jo_ecart_jalon">8dp</dimen>
+    <dimen name="jo_pad_compte_cote">10dp</dimen>
+    <dimen name="jo_pad_compte_haut">2dp</dimen>
+    <dimen name="jo_pad_corps_creation_haut">4dp</dimen>
+    <dimen name="jo_pad_corps_creation_bas">8dp</dimen>
+    <dimen name="jo_ecart_recherche_creation">8dp</dimen>
+    <dimen name="jo_ecart_puces_creation">10dp</dimen>
+    <dimen name="jo_ecart_carte_modele">8dp</dimen>
+    <dimen name="jo_ecart_champ_creation">6dp</dimen>
+    <dimen name="jo_ecart_note_minsdk">10dp</dimen>
+    <dimen name="jo_ecart_etape_recap">12dp</dimen>
+    <dimen name="jo_pad_fiche_cote">14dp</dimen>
+    <dimen name="jo_pad_fiche_haut">4dp</dimen>
+    <dimen name="jo_rayon_arbo">14dp</dimen>
+    <dimen name="jo_pad_arbo">12dp</dimen>
+    <dimen name="jo_pad_banniere_cote">12dp</dimen>
+    <dimen name="jo_pad_banniere_haut">10dp</dimen>
+    <dimen name="jo_coche_cote">20dp</dimen>
+    <dimen name="jo_ecart_boutons_creation">10dp</dimen>
+    <dimen name="jo_pad_pied_creation_haut">8dp</dimen>
+    <dimen name="jo_pad_pied_creation_bas">14dp</dimen>
+    <dimen name="jo_pad_puce_cote">14dp</dimen>
+    <dimen name="jo_pad_puce_haut">7dp</dimen>
+    <dimen name="jo_ecart_puce">6dp</dimen>
+    <dimen name="jo_texte_num_etape">11sp</dimen>
+    <dimen name="jo_texte_num_etape_interligne">16sp</dimen>
 </resources>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Étape 2 — IDENTITÉ de l'assistant (lot A4, formulaire piloté par le
+  modèle, ADR-É4 leçon 3) : étiquettes 12 demi-grasses au-dessus des
+  champs Material (Widget.Jo.Champ — le nom en corps, le paquet en
+  monospace), puces de module en ChipGroup (Widget.Jo.Puce, cochées =
+  module conservé, bascule refusée motivée), segment minSdk en
+  MaterialButtonToggleGroup (Widget.Jo.Bascule — le motif A3, MIN_SDK =
+  28/30), note « targetSdk reste 28 (D4) », bannière d'information du
+  stockage privé (item_banniere). Les blocs modules/paquet/minSdk se
+  MONTRENT selon le modèle ; les erreurs en ligne vivent sous leur
+  champ. saveEnabled=false : l'état vit dans EtatCreation (A8 fera la
+  sauvegarde, aujourd'hui la rotation réinitialise l'assistant).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingLeft="@dimen/jo_marge"
+    android:paddingTop="@dimen/jo_pad_corps_creation_haut"
+    android:paddingRight="@dimen/jo_marge"
+    android:paddingBottom="@dimen/jo_pad_corps_creation_bas">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/bloc_nom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/etiquette_nom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+                android:text="@string/creation_champ_nom"
+                android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+                android:textColor="?attr/jo_texte2" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/champ_nom"
+                style="@style/Widget.Jo.Champ"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edition_nom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:saveEnabled="false"
+                    android:textAppearance="@style/TextAppearance.Jo.Corps"
+                    android:textColor="?attr/jo_texte" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/erreur_nom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_erreur"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bloc_modules"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/etiquette_modules"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/creation_champ_modules"
+                android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+                android:textColor="?attr/jo_texte2" />
+
+            <TextView
+                android:id="@+id/aide_modules"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/creation_champ_modules_note"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/puces_modules"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_champ_creation"
+                app:chipSpacingHorizontal="@dimen/jo_ecart_puce" />
+
+            <TextView
+                android:id="@+id/erreur_modules"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_erreur"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bloc_paquet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/etiquette_paquet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+                android:text="@string/creation_champ_paquet"
+                android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+                android:textColor="?attr/jo_texte2" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/champ_paquet"
+                style="@style/Widget.Jo.Champ"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edition_paquet"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:importantForAutofill="no"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:saveEnabled="false"
+                    android:textAppearance="@style/TextAppearance.Jo.Code"
+                    android:textColor="?attr/jo_texte" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/erreur_paquet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_erreur"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/bloc_minsdk"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/etiquette_minsdk"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+                android:text="@string/creation_champ_minsdk"
+                android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+                android:textColor="?attr/jo_texte2" />
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/segment_minsdk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/fond_bascule"
+                android:padding="@dimen/jo_pad_bascule"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/option_minsdk_0"
+                    style="@style/Widget.Jo.Bascule"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginRight="@dimen/jo_ecart_bascule" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/option_minsdk_1"
+                    style="@style/Widget.Jo.Bascule"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <TextView
+                android:id="@+id/note_minsdk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_champ_creation"
+                android:layout_marginBottom="@dimen/jo_ecart_note_minsdk"
+                android:text="@string/creation_note_minsdk"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+        </LinearLayout>
+
+        <include
+            android:id="@+id/banniere_stockage"
+            layout="@layout/item_banniere" />
+    </LinearLayout>
+</ScrollView>

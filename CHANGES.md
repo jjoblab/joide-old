@@ -1,3 +1,43 @@
+# CHANGES — l'assistant de création quitte le code : trois étapes en layouts, puces Chip, génération sous garde de cycle de vie (2026-11-19)
+
+**Lot A4 de l'ADR-085** : `EcranCreation` devient une coque mince sur
+`activity_creation.xml` — sous-barre (retour 36 + titre 17 gras, compte
+« 1/3 » en pilule), barre de progression (ronds + jalons, états
+faite/active/à venir par sélecteurs `res/color`), **corps en
+`ViewFlipper`** : UN layout D'ÉTAPE par `EtatCreation.Etape`
+(`creation_etape_modele/identite/recapitulatif.xml`, `<include>` dans le
+flipper — l'ordinal de l'étape est l'indice affiché, un seul corps
+visible par construction), ligne d'erreur, pied Retour/Continuer/Créer.
+`MaterialCardView` (modèles — la carte choisie tonale par `ChoixCarte`
+au bind), `TextInputLayout` (identité : étiquettes 12 demi-grasses,
+paquet monospace), `Chip`/`ChipGroup` remplace le kit `Puce`
+(`Widget.Jo.Puce` : cochée = accent 16 % + bord 45 % + texte accent, en
+`res/color` par `?attr/jo_*`), `MaterialButtonToggleGroup` le kit
+`Segment` (minSdk, motif A3). Les listes très courtes et bornées
+(cartes de modèle, puces de module, lignes de fiche et d'arborescence —
+`item_modele_projet/item_banniere/item_ligne_recap/item_ligne_arbo/
+item_puce_module.xml`) se GONFLENT par binding (décision 11 : pas de
+flux, le comportement d'hier est conservé) — plus AUCUNE vue
+instanciée dans l'écran (165 → 131 vues dans le module, −34). Le thread
+de génération court sur l'exécuteur de l'écran avec garde de cycle de
+vie (I8 : `isDestroyed()`, binding muet après `onDestroy`,
+`shutdownNow`) ; `onBackPressed` cède la place à
+`OnBackPressedDispatcher` et l'ouverture d'atelier à `Ecrans.atelier`
+(navigation typée, décision 13). Latences d'hier réparées au passage :
+retraits latéraux du corps (perdus — la maquette les insettait de 20),
+recherche qui se vidait à chaque clic de catégorie, paquet dérivé mais
+jamais affiché (`EtatCreation.suitPaquet()`, testé JVM), coche du
+modèle choisi muet (0×0). `saveEnabled="false"` sur les champs/puces :
+la rotation réinitialise l'assistant comme aujourd'hui (A8 fera la
+sauvegarde). Filet : `ArchitectureVuesTest` retire l'écran de ses
+exceptions (3 restantes) ; `ThemesM3Test` gagne la parité du lot
+(paddings 14/7, 11/16, rayon arbo 14, 11 sélecteurs `?attr/jo_*`).
+APK 15 649 057 → 15 743 732 o (+0,09 Mio — `Chip` entre à l'APK),
+`verifierOmbreApk` vert ; 344 tests verts (0 échec). Écarts documentés
+au rapport (bouton Créer accent, Retour texte-accent, bannières sans
+icône, rayon recherche 12 uni, segment pilule A3, graisses
+rapprochées, ripple Material).
+
 # CHANGES — les paramètres quittent le code : un layout d'item par genre, bascules et commutateurs Material (2026-11-19)
 
 **Lot A3 de l'ADR-085** : `EcranParametres` devient une coque mince sur

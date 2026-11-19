@@ -239,6 +239,7 @@
     <string name="creation_recap_minsdk">minSdk</string>
     <string name="creation_recap_arbo">Arborescence générée</string>
     <string name="creation_echouee">Création échouée : %1$s</string>
+    <string name="creation_desc_retour">Retour</string>
 
     <!-- Lot J : atelier adaptatif (ADR-É5, ADR-051) -->
     <string name="atelier_desc_retour">Retour aux projets</string>

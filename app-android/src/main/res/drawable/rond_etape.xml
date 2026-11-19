@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rond du numéro d'étape (lot A4, .etape .num) : le rond suit l'état —
+  faite (activé) → plein réussite, active (sélectionné) → plein
+  accent, à venir → transparent liseré bord. Les états activé/
+  sélectionné portent faite/active (jamais ensemble), chacun des trois
+  ronds vit ses couleurs par ?attr/jo_*.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_activated="true" android:drawable="@drawable/rond_etape_faite" />
+    <item android:state_selected="true" android:drawable="@drawable/rond_etape_active" />
+    <item android:drawable="@drawable/rond_etape_todo" />
+</selector>

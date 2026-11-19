@@ -93,11 +93,11 @@ class ArchitectureVuesTest {
     /**
      * Liste d'exceptions DÉCROISSANTE — écrans qui instancient encore des
      * vues en code (état mesuré au commit de base, lot A0) : à vider au
-     * fil des lots A2 (pilote), A3 (paramètres), A4 (création),
-     * A5/A6 (atelier), A7 (contrôleurs agent).
+     * fil des lots A5/A6 (atelier), A7 (contrôleurs agent) — le pilote
+     * A2 (accueil, rappel MCP), les paramètres A3 et la création A4
+     * sont sortis de la liste.
      */
     private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of(
-            "ecrans/creation/EcranCreation.java",
             "ecrans/atelier/EcranAtelier.java",
             "ecrans/atelier/ControleurAgent.java",
             "ecrans/atelier/ControleurFichiers.java");

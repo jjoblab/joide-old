@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rond d'étape FAITE (lot A4) : plein réussite, liseré réussite. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="?attr/jo_reussite" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_reussite" />
+</shape>

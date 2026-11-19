@@ -328,25 +328,97 @@ class ThemesM3Test {
     }
 
     @Test
-    void lesSelecteursDeCouleurDuLotParametresNePortentQueDesAttrsJo()
+    void lesStylesDuLotCreationOntUnParentM3EtDesJetonsExistants()
             throws Exception {
-        // lot A3 : les teintes des bascules et du commutateur vivent en
-        // res/color — chaque couleur est un ?attr/jo_* DECLARÉ comme
-        // couleur de thème (JetonsXmlTest garantit que les thèmes posent
-        // chaque attr) ; jamais une couleur littérale, l'alpha est porté
+        // ADR-085 §2 : tout nouveau jeton reçoit sa parité — lot A4
+        // (maquette creation-projet.html, 1 px = 1 dp et 1 px = 1 sp ;
+        // les valeurs du kit/code d'hier font l'identité)
+        Map<String, Map<String, String>> styles = styles(
+                RES.resolve("values").resolve("styles.xml").toFile());
+        Map<String, String> dimens = enfants(
+                document(RES.resolve("values").resolve("dimens.xml").toFile()),
+                "dimen");
+
+        // Étiquette de champ (.etiq : la légende 12/16 en graisse 600
+        // rapprochée par sans-serif-medium — nuance documentée)
+        Map<String, String> etiquette = styles.get(
+                "TextAppearance.Jo.Etiquette");
+        assertNotNull(etiquette,
+                "TextAppearance.Jo.Etiquette doit exister");
+        assertEquals("TextAppearance.Jo.Legende",
+                etiquette.get("_parent"),
+                "l'étiquette hérite de la légende Graphite (12/16)");
+        assertEquals("sans-serif-medium", etiquette.get("android:fontFamily"));
+
+        // Numéro d'étape (.etape .num : 11/16 gras dans le rond 20 dp)
+        Map<String, String> numero = styles.get(
+                "TextAppearance.Jo.NumEtape");
+        assertNotNull(numero, "TextAppearance.Jo.NumEtape doit exister");
+        assertEquals("TextAppearance.Material3.LabelSmall",
+                numero.get("_parent"),
+                "le numéro d'étape hérite d'un TextAppearance.Material3.*");
+        assertEquals("bold", numero.get("android:textStyle"));
+        assertEquals("@dimen/jo_texte_num_etape",
+                numero.get("android:textSize"));
+        assertEquals("@dimen/jo_texte_num_etape_interligne",
+                numero.get("android:lineHeight"));
+        assertEquals("11sp", dimens.get("jo_texte_num_etape"),
+                "le .num de la maquette : 11 px = 11 sp");
+        assertEquals("16sp",
+                dimens.get("jo_texte_num_etape_interligne"),
+                "l'interligne du .num suit la cadence de la légende");
+
+        // Puce Chip (Puce du kit remplacée, D2) : pilule note 13/18,
+        // paddings 14/7 du kit, teintes de ChoixPuce en res/color
+        Map<String, String> puce = styles.get("Widget.Jo.Puce");
+        assertNotNull(puce, "Widget.Jo.Puce doit exister");
+        assertEquals("Widget.Material3.Chip.Filter", puce.get("_parent"),
+                "la puce remplace le kit Puce par un Chip Material");
+        assertEquals("@color/puce_texte", puce.get("android:textColor"));
+        assertEquals("@color/puce_fond", puce.get("chipBackgroundColor"));
+        assertEquals("@color/puce_bord", puce.get("chipStrokeColor"));
+        assertEquals("@dimen/jo_pad_puce_cote", puce.get("android:paddingLeft"));
+        assertEquals("@dimen/jo_pad_puce_cote",
+                puce.get("android:paddingRight"));
+        assertEquals("@dimen/jo_pad_puce_haut", puce.get("android:paddingTop"));
+        assertEquals("@dimen/jo_pad_puce_haut",
+                puce.get("android:paddingBottom"));
+        assertEquals("false", puce.get("checkedIconVisible"),
+                "la maquette ne montre pas de coche : la couleur porte "
+                        + "la sélection");
+        assertEquals("14dp", dimens.get("jo_pad_puce_cote"),
+                "le padding horizontal du kit Puce");
+        assertEquals("7dp", dimens.get("jo_pad_puce_haut"),
+                "le padding vertical du kit Puce");
+        assertEquals("6dp", dimens.get("jo_ecart_puce"),
+                "l'écart des puces du kit (marginRight d'hier)");
+        assertEquals("14dp", dimens.get("jo_rayon_arbo"),
+                "le .arbo de la maquette : rayon 14 px = 14 dp");
+    }
+
+    @Test
+    void lesSelecteursDeCouleurNePortentQueDesAttrsJo()
+            throws Exception {
+        // lots A3/A4 : les teintes des bascules, du commutateur, des
+        // puces Chip et de la barre d'étapes vivent en res/color —
+        // chaque couleur est un ?attr/jo_* DECLARÉ comme couleur de
+        // thème (JetonsXmlTest garantit que les thèmes posent chaque
+        // attr) ; jamais une couleur littérale, l'alpha est porté
         // par l'item
         Map<String, String> attrs = attrsCouleurDeTheme();
         Path couleurs = RES.resolve("color");
         assertTrue(Files.isDirectory(couleurs),
-                "res/color doit exister (teintes du lot A3)");
+                "res/color doit exister (teintes des lots A3/A4)");
         List<String> manquants = new ArrayList<>();
         try (var parcours = Files.list(couleurs)) {
             List<Path> selecteurs = parcours.filter(
                             p -> p.toString().endsWith(".xml"))
                     .sorted().toList();
-            assertEquals(5, selecteurs.size(),
-                    "les cinq sélecteurs du lot A3 (bascule texte/fond, "
-                            + "interrupteur piste/liséré/pouce)");
+            assertEquals(11, selecteurs.size(),
+                    "les onze sélecteurs des lots A3 et A4 (bascule "
+                            + "texte/fond, interrupteur piste/liséré/pouce, "
+                            + "puce fond/texte/bord, étape "
+                            + "numéro/libellé/jalon)");
             for (Path selecteur : selecteurs) {
                 NodeList items = document(selecteur.toFile())
                         .getElementsByTagName("item");

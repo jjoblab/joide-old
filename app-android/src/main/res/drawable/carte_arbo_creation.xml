@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Carte de l'arborescence générée (lot A4, maquette creation-projet.html
+  .arbo) : fond puits, liseré bord-fin 1 dp, rayon 14 (le .arbo de la
+  maquette, hors échelle des rayons Graphite 12/16 — jeton propre).
+  Les lignes monospace se gonflent par binding dans le conteneur.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="?attr/jo_puits" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="@dimen/jo_rayon_arbo" />
+</shape>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Étape 3 — RÉCAPITULATIF de l'assistant (lot A4) : la fiche en lignes
+  (MaterialCardView surface/liseré bord-fin, élévation nulle — les
+  lignes de EtatCreation.lignesRecap() se gonflent par binding dans
+  colonne_fiche, item_ligne_recap), l'étiquette puis l'arborescence
+  générée en code compact (carte puits, item_ligne_arbo), et la
+  bannière d'alerte qui RÉPÈTE la franchise du modèle (item_banniere —
+  la carte l'a dite, le récapitulatif le répète, ADR-É4).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingLeft="@dimen/jo_marge"
+    android:paddingTop="@dimen/jo_pad_corps_creation_haut"
+    android:paddingRight="@dimen/jo_marge"
+    android:paddingBottom="@dimen/jo_pad_corps_creation_bas">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/fiche_recap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/jo_ecart_etape_recap"
+            app:cardBackgroundColor="?attr/jo_surface"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/jo_bord_fin"
+            app:strokeWidth="@dimen/jo_ligne">
+
+            <LinearLayout
+                android:id="@+id/colonne_fiche"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="@dimen/jo_pad_fiche_cote"
+                android:paddingTop="@dimen/jo_pad_fiche_haut"
+                android:paddingRight="@dimen/jo_pad_fiche_cote"
+                android:paddingBottom="@dimen/jo_pad_fiche_haut" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/etiquette_arbo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/jo_ecart_champ_creation"
+            android:text="@string/creation_recap_arbo"
+            android:textAppearance="@style/TextAppearance.Jo.Etiquette"
+            android:textColor="?attr/jo_texte2" />
+
+        <LinearLayout
+            android:id="@+id/colonne_arbo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/jo_ecart_etape_recap"
+            android:background="@drawable/carte_arbo_creation"
+            android:orientation="vertical"
+            android:padding="@dimen/jo_pad_arbo" />
+
+        <include
+            android:id="@+id/banniere_franchise"
+            layout="@layout/item_banniere" />
+    </LinearLayout>
+</ScrollView>

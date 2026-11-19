@@ -239,6 +239,7 @@
     <string name="creation_recap_minsdk">minSdk</string>
     <string name="creation_recap_arbo">Generated tree</string>
     <string name="creation_echouee">Creation failed: %1$s</string>
+    <string name="creation_desc_retour">Back</string>
 
     <!-- Lot J : atelier adaptatif (ADR-É5, ADR-051) -->
     <string name="atelier_desc_retour">Back to projects</string>

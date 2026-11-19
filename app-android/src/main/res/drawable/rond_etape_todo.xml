@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rond d'étape À VENIR (lot A4) : transparent, liseré bord. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord" />
+</shape>

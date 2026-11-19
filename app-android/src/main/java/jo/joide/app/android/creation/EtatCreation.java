@@ -210,6 +210,16 @@ public final class EtatCreation {
         paquetTouche = true;
     }
 
+    /**
+     * Le paquet suit-il encore le nom (l'utilisateur ne l'a pas
+     * touché) ? La vue s'en sert pour re-poser le champ du paquet à
+     * chaque frappe du nom — le code d'hier dérivait déjà le paquet
+     * mais ne le montrait jamais (lot A4).
+     */
+    public boolean suitPaquet() {
+        return !paquetTouche;
+    }
+
     /** Le minSdk choisi. */
     public int minSdk() {
         return minSdk;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bannière du bas d'étape de l'assistant (lot A4, .banniere de la
+  maquette) : alerte (franchise du modèle, étape 3) ou information
+  (stockage privé, étape 2). Le fond est un mélange calculé (alerte/
+  accent à 10 % sur le fond, liseré 35 %, rayon composant) : ces
+  couleurs se posent AU BIND depuis la palette (décision 8 — couleurs
+  calculées, jamais un jeton figé), comme le code d'hier.
+  Incluse deux fois (étapes 2 et 3) : chaque <include> porte son id,
+  le binding typé désambiguïse.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingLeft="@dimen/jo_pad_banniere_cote"
+    android:paddingTop="@dimen/jo_pad_banniere_haut"
+    android:paddingRight="@dimen/jo_pad_banniere_cote"
+    android:paddingBottom="@dimen/jo_pad_banniere_haut">
+
+    <TextView
+        android:id="@+id/texte_banniere"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAppearance="@style/TextAppearance.Jo.Note" />
+</LinearLayout>

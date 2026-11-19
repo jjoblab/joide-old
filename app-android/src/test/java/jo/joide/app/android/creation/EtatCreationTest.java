@@ -73,10 +73,15 @@ class EtatCreationTest {
         assertEquals(28, etat.minSdk());
         assertEquals(List.of("app", "core"), etat.modulesChoisis());
         // le paquet suit le nom tant qu'il n'est pas touché
+        // (suitPaquet guide la re-pose du champ à chaque frappe du nom,
+        // lot A4 — le code d'hier dérivait sans jamais le montrer)
+        assertTrue(etat.suitPaquet());
         etat.changerNom("Essai 2");
         assertEquals("jo.exemple.essai2", etat.paquet());
+        assertTrue(etat.suitPaquet());
         // touché, il ne suit plus
         etat.changerPaquet("com.exemple.essai");
+        assertFalse(etat.suitPaquet());
         etat.changerNom("autre");
         assertEquals("com.exemple.essai", etat.paquet());
     }

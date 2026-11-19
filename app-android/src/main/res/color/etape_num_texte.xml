@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Numéro d'étape de l'assistant (lot A4, maquette creation-projet.html
+  .etape .num) : faite → texte sur réussite dans le rond réussite ;
+  active → texte sur accent dans le rond accent ; à venir → texte
+  estompé dans le rond bord. Les états activé/sélectionné portent
+  faite/active (jamais ensemble : un pas de l'assistant ne l'est pas
+  deux fois).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_texte_sur_reussite" android:state_activated="true" />
+    <item android:color="?attr/jo_texte_sur_accent" android:state_selected="true" />
+    <item android:color="?attr/jo_texte3" />
+</selector>

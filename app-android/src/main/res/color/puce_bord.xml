@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Liseré d'une puce Chip (lot A4) : cochée → accent à 45 % (le bord de
+  ChoixPuce), non cochée → bord fin 1 dp du kit.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.45" android:color="?attr/jo_accent" android:state_checked="true" />
+    <item android:color="?attr/jo_bord_fin" />
+</selector>

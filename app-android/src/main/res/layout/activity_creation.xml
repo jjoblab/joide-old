@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Création de projet (ADR-085, lot A4 — maquette creation-projet.html,
+  ADR-É4) : la racine de l'assistant vit en XML. Sous-barre (retour 36 +
+  glyphe 20, titre 17 gras, compte « 1/3 » en pilule), barre de
+  progression (3 étapes + 2 jalons, états par sélecteurs), corps = un
+  ViewFlipper D'UN layout D'ÉTAPE par Etape de l'assistant (MODELE,
+  IDENTITE, RECAPITULATIF — <include> dans le flipper : l'ordinal de
+  l'étape est l'indice affiché, un seul enfant visible PAR CONSTRUCTION,
+  aucun calcul de visibilité à maintenir), ligne d'erreur, pied
+  (Retour fantôme + Continuer/Créer primaires). Coque mince : la
+  machine vit dans EtatCreation, la pose dans EcranCreation.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_pad_barre_creation_gauche"
+        android:paddingTop="@dimen/jo_pad_barre_creation_haut"
+        android:paddingRight="@dimen/jo_pad_barre_creation_droite"
+        android:paddingBottom="@dimen/jo_pad_barre_creation_bas">
+
+        <FrameLayout
+            android:id="@+id/action_retour"
+            android:layout_width="@dimen/jo_cote_retour_creation"
+            android:layout_height="@dimen/jo_cote_retour_creation"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/creation_desc_retour"
+            android:focusable="true">
+
+            <jo.joide.app.android.ui.Icone
+                android:layout_width="@dimen/jo_cote_icone_retour_creation"
+                android:layout_height="@dimen/jo_cote_icone_retour_creation"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                app:jo_icone_glyphe="retour"
+                app:jo_icone_couleur="?attr/jo_texte2" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/titre_creation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/accueil_nouveau_projet"
+            android:textAppearance="@style/TextAppearance.Jo.Titre"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/compte_etape"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/pilule_compte"
+            android:paddingLeft="@dimen/jo_pad_compte_cote"
+            android:paddingTop="@dimen/jo_pad_compte_haut"
+            android:paddingRight="@dimen/jo_pad_compte_cote"
+            android:paddingBottom="@dimen/jo_pad_compte_haut"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte3" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/barre_etapes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingRight="@dimen/jo_marge"
+        android:paddingBottom="@dimen/jo_pad_etapes_creation_bas">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/num_etape_1"
+                android:layout_width="@dimen/jo_cote_num_etape"
+                android:layout_height="@dimen/jo_cote_num_etape"
+                android:background="@drawable/rond_etape"
+                android:gravity="center"
+                android:textAppearance="@style/TextAppearance.Jo.NumEtape"
+                android:textColor="@color/etape_num_texte" />
+
+            <TextView
+                android:id="@+id/libelle_etape_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/jo_ecart_num_etape"
+                android:text="@string/creation_etape_modele"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="@color/etape_libelle" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/jalon_1"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/jo_hauteur_jalon"
+            android:layout_weight="1"
+            android:background="@color/etape_jalon"
+            android:layout_marginLeft="@dimen/jo_ecart_jalon"
+            android:layout_marginRight="@dimen/jo_ecart_jalon" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/num_etape_2"
+                android:layout_width="@dimen/jo_cote_num_etape"
+                android:layout_height="@dimen/jo_cote_num_etape"
+                android:background="@drawable/rond_etape"
+                android:gravity="center"
+                android:textAppearance="@style/TextAppearance.Jo.NumEtape"
+                android:textColor="@color/etape_num_texte" />
+
+            <TextView
+                android:id="@+id/libelle_etape_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/jo_ecart_num_etape"
+                android:text="@string/creation_etape_identite"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="@color/etape_libelle" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/jalon_2"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/jo_hauteur_jalon"
+            android:layout_weight="1"
+            android:background="@color/etape_jalon"
+            android:layout_marginLeft="@dimen/jo_ecart_jalon"
+            android:layout_marginRight="@dimen/jo_ecart_jalon" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/num_etape_3"
+                android:layout_width="@dimen/jo_cote_num_etape"
+                android:layout_height="@dimen/jo_cote_num_etape"
+                android:background="@drawable/rond_etape"
+                android:gravity="center"
+                android:textAppearance="@style/TextAppearance.Jo.NumEtape"
+                android:textColor="@color/etape_num_texte" />
+
+            <TextView
+                android:id="@+id/libelle_etape_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/jo_ecart_num_etape"
+                android:text="@string/creation_etape_recapitulatif"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="@color/etape_libelle" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ViewFlipper
+        android:id="@+id/etapes_creation"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <include
+            android:id="@+id/etape_modele"
+            layout="@layout/creation_etape_modele" />
+
+        <include
+            android:id="@+id/etape_identite"
+            layout="@layout/creation_etape_identite" />
+
+        <include
+            android:id="@+id/etape_recapitulatif"
+            layout="@layout/creation_etape_recapitulatif" />
+    </ViewFlipper>
+
+    <TextView
+        android:id="@+id/ligne_erreur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingRight="@dimen/jo_marge"
+        android:textAppearance="@style/TextAppearance.Jo.Note"
+        android:textColor="?attr/jo_erreur"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/pied_etape"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingTop="@dimen/jo_pad_pied_creation_haut"
+        android:paddingRight="@dimen/jo_marge"
+        android:paddingBottom="@dimen/jo_pad_pied_creation_bas">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/bouton_retour"
+            style="@style/Widget.Jo.Button.Texte"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/jo_ecart_boutons_creation"
+            android:text="@string/creation_bouton_retour"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/bouton_principal"
+            style="@style/Widget.Jo.Button.Primaire"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/creation_bouton_continuer" />
+    </LinearLayout>
+</LinearLayout>

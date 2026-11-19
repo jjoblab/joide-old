@@ -175,4 +175,48 @@
         <item name="trackTint">@color/interrupteur_piste</item>
         <item name="trackDecorationTint">@color/interrupteur_lisere</item>
     </style>
+
+    <!-- Étiquette de champ (lot A4, maquette creation-projet.html
+         .etiq : 12 px texte2 graisse 600, au-dessus de la boîte) : la
+         graisse 600 de Graphite se rapproche par sans-serif-medium —
+         même nuance documentée que l'échelle (GraphiteVue.typographie
+         reste la voie exacte, décision 7). -->
+    <style name="TextAppearance.Jo.Etiquette" parent="TextAppearance.Jo.Legende">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <!-- Numéro d'étape de l'assistant (lot A4, .etape .num) : 11/16
+         gras dans un rond de 20 dp — la couleur et le rond suivent
+         l'état (faite/active/à venir) par sélecteurs. -->
+    <style name="TextAppearance.Jo.NumEtape" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/jo_texte_num_etape</item>
+        <item name="android:lineHeight">@dimen/jo_texte_num_etape_interligne</item>
+    </style>
+
+    <!-- Puce Chip (lot A4, D2) : remplace le kit Puce — case pilule
+         note 13/18, paddings 14/7 et écart 6 du kit ; cochée = accent
+         16 % + texte accent + bord accent 45 % (ChoixPuce demeure la
+         source, teintes en res/color par ?attr/jo_*). Le coche Material
+         est MASQUÉ : la maquette ne le montre pas, la couleur porte la
+         sélection ; la graisse 600 de la case cochée se pose au choix
+         (même concession que la bascule A3). -->
+    <style name="Widget.Jo.Puce" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Note</item>
+        <item name="android:textColor">@color/puce_texte</item>
+        <item name="chipBackgroundColor">@color/puce_fond</item>
+        <item name="chipStrokeColor">@color/puce_bord</item>
+        <item name="chipStrokeWidth">@dimen/jo_ligne</item>
+        <item name="checkedIconVisible">false</item>
+        <item name="chipStartPadding">0dp</item>
+        <item name="textStartPadding">0dp</item>
+        <item name="textEndPadding">0dp</item>
+        <item name="chipEndPadding">0dp</item>
+        <item name="android:paddingLeft">@dimen/jo_pad_puce_cote</item>
+        <item name="android:paddingRight">@dimen/jo_pad_puce_cote</item>
+        <item name="android:paddingTop">@dimen/jo_pad_puce_haut</item>
+        <item name="android:paddingBottom">@dimen/jo_pad_puce_haut</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Jo.Pilule</item>
+    </style>
 </resources>

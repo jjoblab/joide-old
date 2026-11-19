@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Libellé d'étape de l'assistant (lot A4, .etape) : active → texte
+  (graisse 600 posée par l'écran), faite → texte secondaire, à venir →
+  texte estompé — la cadence .etape de la maquette.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_texte" android:state_selected="true" />
+    <item android:color="?attr/jo_texte2" android:state_activated="true" />
+    <item android:color="?attr/jo_texte3" />
+</selector>

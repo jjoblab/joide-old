@@ -1,16 +1,11 @@
 package jo.joide.app.android.ecrans.creation;
 
-import android.app.Activity;
-import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.IOException;
@@ -20,8 +15,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import jo.joide.app.android.ui.ActiviteJoide;
+import androidx.activity.OnBackPressedCallback;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+
 import jo.joide.app.android.ImporteurProjet;
 import jo.joide.app.android.R;
 import jo.joide.app.android.accueil.ProjetsRecents;
@@ -29,43 +31,98 @@ import jo.joide.app.android.creation.EcrireProjet;
 import jo.joide.app.android.creation.EtatCreation;
 import jo.joide.app.android.creation.GenerateurProjet;
 import jo.joide.app.android.creation.ModeleProjet;
-import jo.joide.app.android.ecrans.atelier.EcranAtelier;
-import jo.joide.app.android.ui.Bouton;
-import jo.joide.app.android.ui.Carte;
-import jo.joide.app.android.ui.Champ;
+import jo.joide.app.android.databinding.ActivityCreationBinding;
+import jo.joide.app.android.databinding.CreationEtapeIdentiteBinding;
+import jo.joide.app.android.databinding.CreationEtapeModeleBinding;
+import jo.joide.app.android.databinding.CreationEtapeRecapitulatifBinding;
+import jo.joide.app.android.databinding.ItemBanniereBinding;
+import jo.joide.app.android.databinding.ItemLigneArboBinding;
+import jo.joide.app.android.databinding.ItemLigneRecapBinding;
+import jo.joide.app.android.databinding.ItemModeleProjetBinding;
+import jo.joide.app.android.databinding.ItemPuceModuleBinding;
+import jo.joide.app.android.ecrans.Ecrans;
+import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
-import jo.joide.app.android.ui.Icone;
-import jo.joide.app.android.ui.Puce;
-import jo.joide.app.android.ui.Segment;
-import jo.joide.app.android.ui.choix.ChoixBouton;
+import jo.joide.app.android.ui.choix.ChoixCarte;
 import jo.joide.platform.Clock;
 
 /**
- * L'assistant de création de projet (ADR-É4, lot I) : trois étapes —
- * Modèle, Identité, Récapitulatif — la progression toujours visible.
- * Le retour système remonte d'une étape ; depuis l'étape 1 il quitte
- * l'assistant : rien n'est créé avant « Créer le projet ». La
- * création écrit dans le stockage privé de JoIDE, tout ou rien
- * ({@link EcrireProjet}), inscrit le projet dans la liste d'accueil
- * et ouvre l'atelier sur le fichier d'entrée du modèle.
+ * L'assistant de création de projet (ADR-É4, lot I ; racine XML au lot
+ * A4 de l'ADR-085) : trois étapes — Modèle, Identité, Récapitulatif —
+ * la progression toujours visible. Le retour système remonte d'une
+ * étape ; depuis l'étape 1 il quitte l'assistant : rien n'est créé
+ * avant « Créer le projet ». La création écrit dans le stockage privé
+ * de JoIDE, tout ou rien ({@link EcrireProjet}), inscrit le projet dans
+ * la liste d'accueil et ouvre l'atelier sur le fichier d'entrée du
+ * modèle.
  *
- * <p>Vue mince : la machine à états, les validations et le
+ * <p>Coque mince (décision 2) : la hiérarchie vit dans
+ * {@code activity_creation.xml} — un layout D'ÉTAPE par
+ * {@link EtatCreation.Etape} inclus dans un {@code ViewFlipper} (le
+ * corps de l'assistant : l'ordinal de l'étape est l'indice affiché, un
+ * seul enfant visible par construction) ; les cartes de modèle, les
+ * puces de module, les lignes de fiche et d'arborescence se GONFLENT
+ * par binding ({@code item_*.xml}, listes très courtes et bornées —
+ * décision 11) ; la machine à états, les validations et le
  * récapitulatif exact vivent dans {@link EtatCreation} (pur, testé
- * JVM) ; la génération dans {@link GenerateurProjet} ; les modèles
- * sont des fichiers TOML de {@code assets/modeles/} (ADR-050) — un
- * modèle v3 s'ajoute sans toucher cet écran.</p>
+ * JVM), la génération dans {@link GenerateurProjet}, les modèles sont
+ * des fichiers TOML de {@code assets/modeles/} (ADR-050). Le kit
+ * cède la place à Material : {@code MaterialCardView} (modèles),
+ * {@code TextInputLayout} (identité), {@code Chip} (catégories et
+ * modules — remplace le kit Puce, teintes de {@code ChoixPuce} en
+ * {@code res/color}), {@code MaterialButtonToggleGroup} (minSdk, motif
+ * A3) ; la tuile et les icônes restent des vues du kit dessinées au
+ * Canvas (sans équivalent). La génération court sur l'exécuteur de
+ * l'écran avec garde de cycle de vie (I8) : {@code isDestroyed()} et
+ * binding MUET après {@code onDestroy()}.</p>
  */
 public final class EcranCreation extends ActiviteJoide {
 
+    /**
+     * Le fil de fond de l'écran (I8) : l'écriture du projet (tout ou
+     * rien) n'a rien à faire sur le fil UI — les résultats y reviennent
+     * par {@code runOnUiThread} avec la garde de cycle de vie.
+     */
+    private final ExecutorService fond = Executors.newSingleThreadExecutor(
+            runnable -> {
+                Thread fil = new Thread(runnable, "joide-creation");
+                fil.setDaemon(true);
+                return fil;
+            });
+
+    /**
+     * Le retour système (décision 13 — OnBackPressedDispatcher) remonte
+     * d'une étape ; depuis l'étape 1, la garde se désarme et le cadre
+     * ferme l'assistant : rien n'est créé avant le bouton.
+     */
+    private final OnBackPressedCallback retourSysteme =
+            new OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    if (etat.surPremiereEtape()) {
+                        setEnabled(false);
+                        getOnBackPressedDispatcher().onBackPressed();
+                        return;
+                    }
+                    etat.precedente();
+                    rendre();
+                }
+            };
+
+    private ActivityCreationBinding ecran;
+    private CreationEtapeModeleBinding etapeModele;
+    private CreationEtapeIdentiteBinding etapeIdentite;
+    private CreationEtapeRecapitulatifBinding etapeRecap;
+
     private Graphite.Palette palette;
     private EtatCreation etat;
-    private LinearLayout corpsEtape;
-    private LinearLayout piedEtape;
-    private LinearLayout barreEtapes;
-    private TextView compteEtape;
-    private TextView ligneErreur;
-    private LinearLayout zoneModeles;
+
+    /**
+     * Vrai pendant les re-poses programmatiques : les écouteurs de
+     * saisie et de segment se taisent (seul l'utilisateur les déclenche).
+     */
+    private boolean poseEnCours;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -74,14 +131,36 @@ public final class EcranCreation extends ActiviteJoide {
         GraphiteVue.fondEcran(this, palette);
         etat = new EtatCreation(chargerModeles(),
                 ProjetsRecents.lire(fichier()).entrees());
-        setContentView(construire());
+        ecran = monter(ActivityCreationBinding::inflate);
+        etapeModele = ecran.etapeModele;
+        etapeIdentite = ecran.etapeIdentite;
+        etapeRecap = ecran.etapeRecapitulatif;
+        brancher();
         rendre();
+        getOnBackPressedDispatcher().addCallback(this, retourSysteme);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // I8 : l'exécuteur tombe, le binding devient MUET — un retour
+        // de fil de fond après la fermeture ne touche plus aucune vue
+        fond.shutdownNow();
+        ecran = null;
+        etapeModele = null;
+        etapeIdentite = null;
+        etapeRecap = null;
+        super.onDestroy();
     }
 
     private Path fichier() {
         return getFilesDir().toPath().resolve(ProjetsRecents.FICHIER);
     }
 
+    /**
+     * Les modèles exploitables des assets (ADR-050) : triés par nom, un
+     * modèle inutilisable se voit au journal, jamais une galerie qui le
+     * montre à moitié.
+     */
     private List<ModeleProjet.Modele> chargerModeles() {
         List<ModeleProjet.Modele> modeles = new ArrayList<>();
         String[] noms;
@@ -120,8 +199,6 @@ public final class EcranCreation extends ActiviteJoide {
             if (analyse.exploitable()) {
                 modeles.add(analyse.modele());
             } else {
-                // un modèle inutilisable se voit au journal, jamais
-                // une galerie qui le montre à moitié
                 android.util.Log.w("joide.creation",
                         "modele rejete : " + nom + " : "
                                 + analyse.problemes());
@@ -130,417 +207,327 @@ public final class EcranCreation extends ActiviteJoide {
         return modeles;
     }
 
-    private LinearLayout construire() {
-        LinearLayout racine = new LinearLayout(this);
-        racine.setOrientation(LinearLayout.VERTICAL);
+    // ------------------------------------------------------------------
+    // Câblage (une seule fois) : écouteurs et textes immuables
+    // ------------------------------------------------------------------
 
-        LinearLayout sousBarre = new LinearLayout(this);
-        sousBarre.setOrientation(LinearLayout.HORIZONTAL);
-        sousBarre.setGravity(Gravity.CENTER_VERTICAL);
-        sousBarre.setPadding(GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 10), GraphiteVue.dp(this, 16),
-                GraphiteVue.dp(this, 6));
-        FrameLayout retour = new FrameLayout(this);
-        retour.setOnClickListener(v -> retour());
-        Icone iconeRetour = new Icone(this);
-        iconeRetour.setGlyphe(Icone.Glyphe.RETOUR);
-        iconeRetour.setCouleur(palette.texteSecondaire);
-        retour.addView(iconeRetour, new FrameLayout.LayoutParams(
-                GraphiteVue.dp(this, 20), GraphiteVue.dp(this, 20),
-                Gravity.CENTER));
-        sousBarre.addView(retour, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(this, 36), GraphiteVue.dp(this, 36)));
-        TextView titre = new TextView(this);
-        GraphiteVue.typographie(titre, Graphite.TITRE);
-        titre.setTextColor(palette.texte);
-        titre.setText(R.string.accueil_nouveau_projet);
-        sousBarre.addView(titre, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        compteEtape = new TextView(this);
-        GraphiteVue.typographie(compteEtape, Graphite.LEGENDE);
-        compteEtape.setTextColor(palette.texteEstompe);
-        GradientDrawable fondCompte = new GradientDrawable();
-        fondCompte.setColor(palette.surfaceHaute);
-        fondCompte.setCornerRadius(GraphiteVue.dp(this,
-                Graphite.RAYON_PUCE));
-        compteEtape.setBackground(fondCompte);
-        compteEtape.setPadding(GraphiteVue.dp(this, 10),
-                GraphiteVue.dp(this, 2), GraphiteVue.dp(this, 10),
-                GraphiteVue.dp(this, 2));
-        sousBarre.addView(compteEtape);
-        racine.addView(sousBarre);
+    private void brancher() {
+        ecran.actionRetour.setOnClickListener(vue -> retour());
+        ecran.boutonRetour.setOnClickListener(vue -> retour());
+        ecran.boutonPrincipal.setOnClickListener(vue -> {
+            if (etat.etape() == EtatCreation.Etape.RECAPITULATIF) {
+                creer();
+            } else {
+                etat.suivante();
+                rendre();
+            }
+        });
 
-        barreEtapes = new LinearLayout(this);
-        barreEtapes.setOrientation(LinearLayout.HORIZONTAL);
-        barreEtapes.setGravity(Gravity.CENTER_VERTICAL);
-        barreEtapes.setPadding(GraphiteVue.dp(this, 20), 0,
-                GraphiteVue.dp(this, 20), GraphiteVue.dp(this, 10));
-        racine.addView(barreEtapes);
+        // la recherche ne re-filtre que la galerie : le champ, immobile
+        // dans le layout, ne perd ni focus ni texte (le code d'hier le
+        // reconstruisait vide à chaque changement de catégorie)
+        etapeModele.editionRecherche.addTextChangedListener(
+                apresSaisie(texte -> {
+                    etat.filtrer(texte);
+                    majModeles();
+                }));
+        poserCategorie(etapeModele.puceToutes, null);
+        poserCategorie(etapeModele.puceApplications,
+                ModeleProjet.Categorie.APPLICATIONS);
+        poserCategorie(etapeModele.puceBibliotheques,
+                ModeleProjet.Categorie.BIBLIOTHEQUES);
+        poserCategorie(etapeModele.puceVide,
+                ModeleProjet.Categorie.VIDE);
 
-        corpsEtape = new LinearLayout(this);
-        corpsEtape.setOrientation(LinearLayout.VERTICAL);
-        ScrollView defile = new ScrollView(this);
-        defile.addView(corpsEtape, new ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT));
-        racine.addView(defile, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        etapeIdentite.editionNom.addTextChangedListener(apresSaisie(
+                texte -> {
+                    if (poseEnCours) {
+                        return;
+                    }
+                    etat.changerNom(texte);
+                    suivrePaquet();
+                    majValiditeIdentite();
+                }));
+        etapeIdentite.editionPaquet.addTextChangedListener(apresSaisie(
+                texte -> {
+                    if (poseEnCours) {
+                        return;
+                    }
+                    etat.changerPaquet(texte);
+                    majValiditeIdentite();
+                }));
 
-        ligneErreur = new TextView(this);
-        GraphiteVue.typographie(ligneErreur, Graphite.NOTE);
-        ligneErreur.setTextColor(palette.erreur);
-        ligneErreur.setPadding(GraphiteVue.dp(this, Graphite.MARGE), 0,
-                GraphiteVue.dp(this, Graphite.MARGE), 0);
-        ligneErreur.setVisibility(View.GONE);
-        racine.addView(ligneErreur);
-
-        piedEtape = new LinearLayout(this);
-        piedEtape.setOrientation(LinearLayout.HORIZONTAL);
-        piedEtape.setPadding(GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 8), GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 14));
-        racine.addView(piedEtape);
-        return racine;
+        monterSegmentMinsdk();
+        // l'information de stockage ne bouge jamais : posée au montage
+        poseBanniere(etapeIdentite.banniereStockage, false,
+                getString(R.string.creation_note_stockage));
     }
 
-    // ---- Rendu par étape ----
+    /**
+     * Une puce de catégorie : cochée → la catégorie, décochée → toutes
+     * (la galerie ne reste jamais vide par accident). Le rendu
+     * re-coche « Tous » depuis l'état.
+     */
+    private void poserCategorie(Chip puce,
+                               ModeleProjet.Categorie categorie) {
+        puce.setOnClickListener(vue -> {
+            etat.changerCategorie(puce.isChecked() ? categorie : null);
+            rendre();
+        });
+    }
+
+    /** Les textes et l'écoute du segment minSdk (options immuables). */
+    private void monterSegmentMinsdk() {
+        List<Integer> niveaux = GenerateurProjet.MIN_SDK;
+        etapeIdentite.optionMinsdk0.setText(
+                String.valueOf(niveaux.get(0)));
+        if (niveaux.size() > 1) {
+            etapeIdentite.optionMinsdk1.setText(
+                    String.valueOf(niveaux.get(1)));
+        } else {
+            etapeIdentite.optionMinsdk1.setVisibility(View.GONE);
+        }
+        etapeIdentite.segmentMinsdk.addOnButtonCheckedListener(
+                (group, coche, estCoche) -> {
+                    if (!estCoche || poseEnCours) {
+                        return;
+                    }
+                    int index = coche == etapeIdentite.optionMinsdk0.getId()
+                            ? 0 : 1;
+                    etat.changerMinSdk(niveaux.get(index));
+                    poserGrasSegment();
+                });
+    }
+
+    // ------------------------------------------------------------------
+    // Rendu (les vues persistent, l'état décide)
+    // ------------------------------------------------------------------
 
     private void rendre() {
-        compteEtape.setText(String.format(Locale.ROOT, "%d/3",
+        ecran.compteEtape.setText(String.format(Locale.ROOT, "%d/3",
                 etat.etape().numero()));
-        majBarreEtapes();
+        poserBarreEtapes();
         masquerErreur();
-        erreurNom = null;
-        erreurModules = null;
-        erreurPaquet = null;
-        corpsEtape.removeAllViews();
-        piedEtape.removeAllViews();
-        switch (etat.etape()) {
-            case MODELE -> corpsModele();
-            case IDENTITE -> corpsIdentite();
-            case RECAPITULATIF -> corpsRecap();
-            default -> {
-            }
-        }
+        // l'ordinal de l'étape EST l'indice du flipper : un seul corps
+        // d'étape visible, par construction
+        ecran.etapesCreation.setDisplayedChild(etat.etape().ordinal());
         poserBoutons();
-    }
-
-    private void majBarreEtapes() {
-        barreEtapes.removeAllViews();
-        EtatCreation.Etape[] etapes = EtatCreation.Etape.values();
-        for (int i = 0; i < etapes.length; i++) {
-            if (i > 0) {
-                View jalon = new View(this);
-                jalon.setBackgroundColor(
-                        i <= etat.etape().ordinal()
-                                ? palette.reussite : palette.bord);
-                LinearLayout.LayoutParams placements = new LinearLayout
-                        .LayoutParams(0, GraphiteVue.dp(this, 2), 1f);
-                placements.leftMargin = GraphiteVue.dp(this, 8);
-                placements.rightMargin = GraphiteVue.dp(this, 8);
-                barreEtapes.addView(jalon, placements);
-            }
-            barreEtapes.addView(etapeBarre(etapes[i],
-                    i == etat.etape().ordinal(),
-                    i < etat.etape().ordinal()));
+        switch (etat.etape()) {
+            case MODELE -> majModeles();
+            case IDENTITE -> poserIdentite();
+            case RECAPITULATIF -> poserRecap();
         }
     }
 
-    private LinearLayout etapeBarre(EtatCreation.Etape etape,
-                                    boolean active, boolean faite) {
-        LinearLayout bloc = new LinearLayout(this);
-        bloc.setOrientation(LinearLayout.HORIZONTAL);
-        bloc.setGravity(Gravity.CENTER_VERTICAL);
-        TextView numero = new TextView(this);
-        numero.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 11);
-        numero.setTypeface(GraphiteVue.police(this, 700, false));
-        numero.setGravity(Gravity.CENTER);
-        GradientDrawable fond = new GradientDrawable();
-        fond.setShape(GradientDrawable.OVAL);
-        int cote = GraphiteVue.dp(this, 20);
-        if (faite) {
-            fond.setColor(palette.reussite);
-            fond.setStroke(GraphiteVue.dp(this, 1), palette.reussite);
-            numero.setTextColor(palette.texteSurReussite);
-            numero.setText(R.string.etapes_faite);
-        } else if (active) {
-            fond.setColor(palette.accent);
-            fond.setStroke(GraphiteVue.dp(this, 1), palette.accent);
-            numero.setTextColor(palette.texteSurAccent);
-            numero.setText(String.valueOf(etape.numero()));
-        } else {
-            fond.setColor(0x00000000);
-            fond.setStroke(GraphiteVue.dp(this, 1), palette.bord);
-            numero.setTextColor(palette.texteEstompe);
-            numero.setText(String.valueOf(etape.numero()));
+    /**
+     * La barre de progression : l'état fait/active/à venir des numéros
+     * et libellés passe par les états activé/sélectionné (les
+     * sélecteurs res/color portent les teintes), les jalons par
+     * l'état activé.
+     */
+    private void poserBarreEtapes() {
+        TextView[] numeros = {ecran.numEtape1, ecran.numEtape2,
+                ecran.numEtape3};
+        TextView[] libelles = {ecran.libelleEtape1, ecran.libelleEtape2,
+                ecran.libelleEtape3};
+        View[] jalons = {ecran.jalon1, ecran.jalon2};
+        int courant = etat.etape().ordinal();
+        for (int i = 0; i < numeros.length; i++) {
+            boolean faite = i < courant;
+            boolean active = i == courant;
+            numeros[i].setActivated(faite);
+            numeros[i].setSelected(active);
+            numeros[i].setText(faite
+                    ? getText(R.string.etapes_faite)
+                    : String.valueOf(i + 1));
+            libelles[i].setActivated(faite);
+            libelles[i].setSelected(active);
+            libelles[i].setTypeface(GraphiteVue.police(this,
+                    active ? 600 : 400, false));
         }
-        numero.setBackground(fond);
-        bloc.addView(numero, new LinearLayout.LayoutParams(cote, cote));
-        TextView libelle = new TextView(this);
-        GraphiteVue.typographie(libelle, Graphite.LEGENDE);
-        libelle.setTextColor(faite ? palette.texteSecondaire
-                : active ? palette.texte : palette.texteEstompe);
-        libelle.setTypeface(GraphiteVue.police(this, active ? 600 : 400,
-                false));
-        libelle.setText(libelleEtape(etape));
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.leftMargin = GraphiteVue.dp(this, 7);
-        bloc.addView(libelle, placements);
-        return bloc;
+        for (int i = 0; i < jalons.length; i++) {
+            jalons[i].setActivated(i < courant);
+        }
     }
 
-    private int libelleEtape(EtatCreation.Etape etape) {
-        return switch (etape) {
-            case MODELE -> R.string.creation_etape_modele;
-            case IDENTITE -> R.string.creation_etape_identite;
-            case RECAPITULATIF -> R.string.creation_etape_recapitulatif;
-        };
+    private void poserBoutons() {
+        boolean premiere = etat.surPremiereEtape();
+        ecran.boutonRetour.setVisibility(premiere
+                ? View.GONE : View.VISIBLE);
+        ecran.boutonPrincipal.setText(
+                etat.etape() == EtatCreation.Etape.RECAPITULATIF
+                        ? R.string.creation_bouton_creer
+                        : R.string.creation_bouton_continuer);
+        ecran.boutonPrincipal.setEnabled(etat.continuerPossible());
+    }
+
+    private void retour() {
+        if (etat.surPremiereEtape()) {
+            finish();
+            return;
+        }
+        etat.precedente();
+        rendre();
     }
 
     // ---- Étape 1 : la galerie de modèles ----
 
-    private void corpsModele() {
-        Champ champRecherche = new Champ(this);
-        champRecherche.sansEtiquette();
-        champRecherche.setIndice(R.string.creation_recherche_indice);
-        champRecherche.edition().addTextChangedListener(
-                new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int a,
-                                                  int b, int c) {
-                        // rien : le changement se traite après
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int a,
-                                              int b, int c) {
-                        // rien : le changement se traite après
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        etat.filtrer(s.toString());
-                        majListeModeles();
-                    }
-                });
-        corpsEtape.addView(champRecherche, marges(0, GraphiteVue.dp(this, 8)));
-
-        LinearLayout puces = new LinearLayout(this);
-        puces.setOrientation(LinearLayout.HORIZONTAL);
-        ajouterPuceCategorie(puces, null,
-                getString(R.string.creation_categorie_toutes));
-        ajouterPuceCategorie(puces, ModeleProjet.Categorie.APPLICATIONS,
-                getString(R.string.creation_categorie_applications));
-        ajouterPuceCategorie(puces, ModeleProjet.Categorie.BIBLIOTHEQUES,
-                getString(R.string.creation_categorie_bibliotheques));
-        ajouterPuceCategorie(puces, ModeleProjet.Categorie.VIDE,
-                getString(R.string.creation_categorie_vide));
-        corpsEtape.addView(puces, marges(0, GraphiteVue.dp(this, 10)));
-
-        zoneModeles = new LinearLayout(this);
-        zoneModeles.setOrientation(LinearLayout.VERTICAL);
-        corpsEtape.addView(zoneModeles);
-        majListeModeles();
-    }
-
-    private void ajouterPuceCategorie(LinearLayout parent,
-                                      ModeleProjet.Categorie categorie,
-                                      String libelle) {
-        Puce puce = new Puce(this);
-        puce.setCategorie(true);
-        puce.setText(libelle);
-        puce.setPointee(etat.categorie() == categorie);
-        puce.setAuditeur((p, pointee) -> {
-            if (pointee) {
-                etat.changerCategorie(categorie);
-            } else {
-                // une catégorie décochée revient à toutes : la galerie
-                // ne reste jamais vide par accident
-                etat.changerCategorie(null);
-            }
-            rendre();
-        });
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.rightMargin = GraphiteVue.dp(this, 6);
-        parent.addView(puce, placements);
-    }
-
-    private void majListeModeles() {
-        if (zoneModeles == null) {
-            return;
-        }
-        zoneModeles.removeAllViews();
+    /**
+     * La galerie : les puces de catégorie se re-cochent depuis l'état,
+     * puis les cartes visibles ({@code item_modele_projet}) se gonflent
+     * — liste très courte et bornée par les assets, la vue reste mince.
+     */
+    private void majModeles() {
+        etapeModele.puceToutes.setChecked(
+                etat.categorie() == null);
+        etapeModele.puceApplications.setChecked(
+                etat.categorie() == ModeleProjet.Categorie.APPLICATIONS);
+        etapeModele.puceBibliotheques.setChecked(
+                etat.categorie() == ModeleProjet.Categorie.BIBLIOTHEQUES);
+        etapeModele.puceVide.setChecked(
+                etat.categorie() == ModeleProjet.Categorie.VIDE);
+        etapeModele.colonneModeles.removeAllViews();
         List<ModeleProjet.Modele> visibles = etat.modelesVisibles();
         for (ModeleProjet.Modele modele : visibles) {
-            zoneModeles.addView(carteModele(modele), marges(0, GraphiteVue.dp(this, 8)));
+            ItemModeleProjetBinding carte =
+                    ItemModeleProjetBinding.inflate(getLayoutInflater(),
+                            etapeModele.colonneModeles, false);
+            lierModele(carte, modele);
+            etapeModele.colonneModeles.addView(carte.getRoot());
         }
-        if (visibles.isEmpty()) {
-            TextView aucun = new TextView(this);
-            GraphiteVue.typographie(aucun, Graphite.NOTE);
-            aucun.setTextColor(palette.texteSecondaire);
-            aucun.setText(R.string.creation_aucun_modele);
-            zoneModeles.addView(aucun);
-        }
+        etapeModele.aucunModele.setVisibility(
+                visibles.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
-    private View carteModele(ModeleProjet.Modele modele) {
+    private void lierModele(ItemModeleProjetBinding carte,
+                            ModeleProjet.Modele modele) {
         boolean choisi = modele.id().equals(etat.modeleChoisi());
-        Carte carte = new Carte(this);
-        carte.setTonale(choisi);
-        carte.setTuile(modele.tuile());
-        LinearLayout corps = carte.corps();
-        TextView nom = Carte.ligneNom(this);
-        nom.setText(modele.nom());
-        corps.addView(nom);
-        TextView description = Carte.ligneMeta(this);
-        description.setText(modele.description());
-        corps.addView(description);
-        TextView franchise = Carte.ligneLegende(this);
+        carte.tuileModele.poserType(modele.tuile());
+        carte.nomModele.setText(modele.nom());
+        carte.descModele.setText(modele.description());
         if (modele.franchise() != null) {
-            franchise.setTextColor(palette.alerte);
-            franchise.setText(modele.franchise());
+            carte.franchiseModele.setTextColor(palette.alerte);
+            carte.franchiseModele.setText(modele.franchise());
         } else {
-            franchise.setText(getString(R.string.creation_note_prefixe,
+            carte.franchiseModele.setTextColor(palette.texteEstompe);
+            carte.franchiseModele.setText(getString(
+                    R.string.creation_note_prefixe,
                     modele.note() == null ? "" : modele.note()));
         }
-        corps.addView(franchise);
-        Icone coche = new Icone(this);
-        coche.setGlyphe(choisi ? Icone.Glyphe.COCHE : Icone.Glyphe.CROIX);
-        coche.setCouleur(choisi ? palette.accent : 0x00000000);
-        coche.setVisibility(choisi ? View.VISIBLE : View.INVISIBLE);
-        carte.addAccessoire(coche);
-        carte.setOnClickListener(v -> {
+        // la carte du modèle choisi : tonale (bord accent 35 %, aplat
+        // accent 8 % — le dégradé du kit devient un aplat, écart A2),
+        // le coche du code d'hier reprend sa taille de maquette
+        carte.carteModele.setCardBackgroundColor(ColorStateList.valueOf(
+                choisi ? ChoixCarte.tonaleHaut(palette)
+                        : palette.surface));
+        carte.carteModele.setStrokeColor(ColorStateList.valueOf(
+                choisi ? ChoixCarte.tonaleBord(palette)
+                        : palette.bordFin));
+        carte.cocheModele.setVisibility(
+                choisi ? View.VISIBLE : View.INVISIBLE);
+        carte.carteModele.setOnClickListener(vue -> {
             etat.selectionnerModele(modele.id());
             rendre();
         });
-        carte.setClickable(true);
-        return carte;
     }
 
     // ---- Étape 2 : l'identité (formulaire piloté par le modèle) ----
 
-    /** L'erreur en ligne du nom (vit avec la saisie, jamais tardive). */
-    private TextView erreurNom;
-
-    /** L'erreur en ligne des modules. */
-    private TextView erreurModules;
-
-    /** L'erreur en ligne du paquet. */
-    private TextView erreurPaquet;
-
-    private void corpsIdentite() {
+    private void poserIdentite() {
         ModeleProjet.Modele modele = etat.modele();
+        poseEnCours = true;
+        etapeIdentite.editionNom.setText(etat.nom());
+        etapeIdentite.editionPaquet.setText(etat.paquet());
+        poseEnCours = false;
 
-        Champ champNom = new Champ(this);
-        champNom.setEtiquette(R.string.creation_champ_nom);
-        champNom.edition().setText(etat.nom());
-        champNom.edition().addTextChangedListener(apresSaisie(
-                texte -> {
-                    etat.changerNom(texte);
-                    majValiditeIdentite();
-                }));
-        corpsEtape.addView(champNom, marges(0, GraphiteVue.dp(this, 6)));
-        erreurNom = ligneErreurChamp();
-        corpsEtape.addView(erreurNom);
-
-        if (modele != null && !modele.modules().isEmpty()) {
-            LinearLayout blocModules = new LinearLayout(this);
-            blocModules.setOrientation(LinearLayout.VERTICAL);
-            TextView etiquette = new TextView(this);
-            GraphiteVue.typographie(etiquette, Graphite.LEGENDE);
-            etiquette.setTypeface(GraphiteVue.police(this, 600, false));
-            etiquette.setTextColor(palette.texteSecondaire);
-            etiquette.setText(getString(R.string.creation_champ_modules));
-            blocModules.addView(etiquette);
-            TextView aide = new TextView(this);
-            GraphiteVue.typographie(aide, Graphite.LEGENDE);
-            aide.setTextColor(palette.texteEstompe);
-            aide.setText(R.string.creation_champ_modules_note);
-            blocModules.addView(aide);
-            LinearLayout puces = new LinearLayout(this);
-            puces.setOrientation(LinearLayout.HORIZONTAL);
-            for (ModeleProjet.ModuleModele module : modele.modules()) {
-                ajouterPuceModule(puces, module);
-            }
-            blocModules.addView(puces, marges(GraphiteVue.dp(this, 8), 0));
-            corpsEtape.addView(blocModules, marges(0, GraphiteVue.dp(this, 6)));
-            erreurModules = ligneErreurChamp();
-            corpsEtape.addView(erreurModules);
+        boolean modules = modele != null && !modele.modules().isEmpty();
+        etapeIdentite.blocModules.setVisibility(
+                modules ? View.VISIBLE : View.GONE);
+        if (modules) {
+            poserPucesModules(modele);
         }
-
-        if (etat.champsPaquet()) {
-            Champ champPaquet = new Champ(this);
-            champPaquet.setEtiquette(R.string.creation_champ_paquet);
-            champPaquet.setMonospace(true);
-            champPaquet.edition().setText(etat.paquet());
-            champPaquet.edition().addTextChangedListener(apresSaisie(
-                    texte -> {
-                        etat.changerPaquet(texte);
-                        majValiditeIdentite();
-                    }));
-            corpsEtape.addView(champPaquet, marges(0, GraphiteVue.dp(this, 6)));
-            erreurPaquet = ligneErreurChamp();
-            corpsEtape.addView(erreurPaquet);
-
-            TextView etiquetteMinSdk = new TextView(this);
-            GraphiteVue.typographie(etiquetteMinSdk, Graphite.LEGENDE);
-            etiquetteMinSdk.setTypeface(GraphiteVue.police(this, 600,
-                    false));
-            etiquetteMinSdk.setTextColor(palette.texteSecondaire);
-            etiquetteMinSdk.setText(R.string.creation_champ_minsdk);
-            corpsEtape.addView(etiquetteMinSdk, marges(0, GraphiteVue.dp(this, 6)));
-            Segment segment = new Segment(this);
-            List<String> niveaux = new ArrayList<>();
-            for (Integer niveau : GenerateurProjet.MIN_SDK) {
-                niveaux.add(String.valueOf(niveau));
-            }
-            segment.setOptions(niveaux,
-                    GenerateurProjet.MIN_SDK.indexOf(etat.minSdk()));
-            segment.setAuditeur((s, index) ->
-                    etat.changerMinSdk(GenerateurProjet.MIN_SDK
-                            .get(index)));
-            corpsEtape.addView(segment);
-            TextView note = new TextView(this);
-            GraphiteVue.typographie(note, Graphite.LEGENDE);
-            note.setTextColor(palette.texteEstompe);
-            note.setText(R.string.creation_note_minsdk);
-            corpsEtape.addView(note, marges(GraphiteVue.dp(this, 6),
-                    GraphiteVue.dp(this, 10)));
+        boolean paquet = etat.champsPaquet();
+        etapeIdentite.blocPaquet.setVisibility(
+                paquet ? View.VISIBLE : View.GONE);
+        etapeIdentite.blocMinsdk.setVisibility(
+                paquet ? View.VISIBLE : View.GONE);
+        if (paquet) {
+            poserSegmentMinsdk();
         }
-
-        corpsEtape.addView(banniere(false,
-                R.string.creation_note_stockage));
         majValiditeIdentite();
     }
 
-    private void ajouterPuceModule(LinearLayout parent,
-                                   ModeleProjet.ModuleModele module) {
-        Puce puce = new Puce(this);
-        puce.setCategorie(true);
-        puce.setText(":" + module.id());
-        puce.setPointee(etat.modulesChoisis().contains(module.id()));
-        puce.setAuditeur((p, pointee) -> {
-            EtatCreation.Bascule bascule =
-                    etat.basculerModule(module.id());
-            if (!bascule.faite() && bascule.requisPar() != null) {
-                montrerErreur(getString(R.string.creation_err_module_requis,
-                        ":" + bascule.requisPar()));
-            } else {
-                masquerErreur();
-            }
-            // les puces se re-posent (l'état décide, la vue déroule)
-            puce.setPointee(etat.modulesChoisis().contains(module.id()));
-            majValiditeIdentite();
-        });
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.rightMargin = GraphiteVue.dp(this, 6);
-        parent.addView(puce, placements);
+    /**
+     * Les puces de module ({@code item_puce_module}) : cochée = module
+     * conservé ; un retrait refusé re-coche la puce depuis l'état et
+     * nomme le responsable — jamais un refus silencieux.
+     */
+    private void poserPucesModules(ModeleProjet.Modele modele) {
+        ChipGroup groupe = etapeIdentite.pucesModules;
+        groupe.removeAllViews();
+        for (ModeleProjet.ModuleModele module : modele.modules()) {
+            ItemPuceModuleBinding puce = ItemPuceModuleBinding.inflate(
+                    getLayoutInflater(), groupe, false);
+            puce.puceModule.setText(":" + module.id());
+            puce.puceModule.setChecked(
+                    etat.modulesChoisis().contains(module.id()));
+            puce.puceModule.setOnClickListener(vue -> {
+                EtatCreation.Bascule bascule =
+                        etat.basculerModule(module.id());
+                if (!bascule.faite() && bascule.requisPar() != null) {
+                    montrerErreur(getString(
+                            R.string.creation_err_module_requis,
+                            ":" + bascule.requisPar()));
+                } else {
+                    masquerErreur();
+                }
+                // la puce se re-pose : l'état décide (refus compris),
+                // la vue déroule
+                puce.puceModule.setChecked(
+                        etat.modulesChoisis().contains(module.id()));
+                majValiditeIdentite();
+            });
+            groupe.addView(puce.getRoot());
+        }
+    }
+
+    /** Le segment minSdk se re-coche depuis l'état (muette). */
+    private void poserSegmentMinsdk() {
+        List<Integer> niveaux = GenerateurProjet.MIN_SDK;
+        int index = niveaux.indexOf(etat.minSdk());
+        poseEnCours = true;
+        etapeIdentite.segmentMinsdk.check(index <= 0
+                ? etapeIdentite.optionMinsdk0.getId()
+                : etapeIdentite.optionMinsdk1.getId());
+        poseEnCours = false;
+        poserGrasSegment();
+    }
+
+    /** La graisse 700 de la case cochée (concession A3 : pas en style). */
+    private void poserGrasSegment() {
+        int coche = etapeIdentite.segmentMinsdk.getCheckedButtonId();
+        grasDe(etapeIdentite.optionMinsdk0, coche);
+        if (etapeIdentite.optionMinsdk1.getVisibility() == View.VISIBLE) {
+            grasDe(etapeIdentite.optionMinsdk1, coche);
+        }
+    }
+
+    private void grasDe(MaterialButton bouton, int coche) {
+        bouton.setTypeface(GraphiteVue.police(this,
+                bouton.getId() == coche ? 700 : 400, false));
+    }
+
+    /**
+     * Le paquet suit le nom tant que l'utilisateur ne l'a pas touché :
+     * le champ se re-pose en silence (le code d'hier dérivait le paquet
+     * sans jamais le montrer).
+     */
+    private void suivrePaquet() {
+        if (etat.suitPaquet() && etat.champsPaquet()) {
+            poseEnCours = true;
+            etapeIdentite.editionPaquet.setText(etat.paquet());
+            poseEnCours = false;
+        }
     }
 
     private TextWatcher apresSaisie(
@@ -567,31 +554,27 @@ public final class EcranCreation extends ActiviteJoide {
 
     /**
      * La validation au fil de la saisie : les erreurs en ligne et le
-     * bouton Continuer reflètent l'état, jamais une alerte tardive.
+     * bouton Continuer reflètent l'état, jamais d'alerte tardive.
      */
     private void majValiditeIdentite() {
-        if (erreurNom != null) {
-            if (etat.raisonNom() == EtatCreation.RaisonNom.VIDE) {
-                poser(erreurNom, R.string.creation_err_nom_vide);
-            } else if (etat.raisonNom() == EtatCreation.RaisonNom.LONG) {
-                poser(erreurNom, R.string.creation_err_nom_long);
-            } else {
-                erreurNom.setVisibility(View.GONE);
-            }
+        if (etat.raisonNom() == EtatCreation.RaisonNom.VIDE) {
+            poser(etapeIdentite.erreurNom, R.string.creation_err_nom_vide);
+        } else if (etat.raisonNom() == EtatCreation.RaisonNom.LONG) {
+            poser(etapeIdentite.erreurNom, R.string.creation_err_nom_long);
+        } else {
+            etapeIdentite.erreurNom.setVisibility(View.GONE);
         }
-        if (erreurModules != null) {
-            if (etat.modulesValides()) {
-                erreurModules.setVisibility(View.GONE);
-            } else {
-                poser(erreurModules, R.string.creation_err_modules);
-            }
+        if (etat.modulesValides()) {
+            etapeIdentite.erreurModules.setVisibility(View.GONE);
+        } else {
+            poser(etapeIdentite.erreurModules,
+                    R.string.creation_err_modules);
         }
-        if (erreurPaquet != null) {
-            if (etat.paquetValide()) {
-                erreurPaquet.setVisibility(View.GONE);
-            } else {
-                poser(erreurPaquet, R.string.creation_err_paquet);
-            }
+        if (etat.paquetValide()) {
+            etapeIdentite.erreurPaquet.setVisibility(View.GONE);
+        } else {
+            poser(etapeIdentite.erreurPaquet,
+                    R.string.creation_err_paquet);
         }
         poserBoutons();
     }
@@ -601,94 +584,60 @@ public final class EcranCreation extends ActiviteJoide {
         erreur.setVisibility(View.VISIBLE);
     }
 
-    /** Une ligne d'erreur de champ, cachée jusqu'à sa raison. */
-    private TextView ligneErreurChamp() {
-        TextView erreur = new TextView(this);
-        GraphiteVue.typographie(erreur, Graphite.LEGENDE);
-        erreur.setTextColor(palette.erreur);
-        erreur.setVisibility(View.GONE);
-        return erreur;
-    }
-
     // ---- Étape 3 : le récapitulatif ----
 
-    private void corpsRecap() {
+    /**
+     * Le récapitulatif exact : les lignes de la fiche
+     * ({@code item_ligne_recap}) et l'arborescence générée
+     * ({@code item_ligne_arbo}) se gonflent depuis l'état — l'arbre est
+     * la liste des fichiers que la génération produira, jamais une
+     * promesse séparée de l'écriture.
+     */
+    private void poserRecap() {
         ModeleProjet.Modele modele = etat.modele();
-        LinearLayout fiche = new LinearLayout(this);
-        fiche.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable fond = new GradientDrawable();
-        fond.setColor(palette.surface);
-        fond.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
-        fond.setCornerRadius(GraphiteVue.dp(this, Graphite.RAYON_CARTE));
-        fiche.setBackground(fond);
-        int interne = GraphiteVue.dp(this, 14);
-        fiche.setPadding(interne, GraphiteVue.dp(this, 4), interne,
-                GraphiteVue.dp(this, 4));
+
+        etapeRecap.colonneFiche.removeAllViews();
         List<EtatCreation.LigneRecap> lignes = etat.lignesRecap();
         for (int i = 0; i < lignes.size(); i++) {
-            if (i > 0) {
-                View separateur = new View(this);
-                separateur.setBackgroundColor(palette.bordFin);
-                fiche.addView(separateur, new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        GraphiteVue.dp(this, 1)));
-            }
             EtatCreation.LigneRecap ligne = lignes.get(i);
-            LinearLayout rangee = new LinearLayout(this);
-            rangee.setOrientation(LinearLayout.HORIZONTAL);
-            rangee.setPadding(0, GraphiteVue.dp(this, 9), 0,
-                    GraphiteVue.dp(this, 9));
-            TextView cle = new TextView(this);
-            GraphiteVue.typographie(cle, Graphite.NOTE);
-            cle.setTextColor(palette.texteSecondaire);
-            cle.setText(cleRecap(ligne.cle()));
-            rangee.addView(cle, new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-            TextView valeur = new TextView(this);
-            GraphiteVue.typographie(valeur, Graphite.NOTE);
-            valeur.setTypeface(GraphiteVue.police(this, 600, false));
-            valeur.setTextColor(palette.texte);
-            valeur.setText(ligne.valeur());
-            rangee.addView(valeur);
-            fiche.addView(rangee);
+            ItemLigneRecapBinding rangee = ItemLigneRecapBinding.inflate(
+                    getLayoutInflater(), etapeRecap.colonneFiche, false);
+            rangee.separateurLigne.setVisibility(
+                    i == 0 ? View.GONE : View.VISIBLE);
+            rangee.cleLigne.setText(cleRecap(ligne.cle()));
+            rangee.valeurLigne.setText(ligne.valeur());
+            etapeRecap.colonneFiche.addView(rangee.getRoot());
         }
-        corpsEtape.addView(fiche, marges(0, GraphiteVue.dp(this, 12)));
 
-        TextView etiquetteArbo = new TextView(this);
-        GraphiteVue.typographie(etiquetteArbo, Graphite.LEGENDE);
-        etiquetteArbo.setTypeface(GraphiteVue.police(this, 600, false));
-        etiquetteArbo.setTextColor(palette.texteSecondaire);
-        etiquetteArbo.setText(R.string.creation_recap_arbo);
-        corpsEtape.addView(etiquetteArbo, marges(0, GraphiteVue.dp(this, 6)));
-        LinearLayout arbo = new LinearLayout(this);
-        arbo.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable fondArbo = new GradientDrawable();
-        fondArbo.setColor(palette.puits);
-        fondArbo.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
-        fondArbo.setCornerRadius(GraphiteVue.dp(this, 14));
-        arbo.setBackground(fondArbo);
-        arbo.setPadding(GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 12), GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 12));
+        etapeRecap.colonneArbo.removeAllViews();
         for (EtatCreation.LigneArbo ligne : etat.arborescence()) {
-            TextView texte = new TextView(this);
-            GraphiteVue.typographie(texte, Graphite.CODE_COMPACT);
-            texte.setText(ligne.profondeur() > 0
+            ItemLigneArboBinding texte = ItemLigneArboBinding.inflate(
+                    getLayoutInflater(), etapeRecap.colonneArbo, false);
+            texte.texteLigne.setText(ligne.profondeur() > 0
                     ? "  ".repeat(ligne.profondeur()) + ligne.texte()
                     : ligne.texte());
-            texte.setTextColor(ligne.annotation()
-                    ? palette.syntaxe.commentaire : ligne.profondeur() == 0
-                            ? palette.texte : palette.texteSecondaire);
-            arbo.addView(texte);
+            texte.texteLigne.setTextColor(couleurArbo(ligne));
+            etapeRecap.colonneArbo.addView(texte.getRoot());
         }
-        corpsEtape.addView(arbo, marges(0, GraphiteVue.dp(this, 12)));
 
-        if (modele != null && modele.franchise() != null) {
-            LinearLayout banniere = banniere(true, 0);
-            TextView texte = (TextView) banniere.getChildAt(0);
-            texte.setText(modele.franchise());
-            corpsEtape.addView(banniere);
+        // la franchise du modèle se RÉPÈTE sur le récapitulatif (la
+        // carte l'a dite, ADR-É4) ; sans franchise, pas de bannière
+        boolean franchise = modele != null && modele.franchise() != null;
+        etapeRecap.banniereFranchise.getRoot().setVisibility(
+                franchise ? View.VISIBLE : View.GONE);
+        if (franchise) {
+            poseBanniere(etapeRecap.banniereFranchise, true,
+                    modele.franchise());
         }
+    }
+
+    /** La couleur d'une ligne d'arborescence (les trois d'hier). */
+    private int couleurArbo(EtatCreation.LigneArbo ligne) {
+        if (ligne.annotation()) {
+            return palette.syntaxe.commentaire;
+        }
+        return ligne.profondeur() == 0 ? palette.texte
+                : palette.texteSecondaire;
     }
 
     private int cleRecap(String cle) {
@@ -702,103 +651,24 @@ public final class EcranCreation extends ActiviteJoide {
         };
     }
 
-    /** La bannière du bas d'étape : alerte (franchise) ou info. */
-    private LinearLayout banniere(boolean alerte, int idTexte) {
-        LinearLayout banniere = new LinearLayout(this);
-        banniere.setOrientation(LinearLayout.HORIZONTAL);
-        GradientDrawable fond = new GradientDrawable();
-        if (alerte) {
-            fond.setColor(Graphite.melange(palette.alerte, 0.10f,
-                    palette.fond));
-            fond.setStroke(GraphiteVue.dp(this, 1),
-                    Graphite.melange(palette.alerte, 0.35f, palette.fond));
-        } else {
-            fond.setColor(Graphite.melange(palette.accent, 0.10f,
-                    palette.fond));
-            fond.setStroke(GraphiteVue.dp(this, 1),
-                    Graphite.melange(palette.accent, 0.35f, palette.fond));
-        }
-        fond.setCornerRadius(GraphiteVue.dp(this,
-                Graphite.RAYON_COMPOSANT));
-        banniere.setBackground(fond);
-        banniere.setPadding(GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 10), GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 10));
-        TextView texte = new TextView(this);
-        GraphiteVue.typographie(texte, Graphite.NOTE);
-        texte.setTextColor(alerte ? palette.alerte : palette.accent);
-        if (idTexte != 0) {
-            texte.setText(idTexte);
-        }
-        banniere.addView(texte, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        return banniere;
-    }
-
-    // ---- Boutons et navigation ----
-
-    private void poserBoutons() {
-        if (piedEtape == null) {
-            return;
-        }
-        piedEtape.removeAllViews();
-        if (etat.etape() != EtatCreation.Etape.MODELE) {
-            Bouton retour = new Bouton(this);
-            retour.setVariante(ChoixBouton.Variante.TEXTE);
-            retour.setTexte(R.string.creation_bouton_retour);
-            retour.setOnClickListener(v -> retour());
-            LinearLayout.LayoutParams placements =
-                    new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT);
-            placements.rightMargin = GraphiteVue.dp(this, 10);
-            piedEtape.addView(retour, placements);
-        }
-        Bouton principal = new Bouton(this);
-        principal.setVariante(ChoixBouton.Variante.PRIMAIRE);
-        principal.setTexte(etat.etape() == EtatCreation.Etape.RECAPITULATIF
-                ? R.string.creation_bouton_creer
-                : R.string.creation_bouton_continuer);
-        principal.setEnabled(etat.continuerPossible());
-        principal.setOnClickListener(v -> {
-            if (etat.etape() == EtatCreation.Etape.RECAPITULATIF) {
-                creer();
-            } else {
-                etat.suivante();
-                rendre();
-            }
-        });
-        piedEtape.addView(principal, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-    }
-
-    private void retour() {
-        if (etat.surPremiereEtape()) {
-            finish();
-            return;
-        }
-        etat.precedente();
-        rendre();
-    }
-
     /**
-     * Le retour système remonte d'une étape ; depuis l'étape 1 il
-     * quitte l'assistant. Le cadre déprécie onBackPressed au profit
-     * d'OnBackInvokedCallback (API 33+) : le produit vise le niveau
-     * 28 (D4), le retour passe encore par ici — suppression
-     * documentée, pas un angle mort.
+     * La bannière du bas d'étape : alerte (franchise) ou information —
+     * les mélanges (rôle à 10 % sur le fond, liseré 35 %, rayon
+     * composant) se posent depuis la palette, couleurs calculées
+     * (décision 8).
      */
-    @SuppressWarnings("deprecation")
-    @Override
-    public void onBackPressed() {
-        // le retour système remonte d'une étape ; depuis l'étape 1 il
-        // quitte l'assistant — rien n'est créé avant le bouton
-        if (etat.surPremiereEtape()) {
-            super.onBackPressed();
-            return;
-        }
-        etat.precedente();
-        rendre();
+    private void poseBanniere(ItemBanniereBinding banniere,
+                              boolean alerte, CharSequence texte) {
+        int role = alerte ? palette.alerte : palette.accent;
+        GradientDrawable fond = new GradientDrawable();
+        fond.setColor(Graphite.melange(role, 0.10f, palette.fond));
+        fond.setStroke(GraphiteVue.dp(this, 1),
+                Graphite.melange(role, 0.35f, palette.fond));
+        fond.setCornerRadius(
+                GraphiteVue.dp(this, Graphite.RAYON_COMPOSANT));
+        banniere.getRoot().setBackground(fond);
+        banniere.texteBanniere.setTextColor(role);
+        banniere.texteBanniere.setText(texte);
     }
 
     // ---- Création (atomique, tout ou rien) ----
@@ -816,12 +686,22 @@ public final class EcranCreation extends ActiviteJoide {
         String id = ProjetsRecents.idUnique(existants,
                 GenerateurProjet.idDossier(etat.nom().trim()));
         Path projets = ImporteurProjet.dossierProjets(getFilesDir());
-        new Thread(() -> {
+        // l'écriture court sur l'exécuteur de l'écran (I8), le retour
+        // revient au fil UI sous garde de cycle de vie
+        fond.execute(() -> {
             EcrireProjet.Resultat resultat = EcrireProjet.ecrire(
                     projets, id, generation.fichiers(),
                     generation.dossiers());
-            runOnUiThread(() -> apresCreation(resultat, generation, id));
-        }, "joide-creation").start();
+            runOnUiThread(() -> {
+                if (isDestroyed() || ecran == null) {
+                    // l'écran a fermé pendant l'écriture : le projet
+                    // est écrit, l'accueil le relira — jamais une vue
+                    // morte touchée
+                    return;
+                }
+                apresCreation(resultat, generation, id);
+            });
+        });
     }
 
     private void apresCreation(EcrireProjet.Resultat resultat,
@@ -846,34 +726,21 @@ public final class EcranCreation extends ActiviteJoide {
             android.util.Log.w("joide.creation",
                     "projets recents non ecrits : " + e.getMessage());
         }
-        Intent intention = new Intent(this, EcranAtelier.class);
-        intention.putExtra(EcranAtelier.EXTRA_RACINE,
-                resultat.chemin().toString());
-        if (generation.fichierEntree() != null) {
-            intention.putExtra(EcranAtelier.EXTRA_FICHIER,
-                    generation.fichierEntree());
-        }
-        startActivity(intention);
+        // navigation typée (décision 13) : l'atelier s'ouvre sur le
+        // fichier d'entrée du modèle — jamais un atelier vide
+        startActivity(Ecrans.atelier(this, resultat.chemin().toString(),
+                null, generation.fichierEntree()));
         finish();
     }
 
     // ---- Erreurs en ligne ----
 
     private void montrerErreur(String texte) {
-        ligneErreur.setText(texte);
-        ligneErreur.setVisibility(View.VISIBLE);
+        ecran.ligneErreur.setText(texte);
+        ecran.ligneErreur.setVisibility(View.VISIBLE);
     }
 
     private void masquerErreur() {
-        ligneErreur.setVisibility(View.GONE);
-    }
-
-    private LinearLayout.LayoutParams marges(int dessus, int dessous) {
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.topMargin = dessus;
-        placements.bottomMargin = dessous;
-        return placements;
+        ecran.ligneErreur.setVisibility(View.GONE);
     }
 }

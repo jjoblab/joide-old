@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Texte d'une puce Chip (lot A4) : cochée → accent (la graisse 600 du
+  kit se pose par l'écran au moment du choix — un ColorStateList ne
+  porte pas la graisse), non cochée → texte secondaire.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_accent" android:state_checked="true" />
+    <item android:color="?attr/jo_texte2" />
+</selector>

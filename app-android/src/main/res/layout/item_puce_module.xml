@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Puce de MODULE de l'étape Identité (lot A4, D2) : Chip (Widget.Jo.
+  Puce — remplace le kit Puce) gonflée par binding pour chaque module
+  proposé par le modèle, cochée = module conservé. saveEnabled=false :
+  gonflée après la restauration, jamais un id dupliqué restauré.
+-->
+<com.google.android.material.chip.Chip xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/puce_module"
+    style="@style/Widget.Jo.Puce"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:saveEnabled="false" />

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Étape 1 — MODÈLE de l'assistant (lot A4, .corps de la maquette :
+  retraits 4/20/8 — le code d'hier les avait perdus) : recherche
+  Material (Widget.Jo.Champ), puces de catégorie en ChipGroup
+  (Widget.Jo.Puce, remplace le kit Puce — D2), puis la galerie : les
+  cartes de modèle (item_modele_projet) se GONFLENT par binding dans
+  colonne_modeles — liste très courte et bornée par les assets (4
+  modèles livrés), la recherche et la catégorie ne font que changer
+  les membres (décision 11 : pas de flux, un RecyclerView sous
+  ScrollView serait un anti-patron ; le comportement d'hier —
+  re-gonfler la zone — est conservé, la vue reste mince).
+  saveEnabled=false partout : l'état de VÉRITÉ vit dans EtatCreation,
+  la rotation réinitialise l'assistant comme aujourd'hui (A8 apportera
+  la sauvegarde).
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingLeft="@dimen/jo_marge"
+    android:paddingTop="@dimen/jo_pad_corps_creation_haut"
+    android:paddingRight="@dimen/jo_marge"
+    android:paddingBottom="@dimen/jo_pad_corps_creation_bas">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/champ_recherche"
+            style="@style/Widget.Jo.Champ"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/jo_ecart_recherche_creation">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edition_recherche"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/creation_recherche_indice"
+                android:inputType="text"
+                android:maxLines="1"
+                android:saveEnabled="false"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte"
+                android:textColorHint="?attr/jo_texte3" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/puces_categories"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/jo_ecart_puces_creation"
+            app:chipSpacingHorizontal="@dimen/jo_ecart_puce"
+            app:singleSelection="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/puce_toutes"
+                style="@style/Widget.Jo.Puce"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                android:text="@string/creation_categorie_toutes" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/puce_applications"
+                style="@style/Widget.Jo.Puce"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                android:text="@string/creation_categorie_applications" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/puce_bibliotheques"
+                style="@style/Widget.Jo.Puce"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                android:text="@string/creation_categorie_bibliotheques" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/puce_vide"
+                style="@style/Widget.Jo.Puce"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:saveEnabled="false"
+                android:text="@string/creation_categorie_vide" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <LinearLayout
+            android:id="@+id/colonne_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/aucun_modele"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/creation_aucun_modele"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_texte2"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

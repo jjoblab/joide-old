@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ligne de la fiche du récapitulatif (lot A4, .ligne de la maquette) :
+  séparateur bord-fin 1 dp au-dessus (absent sur la première ligne —
+  gonflée par binding, l'écran le décide), clé note/texte2 à gauche,
+  valeur note/texte gras à droite (la graisse 600 du code d'hier se
+  rapproche par le gras du cadre — même concession que les actions A3).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <View
+        android:id="@+id/separateur_ligne"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_ligne"
+        android:background="?attr/jo_bord_fin" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="@dimen/jo_pad_rangee"
+        android:paddingBottom="@dimen/jo_pad_rangee">
+
+        <TextView
+            android:id="@+id/cle_ligne"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_texte2" />
+
+        <TextView
+            android:id="@+id/valeur_ligne"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="right"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_texte"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

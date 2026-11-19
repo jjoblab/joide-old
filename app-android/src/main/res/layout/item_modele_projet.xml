@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Carte de modèle de la galerie (lot A4 — mission de l'ADR-085, D2) :
+  MaterialCardView habillé Graphite (surface, liseré bord-fin 1 dp,
+  élévation 3, rayon 16 du thème) ; la tuile tonale reste une vue du
+  kit (Canvas, couleurs calculées — l'accent du nuancier décide) ;
+  nom/description/franchise aux échelles du kit (une ligne, ellipse).
+  Le modèle CHOISI porte la carte tonale (aplat accent 8 % + bord
+  accent 35 % — ChoixCarte, posés au bind, décision 8 : le dégradé du
+  kit devient un aplat, écart A2 consigné) et le coche accent (20 dp —
+  le code d'hier le laissait muet à 0×0 : le layout lui rend sa
+  maquette).
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/carte_modele"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/jo_ecart_carte_modele"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="?attr/jo_surface"
+    app:cardElevation="3dp"
+    app:strokeColor="?attr/jo_bord_fin"
+    app:strokeWidth="@dimen/jo_ligne">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/jo_pad_carte">
+
+        <jo.joide.app.android.ui.TuileProjet
+            android:id="@+id/tuile_modele"
+            android:layout_width="@dimen/jo_tuile"
+            android:layout_height="@dimen/jo_tuile"
+            android:layout_marginRight="@dimen/jo_ecart_carte_interieur" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/nom_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/desc_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.Note"
+                android:textColor="?attr/jo_texte2" />
+
+            <TextView
+                android:id="@+id/franchise_modele"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/jo_ecart_legende_param"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.Legende" />
+        </LinearLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/coche_modele"
+            android:layout_width="@dimen/jo_coche_cote"
+            android:layout_height="@dimen/jo_coche_cote"
+            android:layout_marginLeft="@dimen/jo_ecart_carte_interieur"
+            android:contentDescription="@null"
+            app:jo_icone_glyphe="coche"
+            app:jo_icone_couleur="?attr/jo_accent" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

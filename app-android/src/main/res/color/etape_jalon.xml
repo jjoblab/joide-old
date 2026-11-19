@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jalon de progression de l'assistant (lot A4, .jalon) : franchi →
+  réussite, à franchir → bord — l'état activé du jalon porte « faite ».
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="?attr/jo_reussite" android:state_activated="true" />
+    <item android:color="?attr/jo_bord" />
+</selector>
