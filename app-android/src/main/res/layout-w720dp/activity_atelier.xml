@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A6 (ADR-085 décisions 1 et 9) — LA RACINE DE L'ATELIER, VARIANTE
+  GRAND ÉCRAN (w720dp — la largeur DISPONIBLE, en parité avec
+  EtatAtelier.SEUIL_GRAND_ECRAN_DP ; PAS sw720dp) : elle REMPLACE
+  rangeeGrandEcran()/ContexteUi (constat C2). Même colonne haute
+  (barre, bannière, onglets, fil d'Ariane) ; le CORPS porte la rangée
+  amarrée : rail léger (fichiers, console), colonne d'arborescence
+  amarrée (240 dp), le PUITS (conteneur de la scène, jamais
+  reconstruit) au poids, volet d'aperçu côte à côte (320 dp) — plus
+  le volet plein écran (surcouche) et son ViewStub d'aperçu. Barre de
+  symboles et feuille basse AMARRÉES en bas (voisine à poids : la
+  hauteur utile de la feuille se mesure sur le corps — le bug 6f2e899
+  meurt ICI). Le tiroir fichiers ne vit QUE compact : l'arbre est
+  amarré. Le tiroir agent (ViewStub) et le FAB restent communs.
+  Couleurs par ?attr/jo_* uniquement, aucune dimension réelle
+  littérale (jetons @dimen).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/racine"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- la zone console, RARE/coûteuse : montée à la demande par stub,
+         posée dans la feuille aussitôt (z-plan bas) -->
+    <ViewStub
+        android:id="@+id/stub_console"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout="@layout/vue_console_zone" />
+
+    <LinearLayout
+        android:id="@+id/colonne"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="?attr/jo_fond">
+
+        <jo.joide.app.android.ui.atelier.BarreHaut
+            android:id="@+id/barre_haut"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/jo_hauteur_barre_atelier" />
+
+        <TextView
+            android:id="@+id/banniere_compat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="@dimen/jo_pad_banniere_compat"
+            android:paddingEnd="@dimen/jo_pad_banniere_compat"
+            android:paddingTop="@dimen/jo_ecart_banniere_compat"
+            android:paddingBottom="@dimen/jo_ecart_banniere_compat"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_alerte"
+            android:visibility="gone" />
+
+        <jo.joide.app.android.ui.atelier.BarreOnglets
+            android:id="@+id/barre_onglets"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/jo_hauteur_onglets_atelier" />
+
+        <jo.joide.app.android.ui.atelier.FilAriane
+            android:id="@+id/fil_ariane"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/jo_hauteur_fil_ariane_atelier" />
+
+        <FrameLayout
+            android:id="@+id/corps"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- la rangée grand écran : rail, arbre amarré, puits au
+                 poids, volet d'aperçu côte à côte (§005 « tout
+                 amarré » — la disposition de rangeeGrandEcran
+                 d'hier, en XML) -->
+            <LinearLayout
+                android:id="@+id/rangee_grand_ecran"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:baselineAligned="false">
+
+                <LinearLayout
+                    android:id="@+id/rail"
+                    android:layout_width="@dimen/jo_largeur_rail_atelier"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:background="?attr/jo_surface"
+                    android:paddingTop="@dimen/jo_pad_rail_atelier">
+
+                    <jo.joide.app.android.ui.Icone
+                        android:id="@+id/bouton_rail_arbre"
+                        android:layout_width="@dimen/jo_largeur_rail_atelier"
+                        android:layout_height="@dimen/jo_largeur_rail_atelier"
+                        app:jo_icone_glyphe="dossier"
+                        app:jo_icone_couleur="?attr/jo_accent"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="@string/atelier_desc_fichiers" />
+
+                    <jo.joide.app.android.ui.Icone
+                        android:id="@+id/bouton_rail_console"
+                        android:layout_width="@dimen/jo_largeur_rail_atelier"
+                        android:layout_height="@dimen/jo_largeur_rail_atelier"
+                        app:jo_icone_glyphe="terminal"
+                        app:jo_icone_couleur="?attr/jo_texte2"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="@string/atelier_desc_console" />
+                </LinearLayout>
+
+                <!-- l'arborescence AMARRÉE (le tiroir compact n'existe
+                     pas ici) : le conteneur reçoit la vue arbre posée
+                     par la coque (une instance, deux amarrages) -->
+                <LinearLayout
+                    android:id="@+id/colonne_arbre"
+                    android:layout_width="@dimen/jo_largeur_colonne_arbre_atelier"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:background="?attr/jo_surface" />
+
+                <!-- le PUITS : fond puits, état vide sans onglet actif,
+                     conteneur de la scène éditeur (détaché/rattaché au
+                     montage de session, JAMAIS reconstruit) -->
+                <FrameLayout
+                    android:id="@+id/puits"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/jo_puits">
+
+                    <jo.joide.app.android.ui.EtatVide
+                        android:id="@+id/etat_vide_puits"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <FrameLayout
+                        android:id="@+id/vue_editeur"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <!-- l'aperçu côte à côte du fichier de mise en page
+                     actif (volet 320 dp, fermable) -->
+                <LinearLayout
+                    android:id="@+id/volet_droit"
+                    android:layout_width="@dimen/jo_largeur_volet_apercu_atelier"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- l'aperçu plein écran : surcouche du corps, zone rare
+                 montée par stub -->
+            <FrameLayout
+                android:id="@+id/volet_plein_ecran"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="?attr/jo_fond"
+                android:visibility="gone">
+
+                <ViewStub
+                    android:id="@+id/stub_apercu"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout="@layout/vue_apercu_zone" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <jo.joide.app.android.ui.atelier.BarreSymboles
+            android:id="@+id/barre_symboles"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/jo_hauteur_barre_symboles_atelier" />
+
+        <!-- la feuille basse AMARRÉE (console amarrée en bas, §005) :
+             voisine à poids du corps — hauteur utile mesurable -->
+        <jo.joide.app.android.ui.atelier.FeuilleBasse
+            android:id="@+id/feuille"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- le tiroir agent : poussé droite, 360 dp, AU-DESSUS de tout
+         (même form factor aux deux tailles, lot P) — monté par stub à
+         la première ouverture -->
+    <ViewStub
+        android:id="@+id/stub_tiroir_agent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout="@layout/tiroir_agent_pousse" />
+
+    <!-- le FAB Construire (§3.7 : bas 84 dp, droite 20 dp) -->
+    <jo.joide.app.android.ui.Fab
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="@dimen/jo_fab_bas"
+        android:layout_marginEnd="@dimen/jo_fab_droite" />
+</FrameLayout>

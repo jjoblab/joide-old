@@ -44,41 +44,57 @@ import jo.joide.app.android.ui.Puce;
  * L6 — le contrôleur de l'agent : le service, le tour, les pièces
  * jointes, les connexions MCP, le sélecteur de modèle, les usages,
  * l'historique, les permissions et les questions. La vérité reste
- * dans EtatAgentChat (porté par l'écran) et le service ; le
- * contrôleur orchestre et met à jour les vues via l'écran. Les corps
- * viennent d'EcranAtelier sans changement de comportement
+ * dans EtatAgentChat (porté par l'hôte) et le service ; le
+ * contrôleur orchestre et met à jour les vues via l'hôte. Les corps
+ * viennent de l'écran d'hier sans changement de comportement
  * (extraction mécanique, mêmes commentaires).
+ *
+ * <p>Lot A6 (ADR-085 décision 3) : le contrôleur dépend de
+ * {@link HoteAtelier} — plus un champ d'écran.</p>
  */
 final class ControleurAgent {
 
-    private final EcranAtelier atelier;
+    /**
+     * Le code de requête du choix d'image (SAF) — délocalisé de
+     * l'écran au lot A6 : le contrat typé {@code Ecrans.CHOISIR_IMAGE}
+     * le remplace au lot A7 (décision 13).
+     */
+    static final int REQUETE_IMAGE = 47_101;
 
-    ControleurAgent(EcranAtelier atelier) {
-        this.atelier = atelier;
+    /**
+     * Le code de requête de la photo (caméra) — même délocalisation ;
+     * le contrat {@code Ecrans.PRENDRE_PHOTO} prend le relais en A7.
+     */
+    static final int REQUETE_PHOTO = 47_102;
+
+    private final HoteAtelier hote;
+
+    ControleurAgent(HoteAtelier hote) {
+        this.hote = hote;
     }
 
     /** L'arrêt du tour (le bouton ■ du composeur). */
     void arreterTour() {
-        if (atelier.agent != null) {
-            atelier.agent.arreter();
+        if (hote.agent() != null) {
+            hote.agent().arreter();
         }
     }
 
     /** Le mode de permission posé par la puce d'en-tête. */
     void poserMode(Permissions.Mode mode) {
-        atelier.etatAgent.poserMode(mode);
-        if (atelier.agent != null) {
-            atelier.agent.poserMode(mode);
+        hote.etatAgent().poserMode(mode);
+        if (hote.agent() != null) {
+            hote.agent().poserMode(mode);
         }
-        atelier.vueAgent.rafraichir();
+        hote.vueAgent().rafraichir();
     }
 
     /** Une pièce retirée du composeur (le tap sur sa puce). */
     void retirerPiece(int index) {
-        if (index >= 0 && index < atelier.piecesAgent.size()) {
-            atelier.piecesAgent.remove(index);
-            atelier.vueAgent.poserPieces(
-                    PieceJointe.noms(atelier.piecesAgent));
+        if (index >= 0 && index < hote.piecesAgent().size()) {
+            hote.piecesAgent().remove(index);
+            hote.vueAgent().poserPieces(
+                    PieceJointe.noms(hote.piecesAgent()));
         }
     }
 
@@ -88,11 +104,11 @@ final class ControleurAgent {
         if (resultat != android.app.Activity.RESULT_OK) {
             return;
         }
-        if (requete == EcranAtelier.REQUETE_IMAGE && donnees != null
+        if (requete == REQUETE_IMAGE && donnees != null
                 && donnees.getData() != null) {
             attacherImage(donnees.getData(),
                     nomDadresse(donnees.getData()));
-        } else if (requete == EcranAtelier.REQUETE_PHOTO) {
+        } else if (requete == REQUETE_PHOTO) {
             Path photo = FournisseurCameraAgent.dernierePhoto();
             if (photo != null && Files.isRegularFile(photo)) {
                 attacherImage(android.net.Uri.fromFile(photo.toFile()),
@@ -103,34 +119,33 @@ final class ControleurAgent {
 
     /** Le débranchement du service (onDestroy de l'écran). */
     void debrancherService() {
-        if (atelier.agent != null) {
+        if (hote.agent() != null) {
             try {
-                atelier.unbindService(connexionAgent());
+                hote.delierService(connexionAgent());
             } catch (RuntimeException e) {
                 // le service partait déjà
             }
-            atelier.agent = null;
+            hote.poserAgent(null);
         }
     }
 
     void ouvrirAgent() {
-        if (atelier.tiroirAgent == null) {
-            return;
-        }
-        atelier.tiroirAgent.ouvrir();
-        if (atelier.agent != null) {
+        // le tiroir se MONTE à la demande (stub) : l'appel gonfle la
+        // surcouche la première fois
+        hote.tiroirAgent().ouvrir();
+        if (hote.agent() != null) {
             brancherEspaceAgent();
             rejouerJournalAgent();
             return;
         }
-        AgentService.demarrer(atelier);
-        atelier.bindService(new Intent(atelier, AgentService.class),
+        AgentService.demarrer(hote.contexte());
+        hote.lierService(new Intent(hote.contexte(), AgentService.class),
                 connexionAgent(), Context.BIND_AUTO_CREATE);
     }
 
     void fermerAgent() {
-        if (atelier.tiroirAgent != null) {
-            atelier.tiroirAgent.fermer();
+        if (hote.tiroirAgentOuvert()) {
+            hote.tiroirAgent().fermer();
         }
     }
 
@@ -140,100 +155,101 @@ final class ControleurAgent {
             public void onServiceConnected(
                     android.content.ComponentName nom,
                     android.os.IBinder service) {
-                atelier.agent = (AgentService.AgentBinder) service;
+                hote.poserAgent((AgentService.AgentBinder) service);
                 brancherEspaceAgent();
-                atelier.agent.poserEcouteur(VueAgentEntree -> atelier.runOnUiThread(
+                hote.agent().poserEcouteur(VueAgentEntree -> hote.executerSurFilUi(
                         () -> surEntreeAgent(VueAgentEntree)));
                 rejouerJournalAgent();
                 // le message parti pendant le bind s'en va MAINTENANT
-                atelier.runOnUiThread(() -> depecherAttenteAgent());
+                hote.executerSurFilUi(() -> depecherAttenteAgent());
             }
 
             @Override
             public void onServiceDisconnected(
                     android.content.ComponentName nom) {
-                atelier.agent = null;
+                hote.poserAgent(null);
             }
         };
     }
 
-    /** Construit l'espace de travail du projet pour l'atelier.agent. */
+    /** Construit l'espace de travail du projet pour l'agent de
+     *  l'hôte (le binder du service). */
     private void brancherEspaceAgent() {
-        if (atelier.agent == null || atelier.racineProjet == null || atelier.scene == null) {
+        if (hote.agent() == null || hote.racineProjet() == null || hote.scene() == null) {
             return;
         }
-        EspaceTravailIde espace = new EspaceTravailIde(atelier.racineProjet,
-                atelier.modele).poserMoteurs(atelier.moteurs);
+        EspaceTravailIde espace = new EspaceTravailIde(hote.racineProjet(),
+                hote.modele()).poserMoteurs(hote.moteurs());
         espace.poserOverlayEditeur(chemin -> {
-            String actif = atelier.etat.actif();
+            String actif = hote.etat().actif();
             if (actif != null && actif.equals(chemin)) {
-                return atelier.scene.texte();
+                return hote.scene().texte();
             }
             return null;
         });
-        atelier.agent.poserEspace(new EspaceCheckpoint(espace));
-        Reglages reglages = Reglages.lire(atelier.sourceReglages);
-        atelier.agent.poserModele(reglages.fournisseurIa, reglages.modeleIa);
+        hote.agent().poserEspace(new EspaceCheckpoint(espace));
+        Reglages reglages = Reglages.lire(hote.sourceReglages());
+        hote.agent().poserModele(reglages.fournisseurIa, reglages.modeleIa);
         // le .mcp.json du projet, lu borné, part au service : les
         // serveurs déclarés sont parsés, pas activés (ADR-063)
-        atelier.agent.poserMcpJson(lireMcpJson());
+        hote.agent().poserMcpJson(lireMcpJson());
         // l'approbation PERSISTÉE par projet (lot T, ADR-065) : liée
         // à la signature du fichier qui l'a motivée — le même
         // .mcp.json retrouve ses serveurs, un fichier changé redemande
         // le geste explicite de l'utilisateur
-        if ("1".equals(atelier.sourceReglages.lire(cleApprobationMcp()))) {
-            atelier.agent.poserApprobationMcp(true);
+        if ("1".equals(hote.sourceReglages().lire(cleApprobationMcp()))) {
+            hote.agent().poserApprobationMcp(true);
         }
-        atelier.etatAgent.poserModele(reglages.modeleIa);
-        atelier.etatAgent.poserMode(EtatAgentChat.TourEtat.EN_COURS
-                == atelier.etatAgent.etat()
-                ? atelier.etatAgent.mode() : Permissions.Mode.DEMANDE_CHAQUE);
+        hote.etatAgent().poserModele(reglages.modeleIa);
+        hote.etatAgent().poserMode(EtatAgentChat.TourEtat.EN_COURS
+                == hote.etatAgent().etat()
+                ? hote.etatAgent().mode() : Permissions.Mode.DEMANDE_CHAQUE);
     }
 
     /** Rejoue le journal du service dans l'état pur (retour d'écran). */
     private void rejouerJournalAgent() {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
-        atelier.etatAgent = new EtatAgentChat();
-        for (AgentService.Entree entree : atelier.agent.journal()) {
+        hote.poserEtatAgent(new EtatAgentChat());
+        for (AgentService.Entree entree : hote.agent().journal()) {
             if (entree.estMessage()) {
-                atelier.etatAgent.envoyer(entree.message, entree.pieces);
+                hote.etatAgent().envoyer(entree.message, entree.pieces);
             } else if (entree.estReponse()) {
-                atelier.etatAgent.restaurerReponse(entree.reponse);
+                hote.etatAgent().restaurerReponse(entree.reponse);
             } else {
-                atelier.etatAgent.surEvenement(entree.evenement);
+                hote.etatAgent().surEvenement(entree.evenement);
             }
         }
         majQuestionsAgent();
-        atelier.vueAgent.poserEtat(atelier.etatAgent);
+        hote.vueAgent().poserEtat(hote.etatAgent());
     }
 
     /** L'entrée live du service : événement ou message. */
     private void surEntreeAgent(AgentService.Entree entree) {
         if (entree.estMessage()) {
-            atelier.etatAgent.envoyer(entree.message, entree.pieces);
+            hote.etatAgent().envoyer(entree.message, entree.pieces);
         } else if (entree.estReponse()) {
-            atelier.etatAgent.restaurerReponse(entree.reponse);
+            hote.etatAgent().restaurerReponse(entree.reponse);
         } else {
-            atelier.etatAgent.surEvenement(entree.evenement);
+            hote.etatAgent().surEvenement(entree.evenement);
         }
         majQuestionsAgent();
-        atelier.vueAgent.poserEtat(atelier.etatAgent);
+        hote.vueAgent().poserEtat(hote.etatAgent());
         // la fin d'un tour libère le message retenu pendant le bind
         // (session revenue sur un tour vivant)
-        if (atelier.messageEnAttenteAgent != null
-                && atelier.etatAgent.etat() != EtatAgentChat.TourEtat.EN_COURS) {
+        if (hote.messageEnAttenteAgent() != null
+                && hote.etatAgent().etat() != EtatAgentChat.TourEtat.EN_COURS) {
             depecherAttenteAgent();
         }
-        if (atelier.pointAgent != null) {
-            atelier.pointAgent.setVisibility(
-                    atelier.etatAgent.etat()
+        if (hote.pointAgent() != null) {
+            hote.pointAgent().setVisibility(
+                    hote.etatAgent().etat()
                             == EtatAgentChat.TourEtat.EN_COURS
                             ? View.VISIBLE : View.GONE);
         }
         Permissions.DemandeEcriture permission =
-                atelier.agent == null ? null : atelier.agent.permissionEnAttente();
+                hote.agent() == null ? null : hote.agent().permissionEnAttente();
         if (permission != null) {
             montrerPermissionAgent(permission);
         }
@@ -241,38 +257,38 @@ final class ControleurAgent {
 
     /** Les questions en attente deviennent une carte (ask_user). */
     private void majQuestionsAgent() {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
         java.util.List<jo.joide.agent.espace.QuestionUtilisateur>
-                questions = atelier.agent.questionsEnAttente();
+                questions = hote.agent().questionsEnAttente();
         if (questions != null && !questions.isEmpty()
-                && atelier.etatAgent.reponses() == null) {
-            atelier.etatAgent.poserQuestions(questions);
+                && hote.etatAgent().reponses() == null) {
+            hote.etatAgent().poserQuestions(questions);
         }
     }
 
     /** Le dialogue de permission sur diff déplié (fermer = refuser). */
     private void montrerPermissionAgent(
             Permissions.DemandeEcriture demande) {
-        if (atelier.etatAgent.permissionEnAttente() != null) {
+        if (hote.etatAgent().permissionEnAttente() != null) {
             return;
         }
-        atelier.etatAgent.poserPermission(demande);
-        atelier.vueAgent.poserEtat(atelier.etatAgent);
-        ScrollView defilement = new ScrollView(atelier);
-        TextView diff = new TextView(atelier);
-        diff.setTypeface(GraphiteVue.police(atelier, 400, true));
+        hote.etatAgent().poserPermission(demande);
+        hote.vueAgent().poserEtat(hote.etatAgent());
+        ScrollView defilement = new ScrollView(hote.contexte());
+        TextView diff = new TextView(hote.contexte());
+        diff.setTypeface(GraphiteVue.police(hote.contexte(), 400, true));
         diff.setTextSize(11.5f);
-        diff.setTextColor(atelier.palette.texteSecondaire);
+        diff.setTextColor(hote.palette().texteSecondaire);
         diff.setText(demande.diffApercu);
-        int marge = GraphiteVue.dp(atelier, 24);
-        diff.setPadding(marge, GraphiteVue.dp(atelier, 6), marge, 0);
+        int marge = GraphiteVue.dp(hote.contexte(), 24);
+        diff.setPadding(marge, GraphiteVue.dp(hote.contexte(), 6), marge, 0);
         defilement.addView(diff, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
-        Dialogue.autorisation(atelier, atelier.palette,
-                atelier.getString(R.string.agent_permission_ecriture),
+        Dialogue.autorisation(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_permission_ecriture),
                 demande.outil + " — " + demande.cible,
                 defilement,
                 R.string.agent_refuser, R.string.agent_appliquer,
@@ -283,47 +299,47 @@ final class ControleurAgent {
     }
 
     void envoyerAgent(String message) {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             ouvrirAgent();
         }
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             // le bind est ASYNCHRONE : le message part dès la liaison
             // (onServiceConnected) — plus jamais perdu silencieusement
             // (fix du 2026-11-17 : le premier message d'une session
             // disparaissait quand le service n'était pas encore lié)
-            atelier.messageEnAttenteAgent =
-                    PieceJointe.fondre(message, atelier.piecesAgent);
-            atelier.piecesEnAttenteAgent.clear();
-            atelier.piecesEnAttenteAgent.addAll(atelier.piecesAgent);
-            atelier.piecesAgent.clear();
-            atelier.vueAgent.poserPieces(List.of());
+            hote.poserMessageEnAttenteAgent(
+                    PieceJointe.fondre(message, hote.piecesAgent()));
+            hote.piecesEnAttenteAgent().clear();
+            hote.piecesEnAttenteAgent().addAll(hote.piecesAgent());
+            hote.piecesAgent().clear();
+            hote.vueAgent().poserPieces(List.of());
             return;
         }
-        if (atelier.agent.tourEnCours()) {
+        if (hote.agent().tourEnCours()) {
             // le service n'empile jamais deux tours — les pièces
             // restent posées, l'utilisateur renverra après l'arrêt
             return;
         }
         // les fichiers et l'arbre se fondent dans le message, les
         // images partent multimodales (lot S)
-        String fondu = PieceJointe.fondre(message, atelier.piecesAgent);
-        atelier.agent.envoyer(fondu, List.copyOf(atelier.piecesAgent));
-        atelier.piecesAgent.clear();
-        atelier.vueAgent.poserPieces(List.of());
+        String fondu = PieceJointe.fondre(message, hote.piecesAgent());
+        hote.agent().envoyer(fondu, List.copyOf(hote.piecesAgent()));
+        hote.piecesAgent().clear();
+        hote.vueAgent().poserPieces(List.of());
     }
 
     /** Le départ du message retenu : la liaison du service est là
      *  (ou le tour en cours vient de finir). */
     private void depecherAttenteAgent() {
-        if (atelier.agent == null || atelier.messageEnAttenteAgent == null
-                || atelier.agent.tourEnCours()) {
+        if (hote.agent() == null || hote.messageEnAttenteAgent() == null
+                || hote.agent().tourEnCours()) {
             return;
         }
-        String message = atelier.messageEnAttenteAgent;
-        List<PieceJointe> pieces = List.copyOf(atelier.piecesEnAttenteAgent);
-        atelier.messageEnAttenteAgent = null;
-        atelier.piecesEnAttenteAgent.clear();
-        atelier.agent.envoyer(message, pieces);
+        String message = hote.messageEnAttenteAgent();
+        List<PieceJointe> pieces = List.copyOf(hote.piecesEnAttenteAgent());
+        hote.poserMessageEnAttenteAgent(null);
+        hote.piecesEnAttenteAgent().clear();
+        hote.agent().envoyer(message, pieces);
     }
 
     // ------------------------------------------------------------------
@@ -334,26 +350,25 @@ final class ControleurAgent {
 
     /** Le menu + ancré à son bouton (lot T) : chaque entrée est câblée, jamais morte. */
     void ouvrirAjoutsAgent() {
-        if (atelier.vueAgent == null) {
+        if (hote.vueAgent() == null) {
             return;
         }
         List<CharSequence> elements = new ArrayList<>();
         List<Integer> actions = new ArrayList<>();
-        elements.add(atelier.getString(R.string.agent_ajouter_image));
+        elements.add(hote.texte(R.string.agent_ajouter_image));
         actions.add(0);
-        boolean camera = atelier.getPackageManager().hasSystemFeature(
-                android.content.pm.PackageManager.FEATURE_CAMERA_ANY);
+        boolean camera = hote.possedeCamera();
         if (camera) {
-            elements.add(atelier.getString(R.string.agent_ajouter_photo));
+            elements.add(hote.texte(R.string.agent_ajouter_photo));
             actions.add(1);
         }
-        if (atelier.etat.actif() != null) {
-            elements.add(atelier.getString(R.string.agent_ajouter_fichier));
+        if (hote.etat().actif() != null) {
+            elements.add(hote.texte(R.string.agent_ajouter_fichier));
             actions.add(2);
         }
-        elements.add(atelier.getString(R.string.agent_ajouter_projet));
+        elements.add(hote.texte(R.string.agent_ajouter_projet));
         actions.add(3);
-        LinearLayout colonne = new LinearLayout(atelier);
+        LinearLayout colonne = new LinearLayout(hote.contexte());
         colonne.setOrientation(LinearLayout.VERTICAL);
         android.widget.PopupWindow[] fenetre = new android.widget
                 .PopupWindow[1];
@@ -365,7 +380,7 @@ final class ControleurAgent {
         for (int i = 0; i < elements.size(); i++) {
             CharSequence nom = elements.get(i);
             int action = actions.get(i);
-            colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette, nom,
+            colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(), nom,
                     () -> {
                         fermer.run();
                         if (action == 0) {
@@ -379,8 +394,8 @@ final class ControleurAgent {
                         }
                     }));
         }
-        fenetre[0] = PopupAncre.montrer(atelier.vueAgent.ancreAjouter(),
-                atelier.palette, colonne, 240);
+        fenetre[0] = PopupAncre.montrer(hote.vueAgent().ancreAjouter(),
+                hote.palette(), colonne, 240);
     }
 
     /**
@@ -397,11 +412,11 @@ final class ControleurAgent {
         intention.addCategory(Intent.CATEGORY_OPENABLE);
         intention.setType("image/*");
         try {
-            atelier.startActivityForResult(intention, EcranAtelier.REQUETE_IMAGE);
+            hote.ouvrirEcranPourResultat(intention, REQUETE_IMAGE);
         } catch (android.content.ActivityNotFoundException e) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_ajouter),
-                    atelier.getString(R.string.agent_image_indisponible),
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_ajouter),
+                    hote.texte(R.string.agent_image_indisponible),
                     R.string.action_ok);
         }
     }
@@ -416,18 +431,18 @@ final class ControleurAgent {
     @SuppressWarnings("deprecation")
     private void prendrePhotoAgent() {
         try {
-            android.net.Uri cible = FournisseurCameraAgent.preparer(atelier);
+            android.net.Uri cible = FournisseurCameraAgent.preparer(hote.contexte());
             Intent intention = new Intent(
                     android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
             intention.putExtra(
                     android.provider.MediaStore.EXTRA_OUTPUT, cible);
             intention.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            atelier.startActivityForResult(intention, EcranAtelier.REQUETE_PHOTO);
+            hote.ouvrirEcranPourResultat(intention, REQUETE_PHOTO);
         } catch (IOException | RuntimeException e) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_ajouter),
-                    atelier.getString(R.string.agent_image_indisponible),
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_ajouter),
+                    hote.texte(R.string.agent_image_indisponible),
                     R.string.action_ok);
         }
     }
@@ -448,7 +463,7 @@ final class ControleurAgent {
     private void attacherImage(android.net.Uri adresse, String nom) {
         byte[] octets;
         try (java.io.InputStream flux =
-                     atelier.getContentResolver().openInputStream(adresse)) {
+                     hote.resolveurContenu().openInputStream(adresse)) {
             if (flux == null) {
                 return;
             }
@@ -464,20 +479,20 @@ final class ControleurAgent {
             }
             octets = tampon.toByteArray();
         } catch (IOException | RuntimeException e) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_ajouter),
-                    atelier.getString(R.string.agent_image_indisponible),
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_ajouter),
+                    hote.texte(R.string.agent_image_indisponible),
                     R.string.action_ok);
             return;
         }
         if (octets.length > 8_000_000) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_ajouter),
-                    atelier.getString(R.string.agent_image_trop_grande),
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_ajouter),
+                    hote.texte(R.string.agent_image_trop_grande),
                     R.string.action_ok);
             return;
         }
-        String mediaType = atelier.getContentResolver().getType(adresse);
+        String mediaType = hote.resolveurContenu().getType(adresse);
         if (mediaType == null || !mediaType.startsWith("image/")) {
             mediaType = ReducteurImagesAndroid.mediaTypeDe(nom);
         }
@@ -488,37 +503,37 @@ final class ControleurAgent {
                         new ReducteurImagesAndroid(),
                         ReductionImages.BUDGET_OCTETS_DEFAUT);
         if (reduite.image == null) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_ajouter),
-                    atelier.getString(R.string.agent_image_trop_grande),
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_ajouter),
+                    hote.texte(R.string.agent_image_trop_grande),
                     R.string.action_ok);
             return;
         }
-        atelier.piecesAgent.add(PieceJointe.image(
+        hote.piecesAgent().add(PieceJointe.image(
                 nom.isEmpty() ? "image" : nom,
                 reduite.image.mediaType, reduite.image.donnees));
-        atelier.vueAgent.poserPieces(PieceJointe.noms(atelier.piecesAgent));
+        hote.vueAgent().poserPieces(PieceJointe.noms(hote.piecesAgent()));
     }
 
     /** Le fichier courant : cité en bloc borné (le modèle a read_file). */
     private void joindreFichierCourant() {
-        String actif = atelier.etat.actif();
-        if (actif == null || atelier.scene == null) {
+        String actif = hote.etat().actif();
+        if (actif == null || hote.scene() == null) {
             return;
         }
-        atelier.piecesAgent.add(PieceJointe.fichier(actif,
-                PieceJointe.bornerTexte(atelier.scene.texte())));
-        atelier.vueAgent.poserPieces(PieceJointe.noms(atelier.piecesAgent));
+        hote.piecesAgent().add(PieceJointe.fichier(actif,
+                PieceJointe.bornerTexte(hote.scene().texte())));
+        hote.vueAgent().poserPieces(PieceJointe.noms(hote.piecesAgent()));
     }
 
     /** La structure du projet : l'arbre borné en lignes. */
     private void joindreProjet() {
-        String arbre = PieceJointe.arbre(atelier.fichiersArbre);
+        String arbre = PieceJointe.arbre(hote.fichiersArbre());
         if (arbre.isEmpty()) {
             return;
         }
-        atelier.piecesAgent.add(PieceJointe.projet(arbre));
-        atelier.vueAgent.poserPieces(PieceJointe.noms(atelier.piecesAgent));
+        hote.piecesAgent().add(PieceJointe.projet(arbre));
+        hote.vueAgent().poserPieces(PieceJointe.noms(hote.piecesAgent()));
     }
 
     // ------------------------------------------------------------------
@@ -529,10 +544,10 @@ final class ControleurAgent {
 
     /** Le menu ⋯ ancré à son icône (lot T) : chaque entrée est câblée, jamais morte. */
     void ouvrirMenuAgentOptions() {
-        if (atelier.vueAgent == null) {
+        if (hote.vueAgent() == null) {
             return;
         }
-        LinearLayout colonne = new LinearLayout(atelier);
+        LinearLayout colonne = new LinearLayout(hote.contexte());
         colonne.setOrientation(LinearLayout.VERTICAL);
         android.widget.PopupWindow[] fenetre = new android.widget
                 .PopupWindow[1];
@@ -541,32 +556,32 @@ final class ControleurAgent {
                 fenetre[0].dismiss();
             }
         };
-        colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette,
-                atelier.getString(R.string.agent_menu_nouvelle), () -> {
+        colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_menu_nouvelle), () -> {
                     fermer.run();
                     nouvelleConversationAgent();
                 }));
-        colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette,
-                atelier.getString(R.string.agent_menu_historique), () -> {
+        colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_menu_historique), () -> {
                     fermer.run();
                     ouvrirHistoriqueAgent();
                 }));
-        colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette,
-                atelier.getString(R.string.agent_modele_titre), () -> {
+        colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_modele_titre), () -> {
                     fermer.run();
                     ouvrirModeleAgent();
                 }));
-        colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette,
-                atelier.getString(R.string.agent_connexions_titre), () -> {
+        colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_connexions_titre), () -> {
                     fermer.run();
                     ouvrirConnexionsAgent();
                 }));
-        colonne.addView(PopupAncre.ligneMenu(atelier, atelier.palette,
-                atelier.getString(R.string.agent_usages_titre), () -> {
+        colonne.addView(PopupAncre.ligneMenu(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_usages_titre), () -> {
                     fermer.run();
                     ouvrirUsagesAgent();
                 }));
-        fenetre[0] = PopupAncre.montrer(atelier.vueAgent.ancreMenu(), atelier.palette,
+        fenetre[0] = PopupAncre.montrer(hote.vueAgent().ancreMenu(), hote.palette(),
                 colonne, 220);
     }
 
@@ -575,11 +590,11 @@ final class ControleurAgent {
      * vide si absent ou illisible — jamais un crash d'ouverture.
      */
     private String lireMcpJson() {
-        if (atelier.racineProjet == null) {
+        if (hote.racineProjet() == null) {
             return "";
         }
         try {
-            Path cible = atelier.racineProjet.resolve(".mcp.json");
+            Path cible = hote.racineProjet().resolve(".mcp.json");
             if (!Files.isRegularFile(cible)) {
                 return "";
             }
@@ -600,13 +615,17 @@ final class ControleurAgent {
      * ajouté ou modifié redemande le geste explicite.
      */
     private String cleApprobationMcp() {
-        String chemin = atelier.racineProjet == null ? ""
-                : atelier.racineProjet.resolve(".mcp.json").toString();
+        String chemin = hote.racineProjet() == null ? ""
+                : hote.racineProjet().resolve(".mcp.json").toString();
         try {
             java.security.MessageDigest empreinte =
                     java.security.MessageDigest.getInstance("SHA-256");
             byte[] octets = empreinte.digest((chemin + "\n"
                     + lireMcpJson()).getBytes(StandardCharsets.UTF_8));
+            // lot A6 : la clé ne RENOMME pas — « atelier.agent.mcp. »
+            // est un identifiant de STOCKAGE (lot T, ADR-065), pas un
+            // champ d'écran : le refactoring ne doit jamais perdre les
+            // approbations déjà persistées
             StringBuilder hex = new StringBuilder(
                     "atelier.agent.mcp.approuve.");
             for (int i = 0; i < 8; i++) {
@@ -616,6 +635,8 @@ final class ControleurAgent {
         } catch (java.security.NoSuchAlgorithmException e) {
             // SHA-256 manque (impossible sur Android) : la clé retombe
             // sur le chemin seul — la persistance reste par projet
+            // lot A6 : idem — la clé de repli reste l'identifiant du
+            // lot T, jamais renommée (données persistées)
             return "atelier.agent.mcp.approuve."
                     + Integer.toHexString(chemin.hashCode());
         }
@@ -628,68 +649,68 @@ final class ControleurAgent {
      * choix de l'utilisateur.
      */
     private void ouvrirConnexionsAgent() {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
         List<jo.joide.agent.mcp.ConfigServeurMcp> configs =
-                atelier.agent.configsMcp();
-        boolean approuve = atelier.agent.approuveMcp();
+                hote.agent().configsMcp();
+        boolean approuve = hote.agent().approuveMcp();
         java.util.Map<String, jo.joide.agent.mcp.GestionnaireMcp
                 .EtatServeur> etats = new java.util.HashMap<>();
-        for (var etat : atelier.agent.etatsMcp()) {
+        for (var etat : hote.agent().etatsMcp()) {
             etats.put(etat.nom, etat);
         }
 
-        LinearLayout corps = new LinearLayout(atelier);
+        LinearLayout corps = new LinearLayout(hote.contexte());
         corps.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(atelier, 4);
+        int marge = GraphiteVue.dp(hote.contexte(), 4);
         corps.setPadding(marge, marge, marge, marge);
 
         if (configs.isEmpty()) {
-            TextView vide = new TextView(atelier);
+            TextView vide = new TextView(hote.contexte());
             GraphiteVue.typographie(vide, Graphite.CORPS);
-            vide.setTextColor(atelier.palette.texteEstompe);
+            vide.setTextColor(hote.palette().texteEstompe);
             vide.setText(R.string.agent_connexions_vide);
-            vide.setPadding(0, GraphiteVue.dp(atelier, 10), 0,
-                    GraphiteVue.dp(atelier, 10));
+            vide.setPadding(0, GraphiteVue.dp(hote.contexte(), 10), 0,
+                    GraphiteVue.dp(hote.contexte(), 10));
             corps.addView(vide);
         } else {
-            TextView avertissement = new TextView(atelier);
+            TextView avertissement = new TextView(hote.contexte());
             GraphiteVue.typographie(avertissement, Graphite.LEGENDE);
-            avertissement.setTextColor(atelier.palette.texteSecondaire);
+            avertissement.setTextColor(hote.palette().texteSecondaire);
             avertissement.setText(approuve
                     ? R.string.agent_connexions_actives
                     : R.string.agent_connexions_avertissement);
             avertissement.setPadding(0, marge, 0,
-                    GraphiteVue.dp(atelier, 8));
+                    GraphiteVue.dp(hote.contexte(), 8));
             corps.addView(avertissement);
 
-            TextView action = new TextView(atelier);
+            TextView action = new TextView(hote.contexte());
             GraphiteVue.typographie(action, Graphite.CORPS);
-            action.setTextColor(atelier.palette.accent);
+            action.setTextColor(hote.palette().accent);
             action.setText(approuve
                     ? R.string.agent_connexions_desactiver
                     : R.string.agent_connexions_activer);
-            action.setPadding(0, 0, 0, GraphiteVue.dp(atelier, 10));
+            action.setPadding(0, 0, 0, GraphiteVue.dp(hote.contexte(), 10));
             action.setOnClickListener(vue -> {
-                if (atelier.agent != null) {
-                    atelier.agent.poserApprobationMcp(!approuve);
+                if (hote.agent() != null) {
+                    hote.agent().poserApprobationMcp(!approuve);
                 }
                 // la décision se souvient par projet (lot T), liée à
                 // la signature du .mcp.json qui l'a motivée
-                atelier.sourceReglages.ecrire(cleApprobationMcp(),
+                hote.sourceReglages().ecrire(cleApprobationMcp(),
                         !approuve ? "1" : "0");
                 ouvrirConnexionsAgent();
             });
             corps.addView(action);
 
             if (approuve) {
-                TextView compte = new TextView(atelier);
+                TextView compte = new TextView(hote.contexte());
                 GraphiteVue.typographie(compte, Graphite.LEGENDE);
-                compte.setTextColor(atelier.palette.texteEstompe);
-                compte.setText(atelier.getString(R.string.agent_connexions_outils,
-                        atelier.agent.outilsMcp()));
-                compte.setPadding(0, 0, 0, GraphiteVue.dp(atelier, 6));
+                compte.setTextColor(hote.palette().texteEstompe);
+                compte.setText(hote.texte(R.string.agent_connexions_outils,
+                        hote.agent().outilsMcp()));
+                compte.setPadding(0, 0, 0, GraphiteVue.dp(hote.contexte(), 6));
                 corps.addView(compte);
             }
 
@@ -699,14 +720,14 @@ final class ControleurAgent {
             }
         }
 
-        ScrollView defilement = new ScrollView(atelier);
+        ScrollView defilement = new ScrollView(hote.contexte());
         defilement.addView(corps, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
         // le popup ancré (lot T) : l'écran Connexions vit près du menu
         // qui l'appelle, jamais un dialogue centré qui coupe le fil
-        if (atelier.vueAgent != null) {
-            PopupAncre.montrer(atelier.vueAgent.ancreMenu(), atelier.palette,
+        if (hote.vueAgent() != null) {
+            PopupAncre.montrer(hote.vueAgent().ancreMenu(), hote.palette(),
                     defilement, 320);
         }
     }
@@ -715,36 +736,36 @@ final class ControleurAgent {
     private View ligneServeurMcp(
             jo.joide.agent.mcp.ConfigServeurMcp config, boolean approuve,
             jo.joide.agent.mcp.GestionnaireMcp.EtatServeur etat) {
-        LinearLayout ligne = new LinearLayout(atelier);
+        LinearLayout ligne = new LinearLayout(hote.contexte());
         ligne.setOrientation(LinearLayout.VERTICAL);
-        int padding = GraphiteVue.dp(atelier, 10);
+        int padding = GraphiteVue.dp(hote.contexte(), 10);
         ligne.setPadding(padding, padding, padding, padding);
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
-        fond.setColor(atelier.palette.surface);
-        fond.setCornerRadius(GraphiteVue.dp(atelier,
+        fond.setColor(hote.palette().surface);
+        fond.setCornerRadius(GraphiteVue.dp(hote.contexte(),
                 Graphite.RAYON_COMPOSANT));
-        fond.setStroke(GraphiteVue.dp(atelier, 1), atelier.palette.bordFin);
+        fond.setStroke(GraphiteVue.dp(hote.contexte(), 1), hote.palette().bordFin);
         ligne.setBackground(fond);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        int marge = GraphiteVue.dp(atelier, 4);
+        int marge = GraphiteVue.dp(hote.contexte(), 4);
         params.setMargins(0, marge, 0, marge);
         ligne.setLayoutParams(params);
 
-        TextView nom = new TextView(atelier);
+        TextView nom = new TextView(hote.contexte());
         GraphiteVue.typographie(nom, Graphite.CORPS);
-        nom.setTextColor(atelier.palette.texte);
+        nom.setTextColor(hote.palette().texte);
         nom.setText(config.nom);
         ligne.addView(nom);
 
-        TextView statut = new TextView(atelier);
+        TextView statut = new TextView(hote.contexte());
         GraphiteVue.typographie(statut, Graphite.LEGENDE);
         CharSequence texteStatut = !approuve
-                ? atelier.getString(R.string.agent_connexions_non_active)
+                ? hote.texte(R.string.agent_connexions_non_active)
                 : etat == null
-                        ? atelier.getString(R.string.agent_connexions_statut_connexion)
+                        ? hote.texte(R.string.agent_connexions_statut_connexion)
                         : texteStatutMcp(etat.statut)
                                 + (etat.motif == null ? ""
                                         : " — " + etat.motif);
@@ -752,8 +773,8 @@ final class ControleurAgent {
         statut.setTextColor(approuve && etat != null
                 && etat.statut == jo.joide.agent.mcp.GestionnaireMcp
                         .Statut.ECHEC
-                ? atelier.palette.erreur : atelier.palette.texteEstompe);
-        statut.setPadding(0, GraphiteVue.dp(atelier, 3), 0, 0);
+                ? hote.palette().erreur : hote.palette().texteEstompe);
+        statut.setPadding(0, GraphiteVue.dp(hote.contexte(), 3), 0, 0);
         ligne.addView(statut);
 
         if (approuve && etat != null
@@ -764,49 +785,49 @@ final class ControleurAgent {
             // lot U : la signature OAuth — le parcours MCP se
             // complète : découverte, enregistrement du client,
             // navigateur, rappel joide://mcp/oauth, jetons, connexion
-            TextView connecter = new TextView(atelier);
+            TextView connecter = new TextView(hote.contexte());
             GraphiteVue.typographie(connecter, Graphite.CORPS);
-            connecter.setTextColor(atelier.palette.accent);
+            connecter.setTextColor(hote.palette().accent);
             connecter.setText(R.string.agent_connexions_se_connecter);
-            connecter.setPadding(0, GraphiteVue.dp(atelier, 6), 0, 0);
+            connecter.setPadding(0, GraphiteVue.dp(hote.contexte(), 6), 0, 0);
             connecter.setOnClickListener(vue -> {
-                if (atelier.agent == null) {
+                if (hote.agent() == null) {
                     return;
                 }
-                atelier.agent.demanderOAuthMcp(config.nom,
-                        url -> atelier.runOnUiThread(() -> {
+                hote.agent().demanderOAuthMcp(config.nom,
+                        url -> hote.executerSurFilUi(() -> {
                             try {
-                                atelier.startActivity(new Intent(
+                                hote.ouvrirEcran(new Intent(
                                         Intent.ACTION_VIEW,
                                         Uri.parse(url)));
                             } catch (Exception e) {
                                 Dialogue.information(
-                                        atelier, atelier.palette,
-                                        atelier.getString(R.string
+                                        hote.contexte(), hote.palette(),
+                                        hote.texte(R.string
                                                 .agent_connexions_titre),
-                                        atelier.getString(R.string
+                                        hote.texte(R.string
                                                 .agent_connexions_oauth_echec),
                                         R.string.action_ok);
                             }
                         }),
-                        erreur -> atelier.runOnUiThread(() -> Dialogue
-                                .information(atelier,
-                                        atelier.palette,
-                                        atelier.getString(R.string
+                        erreur -> hote.executerSurFilUi(() -> Dialogue
+                                .information(hote.contexte(),
+                                        hote.palette(),
+                                        hote.texte(R.string
                                                 .agent_connexions_titre),
                                         erreur,
                                         R.string.action_ok)));
             });
             ligne.addView(connecter);
 
-            TextView reconnecter = new TextView(atelier);
+            TextView reconnecter = new TextView(hote.contexte());
             GraphiteVue.typographie(reconnecter, Graphite.CORPS);
-            reconnecter.setTextColor(atelier.palette.accent);
+            reconnecter.setTextColor(hote.palette().accent);
             reconnecter.setText(R.string.agent_connexions_reconnecter);
-            reconnecter.setPadding(0, GraphiteVue.dp(atelier, 6), 0, 0);
+            reconnecter.setPadding(0, GraphiteVue.dp(hote.contexte(), 6), 0, 0);
             reconnecter.setOnClickListener(vue -> {
-                if (atelier.agent != null) {
-                    atelier.agent.reconnecterMcp(config.nom);
+                if (hote.agent() != null) {
+                    hote.agent().reconnecterMcp(config.nom);
                 }
                 ouvrirConnexionsAgent();
             });
@@ -818,7 +839,7 @@ final class ControleurAgent {
     /** Le libellé localisé d'un statut MCP. */
     private CharSequence texteStatutMcp(
             jo.joide.agent.mcp.GestionnaireMcp.Statut statut) {
-        return atelier.getString(switch (statut) {
+        return hote.texte(switch (statut) {
             case CONNECTE -> R.string.agent_connexions_statut_connecte;
             case CONNEXION -> R.string.agent_connexions_statut_connexion;
             case AUTH_REQUISE -> R.string.agent_connexions_statut_auth;
@@ -839,10 +860,10 @@ final class ControleurAgent {
      * modèle personnalisé (et l'URL de base) gardent leur dialogue.
      */
     void ouvrirModeleAgent() {
-        if (atelier.vueAgent == null) {
+        if (hote.vueAgent() == null) {
             return;
         }
-        Reglages reglages = Reglages.lire(atelier.sourceReglages);
+        Reglages reglages = Reglages.lire(hote.sourceReglages());
         android.widget.PopupWindow[] fenetre =
                 new android.widget.PopupWindow[1];
         Runnable fermer = () -> {
@@ -858,10 +879,10 @@ final class ControleurAgent {
         // les puces (état pointé) et les lignes de modèles restent
         // posées par code, la vérité reste dans les réglages
         PopupModelesBinding coque = PopupModelesBinding.inflate(
-                LayoutInflater.from(atelier));
+                LayoutInflater.from(hote.contexte()));
         LinearLayout colonne = coque.getRoot();
         Icone fermerIcone = coque.btnFermerModeles;
-        fermerIcone.setCouleur(atelier.palette.texteSecondaire);
+        fermerIcone.setCouleur(hote.palette().texteSecondaire);
         fermerIcone.setOnClickListener(vue -> fermer.run());
 
         // la rangée des fournisseurs : une puce pointée dit le
@@ -883,7 +904,7 @@ final class ControleurAgent {
         GraphiteVue.typographie(etatCles, Graphite.LEGENDE);
         etatCles.setOnClickListener(vue -> {
             try {
-                atelier.startActivity(new Intent(atelier,
+                hote.ouvrirEcran(new Intent(hote.contexte(),
                         jo.joide.app.android.ecrans.parametres
                                 .EcranParametres.class));
             } catch (RuntimeException e) {
@@ -897,15 +918,15 @@ final class ControleurAgent {
             boolean posee = false;
             try {
                 posee = jo.joide.app.android.parametres.KeystoreCles
-                        .sur(atelier).estPosee(
+                        .sur(hote.contexte()).estPosee(
                                 nomStockageCle(courant));
             } catch (RuntimeException e) {
                 // Keystore cassé : l'état reste « absente », jamais
                 // un crash du sélecteur
             }
-            etatCles.setTextColor(posee ? atelier.palette.texteSecondaire
-                    : atelier.palette.alerte);
-            etatCles.setText(atelier.getString(
+            etatCles.setTextColor(posee ? hote.palette().texteSecondaire
+                    : hote.palette().alerte);
+            etatCles.setText(hote.texte(
                     posee ? R.string.agent_cle_etat_posee
                             : R.string.agent_cle_etat_absente,
                     nomFournisseur(courant)));
@@ -918,7 +939,7 @@ final class ControleurAgent {
         Puce[] puces = new Puce[fournisseurs.length];
         for (int i = 0; i < fournisseurs.length; i++) {
             final int index = i;
-            Puce puce = new Puce(atelier);
+            Puce puce = new Puce(hote.contexte());
             puce.setText(nomFournisseur(fournisseurs[i]));
             puce.setPointee(i == fournisseurIndex[0]);
             puce.setOnClickListener(vue -> {
@@ -937,17 +958,17 @@ final class ControleurAgent {
                     new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            paramsPuce.rightMargin = GraphiteVue.dp(atelier, 6);
-            paramsPuce.topMargin = GraphiteVue.dp(atelier, 8);
+            paramsPuce.rightMargin = GraphiteVue.dp(hote.contexte(), 6);
+            paramsPuce.topMargin = GraphiteVue.dp(hote.contexte(), 8);
             rangeeFournisseurs.addView(puce, paramsPuce);
         }
         majEtatCles[0].run();
 
         // la recherche : le filtre des listes longues
         android.widget.EditText recherche = coque.rechercheModeles;
-        recherche.setTextColor(atelier.palette.texte);
-        recherche.setHintTextColor(atelier.palette.texteEstompe);
-        recherche.setTypeface(GraphiteVue.police(atelier, 400, false));
+        recherche.setTextColor(hote.palette().texte);
+        recherche.setHintTextColor(hote.palette().texteEstompe);
+        recherche.setTypeface(GraphiteVue.police(hote.contexte(), 400, false));
 
         LinearLayout liste = coque.listeModeles;
 
@@ -977,8 +998,8 @@ final class ControleurAgent {
                 });
         rafraichir[0].run();
 
-        fenetre[0] = PopupAncre.montrer(atelier.vueAgent.ancreModele(),
-                atelier.palette, colonne, 320);
+        fenetre[0] = PopupAncre.montrer(hote.vueAgent().ancreModele(),
+                hote.palette(), colonne, 320);
     }
 
     /** Les sections du sélecteur : favoris, récents, suggestions. */
@@ -986,7 +1007,7 @@ final class ControleurAgent {
                                      int fournisseurIndex,
                                      String requete, Runnable fermer,
                                      Runnable rafraichir) {
-        Reglages reglages = Reglages.lire(atelier.sourceReglages);
+        Reglages reglages = Reglages.lire(hote.sourceReglages());
         String[] catalogue = catalogueModele(fournisseurIndex);
         List<String> favoris = lireListeModeles(
                 cleFavorisModeles(fournisseurIndex));
@@ -1014,7 +1035,7 @@ final class ControleurAgent {
                 && sectionRecents.isEmpty()
                 && sectionSuggestions.isEmpty();
         if (!sectionFavoris.isEmpty()) {
-            liste.addView(enteteSection(atelier.getString(
+            liste.addView(enteteSection(hote.texte(
                     R.string.agent_modeles_favoris)));
         }
         for (String modele : sectionFavoris) {
@@ -1023,7 +1044,7 @@ final class ControleurAgent {
                     fournisseurIndex, fermer, rafraichir));
         }
         if (!sectionRecents.isEmpty()) {
-            liste.addView(enteteSection(atelier.getString(
+            liste.addView(enteteSection(hote.texte(
                     R.string.agent_modeles_recents)));
         }
         for (String modele : sectionRecents) {
@@ -1032,7 +1053,7 @@ final class ControleurAgent {
                     fournisseurIndex, fermer, rafraichir));
         }
         if (!sectionSuggestions.isEmpty()) {
-            liste.addView(enteteSection(atelier.getString(
+            liste.addView(enteteSection(hote.texte(
                     R.string.agent_modeles_suggestions)));
         }
         for (String modele : sectionSuggestions) {
@@ -1041,23 +1062,23 @@ final class ControleurAgent {
                     fournisseurIndex, fermer, rafraichir));
         }
         if (vide && filtre.isEmpty()) {
-            TextView videVue = new TextView(atelier);
+            TextView videVue = new TextView(hote.contexte());
             GraphiteVue.typographie(videVue, Graphite.LEGENDE);
-            videVue.setTextColor(atelier.palette.texteEstompe);
+            videVue.setTextColor(hote.palette().texteEstompe);
             videVue.setText(R.string.agent_modeles_recherche);
-            videVue.setPadding(GraphiteVue.dp(atelier, 14),
-                    GraphiteVue.dp(atelier, 12), 0, 0);
+            videVue.setPadding(GraphiteVue.dp(hote.contexte(), 14),
+                    GraphiteVue.dp(hote.contexte(), 12), 0, 0);
             liste.addView(videVue);
         }
         // le modèle hors catalogue reste atteignable : le geste
         // personnalisé garde son dialogue (nom, URL de base)
-        TextView personnalise = new TextView(atelier);
+        TextView personnalise = new TextView(hote.contexte());
         GraphiteVue.typographie(personnalise, Graphite.CORPS);
-        personnalise.setTextColor(atelier.palette.accent);
+        personnalise.setTextColor(hote.palette().accent);
         personnalise.setText(R.string.agent_modeles_personnalise);
-        int vertical = GraphiteVue.dp(atelier, 11);
-        personnalise.setPadding(GraphiteVue.dp(atelier, 14), vertical,
-                GraphiteVue.dp(atelier, 14), vertical);
+        int vertical = GraphiteVue.dp(hote.contexte(), 11);
+        personnalise.setPadding(GraphiteVue.dp(hote.contexte(), 14), vertical,
+                GraphiteVue.dp(hote.contexte(), 14), vertical);
         personnalise.setOnClickListener(vue -> {
             fermer.run();
             dialogueModelePersonnalise(fournisseurIndex);
@@ -1067,14 +1088,14 @@ final class ControleurAgent {
 
     /** L'en-tête discret d'une section du sélecteur. */
     private TextView enteteSection(CharSequence titre) {
-        TextView vue = new TextView(atelier);
+        TextView vue = new TextView(hote.contexte());
         GraphiteVue.typographie(vue, Graphite.LEGENDE);
-        vue.setTextColor(atelier.palette.texteEstompe);
+        vue.setTextColor(hote.palette().texteEstompe);
         vue.setText(titre);
-        vue.setPadding(GraphiteVue.dp(atelier, 14),
-                GraphiteVue.dp(atelier, 10),
-                GraphiteVue.dp(atelier, 14),
-                GraphiteVue.dp(atelier, 2));
+        vue.setPadding(GraphiteVue.dp(hote.contexte(), 14),
+                GraphiteVue.dp(hote.contexte(), 10),
+                GraphiteVue.dp(hote.contexte(), 14),
+                GraphiteVue.dp(hote.contexte(), 2));
         return vue;
     }
 
@@ -1082,39 +1103,39 @@ final class ControleurAgent {
     private View ligneModele(String modele, boolean courant,
                              boolean favori, int fournisseurIndex,
                              Runnable fermer, Runnable rafraichir) {
-        LinearLayout ligne = new LinearLayout(atelier);
+        LinearLayout ligne = new LinearLayout(hote.contexte());
         ligne.setOrientation(LinearLayout.HORIZONTAL);
         ligne.setGravity(Gravity.CENTER_VERTICAL);
-        ligne.setBackground(PopupAncre.fondAppuye(atelier.palette));
+        ligne.setBackground(PopupAncre.fondAppuye(hote.palette()));
         ligne.setOnClickListener(vue -> {
             fermer.run();
             choisirModele(fournisseurIndex, modele);
         });
-        TextView nom = new TextView(atelier);
+        TextView nom = new TextView(hote.contexte());
         GraphiteVue.typographie(nom, Graphite.CORPS);
-        nom.setTextColor(atelier.palette.texte);
+        nom.setTextColor(hote.palette().texte);
         nom.setText(modele);
         nom.setSingleLine(true);
         nom.setEllipsize(android.text.TextUtils.TruncateAt.END);
         ligne.addView(nom, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
         if (courant) {
-            Icone coche = new Icone(atelier);
+            Icone coche = new Icone(hote.contexte());
             coche.setGlyphe(Icone.Glyphe.COCHE);
-            coche.setCouleur(atelier.palette.accent);
+            coche.setCouleur(hote.palette().accent);
             coche.setTraitDp(1.8f);
             LinearLayout.LayoutParams paramsCoche =
                     new LinearLayout.LayoutParams(
-                    GraphiteVue.dp(atelier, 16),
-                    GraphiteVue.dp(atelier, 16));
-            paramsCoche.rightMargin = GraphiteVue.dp(atelier, 8);
+                    GraphiteVue.dp(hote.contexte(), 16),
+                    GraphiteVue.dp(hote.contexte(), 16));
+            paramsCoche.rightMargin = GraphiteVue.dp(hote.contexte(), 8);
             ligne.addView(coche, paramsCoche);
         }
-        Icone etoile = new Icone(atelier);
+        Icone etoile = new Icone(hote.contexte());
         etoile.setGlyphe(Icone.Glyphe.ETOILE);
-        etoile.setCouleur(favori ? atelier.palette.alerte : atelier.palette.bord);
+        etoile.setCouleur(favori ? hote.palette().alerte : hote.palette().bord);
         etoile.setContentDescription(
-                atelier.getString(R.string.agent_modeles_favori));
+                hote.texte(R.string.agent_modeles_favori));
         etoile.setClickable(true);
         etoile.setOnClickListener(vue -> {
             basculeFavori(fournisseurIndex, modele, !favori);
@@ -1122,13 +1143,13 @@ final class ControleurAgent {
         });
         LinearLayout.LayoutParams paramsEtoile =
                 new LinearLayout.LayoutParams(
-                GraphiteVue.dp(atelier, 30),
-                GraphiteVue.dp(atelier, 30));
-        paramsEtoile.leftMargin = GraphiteVue.dp(atelier, 2);
+                GraphiteVue.dp(hote.contexte(), 30),
+                GraphiteVue.dp(hote.contexte(), 30));
+        paramsEtoile.leftMargin = GraphiteVue.dp(hote.contexte(), 2);
         ligne.addView(etoile, paramsEtoile);
-        int vertical = GraphiteVue.dp(atelier, 9);
-        ligne.setPadding(GraphiteVue.dp(atelier, 14), vertical,
-                GraphiteVue.dp(atelier, 10), vertical);
+        int vertical = GraphiteVue.dp(hote.contexte(), 9);
+        ligne.setPadding(GraphiteVue.dp(hote.contexte(), 14), vertical,
+                GraphiteVue.dp(hote.contexte(), 10), vertical);
         return ligne;
     }
 
@@ -1159,17 +1180,17 @@ final class ControleurAgent {
     private void choisirModele(int fournisseurIndex, String modele) {
         Reglages.FournisseurIa choisi = Reglages.FournisseurIa
                 .values()[fournisseurIndex];
-        Reglages.ecrireFournisseurIa(atelier.sourceReglages, choisi);
-        Reglages.ecrireModeleIa(atelier.sourceReglages, modele);
+        Reglages.ecrireFournisseurIa(hote.sourceReglages(), choisi);
+        Reglages.ecrireModeleIa(hote.sourceReglages(), modele);
         // lot U/7 : le modèle se retient POUR CE fournisseur aussi —
         // le modèle partagé ne traverse jamais les fournisseurs
         // (manière CodeAssist)
-        Reglages.ecrireModelePour(atelier.sourceReglages, choisi, modele);
-        if (atelier.agent != null) {
-            atelier.agent.poserModele(choisi, modele);
+        Reglages.ecrireModelePour(hote.sourceReglages(), choisi, modele);
+        if (hote.agent() != null) {
+            hote.agent().poserModele(choisi, modele);
         }
-        atelier.etatAgent.poserModele(modele);
-        atelier.vueAgent.rafraichir();
+        hote.etatAgent().poserModele(modele);
+        hote.vueAgent().rafraichir();
         pousserRecent(fournisseurIndex, modele);
     }
 
@@ -1189,10 +1210,10 @@ final class ControleurAgent {
      * empêche « claude-sonnet-4-5 » de partir chez OpenRouter.</p>
      */
     private void choisirFournisseur(Reglages.FournisseurIa choisi) {
-        Reglages.ecrireFournisseurIa(atelier.sourceReglages, choisi);
-        String modele = Reglages.lireModelePour(atelier.sourceReglages, choisi);
+        Reglages.ecrireFournisseurIa(hote.sourceReglages(), choisi);
+        String modele = Reglages.lireModelePour(hote.sourceReglages(), choisi);
         if (modele.isEmpty()) {
-            String partage = Reglages.lire(atelier.sourceReglages).modeleIa;
+            String partage = Reglages.lire(hote.sourceReglages()).modeleIa;
             if (partage != null
                     && Reglages.modeleAppartient(partage, choisi)) {
                 modele = partage;
@@ -1208,13 +1229,13 @@ final class ControleurAgent {
             // des réglages — le garde du service refusera proprement
             return;
         }
-        Reglages.ecrireModeleIa(atelier.sourceReglages, modele);
-        Reglages.ecrireModelePour(atelier.sourceReglages, choisi, modele);
-        if (atelier.agent != null) {
-            atelier.agent.poserModele(choisi, modele);
+        Reglages.ecrireModeleIa(hote.sourceReglages(), modele);
+        Reglages.ecrireModelePour(hote.sourceReglages(), choisi, modele);
+        if (hote.agent() != null) {
+            hote.agent().poserModele(choisi, modele);
         }
-        atelier.etatAgent.poserModele(modele);
-        atelier.vueAgent.rafraichir();
+        hote.etatAgent().poserModele(modele);
+        hote.vueAgent().rafraichir();
     }
 
     /** L'identifiant de stockage chiffré d'un fournisseur (mêmes
@@ -1256,7 +1277,7 @@ final class ControleurAgent {
 
     /** La liste persistée d'une clé (séparateur |, jamais vide). */
     private List<String> lireListeModeles(String cle) {
-        String brut = atelier.sourceReglages.lire(cle);
+        String brut = hote.sourceReglages().lire(cle);
         List<String> valeurs = new ArrayList<>();
         if (brut != null && !brut.isEmpty()) {
             for (String morceau : brut.split("\\|")) {
@@ -1270,14 +1291,17 @@ final class ControleurAgent {
 
     /** La liste persistée s'écrit d'un trait (séparateur |). */
     private void ecrireListeModeles(String cle, List<String> valeurs) {
-        atelier.sourceReglages.ecrire(cle, String.join("|", valeurs));
+        hote.sourceReglages().ecrire(cle, String.join("|", valeurs));
     }
 
     private static String cleFavorisModeles(int fournisseurIndex) {
+        // lot A6 : la clé ne renomme pas — identifiant de stockage du
+        // lot U/7, les favoris déjà posés restent lus
         return "atelier.agent.modeles.favoris." + fournisseurIndex;
     }
 
     private static String cleRecentsModeles(int fournisseurIndex) {
+        // lot A6 : idem — les récents déjà posés restent lus
         return "atelier.agent.modeles.recents." + fournisseurIndex;
     }
 
@@ -1287,52 +1311,52 @@ final class ControleurAgent {
      * le couple part au service sans quitter la conversation.
      */
     private void dialogueModelePersonnalise(int fournisseurIndex) {
-        Reglages reglages = Reglages.lire(atelier.sourceReglages);
+        Reglages reglages = Reglages.lire(hote.sourceReglages());
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
-        LinearLayout corps = new LinearLayout(atelier);
+        LinearLayout corps = new LinearLayout(hote.contexte());
         corps.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(atelier, 4);
+        int marge = GraphiteVue.dp(hote.contexte(), 4);
         corps.setPadding(marge, marge, marge, marge);
 
-        TextView etiquetteFournisseur = new TextView(atelier);
+        TextView etiquetteFournisseur = new TextView(hote.contexte());
         GraphiteVue.typographie(etiquetteFournisseur,
                 Graphite.LEGENDE);
-        etiquetteFournisseur.setTextColor(atelier.palette.texteEstompe);
+        etiquetteFournisseur.setTextColor(hote.palette().texteEstompe);
         etiquetteFournisseur.setText(R.string.agent_fournisseur_section);
         etiquetteFournisseur.setPadding(0, marge, 0, marge);
         corps.addView(etiquetteFournisseur);
-        TextView valeurFournisseur = new TextView(atelier);
+        TextView valeurFournisseur = new TextView(hote.contexte());
         GraphiteVue.typographie(valeurFournisseur, Graphite.CORPS);
-        valeurFournisseur.setTextColor(atelier.palette.texte);
+        valeurFournisseur.setTextColor(hote.palette().texte);
         valeurFournisseur.setText(nomFournisseur(
                 fournisseurs[Math.max(0, Math.min(fournisseurIndex,
                         fournisseurs.length - 1))]));
         corps.addView(valeurFournisseur);
 
-        TextView etiquetteModele = new TextView(atelier);
+        TextView etiquetteModele = new TextView(hote.contexte());
         GraphiteVue.typographie(etiquetteModele, Graphite.LEGENDE);
-        etiquetteModele.setTextColor(atelier.palette.texteEstompe);
+        etiquetteModele.setTextColor(hote.palette().texteEstompe);
         etiquetteModele.setText(R.string.parametres_modele_ia);
-        etiquetteModele.setPadding(0, GraphiteVue.dp(atelier, 12), 0,
+        etiquetteModele.setPadding(0, GraphiteVue.dp(hote.contexte(), 12), 0,
                 marge);
         corps.addView(etiquetteModele);
         android.widget.EditText saisieModele =
-                new android.widget.EditText(atelier);
+                new android.widget.EditText(hote.contexte());
         saisieModele.setText(reglages.modeleIa);
         saisieModele.setHint(R.string.parametres_modele_indice);
         saisieModele.setSingleLine(true);
         corps.addView(saisieModele);
 
-        TextView etiquetteUrl = new TextView(atelier);
+        TextView etiquetteUrl = new TextView(hote.contexte());
         GraphiteVue.typographie(etiquetteUrl, Graphite.LEGENDE);
-        etiquetteUrl.setTextColor(atelier.palette.texteEstompe);
+        etiquetteUrl.setTextColor(hote.palette().texteEstompe);
         etiquetteUrl.setText(R.string.parametres_url_ia);
-        etiquetteUrl.setPadding(0, GraphiteVue.dp(atelier, 12), 0,
+        etiquetteUrl.setPadding(0, GraphiteVue.dp(hote.contexte(), 12), 0,
                 marge);
         corps.addView(etiquetteUrl);
         android.widget.EditText saisieUrl =
-                new android.widget.EditText(atelier);
+                new android.widget.EditText(hote.contexte());
         // lot U : l'URL d'OpenRouter est propre à la passerelle —
         // préremplie pour la voir, jamais devinée de l'utilisateur
         int indexCourant = Math.max(0, Math.min(fournisseurIndex,
@@ -1346,14 +1370,14 @@ final class ControleurAgent {
         saisieUrl.setSingleLine(true);
         corps.addView(saisieUrl);
 
-        TextView gererCles = new TextView(atelier);
+        TextView gererCles = new TextView(hote.contexte());
         GraphiteVue.typographie(gererCles, Graphite.CORPS);
-        gererCles.setTextColor(atelier.palette.accent);
+        gererCles.setTextColor(hote.palette().accent);
         gererCles.setText(R.string.agent_cles_gerer);
-        gererCles.setPadding(0, GraphiteVue.dp(atelier, 12), 0, 0);
+        gererCles.setPadding(0, GraphiteVue.dp(hote.contexte(), 12), 0, 0);
         gererCles.setOnClickListener(vue -> {
             try {
-                atelier.startActivity(new Intent(atelier,
+                hote.ouvrirEcran(new Intent(hote.contexte(),
                         jo.joide.app.android.ecrans.parametres
                                 .EcranParametres.class));
             } catch (RuntimeException e) {
@@ -1362,8 +1386,8 @@ final class ControleurAgent {
         });
         corps.addView(gererCles);
 
-        Dialogue.saisie(atelier, atelier.palette,
-                atelier.getString(R.string.agent_modele_titre), corps,
+        Dialogue.saisie(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_modele_titre), corps,
                 R.string.action_annuler, R.string.action_ok,
                 (dialog, lequel) -> {
                     if (lequel != DialogInterface.BUTTON_POSITIVE) {
@@ -1382,11 +1406,11 @@ final class ControleurAgent {
                     // doit JAMAIS annuler le fournisseur et le modèle
                     // (rapport du 2026-11-17 — l'URL écartée laissait
                     // tout le dialogue sur Anthropic par défaut)
-                    Reglages.ecrireFournisseurIa(atelier.sourceReglages, choisi);
-                    Reglages.ecrireModeleIa(atelier.sourceReglages, modele);
+                    Reglages.ecrireFournisseurIa(hote.sourceReglages(), choisi);
+                    Reglages.ecrireModeleIa(hote.sourceReglages(), modele);
                     // lot U/7 : le modèle se retient POUR CE
                     // fournisseur aussi (manière CodeAssist)
-                    Reglages.ecrireModelePour(atelier.sourceReglages, choisi,
+                    Reglages.ecrireModelePour(hote.sourceReglages(), choisi,
                             modele);
                     String url = saisieUrl.getText().toString().trim();
                     try {
@@ -1394,28 +1418,28 @@ final class ControleurAgent {
                         // personnalisée se rattache au provider
                         // choisi (une URL OpenRouter ne part plus
                         // chez OpenAI)
-                        Reglages.ecrireUrlPour(atelier.sourceReglages, choisi,
+                        Reglages.ecrireUrlPour(hote.sourceReglages(), choisi,
                                 url);
                     } catch (IllegalArgumentException e) {
-                        Dialogue.information(atelier, atelier.palette,
-                                atelier.getString(R.string.agent_modele_titre),
-                                atelier.getString(
+                        Dialogue.information(hote.contexte(), hote.palette(),
+                                hote.texte(R.string.agent_modele_titre),
+                                hote.texte(
                                         R.string.parametres_valeur_invalide),
                                 R.string.action_ok);
                         // pas de return : le choix est déjà persisté
                     }
-                    if (atelier.agent != null) {
-                        atelier.agent.poserModele(choisi, modele);
+                    if (hote.agent() != null) {
+                        hote.agent().poserModele(choisi, modele);
                     }
-                    atelier.etatAgent.poserModele(modele);
-                    atelier.vueAgent.rafraichir();
+                    hote.etatAgent().poserModele(modele);
+                    hote.vueAgent().rafraichir();
                 });
     }
 
     /** Le nom lisible d'un fournisseur. */
     private CharSequence nomFournisseur(
             Reglages.FournisseurIa fournisseur) {
-        return atelier.getString(switch (fournisseur) {
+        return hote.texte(switch (fournisseur) {
             case ANTHROPIC -> R.string.agent_fournisseur_anthropic;
             case GEMINI -> R.string.agent_fournisseur_gemini;
             case OPENROUTER -> R.string.agent_fournisseur_openrouter;
@@ -1431,48 +1455,48 @@ final class ControleurAgent {
      * son bouton d'actualisation — l'occupation se relit sans rouvrir.
      */
     void ouvrirUsagesAgent() {
-        if (atelier.agent == null || atelier.vueAgent == null) {
+        if (hote.agent() == null || hote.vueAgent() == null) {
             return;
         }
-        LinearLayout colonne = new LinearLayout(atelier);
+        LinearLayout colonne = new LinearLayout(hote.contexte());
         colonne.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(atelier, 6);
+        int marge = GraphiteVue.dp(hote.contexte(), 6);
         colonne.setPadding(marge, marge, marge, marge);
 
         // ---- l'en-tête : titre, actualiser, fermer (la manière
         // CodeAssist — le dialogue se suffit, jamais un seul OK) ----
-        LinearLayout tete = new LinearLayout(atelier);
+        LinearLayout tete = new LinearLayout(hote.contexte());
         tete.setOrientation(LinearLayout.HORIZONTAL);
         tete.setGravity(Gravity.CENTER_VERTICAL);
-        TextView titre = new TextView(atelier);
+        TextView titre = new TextView(hote.contexte());
         GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(atelier.palette.texte);
+        titre.setTextColor(hote.palette().texte);
         titre.setText(R.string.agent_usages_titre);
         tete.addView(titre, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        Icone rafraichir = new Icone(atelier);
+        Icone rafraichir = new Icone(hote.contexte());
         rafraichir.setGlyphe(Icone.Glyphe.RAFRAICHIR);
-        rafraichir.setCouleur(atelier.palette.texteSecondaire);
+        rafraichir.setCouleur(hote.palette().texteSecondaire);
         rafraichir.setClickable(true);
         rafraichir.setContentDescription(
-                atelier.getString(R.string.agent_usages_rafraichir));
-        LinearLayout corps = new LinearLayout(atelier);
+                hote.texte(R.string.agent_usages_rafraichir));
+        LinearLayout corps = new LinearLayout(hote.contexte());
         corps.setOrientation(LinearLayout.VERTICAL);
         rafraichir.setOnClickListener(vue -> {
             corps.removeAllViews();
             construireUsages(corps);
         });
         tete.addView(rafraichir, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(atelier, 30),
-                GraphiteVue.dp(atelier, 30)));
-        Icone fermer = new Icone(atelier);
+                GraphiteVue.dp(hote.contexte(), 30),
+                GraphiteVue.dp(hote.contexte(), 30)));
+        Icone fermer = new Icone(hote.contexte());
         fermer.setGlyphe(Icone.Glyphe.CROIX);
-        fermer.setCouleur(atelier.palette.texteSecondaire);
+        fermer.setCouleur(hote.palette().texteSecondaire);
         fermer.setClickable(true);
-        fermer.setContentDescription(atelier.getString(R.string.action_annuler));
+        fermer.setContentDescription(hote.texte(R.string.action_annuler));
         tete.addView(fermer, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(atelier, 30),
-                GraphiteVue.dp(atelier, 30)));
+                GraphiteVue.dp(hote.contexte(), 30),
+                GraphiteVue.dp(hote.contexte(), 30)));
         colonne.addView(tete);
         colonne.addView(corps);
         construireUsages(corps);
@@ -1484,7 +1508,7 @@ final class ControleurAgent {
                 fenetre[0].dismiss();
             }
         });
-        fenetre[0] = PopupAncre.montrer(atelier.vueAgent.ancreMenu(), atelier.palette,
+        fenetre[0] = PopupAncre.montrer(hote.vueAgent().ancreMenu(), hote.palette(),
                 colonne, 300);
     }
 
@@ -1492,62 +1516,62 @@ final class ControleurAgent {
     private void construireUsages(LinearLayout corps) {
         // ---- les compteurs du régulateur (l'occupation des fenêtres
         // du modèle courant — la bande prévient AVANT le 429) ----
-        double[] occupations = atelier.agent.occupationsModele();
+        double[] occupations = hote.agent().occupationsModele();
         double requetes = occupations[0];
         double jetons = occupations[1];
         boolean plafondConnu = requetes > 0 || jetons > 0;
         if (plafondConnu) {
             ligneCompteur(corps,
-                    atelier.getString(R.string.agent_usages_minute_requetes),
+                    hote.texte(R.string.agent_usages_minute_requetes),
                     requetes);
             ligneCompteur(corps,
-                    atelier.getString(R.string.agent_usages_minute_jetons),
+                    hote.texte(R.string.agent_usages_minute_jetons),
                     jetons);
         } else {
-            TextView sansPlafond = new TextView(atelier);
+            TextView sansPlafond = new TextView(hote.contexte());
             GraphiteVue.typographie(sansPlafond, Graphite.LEGENDE);
-            sansPlafond.setTextColor(atelier.palette.texteEstompe);
+            sansPlafond.setTextColor(hote.palette().texteEstompe);
             sansPlafond.setText(R.string.agent_usages_sans_plafond);
-            sansPlafond.setPadding(0, GraphiteVue.dp(atelier, 6), 0,
-                    GraphiteVue.dp(atelier, 4));
+            sansPlafond.setPadding(0, GraphiteVue.dp(hote.contexte(), 6), 0,
+                    GraphiteVue.dp(hote.contexte(), 4));
             corps.addView(sansPlafond);
         }
 
         // ---- les trois pieds de la conversation (ce qui est facturé
         // est facturé — la légende compacte du précédent CodeAssist)
-        jo.joide.agent.UsageLlm usage = atelier.agent.usageConversation();
-        TextView conversation = new TextView(atelier);
+        jo.joide.agent.UsageLlm usage = hote.agent().usageConversation();
+        TextView conversation = new TextView(hote.contexte());
         GraphiteVue.typographie(conversation, Graphite.CORPS);
-        conversation.setTextColor(atelier.palette.texte);
-        conversation.setText(atelier.getString(
+        conversation.setTextColor(hote.palette().texte);
+        conversation.setText(hote.texte(
                 R.string.agent_usages_conversation_compacte,
                 EtatAgentChat.jetonsCompacts(usage.entrees),
                 EtatAgentChat.jetonsCompacts(usage.sorties),
                 EtatAgentChat.jetonsCompacts(usage.lecturesCache)));
-        conversation.setPadding(0, GraphiteVue.dp(atelier, 10), 0,
-                GraphiteVue.dp(atelier, 4));
+        conversation.setPadding(0, GraphiteVue.dp(hote.contexte(), 10), 0,
+                GraphiteVue.dp(hote.contexte(), 4));
         corps.addView(conversation);
 
         // ---- l'état du banc de clés ----
-        int taille = atelier.agent.tailleBanc();
-        TextView banc = new TextView(atelier);
+        int taille = hote.agent().tailleBanc();
+        TextView banc = new TextView(hote.contexte());
         GraphiteVue.typographie(banc, Graphite.CORPS);
-        banc.setTextColor(atelier.palette.texte);
+        banc.setTextColor(hote.palette().texte);
         banc.setText(taille == 0
-                ? atelier.getString(R.string.agent_usages_banc_vide)
-                : atelier.getString(R.string.agent_usages_banc, taille));
-        banc.setPadding(0, GraphiteVue.dp(atelier, 8), 0,
-                GraphiteVue.dp(atelier, 2));
+                ? hote.texte(R.string.agent_usages_banc_vide)
+                : hote.texte(R.string.agent_usages_banc, taille));
+        banc.setPadding(0, GraphiteVue.dp(hote.contexte(), 8), 0,
+                GraphiteVue.dp(hote.contexte(), 2));
         corps.addView(banc);
 
-        for (var assise : atelier.agent.bancParRaison().entrySet()) {
-            TextView ligne = new TextView(atelier);
+        for (var assise : hote.agent().bancParRaison().entrySet()) {
+            TextView ligne = new TextView(hote.contexte());
             GraphiteVue.typographie(ligne, Graphite.LEGENDE);
-            ligne.setTextColor(atelier.palette.texteSecondaire);
-            ligne.setText(atelier.getString(R.string.agent_usages_assis,
+            ligne.setTextColor(hote.palette().texteSecondaire);
+            ligne.setText(hote.texte(R.string.agent_usages_assis,
                     assise.getValue(),
                     libelleGenre(assise.getKey())));
-            ligne.setPadding(0, GraphiteVue.dp(atelier, 3), 0, 0);
+            ligne.setPadding(0, GraphiteVue.dp(hote.contexte(), 3), 0, 0);
             corps.addView(ligne);
         }
     }
@@ -1555,20 +1579,20 @@ final class ControleurAgent {
     /** Un compteur d'occupation : nom, pourcentage, sa bande colorée. */
     private void ligneCompteur(LinearLayout corps, String nom,
                                double fraction) {
-        LinearLayout rangee = new LinearLayout(atelier);
+        LinearLayout rangee = new LinearLayout(hote.contexte());
         rangee.setOrientation(LinearLayout.HORIZONTAL);
         rangee.setGravity(Gravity.CENTER_VERTICAL);
-        rangee.setPadding(0, GraphiteVue.dp(atelier, 6), 0, 0);
-        TextView nomVue = new TextView(atelier);
+        rangee.setPadding(0, GraphiteVue.dp(hote.contexte(), 6), 0, 0);
+        TextView nomVue = new TextView(hote.contexte());
         GraphiteVue.typographie(nomVue, Graphite.CORPS);
-        nomVue.setTextColor(atelier.palette.texte);
+        nomVue.setTextColor(hote.palette().texte);
         nomVue.setText(nom);
         rangee.addView(nomVue, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        TextView pourcentage = new TextView(atelier);
+        TextView pourcentage = new TextView(hote.contexte());
         GraphiteVue.typographie(pourcentage, Graphite.LEGENDE);
-        pourcentage.setTextColor(atelier.palette.texteEstompe);
-        pourcentage.setText(atelier.getString(
+        pourcentage.setTextColor(hote.palette().texteEstompe);
+        pourcentage.setText(hote.texte(
                 R.string.agent_usages_occupation,
                 (int) Math.round(fraction * 100)));
         rangee.addView(pourcentage);
@@ -1584,37 +1608,37 @@ final class ControleurAgent {
     private View barreUsage(double fraction) {
         float rempli = (float) Math.max(0.02,
                 Math.min(1, fraction));
-        LinearLayout barre = new LinearLayout(atelier);
+        LinearLayout barre = new LinearLayout(hote.contexte());
         barre.setOrientation(LinearLayout.HORIZONTAL);
         android.graphics.drawable.GradientDrawable piste =
                 new android.graphics.drawable.GradientDrawable();
-        piste.setColor(atelier.palette.surfaceHaute);
-        piste.setCornerRadius(GraphiteVue.dp(atelier, 3));
+        piste.setColor(hote.palette().surfaceHaute);
+        piste.setCornerRadius(GraphiteVue.dp(hote.contexte(), 3));
         barre.setBackground(piste);
         barre.setClipToOutline(true);
-        View remplissage = new View(atelier);
+        View remplissage = new View(hote.contexte());
         jo.joide.agent.BandesUsage.Bande bande =
                 jo.joide.agent.BandesUsage.bandeDe(fraction);
         int couleur = switch (bande) {
-            case CRITIQUE -> atelier.palette.erreur;
-            case ATTENTION -> atelier.palette.alerte;
-            default -> atelier.palette.accent;
+            case CRITIQUE -> hote.palette().erreur;
+            case ATTENTION -> hote.palette().alerte;
+            default -> hote.palette().accent;
         };
         android.graphics.drawable.GradientDrawable jauge =
                 new android.graphics.drawable.GradientDrawable();
         jauge.setColor(couleur);
-        jauge.setCornerRadius(GraphiteVue.dp(atelier, 3));
+        jauge.setCornerRadius(GraphiteVue.dp(hote.contexte(), 3));
         remplissage.setBackground(jauge);
         barre.addView(remplissage, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.MATCH_PARENT, rempli));
-        View reste = new View(atelier);
+        View reste = new View(hote.contexte());
         barre.addView(reste, new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 1f - rempli));
         LinearLayout.LayoutParams params = new LinearLayout
                 .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                GraphiteVue.dp(atelier, 6));
-        params.setMargins(0, GraphiteVue.dp(atelier, 4), 0, 0);
+                GraphiteVue.dp(hote.contexte(), 6));
+        params.setMargins(0, GraphiteVue.dp(hote.contexte(), 4), 0, 0);
         barre.setLayoutParams(params);
         return barre;
     }
@@ -1622,7 +1646,7 @@ final class ControleurAgent {
     /** Le libellé localisé d'un genre d'assise du banc. */
     private CharSequence libelleGenre(
             jo.joide.agent.ErreursLlm.Genre genre) {
-        return atelier.getString(switch (genre) {
+        return hote.texte(switch (genre) {
             case LIMITE_DEBIT -> R.string.agent_genre_limite_debit;
             case LIMITE_JOUR -> R.string.agent_genre_limite_jour;
             case QUOTA_EPUISE -> R.string.agent_genre_quota;
@@ -1634,13 +1658,13 @@ final class ControleurAgent {
 
     /** Nouvelle conversation : le service garde la vérité, l'état suit. */
     void nouvelleConversationAgent() {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
-        if (!atelier.agent.nouvelleConversation()) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_menu_titre),
-                    atelier.getString(R.string.agent_tour_en_cours),
+        if (!hote.agent().nouvelleConversation()) {
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_menu_titre),
+                    hote.texte(R.string.agent_tour_en_cours),
                     R.string.action_ok);
             return;
         }
@@ -1653,28 +1677,28 @@ final class ControleurAgent {
      * suppression demandée nommément.
      */
     void ouvrirHistoriqueAgent() {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
         java.util.List<ConversationsAgent.Resume> resumes =
-                atelier.agent.conversations();
-        ScrollView defilement = new ScrollView(atelier);
-        LinearLayout colonne = new LinearLayout(atelier);
+                hote.agent().conversations();
+        ScrollView defilement = new ScrollView(hote.contexte());
+        LinearLayout colonne = new LinearLayout(hote.contexte());
         colonne.setOrientation(LinearLayout.VERTICAL);
-        int marge = GraphiteVue.dp(atelier, 4);
+        int marge = GraphiteVue.dp(hote.contexte(), 4);
         colonne.setPadding(marge, marge, marge, marge);
         defilement.addView(colonne, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT));
-        String active = atelier.agent.conversationActive();
+        String active = hote.agent().conversationActive();
         if (resumes.isEmpty()) {
-            TextView vide = new TextView(atelier);
+            TextView vide = new TextView(hote.contexte());
             GraphiteVue.typographie(vide, Graphite.CORPS);
-            vide.setTextColor(atelier.palette.texteEstompe);
-            vide.setText(atelier.getString(R.string.agent_historique_vide,
+            vide.setTextColor(hote.palette().texteEstompe);
+            vide.setText(hote.texte(R.string.agent_historique_vide,
                     ConversationsAgent.CONVERSATIONS_MAX));
-            vide.setPadding(0, GraphiteVue.dp(atelier, 12), 0,
-                    GraphiteVue.dp(atelier, 12));
+            vide.setPadding(0, GraphiteVue.dp(hote.contexte(), 12), 0,
+                    GraphiteVue.dp(hote.contexte(), 12));
             colonne.addView(vide);
         }
         java.text.DateFormat formatDate =
@@ -1689,8 +1713,8 @@ final class ControleurAgent {
         }
         // le popup ancré (lot T) : l'historique vit près du menu qui
         // l'appelle, jamais un dialogue centré qui coupe le fil
-        if (atelier.vueAgent != null) {
-            PopupAncre.montrer(atelier.vueAgent.ancreMenu(), atelier.palette,
+        if (hote.vueAgent() != null) {
+            PopupAncre.montrer(hote.vueAgent().ancreMenu(), hote.palette(),
                     defilement, 320);
         }
     }
@@ -1700,18 +1724,18 @@ final class ControleurAgent {
                                    boolean active,
                                    java.text.DateFormat formatDate,
                                    java.text.DateFormat formatHeure) {
-        Context contexte = atelier;
+        Context contexte = hote.contexte();
         LinearLayout ligne = new LinearLayout(contexte);
         ligne.setOrientation(LinearLayout.VERTICAL);
         int padding = GraphiteVue.dp(contexte, 10);
         ligne.setPadding(padding, padding, padding, padding);
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
-        fond.setColor(active ? atelier.palette.surfaceHaute : atelier.palette.surface);
+        fond.setColor(active ? hote.palette().surfaceHaute : hote.palette().surface);
         fond.setCornerRadius(GraphiteVue.dp(contexte,
                 Graphite.RAYON_COMPOSANT));
         fond.setStroke(GraphiteVue.dp(contexte, 1), active
-                ? atelier.palette.accent : atelier.palette.bordFin);
+                ? hote.palette().accent : hote.palette().bordFin);
         ligne.setBackground(fond);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -1722,22 +1746,22 @@ final class ControleurAgent {
 
         TextView titre = new TextView(contexte);
         GraphiteVue.typographie(titre, Graphite.CORPS);
-        titre.setTextColor(atelier.palette.texte);
+        titre.setTextColor(hote.palette().texte);
         titre.setMaxLines(2);
         titre.setEllipsize(android.text.TextUtils.TruncateAt.END);
         titre.setText(resume.titre.isEmpty()
-                ? atelier.getString(R.string.agent_historique_sans_titre)
+                ? hote.texte(R.string.agent_historique_sans_titre)
                 : resume.titre);
         ligne.addView(titre);
 
         TextView meta = new TextView(contexte);
         GraphiteVue.typographie(meta, Graphite.LEGENDE);
-        meta.setTextColor(active ? atelier.palette.accent
-                : atelier.palette.texteEstompe);
+        meta.setTextColor(active ? hote.palette().accent
+                : hote.palette().texteEstompe);
         meta.setText((active
-                ? atelier.getString(R.string.agent_historique_active) + " · "
+                ? hote.texte(R.string.agent_historique_active) + " · "
                 : "")
-                + atelier.getString(R.string.agent_historique_echanges,
+                + hote.texte(R.string.agent_historique_echanges,
                         resume.echanges)
                 + " · " + formatDate.format(new java.util.Date(
                         resume.modifiee))
@@ -1749,7 +1773,7 @@ final class ControleurAgent {
         if (!active) {
             TextView reprendre = new TextView(contexte);
             GraphiteVue.typographie(reprendre, Graphite.CORPS);
-            reprendre.setTextColor(atelier.palette.accent);
+            reprendre.setTextColor(hote.palette().accent);
             reprendre.setText(R.string.agent_menu_historique);
             reprendre.setPadding(0, GraphiteVue.dp(contexte, 6), 0, 0);
             ligne.setOnClickListener(vue ->
@@ -1757,7 +1781,7 @@ final class ControleurAgent {
             ligne.addView(reprendre);
             TextView supprimer = new TextView(contexte);
             GraphiteVue.typographie(supprimer, Graphite.CORPS);
-            supprimer.setTextColor(atelier.palette.erreur);
+            supprimer.setTextColor(hote.palette().erreur);
             supprimer.setText(R.string.agent_supprimer_conversation);
             supprimer.setPadding(0, GraphiteVue.dp(contexte, 2), 0, 0);
             supprimer.setOnClickListener(vue ->
@@ -1769,13 +1793,13 @@ final class ControleurAgent {
 
     /** Reprend une conversation : l'état du tiroir suit le service. */
     void reprendreConversationAgent(String id) {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
-        if (!atelier.agent.reprendreConversation(id)) {
-            Dialogue.information(atelier, atelier.palette,
-                    atelier.getString(R.string.agent_menu_titre),
-                    atelier.getString(R.string.agent_tour_en_cours),
+        if (!hote.agent().reprendreConversation(id)) {
+            Dialogue.information(hote.contexte(), hote.palette(),
+                    hote.texte(R.string.agent_menu_titre),
+                    hote.texte(R.string.agent_tour_en_cours),
                     R.string.action_ok);
             return;
         }
@@ -1784,36 +1808,36 @@ final class ControleurAgent {
 
     /** Supprime une conversation : la demande est nommée et confirmée. */
     private void supprimerConversationAgent(String id) {
-        if (atelier.agent == null) {
+        if (hote.agent() == null) {
             return;
         }
-        Dialogue.confirmation(atelier, atelier.palette,
-                atelier.getString(R.string.agent_supprimer_conversation),
-                atelier.getString(R.string.agent_supprimer_detail),
+        Dialogue.confirmation(hote.contexte(), hote.palette(),
+                hote.texte(R.string.agent_supprimer_conversation),
+                hote.texte(R.string.agent_supprimer_detail),
                 R.string.action_annuler, R.string.agent_menu_historique,
                 (dialog, lequel) -> {
-                    if (atelier.agent != null) {
-                        atelier.agent.supprimerConversation(id);
+                    if (hote.agent() != null) {
+                        hote.agent().supprimerConversation(id);
                     }
                     ouvrirHistoriqueAgent();
                 });
     }
 
     void repondrePermissionAgent(boolean accordee) {
-        atelier.etatAgent.repondrePermission(accordee);
-        if (atelier.agent != null) {
-            atelier.agent.repondrePermission(accordee);
+        hote.etatAgent().repondrePermission(accordee);
+        if (hote.agent() != null) {
+            hote.agent().repondrePermission(accordee);
         }
-        atelier.vueAgent.rafraichir();
+        hote.vueAgent().rafraichir();
     }
 
     void repondreQuestionAgent(int index, int choix) {
-        atelier.etatAgent.repondre(index, choix, null);
-        java.util.List<String> reponses = atelier.etatAgent.reponses();
-        if (reponses != null && atelier.agent != null) {
-            atelier.agent.repondreQuestions(reponses);
+        hote.etatAgent().repondre(index, choix, null);
+        java.util.List<String> reponses = hote.etatAgent().reponses();
+        if (reponses != null && hote.agent() != null) {
+            hote.agent().repondreQuestions(reponses);
         }
-        atelier.vueAgent.rafraichir();
+        hote.vueAgent().rafraichir();
     }
 
     /**
@@ -1824,11 +1848,11 @@ final class ControleurAgent {
      */
     void demanderIa() {
         ouvrirAgent();
-        String actif = atelier.etat.actif();
-        if (actif == null || atelier.scene == null) {
+        String actif = hote.etat().actif();
+        if (actif == null || hote.scene() == null) {
             return;
         }
-        String texte = atelier.scene.texte();
+        String texte = hote.scene().texte();
         int plafond = 8_000;
         String borne = texte.length() > plafond
                 ? texte.substring(0, plafond)
@@ -1836,8 +1860,8 @@ final class ControleurAgent {
                         + (texte.length() - plafond)
                         + " caractères de plus]"
                 : texte;
-        atelier.etatAgent.poserPreRemplissage(actif, borne);
-        atelier.vueAgent.poserEtat(atelier.etatAgent);
+        hote.etatAgent().poserPreRemplissage(actif, borne);
+        hote.vueAgent().poserEtat(hote.etatAgent());
     }
 
 }

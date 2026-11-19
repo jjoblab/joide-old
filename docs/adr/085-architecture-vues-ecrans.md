@@ -244,6 +244,50 @@ ici.
 | Écran grand écran | `ConstraintLayout` / `LinearLayout` à poids, éventuellement `NavigationRailView` | |
 | `Nuancier`, `Stepper`, `EtatVide`, `Icone` (si dessinée au `Canvas`) | **conservées** | pas d'équivalent Material direct |
 
+### Évaluations du lot A6 (atelier — « évaluer n'est pas imposer »)
+
+Les quatre composants de la table ont été évalués sur le comportement
+spécifié (§005 + maquettes `atelier.html`/`atelier-v2.html`, qui font
+foi) ; la conclusion de chaque évaluation :
+
+- **Onglets → `RecyclerView` horizontal** (retenu) : l'onglet
+  FERMABLE (× sur l'actif, appui long sur un autre) et l'indicateur
+  accent 2 dp exigent une vue d'onglet personnalisée — `TabLayout`
+  garderait sa propre mécanique de sélection (indicateur/ripple) qui
+  doublerait l'indicateur maison ; la bande recycle en plus
+  (ListAdapter/DiffUtil, décision 11).
+- **Feuille basse → `FeuilleBasse` conservée** (la clause « si les
+  détentes ne s'expriment pas » s'applique) : la spécification veut
+  que la feuille soit une VOISINE À POIDS qui RESSERRE le corps (le
+  puits perd sa hauteur quand elle se déplie — hauteur utile = feuille
+  + voisins à poids, mesurée par le câblage du lot L3), avec trois
+  détentes FRACTIONS de cette hauteur utile, l'ancrage au relâchement
+  et le tap qui cycle — `BottomSheetBehavior` est une feuille DANS un
+  `CoordinatorLayout` qui recouvre son parent sans jamais retenir la
+  taille des voisins (pas de comportement d'appui stock pour
+  redimensionner un frère à poids) ; l'exprimer exigerait un
+  `Behavior` maison, contredisant le gain cherché. `EtatFeuille`
+  reste la source de vérité (décision inchangée).
+- **Tiroirs → `TiroirPousse` conservé** : la maquette spécifie le
+  panneau glissant du bord avec RIDEAU teinté `jo_rideau` et fermeture
+  au rideau (`.tiroir-rang` de `atelier.html`), discipline PIEGE-31
+  (le rideau fermé ne porte jamais la cliquabilité) et mouvement de
+  composant 180 ms — `DrawerLayout` saurait glisser, mais il impose
+  son propre scrim, ses gestes de bord et ses tiroirs enfants directs
+  ; le tiroir agent est une zone RARE montée par `ViewStub` au-dessus
+  de tout aux DEUX tailles (il n'est pas un tiroir de navigation), et
+  le grand écran n'a qu'un seul tiroir — le conteneur `DrawerLayout`
+  n'apporterait qu'un niveau de plus. Aucun changement de comportement
+  voulu.
+- **Barre haute → `BarreHaut` conservée** : la barre (52 dp, lot L2)
+  porte des zones sans équivalent `MaterialToolbar` — pilule d'état de
+  l'index (point + libellé teintés, tap = détail), puce « n modules »,
+  point d'activité de l'agent, bouton tiroir — l'équivalent menu/entrée
+  de `MaterialToolbar` changerait l'identité de la maquette (pas de
+  titre de fenêtre, pas de menu à trois points au sens M3) et aucun
+  défilement n'est spécifié (pas d'`AppBarLayout`). À rediscuter en A9
+  si le kit décroît.
+
 ## Gabarit cible
 
 ```

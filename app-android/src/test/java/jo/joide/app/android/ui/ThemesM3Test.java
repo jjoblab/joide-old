@@ -511,6 +511,61 @@ class ThemesM3Test {
     }
 
     @Test
+    void lesJetonsDuLotA6OntLeursDimens() throws Exception {
+        // ADR-085 §2 : tout nouveau jeton reçoit sa parité — lot A6
+        // (racine de l'atelier) ; les valeurs du CODE d'hier
+        // (construireUi/ContexteUi, lot J/L) font l'identité : les
+        // hauteurs de zone posées par GraphiteVue.dp, la rangée du
+        // grand écran (rail, colonne amarrée, volet), le FAB (§3.7)
+        Map<String, String> dimens = enfants(
+                document(RES.resolve("values").resolve("dimens.xml")
+                        .toFile()),
+                "dimen");
+
+        // La colonne de l'écran (compact et grand écran) : barre
+        // haute 52 (lot L2), bande d'onglets 40 (§3.2), fil d'Ariane
+        // 28 (§3.3), barre de symboles 42 (§3.5) — les hauteurs que
+        // construireUi posait par GraphiteVue.dp
+        assertEquals("52dp", dimens.get("jo_hauteur_barre_atelier"),
+                "la barre haute du lot L2");
+        assertEquals("40dp", dimens.get("jo_hauteur_onglets_atelier"),
+                "la bande d'onglets (§3.2)");
+        assertEquals("28dp", dimens.get("jo_hauteur_fil_ariane_atelier"),
+                "le fil d'Ariane (§3.3)");
+        assertEquals("42dp", dimens.get("jo_hauteur_barre_symboles_atelier"),
+                "la barre de symboles (§3.5)");
+
+        // Le grand écran (§005 « tout amarré ») : le rail et ses
+        // cibles 48, le retrait du rail 10, la colonne d'arbre 240,
+        // le volet d'aperçu côte à côte 320 — la rangée de
+        // rangeeGrandEcran() d'hier, en XML
+        assertEquals("48dp", dimens.get("jo_largeur_rail_atelier"),
+                "le rail du grand écran et ses cibles 48×48");
+        assertEquals("10dp", dimens.get("jo_pad_rail_atelier"),
+                "le retrait du rail (paddingTop d'hier)");
+        assertEquals("240dp",
+                dimens.get("jo_largeur_colonne_arbre_atelier"),
+                "l'arborescence amarrée du grand écran");
+        assertEquals("320dp",
+                dimens.get("jo_largeur_volet_apercu_atelier"),
+                "le volet d'aperçu côte à côte (ADR-É7)");
+
+        // La bannière de compatibilité Gradle : retrait 14, aération
+        // 7 (= marge/2) — les paddings du TextView d'hier
+        assertEquals("14dp", dimens.get("jo_pad_banniere_compat"),
+                "le retrait latéral de la bannière");
+        assertEquals("7dp", dimens.get("jo_ecart_banniere_compat"),
+                "l'aération verticale de la bannière (marge/2)");
+
+        // Le FAB Construire (§3.7) : bas 84 (feuille repliée 72 + 12),
+        // droite 20 — les marges posées par fabParams d'hier
+        assertEquals("84dp", dimens.get("jo_fab_bas"),
+                "le FAB au-dessus de la feuille repliée (§3.7)");
+        assertEquals("20dp", dimens.get("jo_fab_droite"),
+                "le FAB à droite (§3.7)");
+    }
+
+    @Test
     void lesSelecteursDeCouleurNePortentQueDesAttrsJo()
             throws Exception {
         // lots A3/A4/A5 : les teintes des bascules, du commutateur, des

@@ -1,3 +1,56 @@
+# CHANGES — la racine de l'atelier quitte le code : layouts racine + w720dp, puits et ViewStub, hôte étroit, onglets recyclés (2026-11-19)
+
+**Lot A6 de l'ADR-085** : `EcranAtelier` (1 526 → **180 l.**) devient
+une COQUE MINCE — la composition vit ENFIN en XML :
+`activity_atelier.xml` + `layout-w720dp/activity_atelier.xml`
+(**`w720dp`**, parité `EtatAtelier.SEUIL_GRAND_ECRAN_DP`) : une
+colonne (barre haute 52, bannière compat, bande d'onglets 40, fil
+d'Ariane 28, CORPS À POIDS portant le **puits** — conteneur de la
+scène celeris, attaché au montage, JAMAIS reconstruit —, barre de
+symboles 42, feuille basse), le grand écran en rangée amarrée (rail
+48, arbre 240, puits au poids, volet d'aperçu 320, §005) ;
+`construireUi()`/`ContexteUi` SUPPRIMÉS (constats C1/C2). La
+**hauteur utile de la feuille** vit désormais sur le parent du layout
+racine (voisine `wrap_content` du corps à poids — le câblage du lot L3
+mesure dessus : le bug `6f2e899` meurt enfin). Zones rares par
+**`ViewStub`** (×3 par variante : console, aperçu — le dernier texte
+de mise en page est rejoué au montage —, tiroir agent). Le câblage
+passe dans `VueAtelier` (0 vue instanciée), le montage de session
+(`charger`/`monterIde`/`fermerIde`) dans `SessionAtelier`, et les
+quatre contrôleurs dépendent de **`HoteAtelier`** (l'union exacte de
+leurs 685 accès d'hier — grep `EcranAtelier` : **0**). Évaluations
+§4.4 consignées à l'ADR-085 : **onglets → `RecyclerView` horizontal
+retenu** (l'onglet fermable + l'indicateur 2 dp exigent la vue
+d'onglet personnalisée — `TabLayout` doublerait l'indicateur) ;
+**feuille/tiroirs/barre haute conservées** (détentes FRACTIONS de la
+hauteur utile vs `BottomSheetBehavior` qui recouvre sans redimensionner
+le frère ; rideau `jo_rideau`/PIEGE-31 vs le scrim de `DrawerLayout` ;
+zones sans équivalent `MaterialToolbar`) ; `EtatFeuille` reste la
+source de vérité. `BarreOnglets` recycle (ListAdapter/DiffUtil par
+`OngletVu`, record pur — plus de `removeAllViews()` à chaque maj, le
+coût est MESURÉ par `OngletVuTest` : activer un autre onglet = 2
+re-liés). La feuille adopte ses trois listes dans SON layout et son
+histogramme logcat se dessine au Canvas (`HistogrammeLogcat`) —
+dernière vue instanciée de la zone, exceptions du filet réduites à
+`VueAgent` (A7). FAB 84/20 en `@dimen` (+13 jetons, parité
+`ThemesM3Test`). Retour système : `OnBackPressedDispatcher` (décision
+13, motif A2-A4, ordre INCHANGÉ ; l'erreur lint `MissingSuperCall`
+disparaît) ; `startActivityForResult` reste sous commentaire de
+passation — les contrats `Ecrans.CHOISIR_IMAGE`/`PRENDRE_PHOTO`
+prennent le relais en A7. Reprise d'audit de la session : travail
+hérité non committé audité ligne à ligne (mappings des 685 accès
+vérifiés face aux champs d'hier, constantes délocalisées retrouvées),
+correctifs portés — la console différée se monte à la PREMIÈRE
+ouverture de feuille (`FeuilleBasse.Auditeur.surOuverture()` : sinon le
+geste interne montrait un corps vide là où hier la console vivait),
+imports qualifiés nettoyés, commentaire de tiroir corrigé (360 dp,
+ADR-É2). Module : 94 → 84 vues instanciées, `dp(` 261 → 245, 60 → 65
+layouts (+1 `w720dp`), 6 `ViewStub`, `Dialogue.` **58 inchangés**, 0
+Compose, APK 15 775 929 → 15 798 411 o (+0,02 Mio — aucune dépendance
+nouvelle), `verifierOmbreApk` vert ; **364 tests verts** (356 + 1 parité
++ 7 onglets) ; lint : 11 erreurs = 12 d'A5 − `MissingSuperCall`
+(disparu), aucune nouvelle.
+
 # CHANGES — les vues d'atelier quittent le code : console, aperçu et arbre en layouts, listes recyclées, coût par mise à jour borné (2026-11-19)
 
 **Lot A5 de l'ADR-085** : `VueConsole` (513 → 247 l.), `VueApercu`

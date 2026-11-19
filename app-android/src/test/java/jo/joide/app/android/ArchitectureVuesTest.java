@@ -97,11 +97,11 @@ class ArchitectureVuesTest {
      * Liste d'exceptions DÉCROISSANTE — écrans qui instancient encore des
      * vues en code (état mesuré au commit de base, lot A0) : à vider au
      * fil des lots A5/A6 (atelier), A7 (contrôleurs agent) — le pilote
-     * A2 (accueil, rappel MCP), les paramètres A3 et la création A4
-     * sont sortis de la liste.
+     * A2 (accueil, rappel MCP), les paramètres A3, la création A4 et
+     * l'atelier A6 (écran, vue d'écran, session) sont sortis de la
+     * liste.
      */
     private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of(
-            "ecrans/atelier/EcranAtelier.java",
             "ecrans/atelier/ControleurAgent.java",
             "ecrans/atelier/ControleurFichiers.java");
 
@@ -122,6 +122,8 @@ class ArchitectureVuesTest {
             "MainActivity.java",
             "ecrans/parametres/EcranParametres.java",
             "ecrans/atelier/EcranAtelier.java",
+            "ecrans/atelier/VueAtelier.java",
+            "ecrans/atelier/SessionAtelier.java",
             "ecrans/atelier/ControleurAgent.java",
             "ecrans/atelier/ControleurEdition.java",
             "ecrans/atelier/ControleurFichiers.java",
@@ -143,11 +145,12 @@ class ArchitectureVuesTest {
      * remplacement Material au fil des lots, A9) qui instancient encore
      * des vues en code : le lot A5 a sorti {@code VueConsole},
      * {@code VueApercu}, {@code VueArbre} et les trois listes de la
-     * feuille ; restent l'agent (A6/A7) et la feuille basse (A6).
+     * feuille ; le lot A6 a sorti la feuille basse (histogramme au
+     * Canvas) et la bande d'onglets (RecyclerView fermable) ; reste
+     * l'agent (A7 — popups et découpage du contrôleur).
      */
     private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of(
-            "atelier/agent/VueAgent.java",
-            "ui/atelier/FeuilleBasse.java");
+            "atelier/agent/VueAgent.java");
 
     /**
      * Lot A5 (ADR-085, critère du lot) : HORS écrans et hors kit, les

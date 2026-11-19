@@ -5,6 +5,8 @@ import android.content.Intent;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jo.joide.app.android.BuildService;
 import jo.joide.app.android.SpecsBuild;
@@ -19,70 +21,104 @@ import jo.joide.ide.sync.ExternalResolution;
 /**
  * L6 — le contrôleur du build : la chaîne construire → constitution
  * → service ou en processus → événements → fin. Le moteur de vérité
- * reste EtatConsole/EtatAtelier (portés par l'écran) ; le contrôleur
- * orchestre et met à jour les volets via l'écran. Les corps viennent
- * d'EcranAtelier sans changement de comportement (extraction
+ * reste EtatConsole/EtatAtelier (portés par l'hôte) ; le contrôleur
+ * orchestre et met à jour les volets via l'hôte. Les corps viennent
+ * de l'écran d'hier sans changement de comportement (extraction
  * mécanique, mêmes commentaires).
+ *
+ * <p>Lot A6 (ADR-085 décision 3) : le contrôleur dépend de
+ * {@link HoteAtelier}, plus des champs de l'écran — le compteur de
+ * builds et le client du démon sont à LUI (personne d'autre ne les
+ * touche), les constantes d'attente du port suivent.</p>
  */
 final class ControleurBuild {
 
-    private final EcranAtelier atelier;
+    /**
+     * L'attente de la publication du port (lot U/7 : 30 s — le
+     * démarrage À FROID du processus :build paie le fork du zygote
+     * et le chargement ART de tout le moteur de build ; sur un
+     * appareil occupé, 10 s sortaient avant la publication et
+     * chaque premier build répétait « injoignable », rapport du
+     * 2026-11-17).
+     */
+    static final long ATTENTE_PORT_MS = 30_000L;
 
-    ControleurBuild(EcranAtelier atelier) {
-        this.atelier = atelier;
+    /**
+     * Le pas de re-demande du service pendant l'attente (lot U/7) :
+     * un service tué entre-temps repart avec cette demande — jamais
+     * une attente muette jusqu'au délai complet.
+     */
+    static final long REDEMANDE_SERVICE_MS = 5_000L;
+
+    /** Le compteur de builds de la session (la pilule porte le numéro). */
+    private final AtomicLong numerosBuild = new AtomicLong();
+
+    /** Le client du démon de build (null hors connexion). */
+    private final AtomicReference<DaemonClient> clientDemon =
+            new AtomicReference<>();
+
+    private final HoteAtelier hote;
+
+    ControleurBuild(HoteAtelier hote) {
+        this.hote = hote;
     }
 
     void construire() {
-        if (atelier.racineProjet == null || atelier.modele == null || atelier.buildEnCours) {
+        if (hote.racineProjet() == null || hote.modele() == null
+                || hote.buildEnCours()) {
             return;
         }
-        long numero = atelier.numerosBuild.incrementAndGet();
-        atelier.etat.commencerBuild(numero);
-        atelier.etatConsole.surDemarrage(numero, System.currentTimeMillis());
-        atelier.etat.deplierConsole();
-        atelier.majVolets();
-        atelier.majConsole();
-        atelier.majFab();
-        atelier.majArbre();
+        long numero = numerosBuild.incrementAndGet();
+        hote.etat().commencerBuild(numero);
+        hote.etatConsole().surDemarrage(numero,
+                System.currentTimeMillis());
+        hote.etat().deplierConsole();
+        hote.majVolets();
+        hote.majConsole();
+        hote.majFab();
+        hote.majArbre();
         // lot U : la constitution peut EXTRAIRE des AAR au disque et
         // LOCALISER l'outillage — elle vit sur le fil de fond, ses
         // écarts remontent à la console dès qu'ils sont connus
-        ExternalResolution externals = atelier.sync.derniereResolution()
+        ExternalResolution externals = hote.sync().derniereResolution()
                 .orElse(ExternalResolution.empty());
-        atelier.fond.execute(() -> {
+        hote.fond().execute(() -> {
             // lot U/8 : le keystore de débogage se prépare AVANT la
             // constitution — l'asset de l'APK se copie UNE fois vers
             // filesDir/toolchain, la variante debug signée suit
             // (avant : APK produit non signé, ininstallable)
             java.nio.file.Path keystoreDebug =
                     jo.joide.app.android.PreparationChaine
-                            .assurerKeystoreDebug(atelier);
+                            .assurerKeystoreDebug(hote.contexte());
             SpecsBuild.Constitution constitution = SpecsBuild
-                    .constituer(atelier.modele, externals, atelier.racineProjet,
-                            atelier.racineProjet.resolve("build-joide"),
-                            Paths.get(atelier.getFilesDir().getAbsolutePath(),
-                                    "m2"), keystoreDebug);
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surEcarts(constitution.ecarts);
+                    .constituer(hote.modele(), externals,
+                            hote.racineProjet(),
+                            hote.racineProjet().resolve("build-joide"),
+                            Paths.get(hote.dossierFichiers()
+                                    .getAbsolutePath(), "m2"),
+                            keystoreDebug);
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surEcarts(constitution.ecarts);
                 if (!constitution.constructible()) {
-                    atelier.etatConsole.surRienAConstruire();
-                    atelier.etat.interrompreBuild();
-                    atelier.majConsole();
+                    hote.etatConsole().surRienAConstruire();
+                    hote.etat().interrompreBuild();
+                    hote.majConsole();
                     finirBuild();
                     return;
                 }
                 // lot M : le moteur par défaut vit dans Paramètres
-                boolean enProcessus = Reglages.lire(atelier.sourceReglages)
-                        .moteur == Reglages.Moteur.PROCESSUS;
+                boolean enProcessus = Reglages.lire(
+                        hote.sourceReglages()).moteur
+                        == Reglages.Moteur.PROCESSUS;
                 if (enProcessus) {
-                    atelier.etatConsole.surAnnonceEnProcessus();
+                    hote.etatConsole().surAnnonceEnProcessus();
                 }
-                atelier.majConsole();
+                hote.majConsole();
                 if (enProcessus) {
-                    atelier.fond.execute(() -> construireEnProcessus(
+                    hote.fond().execute(() -> construireEnProcessus(
                             constitution.spec, numero));
                 } else {
-                    atelier.fond.execute(() -> construireParService(
+                    hote.fond().execute(() -> construireParService(
                             constitution.spec, numero));
                 }
             });
@@ -94,14 +130,15 @@ final class ControleurBuild {
         // — un échec d'hier ne doit jamais censurer un essai neuf ;
         // lot VIII : la preuve de VIE part aussi — une vie d'hier ne
         // doit pas faire croire que le processus démarre
-        BuildService.effacerErreur(atelier.getFilesDir());
-        BuildService.effacerVie(atelier.getFilesDir());
-        atelier.startForegroundService(new Intent(atelier, BuildService.class));
+        BuildService.effacerErreur(hote.dossierFichiers());
+        BuildService.effacerVie(hote.dossierFichiers());
+        hote.demarrerServiceAvantPlan(new Intent(hote.contexte(),
+                BuildService.class));
         Socket socket = null;
         DaemonClient client = null;
-        long limite = System.currentTimeMillis() + EcranAtelier.ATTENTE_PORT_MS;
+        long limite = System.currentTimeMillis() + ATTENTE_PORT_MS;
         long prochaineRedemande =
-                System.currentTimeMillis() + EcranAtelier.REDEMANDE_SERVICE_MS;
+                System.currentTimeMillis() + REDEMANDE_SERVICE_MS;
         // un port lu n'est pas un port servi : le fichier peut être
         // PÉRIMÉ (un service mort sans onDestroy l'a laissé — force
         // stop, crash du processus :build) — chaque tentative refusée
@@ -121,16 +158,17 @@ final class ControleurBuild {
             // boucle sort tôt avec la cause RÉELLE au lieu de courir
             // jusqu'au délai (« démon de build : ClassNotFoundException
             // ... » vaut mieux que « port non publié »)
-            String cause = BuildService.lireErreur(atelier.getFilesDir());
+            String cause = BuildService.lireErreur(
+                    hote.dossierFichiers());
             if (cause != null) {
                 causeDemon = cause;
                 break;
             }
-            if (!vieVue
-                    && BuildService.lireVie(atelier.getFilesDir()) != null) {
+            if (!vieVue && BuildService.lireVie(
+                    hote.dossierFichiers()) != null) {
                 vieVue = true;
             }
-            int port = BuildService.lirePort(atelier.getFilesDir());
+            int port = BuildService.lirePort(hote.dossierFichiers());
             if (port >= 0) {
                 try {
                     socket = new Socket("127.0.0.1", port);
@@ -141,7 +179,7 @@ final class ControleurBuild {
                     break;
                 } catch (IOException refuse) {
                     refus++;
-                    BuildService.effacerPort(atelier.getFilesDir());
+                    BuildService.effacerPort(hote.dossierFichiers());
                     if (socket != null) {
                         try {
                             socket.close();
@@ -157,16 +195,17 @@ final class ControleurBuild {
             // avant publication) repart avec cette demande, jamais
             // une attente muette jusqu'au délai
             if (System.currentTimeMillis() >= prochaineRedemande) {
-                atelier.startForegroundService(new Intent(atelier,
-                        BuildService.class));
+                hote.demarrerServiceAvantPlan(new Intent(
+                        hote.contexte(), BuildService.class));
                 prochaineRedemande =
-                        System.currentTimeMillis() + EcranAtelier.REDEMANDE_SERVICE_MS;
+                        System.currentTimeMillis()
+                                + REDEMANDE_SERVICE_MS;
             }
             try {
                 Thread.sleep(150L);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                atelier.runOnUiThread(this::finirBuild);
+                hote.executerSurFilUi(this::finirBuild);
                 return;
             }
         }
@@ -189,7 +228,7 @@ final class ControleurBuild {
             if (detail == null) {
                 if (!vieVue) {
                     detail = "port non publié en "
-                            + (EcranAtelier.ATTENTE_PORT_MS / 1000) + " s et le"
+                            + (ATTENTE_PORT_MS / 1000) + " s et le"
                             + " processus :build n'a JAMAIS démarré"
                             + " (restriction ROM ou batterie ?)";
                 } else if (refus > 0) {
@@ -199,22 +238,22 @@ final class ControleurBuild {
                             + " injoignable)";
                 } else {
                     detail = "port non publié en "
-                            + (EcranAtelier.ATTENTE_PORT_MS / 1000) + " s"
+                            + (ATTENTE_PORT_MS / 1000) + " s"
                             + " (processus :build démarré, démon pas"
                             + " prêt)";
                 }
             }
             final String detailFinal = detail;
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surInjoignable(detailFinal);
-                atelier.etatConsole.surRepliEnProcessus();
-                atelier.majConsole();
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surInjoignable(detailFinal);
+                hote.etatConsole().surRepliEnProcessus();
+                hote.majConsole();
             });
             construireEnProcessus(spec, numero);
             return;
         }
         try (DaemonClient branche = client) {
-            atelier.clientDemon.set(branche);
+            clientDemon.set(branche);
             DaemonClient.Event salutation =
                     branche.await("hello", 30);
             evenement(salutation.type, salutation.id,
@@ -223,18 +262,19 @@ final class ControleurBuild {
         } catch (DaemonClient.DaemonDiedException e) {
             // §6.7 : la mort du démon est un événement, l'UI survit —
             // le build suivant relance le service
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surInterrompu();
-                atelier.etat.interrompreBuild();
-                atelier.majConsole();
-                atelier.majFab();
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surInterrompu();
+                hote.etat().interrompreBuild();
+                hote.majConsole();
+                hote.majFab();
             });
         } catch (IOException e) {
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surInjoignable(String.valueOf(e.getMessage()));
-                atelier.etat.interrompreBuild();
-                atelier.majConsole();
-                atelier.majFab();
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surInjoignable(
+                        String.valueOf(e.getMessage()));
+                hote.etat().interrompreBuild();
+                hote.majConsole();
+                hote.majFab();
             });
         } finally {
             if (socket != null) {
@@ -244,8 +284,8 @@ final class ControleurBuild {
                     // le socket est déjà mort
                 }
             }
-            atelier.clientDemon.set(null);
-            atelier.runOnUiThread(this::finirBuild);
+            clientDemon.set(null);
+            hote.executerSurFilUi(this::finirBuild);
         }
     }
 
@@ -264,67 +304,68 @@ final class ControleurBuild {
     private void evenement(String type, long id,
                            jo.joide.deps.json.JsonValue corps) {
         long maintenant = System.currentTimeMillis();
-        atelier.runOnUiThread(() -> {
-            atelier.etatConsole.surEvenement(type, id, corps, maintenant);
+        hote.executerSurFilUi(() -> {
+            hote.etatConsole().surEvenement(type, id, corps, maintenant);
             jo.joide.app.android.ConsoleBuild.Phase phase =
-                    atelier.etatConsole.phaseCourante();
+                    hote.etatConsole().phaseCourante();
             if (phase != null) {
-                atelier.etat.phaseBuild(phase.name().toLowerCase(
+                hote.etat().phaseBuild(phase.name().toLowerCase(
                         java.util.Locale.ROOT));
             }
             if ("build-finished".equals(type)) {
-                atelier.etat.terminerBuild(
+                hote.etat().terminerBuild(
                         corps.member("success").asBoolean());
-                atelier.majFab();
+                hote.majFab();
             }
-            atelier.majConsole();
+            hote.majConsole();
         });
     }
 
     private void construireEnProcessus(BuildSpec spec, long numero) {
-        int fils = Reglages.lire(atelier.sourceReglages).filsParBuild;
+        int fils = Reglages.lire(hote.sourceReglages()).filsParBuild;
         try (BuildRunner runner = new BuildRunner(
                 outDir -> StoreAndroid.open(outDir), fils)) {
             BuildRunner.Outcome resultat = runner.run(spec, null,
-                    (nom, statut) -> atelier.runOnUiThread(() -> {
-                        atelier.etatConsole.surTache(nom, statut,
+                    (nom, statut) -> hote.executerSurFilUi(() -> {
+                        hote.etatConsole().surTache(nom, statut,
                                 System.currentTimeMillis());
                         jo.joide.app.android.ConsoleBuild.Phase phase =
-                                atelier.etatConsole.phaseCourante();
+                                hote.etatConsole().phaseCourante();
                         if (phase != null) {
-                            atelier.etat.phaseBuild(phase.name().toLowerCase(
-                                    java.util.Locale.ROOT));
+                            hote.etat().phaseBuild(phase.name()
+                                    .toLowerCase(java.util.Locale.ROOT));
                         }
-                        atelier.majConsole();
+                        hote.majConsole();
                     }), jo.joide.platform.CancelToken.NEVER);
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surBilanEnProcessus(numero,
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surBilanEnProcessus(numero,
                         resultat.success, resultat.executed,
                         resultat.fromCache, resultat.upToDate,
                         resultat.problems, System.currentTimeMillis());
-                atelier.etat.terminerBuild(resultat.success);
-                atelier.majConsole();
+                hote.etat().terminerBuild(resultat.success);
+                hote.majConsole();
             });
         } catch (Exception e) {
-            atelier.runOnUiThread(() -> {
-                atelier.etatConsole.surTermine(numero, false, 0, 0, 0, -1,
+            hote.executerSurFilUi(() -> {
+                hote.etatConsole().surTermine(numero, false, 0, 0, 0, -1,
                         java.util.List.of(String.valueOf(e.getMessage())),
                         System.currentTimeMillis());
-                atelier.etat.terminerBuild(false);
-                atelier.majConsole();
+                hote.etat().terminerBuild(false);
+                hote.majConsole();
             });
         } finally {
-            atelier.runOnUiThread(this::finirBuild);
+            hote.executerSurFilUi(this::finirBuild);
         }
     }
 
     /** Arrête le build en cours : la croix de la pilule (critère J). */
     void arreterBuild() {
-        DaemonClient client = atelier.clientDemon.get();
-        if (client == null || !atelier.buildEnCours) {
+        DaemonClient client = clientDemon.get();
+        if (client == null || !hote.buildEnCours()) {
             return;
         }
-        long numero = atelier.etat.build() == null ? -1 : atelier.etat.build().numero();
+        long numero = hote.etat().build() == null ? -1
+                : hote.etat().build().numero();
         if (numero < 0) {
             return;
         }
@@ -337,10 +378,10 @@ final class ControleurBuild {
     }
 
     private void finirBuild() {
-        atelier.buildEnCours = false;
-        atelier.vueArbre.setSortiesEnCours(false);
-        atelier.majFab();
-        atelier.majVerdictConsole();
-        atelier.rechargerArbre();
+        hote.poserBuildEnCours(false);
+        hote.vueArbre().setSortiesEnCours(false);
+        hote.majFab();
+        hote.majVerdictConsole();
+        hote.rechargerArbre();
     }
 }

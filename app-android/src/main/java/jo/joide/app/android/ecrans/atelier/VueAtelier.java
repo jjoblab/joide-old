@@ -1,0 +1,1318 @@
+package jo.joide.app.android.ecrans.atelier;
+
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import jo.joide.app.android.AgentService;
+import jo.joide.app.android.FichiersProjet;
+import jo.joide.app.android.R;
+import jo.joide.app.android.atelier.Arborescence;
+import jo.joide.app.android.atelier.EcrituresFusionnees;
+import jo.joide.app.android.atelier.EtatApercu;
+import jo.joide.app.android.atelier.EtatAtelier;
+import jo.joide.app.android.atelier.EtatFeuille;
+import jo.joide.app.android.atelier.EtatJournal;
+import jo.joide.app.android.atelier.EtatLogcat;
+import jo.joide.app.android.atelier.EtatProblemes;
+import jo.joide.app.android.atelier.VueApercu;
+import jo.joide.app.android.atelier.VueArbre;
+import jo.joide.app.android.atelier.agent.EtatAgentChat;
+import jo.joide.app.android.atelier.agent.PieceJointe;
+import jo.joide.app.android.atelier.agent.VueAgent;
+import jo.joide.app.android.console.EtatConsole;
+import jo.joide.app.android.console.VueConsole;
+import jo.joide.app.android.databinding.ActivityAtelierBinding;
+import jo.joide.app.android.databinding.TiroirAgentPousseBinding;
+import jo.joide.app.android.databinding.VueApercuZoneBinding;
+import jo.joide.app.android.databinding.VueArbreZoneBinding;
+import jo.joide.app.android.databinding.VueConsoleZoneBinding;
+import jo.joide.app.android.logcat.FluxLogcat;
+import jo.joide.app.android.parametres.PreferencesAndroid;
+import jo.joide.app.android.parametres.Reglages;
+import jo.joide.app.android.ui.Dialogue;
+import jo.joide.app.android.ui.Fab;
+import jo.joide.app.android.ui.Graphite;
+import jo.joide.app.android.ui.Pilule;
+import jo.joide.app.android.ui.Puce;
+import jo.joide.app.android.ui.TiroirPousse;
+import jo.joide.app.android.ui.atelier.BarreOnglets;
+import jo.joide.app.android.ui.atelier.BarreSymboles;
+import jo.joide.app.android.ui.atelier.FeuilleBasse;
+import jo.joide.app.android.ui.atelier.FilAriane;
+import jo.joide.app.android.ui.atelier.ListeProblemes;
+import jo.joide.app.android.ui.atelier.TiroirFichiers;
+import jo.joide.ide.apercu.ApercuLayouts;
+import jo.joide.ide.editeur.SceneEditeur;
+
+/**
+ * Lot A6 (ADR-085 décisions 1, 2 et 3) — LA VUE D'ÉCRAN DE
+ * L'ATELIER : la coordonnatrice du binding racine
+ * ({@code activity_atelier.xml}, + {@code layout-w720dp} — le grand
+ * écran n'est plus assemblé en code, {@code ContexteUi} et
+ * {@code construireUi()} ont disparu). Elle porte les états d'UI, le
+ * CÂBLAGE des zones (les auditeurs restent ici : l'écran reste la
+ * coque — thème, cycle de vie, intents, retour), les mises à jour de
+ * l'habillage (volets, FAB, verdicts) et les zones DIFFÉRÉES par
+ * {@code ViewStub} (console, aperçu, tiroir agent — montées à la
+ * demande). Elle implémente {@link HoteAtelier} : les contrôleurs ne
+ * référencent plus l'écran, la session vit dans {@link SessionAtelier}.
+ *
+ * <p>Cette classe n'est PAS une vue Android : c'est la collaboratrice
+ * de la coque, construite avec le binding monté. La doctrine P8 reste
+ * : l'UI est mince, la logique vit dans les états purs
+ * ({@code EtatAtelier}, {@code EtatFeuille}, {@code EtatConsole}…),
+ * ici on traduit et on déroule.</p>
+ */
+final class VueAtelier implements HoteAtelier {
+
+    private final EcranAtelier ecran;
+    private final ActivityAtelierBinding binding;
+
+    private final Graphite.Palette palette;
+    private final Reglages.Source sourceReglages;
+    private final EtatAtelier etat;
+    private final EtatConsole etatConsole = new EtatConsole();
+    private final EtatApercu etatApercu = new EtatApercu();
+    private final EtatProblemes etatProblemes = new EtatProblemes();
+    private final EtatJournal etatJournal = new EtatJournal();
+    private final EtatLogcat etatLogcat = new EtatLogcat();
+    private EtatAgentChat etatAgent = new EtatAgentChat();
+
+    private final ExecutorService fond = Executors.newSingleThreadExecutor(
+            runnable -> {
+                Thread fil = new Thread(runnable, "joide-atelier");
+                fil.setDaemon(true);
+                return fil;
+            });
+    private final ExecutorService ecrivain =
+            Executors.newSingleThreadExecutor(runnable -> {
+                Thread fil = new Thread(runnable, "joide-ecrivain");
+                fil.setDaemon(true);
+                return fil;
+            });
+
+    /** La session (montage, fermeture, état de l'IDE monté). */
+    private final SessionAtelier session;
+
+    /** Les contrôleurs (l'écran ne les connaît que par la vue). */
+    private final ControleurBuild controleurBuild;
+    private final ControleurAgent controleurAgent;
+    private final ControleurEdition controleurEdition;
+    private final ControleurFichiers controleurFichiers;
+
+    // ---- les états d'arbre et d'agent partagés avec les contrôleurs
+    private final Set<String> dossiersOuverts = new LinkedHashSet<>();
+    private String filtreTiroir = "";
+    private final List<PieceJointe> piecesAgent = new ArrayList<>();
+    private final List<PieceJointe> piecesEnAttenteAgent =
+            new ArrayList<>();
+    private String messageEnAttenteAgent;
+    private AgentService.AgentBinder agent;
+    private boolean buildEnCours;
+
+    // ---- les zones différées (ViewStub) : console, aperçu, agent
+    private VueConsole vueConsole;
+    private VueApercu vueApercu;
+    private TiroirPousse tiroirAgent;
+    private VueAgent vueAgent;
+    private VueArbre vueArbre;
+
+    VueAtelier(EcranAtelier ecran, ActivityAtelierBinding binding,
+               Graphite.Palette palette) {
+        this.ecran = ecran;
+        this.binding = binding;
+        this.palette = palette;
+        sourceReglages = PreferencesAndroid.source(ecran);
+        etat = new EtatAtelier(EtatAtelier.estGrandEcran(
+                ecran.getResources().getConfiguration().screenWidthDp));
+        session = new SessionAtelier(ecran, this);
+        controleurBuild = new ControleurBuild(this);
+        controleurAgent = new ControleurAgent(this);
+        controleurEdition = new ControleurEdition(this);
+        controleurFichiers = new ControleurFichiers(this);
+        // la bannière de compatibilité : le fond est un MÉLANGE calculé
+        // (alerte 12 % sur fond — décision 8 : couleur dynamique), le
+        // reste vit dans le layout
+        binding.banniereCompat.setBackgroundColor(Graphite.melange(
+                palette.alerte, 0.12f, palette.fond));
+        monterVueArbre();
+        cabler();
+    }
+
+    // ------------------------------------------------------------------
+    // Le câblage des zones (les auditeurs : la vue d'écran garde le
+    // rôle de l'écran d'hier, les corps sont inchangés)
+    // ------------------------------------------------------------------
+
+    private void monterVueArbre() {
+        // l'arborescence : UNE instance (vue_arbre_zone), posée dans le
+        // conteneur de la disposition courante — le cadre du tiroir
+        // fichiers en compact, la colonne amarrée en grand écran
+        vueArbre = VueArbreZoneBinding.inflate(
+                ecran.getLayoutInflater()).getRoot();
+        ViewGroup conteneur = etat.grandEcran() && binding.colonneArbre != null
+                ? binding.colonneArbre
+                : binding.tiroirFichiers.cadreArbre();
+        conteneur.addView(vueArbre,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT);
+        vueArbre.setAuditeur(new VueArbre.AuditeurArbre() {
+            @Override
+            public void surDossier(String chemin, boolean ouvrir) {
+                if (ouvrir) {
+                    dossiersOuverts.add(chemin);
+                } else {
+                    dossiersOuverts.remove(chemin);
+                }
+                majArbre();
+            }
+
+            @Override
+            public void surFichier(String chemin) {
+                controleurEdition.ouvrirFichier(chemin, null);
+            }
+
+            @Override
+            public void surNouveau(boolean fichier) {
+                controleurFichiers.proposerNouveau(fichier);
+            }
+
+            @Override
+            public void surMenuContextuel(String chemin,
+                                          boolean dossier) {
+                controleurFichiers.montrerMenuContextuel(chemin, dossier);
+            }
+        });
+    }
+
+    private void cabler() {
+        // ---- la barre supérieure (lot L2) : les auditeurs restent
+        // ici, l'état reste EtatAtelier
+        binding.barreHaut.binding.btnTiroirFichiers.setOnClickListener(
+                vue -> {
+                    etat.ouvrirTiroir();
+                    if (binding.tiroir != null) {
+                        binding.tiroir.ouvrir();
+                    }
+                });
+        binding.barreHaut.binding.piluleIndex.setOnClickListener(
+                vue -> controleurFichiers.montrerDetailIndex());
+        binding.barreHaut.binding.cadreBoutonAgent.setOnClickListener(
+                vue -> controleurAgent.ouvrirAgent());
+        binding.barreHaut.binding.boutonOptions.setOnClickListener(
+                vue -> ecran.ouvrirMenu());
+
+        // ---- la bande d'onglets (RecyclerView fermable, lot A6)
+        binding.barreOnglets.setAuditeur(new BarreOnglets.Auditeur() {
+            @Override
+            public void surActivation(String chemin) {
+                etat.activer(chemin);
+                controleurEdition.montrerFichier(chemin, null);
+            }
+
+            @Override
+            public void surFermeture(String chemin) {
+                controleurEdition.fermerOnglet(chemin);
+            }
+
+            @Override
+            public void surApercu() {
+                etat.basculerApercuPleinEcran();
+                majVolets();
+                if (session.apercu != null && session.scene != null
+                        && FichiersProjet.estMiseEnPage(
+                        session.fichierCourant)) {
+                    session.apercu.rendreSansDelai(
+                            session.scene.texte());
+                }
+            }
+        });
+
+        // ---- la barre de symboles (§3.5) : visible seulement quand
+        // le clavier est affiché (détecteur d'insets COMPAT — correctif
+        // C5 du lot A1)
+        binding.barreSymboles.setAuditeur(new BarreSymboles.Auditeur() {
+            @Override
+            public void inserer(String texte) {
+                controleurEdition.insererSymbole(texte);
+            }
+
+            @Override
+            public void commenterLigne() {
+                controleurEdition.commenterLigneCourante();
+            }
+
+            @Override
+            public void dupliquerLigne() {
+                controleurEdition.dupliquerLigneCourante();
+            }
+
+            @Override
+            public void deplacerCurseur(int delta) {
+                if (session.scene != null) {
+                    session.scene.deplacerCurseur(delta);
+                }
+            }
+        });
+        ViewCompat.setOnApplyWindowInsetsListener(
+                binding.getRoot(), (vue, insets) -> {
+                    boolean clavier = insets.getInsets(
+                            WindowInsetsCompat.Type.ime()).bottom > 0;
+                    binding.barreSymboles.poserVisible(clavier);
+                    binding.fab.setVisibility(clavier ? View.GONE
+                            : View.VISIBLE);
+                    return insets;
+                });
+
+        // ---- la feuille basse (lot L3) : le contenu CONSOLE reste la
+        // VueConsole (montée par stub), les listes vivent dans son
+        // layout
+        binding.feuille.setAuditeur(new FeuilleBasse.Auditeur() {
+            @Override
+            public void surOuvrirProbleme(String chemin, int ligne) {
+                controleurEdition.ouvrirFichier(chemin, ligne);
+            }
+
+            @Override
+            public void surPipeline() {
+                etat.deplierConsole();
+                majVolets();
+            }
+
+            @Override
+            public void surOuverture() {
+                // la feuille montre son corps et la console n'est
+                // pas montée : zone différée, montage À LA DEMANDE
+                // (idempotent — le garde interne fait le reste)
+                monterConsole();
+            }
+
+            @Override
+            public void surLogcat(boolean actif) {
+                // ADR-084 : le relais de journal (brique utilisateur,
+                // permission signature) pousse dans FluxLogcat ; la
+                // section lit le tampon quand elle est ouverte
+                if (!actif) {
+                    FluxLogcat.tampon().poserAuditeur(null);
+                    return;
+                }
+                FluxLogcat.tampon().poserAuditeur(
+                        controleurEdition.auditeurFluxLogcat);
+                controleurEdition.viderFluxDansEtatLogcat();
+            }
+        });
+        binding.feuille.listeProblemes().setAuditeur(
+                new ListeProblemes.Auditeur() {
+                    @Override
+                    public void surOuvrir(String chemin, int ligne) {
+                        controleurEdition.ouvrirFichier(chemin, ligne);
+                    }
+                });
+        binding.feuille.boutonProblemeSuivant().setOnClickListener(
+                vue -> {
+                    // §3.6 : le ↓ saute à l'erreur suivante SANS
+                    // déplier
+                    EtatProblemes.Probleme suivant = etatProblemes.suivant(
+                            session.fichierCourant == null ? ""
+                                    : session.fichierCourant,
+                            controleurEdition.ligneCourante());
+                    if (suivant != null) {
+                        controleurEdition.ouvrirFichier(suivant.chemin(),
+                                suivant.ligne());
+                    }
+                });
+        binding.feuille.cibleProblemes().setOnClickListener(vue -> {
+            EtatProblemes.Probleme premier =
+                    etatProblemes.premierDuFichier(
+                            session.fichierCourant == null ? ""
+                                    : session.fichierCourant);
+            if (premier != null) {
+                controleurEdition.ouvrirFichier(premier.chemin(),
+                        premier.ligne());
+            }
+        });
+
+        // ---- le rail du grand écran (la rangée amarrée) : arbre
+        // visible par défaut, console par l'état
+        if (binding.boutonRailArbre != null) {
+            binding.boutonRailArbre.setOnClickListener(vue -> {
+                boolean visible = binding.colonneArbre.getVisibility()
+                        != View.VISIBLE;
+                binding.colonneArbre.setVisibility(
+                        visible ? View.VISIBLE : View.GONE);
+                binding.boutonRailArbre.setCouleur(
+                        visible ? palette.accent
+                                : palette.texteSecondaire);
+            });
+        }
+        if (binding.boutonRailConsole != null) {
+            binding.boutonRailConsole.setOnClickListener(vue -> {
+                etat.basculerConsole();
+                majVolets();
+            });
+        }
+
+        // ---- le tiroir fichiers (écran compact)
+        if (binding.tiroirFichiers != null) {
+            binding.tiroirFichiers.setAuditeur(
+                    new TiroirFichiers.Auditeur() {
+                        @Override
+                        public void surNouveau(boolean fichier) {
+                            controleurFichiers.proposerNouveau(fichier);
+                        }
+
+                        @Override
+                        public void surToutReduire() {
+                            dossiersOuverts.clear();
+                            majArbre();
+                        }
+
+                        @Override
+                        public void surLocaliser() {
+                            controleurFichiers.localiserFichierActif();
+                        }
+
+                        @Override
+                        public void surFiltre(String texte) {
+                            filtreTiroir = texte;
+                            majArbre();
+                        }
+                    });
+        }
+
+        // ---- le FAB Construire (pilule pendant le build, lot J)
+        binding.fab.setAuditeur(new Fab.AuditeurFab() {
+            @Override
+            public void surLancer() {
+                controleurBuild.construire();
+            }
+
+            @Override
+            public void surOuvrirConsole() {
+                etat.deplierConsole();
+                majVolets();
+            }
+
+            @Override
+            public void surArreter() {
+                controleurBuild.arreterBuild();
+            }
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Les zones différées : console, aperçu, tiroir agent (ViewStub —
+    // le rattachement des contrôleurs suit l'inflation)
+    // ------------------------------------------------------------------
+
+    /** Monte la zone console (première mise à jour ou feuille ouverte)
+     *  et la pose dans la feuille. */
+    private void monterConsole() {
+        if (vueConsole != null || binding.stubConsole == null) {
+            return;
+        }
+        vueConsole = VueConsoleZoneBinding.bind(
+                binding.stubConsole.inflate()).getRoot();
+        vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
+            @Override
+            public void surArreter() {
+                controleurBuild.arreterBuild();
+            }
+
+            @Override
+            public void surVider() {
+                confirmerVidage();
+            }
+
+            @Override
+            public void surFiltre(EtatConsole.Filtre filtre) {
+                etatConsole.setFiltre(filtre);
+                majConsole();
+            }
+
+            @Override
+            public void surPhase(jo.joide.app.android.ConsoleBuild.Phase phase) {
+                etatConsole.setFiltrePhase(phase);
+                majConsole();
+            }
+
+            @Override
+            public void surOuvrir(String cible) {
+                controleurEdition.ouvrirCible(cible);
+            }
+        });
+        binding.feuille.poserContenu(EtatFeuille.Section.CONSOLE,
+                vueConsole);
+    }
+
+    /** Monte la zone d'aperçu (plein écran ou volet droit demandé) et
+     *  rejoue le dernier texte de mise en page : le rendu arrivé avant
+     *  le montage n'est pas perdu. */
+    private void monterApercu() {
+        if (vueApercu != null || binding.stubApercu == null) {
+            return;
+        }
+        vueApercu = VueApercuZoneBinding.bind(
+                binding.stubApercu.inflate()).getRoot();
+        vueApercu.setAuditeur(new VueApercu.AuditeurApercu() {
+            @Override
+            public void surRafraichir() {
+                if (session.apercu != null && FichiersProjet.estMiseEnPage(
+                        session.fichierCourant)) {
+                    session.apercu.rendreSansDelai(
+                            session.scene.texte());
+                }
+            }
+
+            @Override
+            public void surPleinEcran() {
+                etat.basculerApercuPleinEcran();
+                majVolets();
+            }
+
+            @Override
+            public void surFermer() {
+                etat.fermerVoletApercu();
+                majVolets();
+            }
+
+            @Override
+            public void surDensite(int densite) {
+                etatApercu.setDensite(densite);
+                reconfigurerApercu();
+            }
+
+            @Override
+            public void surNuit(boolean nuit) {
+                etatApercu.setNuit(nuit);
+                reconfigurerApercu();
+            }
+
+            @Override
+            public void surDimensions(int largeurDp, int hauteurDp) {
+                etatApercu.setDimensions(largeurDp, hauteurDp);
+                reconfigurerApercu();
+            }
+        });
+        // le rendu d'avant-montage n'est pas perdu : le dernier texte
+        // de mise en page repart au moteur (l'état a suivi depuis le
+        // début, le perchoir seul était absent)
+        if (session.apercu != null && session.xmlCourant != null) {
+            session.apercu.rendreSansDelai(session.xmlCourant);
+        }
+    }
+
+    /** Monte le tiroir agent (première ouverture) : le tiroir poussé
+     *  droite et la vue agent de son stub. */
+    private TiroirPousse monterTiroirAgent() {
+        if (tiroirAgent != null || binding.stubTiroirAgent == null) {
+            return tiroirAgent;
+        }
+        tiroirAgent = (TiroirPousse) binding.stubTiroirAgent.inflate();
+        vueAgent = TiroirAgentPousseBinding.bind(
+                tiroirAgent).vueAgent;
+        tiroirAgent.setBordDroit(true);
+        vueAgent.poserAuditeur(new VueAgent.Auditeur() {
+            @Override
+            public void envoyer(String message) {
+                controleurAgent.envoyerAgent(message);
+            }
+
+            @Override
+            public void arreter() {
+                controleurAgent.arreterTour();
+            }
+
+            @Override
+            public void repondrePermission(boolean accordee) {
+                controleurAgent.repondrePermissionAgent(accordee);
+            }
+
+            @Override
+            public void repondreQuestion(int index, int choix) {
+                controleurAgent.repondreQuestionAgent(index, choix);
+            }
+
+            @Override
+            public void poserMode(jo.joide.agent.Permissions.Mode mode) {
+                controleurAgent.poserMode(mode);
+            }
+
+            @Override
+            public void ouvrirModele() {
+                controleurAgent.ouvrirModeleAgent();
+            }
+
+            @Override
+            public void ouvrirMenuAgent() {
+                controleurAgent.ouvrirMenuAgentOptions();
+            }
+
+            @Override
+            public void ouvrirAjouts() {
+                controleurAgent.ouvrirAjoutsAgent();
+            }
+
+            @Override
+            public void retirerPiece(int index) {
+                controleurAgent.retirerPiece(index);
+            }
+        });
+        return tiroirAgent;
+    }
+
+    // ------------------------------------------------------------------
+    // Les mises à jour (les corps d'EcranAtelier d'hier, inchangés)
+    // ------------------------------------------------------------------
+
+    /** La bannière de compatibilité Gradle (mode P7/P8). */
+    void poserBanniere(String texte) {
+        binding.banniereCompat.setText(texte);
+        binding.banniereCompat.setVisibility(View.VISIBLE);
+    }
+
+    /** Démarre le chargement de session sur le fil de fond. */
+    void demarrerSession(java.nio.file.Path racine,
+                         String fichierInitial) {
+        session.demarrer(racine, fichierInitial);
+    }
+
+    /**
+     * L'état vide du puits EST l'état sans onglet actif — UNE seule
+     * source de vérité (lot U) : l'ouverture, la fermeture du dernier
+     * onglet, le chargement et l'erreur passent tous par ici ; jamais
+     * un puits muet derrière un éditeur absent.
+     */
+    @Override
+    public void majPuits() {
+        boolean sansOnglet = etat.actif() == null;
+        binding.etatVidePuits.setVisibility(
+                sansOnglet ? View.VISIBLE : View.GONE);
+        binding.vueEditeur.setVisibility(
+                sansOnglet ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void majVolets() {
+        majPuits();
+        binding.feuille.poserDeplie(etat.consoleDepliee());
+        // §3.7 : le FAB disparaît dès que la feuille dépasse la barre
+        // (le clavier le cache aussi, via les insets)
+        binding.fab.setVisibility(etat.consoleDepliee()
+                ? View.GONE : View.VISIBLE);
+        if (binding.boutonRailConsole != null) {
+            binding.boutonRailConsole.setCouleur(etat.consoleDepliee()
+                    ? palette.accent : palette.texteSecondaire);
+        }
+        // la console se monte à la première OUVERTURE de feuille (zone
+        // différée : repliée et sans build, elle ne sert pas)
+        if (etat.consoleDepliee() && vueConsole == null) {
+            monterConsole();
+        }
+        boolean plein = etat.apercuPleinEcran();
+        boolean miseEnPage = session.fichierCourant != null
+                && FichiersProjet.estMiseEnPage(session.fichierCourant);
+        boolean voletDroitVisible = etat.grandEcran()
+                && etat.voletApercu() && miseEnPage && !plein;
+        if ((plein || voletDroitVisible) && vueApercu == null) {
+            monterApercu();
+        }
+        if (vueApercu == null) {
+            return;
+        }
+        if (plein) {
+            if (vueApercu.getParent() != binding.voletPleinEcran) {
+                detacher(vueApercu);
+                binding.voletPleinEcran.addView(vueApercu,
+                        new FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT));
+            }
+        } else if (voletDroitVisible && binding.voletDroit != null) {
+            if (vueApercu.getParent() != binding.voletDroit) {
+                detacher(vueApercu);
+                binding.voletDroit.addView(vueApercu,
+                        new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.MATCH_PARENT));
+            }
+        }
+        binding.voletPleinEcran.setVisibility(
+                plein ? View.VISIBLE : View.GONE);
+        if (binding.voletDroit != null) {
+            binding.voletDroit.setVisibility(
+                    voletDroitVisible ? View.VISIBLE : View.GONE);
+        }
+        vueApercu.maj(etatApercu, session.fichierCourant == null ? null
+                : Arborescence.nomAffiche(session.fichierCourant));
+    }
+
+    private static void detacher(View vue) {
+        if (vue.getParent() instanceof android.view.ViewGroup parent) {
+            parent.removeView(vue);
+        }
+    }
+
+    @Override
+    public void majFab() {
+        binding.fab.setContentDescription(ecran.getString(
+                etat.buildEnCours()
+                        ? R.string.atelier_desc_arreter_build
+                        : R.string.atelier_desc_construire));
+        if (etat.buildEnCours() && etat.build() != null) {
+            binding.fab.setEtat(true, ecran.getString(
+                    R.string.console_etat_encours,
+                    etat.build().phase() == null
+                            ? ecran.getString(R.string.console_phase_aucune)
+                            : etat.build().phase()));
+        } else {
+            binding.fab.setEtat(false, null);
+        }
+        buildEnCours = etat.buildEnCours();
+    }
+
+    @Override
+    public void majVerdictConsole() {
+        // lot L3 (ADR-083) : la zone vivante console — verdict coloré
+        // selon l'état, détail = dernier bilan, pipeline de 3 segments
+        String libelle = etatConsole.libelleCourt();
+        int couleur;
+        String verdict;
+        switch (etatConsole.etat()) {
+            case EN_COURS -> {
+                couleur = palette.accent;
+                verdict = "● " + libelle;
+            }
+            case REUSSI -> {
+                couleur = palette.reussite;
+                verdict = "✓ " + libelle;
+            }
+            case ECHOUE -> {
+                couleur = palette.erreur;
+                verdict = "✕ " + libelle;
+            }
+            case INTERROMPU -> {
+                couleur = palette.alerte;
+                verdict = "■ " + libelle;
+            }
+            default -> {
+                couleur = palette.texteSecondaire;
+                verdict = ecran.getString(R.string.console_etat_vide);
+            }
+        }
+        boolean enCours = etatConsole.etat() == EtatConsole.Etat.EN_COURS;
+        boolean resolutionOk = false;
+        boolean compilationOk = false;
+        boolean compilationErreur = false;
+        boolean assemblageAtteint = false;
+        boolean assemblageErreur = false;
+        for (EtatConsole.PhaseEtat phase : etatConsole.phases()) {
+            if (phase.phase() == jo.joide.app.android.ConsoleBuild.Phase.PREPARATION) {
+                resolutionOk = phase.commencee() && !enCours;
+            } else if (phase.phase()
+                    == jo.joide.app.android.ConsoleBuild.Phase.COMPILATION) {
+                compilationOk = phase.commencee() && !enCours;
+                compilationErreur = etatConsole.etat()
+                        == EtatConsole.Etat.ECHOUE;
+            } else if (phase.phase()
+                    == jo.joide.app.android.ConsoleBuild.Phase.ASSEMBLAGE) {
+                assemblageAtteint = phase.commencee();
+                assemblageErreur = etatConsole.etat()
+                        == EtatConsole.Etat.ECHOUE && assemblageAtteint;
+            }
+        }
+        binding.feuille.poserVerdictConsole(verdict, couleur,
+                String.valueOf(legendeDernierBilan()), enCours,
+                resolutionOk, compilationOk, compilationErreur,
+                assemblageAtteint, assemblageErreur);
+    }
+
+    private CharSequence legendeDernierBilan() {
+        List<jo.joide.app.android.ConsoleBuild.Ligne> lignes =
+                etatConsole.lignes();
+        for (int i = lignes.size() - 1; i >= 0; i--) {
+            String texte = lignes.get(i).texte();
+            if (texte.startsWith("build #") && texte.contains(" — ")) {
+                return texte.substring(texte.indexOf(" — ") + 3);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public void majConsole() {
+        // la zone console se monte à la première mise à jour (différée :
+        // jamais pendant le chargement de session)
+        if (vueConsole == null) {
+            monterConsole();
+        }
+        if (vueConsole == null) {
+            return;
+        }
+        vueConsole.maj(etatConsole,
+                session.racineProjet == null ? null
+                        : String.valueOf(
+                        session.racineProjet.getFileName()));
+        majVerdictConsole();
+    }
+
+    @Override
+    public void reconfigurerApercu() {
+        if (session.apercu == null || session.configApercuBase == null) {
+            return;
+        }
+        session.apercu.configurer(session.configApercuBase
+                .avecDensite(etatApercu.densite())
+                .avecDimensions(etatApercu.largeurPx(),
+                        etatApercu.hauteurPx())
+                .avecModeNuit(etatApercu.nuit()));
+        if (vueApercu != null) {
+            vueApercu.maj(etatApercu,
+                    session.fichierCourant == null ? null
+                            : Arborescence.nomAffiche(
+                            session.fichierCourant));
+        }
+    }
+
+    /** Pose le rendu LayoutLib tel quel, mis à l'échelle du volet. */
+    private void poserRendu(View rendu) {
+        if (vueApercu == null) {
+            return;
+        }
+        FrameLayout perchoir = vueApercu.conteneurRendu();
+        perchoir.removeAllViews();
+        int largeurMesuree = rendu.getMeasuredWidth();
+        int hauteurMesuree = rendu.getMeasuredHeight();
+        final int largeur = largeurMesuree <= 0
+                ? etatApercu.largeurPx() : largeurMesuree;
+        final int hauteur = hauteurMesuree <= 0
+                ? etatApercu.hauteurPx() : hauteurMesuree;
+        perchoir.addView(rendu, new FrameLayout.LayoutParams(largeur,
+                hauteur, Gravity.CENTER));
+        rendu.post(() -> {
+            float echelle = Math.min(1f,
+                    Math.min(perchoir.getWidth() / (float) largeur,
+                            perchoir.getHeight() / (float) hauteur));
+            rendu.setScaleX(echelle);
+            rendu.setScaleY(echelle);
+            rendu.setPivotX(0f);
+            rendu.setPivotY(0f);
+            perchoir.requestLayout();
+        });
+        perchoir.requestLayout();
+    }
+
+    /** Compte les MockView de l'arbre rendu (classes inconnues). */
+    private static int compterMockViews(View racine) {
+        int[] compte = new int[1];
+        parcourir(racine, compte, new int[]{0});
+        return compte[0];
+    }
+
+    private static void parcourir(View vue, int[] compte, int[] garde) {
+        if (garde[0]++ > 2000) {
+            return;
+        }
+        if (vue.getClass().getSimpleName().equals("MockView")) {
+            compte[0]++;
+        }
+        if (vue instanceof android.view.ViewGroup groupe) {
+            for (int i = 0; i < groupe.getChildCount(); i++) {
+                parcourir(groupe.getChildAt(i), compte, garde);
+            }
+        }
+    }
+
+    /** L'écouteur de rendu du moteur d'aperçu (posé au montage). */
+    @Override
+    public ApercuLayouts.EcouteurRendu ecouteurApercu() {
+        return new ApercuLayouts.EcouteurRendu() {
+            @Override
+            public void onSucces(View rendu, long dureeMs, int vues,
+                                 int largeur, int hauteur) {
+                poserRendu(rendu);
+                etatApercu.surSucces(vues, dureeMs, largeur, hauteur);
+                etatApercu.surMockViews(compterMockViews(rendu));
+                etatApercu.surRessourcesManquantes(
+                        session.apercu.ressourcesManquantes(
+                                session.xmlCourant));
+                if (vueApercu != null) {
+                    vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                            session.fichierCourant));
+                }
+            }
+
+            @Override
+            public void onErreur(String message, Throwable cause) {
+                etatApercu.surErreur(message);
+                if (vueApercu != null) {
+                    vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                            session.fichierCourant));
+                }
+            }
+
+            @Override
+            public void onXmlInvalide(String message) {
+                etatApercu.surXmlInvalide();
+                if (vueApercu != null) {
+                    vueApercu.maj(etatApercu, Arborescence.nomAffiche(
+                            session.fichierCourant));
+                }
+            }
+        };
+    }
+
+    /** Le vidage demandé de la console (confirmation honnête). */
+    private void confirmerVidage() {
+        Dialogue.confirmation(ecran, palette,
+                R.string.console_vider_titre,
+                R.string.console_vider_message,
+                R.string.action_annuler,
+                R.string.console_vider,
+                (dialog, lequel) -> {
+                    etatConsole.vider();
+                    majConsole();
+                });
+    }
+
+    /** Le contrôleur agent (le retour système et le menu y passent). */
+    ControleurAgent controleurAgent() {
+        return controleurAgent;
+    }
+
+    /** Le tiroir fichiers (le retour système le ferme, écran compact ;
+     *  null en grand écran : l'arbre y est amarré). */
+    TiroirPousse tiroir() {
+        return binding.tiroir;
+    }
+
+    /** Ferme tout : service agent, IDE, exécuteurs (onDestroy). */
+    void fermer() {
+        controleurAgent.debrancherService();
+        session.fermerIde();
+        fond.shutdown();
+        ecrivain.shutdown();
+    }
+
+    // ------------------------------------------------------------------
+    // HoteAtelier — les services d'écran délégués à la coque
+    // ------------------------------------------------------------------
+
+    @Override
+    public android.content.Context contexte() {
+        return ecran;
+    }
+
+    @Override
+    public void executerSurFilUi(Runnable action) {
+        ecran.runOnUiThread(action);
+    }
+
+    @Override
+    public String texte(int id) {
+        return ecran.getString(id);
+    }
+
+    @Override
+    public String texte(int id, Object... args) {
+        return ecran.getString(id, args);
+    }
+
+    @Override
+    public android.view.Window fenetre() {
+        return ecran.getWindow();
+    }
+
+    @Override
+    public java.io.File dossierFichiers() {
+        return ecran.getFilesDir();
+    }
+
+    @Override
+    public android.content.ContentResolver resolveurContenu() {
+        return ecran.getContentResolver();
+    }
+
+    @Override
+    public boolean possedeCamera() {
+        return ecran.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_CAMERA_ANY);
+    }
+
+    @Override
+    public void ouvrirEcran(Intent intention) {
+        ecran.startActivity(intention);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void ouvrirEcranPourResultat(Intent intention, int requete) {
+        // déprécié consenti (A1) : le contrat typé Ecrans.CHOISIR_IMAGE
+        // prend le relais au lot A7 (ADR-085 décision 13)
+        ecran.startActivityForResult(intention, requete);
+    }
+
+    @Override
+    public void demarrerServiceAvantPlan(Intent intention) {
+        ecran.startForegroundService(intention);
+    }
+
+    @Override
+    public void lierService(Intent intention,
+                           android.content.ServiceConnection connexion,
+                           int drapeaux) {
+        ecran.bindService(intention, connexion, drapeaux);
+    }
+
+    @Override
+    public void delierService(
+            android.content.ServiceConnection connexion) {
+        ecran.unbindService(connexion);
+    }
+
+    // ------------------------------------------------------------------
+    // HoteAtelier — les états
+    // ------------------------------------------------------------------
+
+    @Override
+    public EtatAtelier etat() {
+        return etat;
+    }
+
+    @Override
+    public EtatConsole etatConsole() {
+        return etatConsole;
+    }
+
+    @Override
+    public EtatApercu etatApercu() {
+        return etatApercu;
+    }
+
+    @Override
+    public EtatProblemes etatProblemes() {
+        return etatProblemes;
+    }
+
+    @Override
+    public EtatJournal etatJournal() {
+        return etatJournal;
+    }
+
+    @Override
+    public EtatLogcat etatLogcat() {
+        return etatLogcat;
+    }
+
+    @Override
+    public EtatAgentChat etatAgent() {
+        return etatAgent;
+    }
+
+    @Override
+    public void poserEtatAgent(EtatAgentChat etat) {
+        etatAgent = etat;
+    }
+
+    @Override
+    public Graphite.Palette palette() {
+        return palette;
+    }
+
+    @Override
+    public Reglages.Source sourceReglages() {
+        return sourceReglages;
+    }
+
+    @Override
+    public ExecutorService fond() {
+        return fond;
+    }
+
+    // ------------------------------------------------------------------
+    // HoteAtelier — la session
+    // ------------------------------------------------------------------
+
+    @Override
+    public java.nio.file.Path racineProjet() {
+        return session.racineProjet;
+    }
+
+    @Override
+    public jo.joide.model.Workspace modele() {
+        return session.modele;
+    }
+
+    @Override
+    public jo.joide.ide.langages.MoteursLangage moteurs() {
+        return session.moteurs;
+    }
+
+    @Override
+    public jo.joide.ide.sync.LanguageModelSync sync() {
+        return session.sync;
+    }
+
+    @Override
+    public SceneEditeur scene() {
+        return session.scene;
+    }
+
+    @Override
+    public ApercuLayouts apercu() {
+        return session.apercu;
+    }
+
+    @Override
+    public jo.joide.ide.apercu.ConfigurationApercu configApercuBase() {
+        return session.configApercuBase;
+    }
+
+    @Override
+    public EcrituresFusionnees ecritures() {
+        return session.ecritures;
+    }
+
+    @Override
+    public String fichierCourant() {
+        return session.fichierCourant;
+    }
+
+    @Override
+    public void poserFichierCourant(String fichier) {
+        session.fichierCourant = fichier;
+    }
+
+    @Override
+    public String xmlCourant() {
+        return session.xmlCourant;
+    }
+
+    @Override
+    public void poserXmlCourant(String xml) {
+        session.xmlCourant = xml;
+    }
+
+    @Override
+    public List<String> fichiersArbre() {
+        return session.fichiersArbre;
+    }
+
+    @Override
+    public void poserFichiersArbre(List<String> fichiers) {
+        session.fichiersArbre = fichiers;
+    }
+
+    @Override
+    public boolean sortiesPresentes() {
+        return session.sortiesPresentes;
+    }
+
+    @Override
+    public void poserSortiesPresentes(boolean presentes) {
+        session.sortiesPresentes = presentes;
+    }
+
+    @Override
+    public boolean buildEnCours() {
+        return buildEnCours;
+    }
+
+    @Override
+    public void poserBuildEnCours(boolean enCours) {
+        buildEnCours = enCours;
+    }
+
+    @Override
+    public Set<String> dossiersOuverts() {
+        return dossiersOuverts;
+    }
+
+    @Override
+    public String filtreTiroir() {
+        return filtreTiroir;
+    }
+
+    @Override
+    public void poserFiltreTiroir(String filtre) {
+        filtreTiroir = filtre;
+    }
+
+    @Override
+    public List<PieceJointe> piecesAgent() {
+        return piecesAgent;
+    }
+
+    @Override
+    public List<PieceJointe> piecesEnAttenteAgent() {
+        return piecesEnAttenteAgent;
+    }
+
+    @Override
+    public String messageEnAttenteAgent() {
+        return messageEnAttenteAgent;
+    }
+
+    @Override
+    public void poserMessageEnAttenteAgent(String message) {
+        messageEnAttenteAgent = message;
+    }
+
+    @Override
+    public AgentService.AgentBinder agent() {
+        return agent;
+    }
+
+    @Override
+    public void poserAgent(AgentService.AgentBinder binder) {
+        agent = binder;
+    }
+
+    // ------------------------------------------------------------------
+    // HoteAtelier — les zones
+    // ------------------------------------------------------------------
+
+    @Override
+    public VueArbre vueArbre() {
+        return vueArbre;
+    }
+
+    @Override
+    public VueAgent vueAgent() {
+        return vueAgent;
+    }
+
+    @Override
+    public FeuilleBasse feuille() {
+        return binding.feuille;
+    }
+
+    @Override
+    public BarreOnglets barreOnglets() {
+        return binding.barreOnglets;
+    }
+
+    @Override
+    public FilAriane filAriane() {
+        return binding.filAriane;
+    }
+
+    @Override
+    public View boutonApercuOnglets() {
+        return binding.barreOnglets.boutonApercu();
+    }
+
+    @Override
+    public TiroirPousse tiroirAgent() {
+        if (tiroirAgent == null) {
+            return monterTiroirAgent();
+        }
+        return tiroirAgent;
+    }
+
+    @Override
+    public boolean tiroirAgentOuvert() {
+        return tiroirAgent != null && tiroirAgent.ouvert();
+    }
+
+    @Override
+    public TiroirFichiers tiroirFichiers() {
+        return binding.tiroirFichiers;
+    }
+
+    @Override
+    public Pilule piluleIndex() {
+        return binding.barreHaut.binding.piluleIndex;
+    }
+
+    @Override
+    public Puce puceModules() {
+        return binding.barreHaut.binding.puceModules;
+    }
+
+    @Override
+    public View pointAgent() {
+        return binding.barreHaut.binding.pointAgent;
+    }
+
+    @Override
+    public ControleurEdition controleurEdition() {
+        return controleurEdition;
+    }
+
+    // ------------------------------------------------------------------
+    // HoteAtelier — les mises à jour et le montage différé
+    // (majVolets/majConsole/majFab/majVerdictConsole/majPuits/
+    //  reconfigurerApercu/ecouteurApercu vivent plus haut, ce sont
+    // leurs corps ; les suivants délèguent ou portent leur logique)
+    // ------------------------------------------------------------------
+
+    @Override
+    public void majArbre() {
+        controleurFichiers.majArbre();
+    }
+
+    @Override
+    public void majPiluleIndex() {
+        controleurFichiers.majPiluleIndex();
+    }
+
+    @Override
+    public void rechargerArbre() {
+        controleurFichiers.rechargerArbre();
+    }
+
+    @Override
+    public void ecrireEnAttente() {
+        session.ecrireEnAttente();
+    }
+
+    @Override
+    public void montrerErreur(String message) {
+        binding.etatVidePuits.setTitre(
+                R.string.projet_illisible_sans_detail);
+        binding.etatVidePuits.setAide(message);
+    }
+
+    @Override
+    public void poserEtatVide(int titre, int aide) {
+        binding.etatVidePuits.setTitre(titre);
+        binding.etatVidePuits.setAide(aide);
+    }
+
+    @Override
+    public void poserNomProjet(String nom) {
+        binding.barreHaut.poserNomProjet(nom);
+    }
+
+    @Override
+    public void poserSceneEditeur(View scene, View couchePopups) {
+        binding.vueEditeur.addView(scene, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        binding.vueEditeur.addView(couchePopups,
+                new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+    }
+
+    @Override
+    public void viderEditeur() {
+        binding.vueEditeur.removeAllViews();
+    }
+}

@@ -83,6 +83,27 @@ public final class TiroirPousse extends FrameLayout {
         }
     }
 
+    /**
+     * Lot A6 (ADR-085 décision 1) — l'adoption des enfants XML : le
+     * tiroir se déclare dans un layout racine ({@code <TiroirPousse>}
+     * portant son contenu en balise fille, p. ex. le tiroir fichiers
+     * de l'atelier) ; les enfants déclarés migrent dans le PANNEAU
+     * après l'inflation — le rideau et la barrière de PIEGE-31 ne
+     * bougent pas, le contenu seul prend sa place au match.
+     */
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        while (getChildCount() > 2) {
+            // les enfants 0 et 1 sont le rideau et le panneau posés par
+            // le constructeur ; les balises filles arrivent après
+            View enfant = getChildAt(2);
+            removeViewAt(2);
+            panneau.addView(enfant, new FrameLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        }
+    }
+
     /** Le contenu du panneau (remplace le précédent). */
     public void setPanneau(View vue) {
         panneau.removeAllViews();

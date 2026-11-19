@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Atelier v2, lot L2 (ADR-083) — la bande d'onglets (§3.2) : 40 dp,
-  padding 0 8, espacement 3 (les marges des items). Les onglets se
-  gonflent depuis item_onglet ; le bouton d'aperçu (téléphone, onglet
-  actif mis en page) vit à droite de la bande.
+  Atelier v2, lot L2 (ADR-083), recyclé au lot A6 (ADR-085 décisions
+  10 et 11) — la bande d'onglets (§3.2) : 40 dp, padding 0 8. Les
+  ONGLETS FERMABLES vivent dans un RecyclerView HORIZONTAL (décision
+  11 : l'item_onglet du lot L2, DiffUtil par ModeleOnglets — plus de
+  removeAllViews()/ré-inflation complète à chaque maj, le coût par
+  mise à jour est borné ; l'onglet fermable exige une vue d'onglet
+  personnalisée — TabLayout doublerait l'indicateur maison 2 dp avec
+  sa propre mécanique de sélection) ; le bouton d'aperçu (téléphone,
+  onglet actif mis en page) vit à droite de la bande.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,22 +16,15 @@
     android:layout_height="40dp"
     android:orientation="horizontal">
 
-    <HorizontalScrollView
-        android:id="@+id/defilement_onglets"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rangee_onglets"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:clipToPadding="false"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:id="@+id/rangee_onglets"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
+        android:scrollbars="none" />
 
     <jo.joide.app.android.ui.Icone
         android:id="@+id/bouton_apercu"

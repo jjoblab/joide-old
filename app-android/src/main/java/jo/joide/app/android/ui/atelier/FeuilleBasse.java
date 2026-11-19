@@ -55,6 +55,14 @@ public final class FeuilleBasse extends LinearLayout {
         /** Le flux logcat doit démarrer (section ouverte) / s'arrêter
          *  (section quittée) — le relais se tranche dans l'ADR dédié. */
         void surLogcat(boolean actif);
+
+        /** Lot A6 (décision 1 — zones différées) : la feuille montre
+         *  son CORPS et la section active n'a pas de contenu (la
+         *  console vit derrière un {@code ViewStub}, les listes non) —
+         *  l'écran monte la zone AVANT que le corps apparaisse, jamais
+         *  une feuille ouverte sur un vide muet. Idempotent : le
+         *  montage est gardé, l'appel répété ne fait rien. */
+        void surOuverture();
     }
 
     /** Le binding de la feuille. */
@@ -84,6 +92,16 @@ public final class FeuilleBasse extends LinearLayout {
         binding = AtelierFeuilleBinding.inflate(
                 LayoutInflater.from(contexte), this, true);
         entete = binding.entete;
+        // lot A6 (ADR-085 décision 1) : les trois listes de section
+        // vivent dans le LAYOUT de la feuille (la feuille les adopte à
+        // sa construction — l'écran n'instancie plus rien ; la console
+        // reste posée par l'écran au gonflage de son stub)
+        contenus[EtatFeuille.Section.PROBLEMES.ordinal()] =
+                binding.listeProblemes;
+        contenus[EtatFeuille.Section.JOURNAL.ordinal()] =
+                binding.listeJournal;
+        contenus[EtatFeuille.Section.LOGCAT.ordinal()] =
+                binding.listeLogcat;
         installerGestes();
         installerRail();
         appliquerDetente(false);
@@ -135,6 +153,21 @@ public final class FeuilleBasse extends LinearLayout {
     /** Pose l'auditeur (l'écran garde le câblage). */
     public void setAuditeur(Auditeur ecouteur) {
         auditeur = ecouteur;
+    }
+
+    /** La liste des problèmes (l'écran câble ses auditions). */
+    public ListeProblemes listeProblemes() {
+        return binding.listeProblemes;
+    }
+
+    /** La liste du journal de l'IDE. */
+    public ListeJournal listeJournal() {
+        return binding.listeJournal;
+    }
+
+    /** La liste du logcat de l'application. */
+    public ListeLogcat listeLogcat() {
+        return binding.listeLogcat;
     }
 
     /** Pose le contenu d'une section (la VueConsole existant pour la
@@ -507,8 +540,20 @@ public final class FeuilleBasse extends LinearLayout {
                 etatFeuille.section().ordinal()]) {
             return;
         }
-        receptacle.removeAllViews();
         View contenu = contenus[etatFeuille.section().ordinal()];
+        if (contenu == null
+                && etatFeuille.detente() != EtatFeuille.Detente.REPLIE) {
+            // lot A6 : le contenu de la section CONSOLE se monte À LA
+            // DEMANDE (ViewStub de l'écran) — la feuille LE DEMANDE dès
+            // que son corps doit se montrer, jamais un vide muet (pas
+            // de boucle : l'auditeur monte la zone, la pose par
+            // poserContenu et le contenu devient non null)
+            if (auditeur != null) {
+                auditeur.surOuverture();
+            }
+            contenu = contenus[etatFeuille.section().ordinal()];
+        }
+        receptacle.removeAllViews();
         if (contenu != null) {
             receptacle.addView(contenu, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
@@ -585,30 +630,9 @@ public final class FeuilleBasse extends LinearLayout {
         entete.logcatVerdict.setTextColor(couleurVerdict);
         entete.logcatDetail.setText(detail);
         entete.logcatDetail.setTextColor(couleurDetail);
-        dessinerHistogramme(histogramme);
-    }
-
-    /** L'histogramme du débit : 9 barres 3 dp (la barre erreur en
-     *  couleur erreur, les autres texte3). */
-    private void dessinerHistogramme(EtatLogcat.Histogramme histogramme) {
-        LinearLayout rangee = entete.logcatHistogramme;
-        rangee.removeAllViews();
-        Graphite.Palette palette = GraphiteVue.palette(getContext());
-        for (int i = 0; i < EtatLogcat.BARRES_HISTOGRAMME; i++) {
-            View barre = new View(getContext());
-            GradientDrawable forme = new GradientDrawable();
-            forme.setCornerRadius(GraphiteVue.dp(getContext(), 2f));
-            forme.setColor(histogramme.erreurs()[i] ? palette.erreur
-                    : palette.texteEstompe);
-            barre.setBackground(forme);
-            LinearLayout.LayoutParams params = new LinearLayout
-                    .LayoutParams(GraphiteVue.dp(getContext(), 3f),
-                    GraphiteVue.dp(getContext(),
-                            Math.max(1, histogramme.hauteurs()[i])));
-            params.setMarginStart(GraphiteVue.dp(getContext(), 2f));
-            params.gravity = Gravity.BOTTOM;
-            rangee.addView(barre, params);
-        }
+        // lot A6 : les 9 barres se dessinent au Canvas
+        // (HistogrammeLogcat), plus de rangée posée vue par vue
+        entete.logcatHistogramme.poser(histogramme);
     }
 
     /** Le bouton ↓ « problème suivant » (§3.6) : branché par

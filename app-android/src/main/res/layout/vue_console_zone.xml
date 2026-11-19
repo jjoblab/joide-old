@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A6 (ADR-085 décision 1) — la zone console (VueConsole, lot A5)
+  se déclare dans un layout RACINE-GONFLABLE : le <ViewStub> de
+  l'atelier (stub_console) porte CE fichier, la vue se monte À LA
+  DEMANDE (première mise à jour de console ou première ouverture de
+  la feuille — jamais pendant le chargement de session). La classe
+  VueConsole gonfle elle-même son <merge> (vue_console.xml) : aucune
+  dimension ni couleur ici, la zone reste maîtresse de son identité.
+-->
+<jo.joide.app.android.console.VueConsole
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/vue_console" />

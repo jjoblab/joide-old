@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A6 (ADR-085 décision 1) — la zone d'aperçu (VueApercu, lot A5)
+  se déclare dans un layout RACINE-GONFLABLE : le <ViewStub> de
+  l'atelier (stub_apercu, dans le volet plein écran) porte CE fichier,
+  la vue se monte À LA DEMANDE (bascule plein écran ou volet droit du
+  grand écran — zone rare : seuls les fichiers de mise en page en ont
+  besoin). La classe VueApercu gonfle elle-même son <merge>
+  (vue_apercu.xml) : aucune dimension ni couleur ici.
+-->
+<jo.joide.app.android.atelier.VueApercu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/vue_apercu" />

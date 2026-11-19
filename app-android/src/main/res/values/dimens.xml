@@ -217,4 +217,27 @@
     <dimen name="jo_ecart_note_tronquee">8dp</dimen>
     <dimen name="jo_ecart_entete_groupe">8dp</dimen>
     <dimen name="jo_ecart_entete_groupe_bas">2dp</dimen>
+
+    <!-- Racine de l'atelier (lot A6, ADR-085 décisions 1 et 9 — les
+         valeurs du code d'hier font l'identité : les hauteurs de zone
+         posées par construireUi, la rangée du grand écran, le FAB) :
+         hauteurs de la barre (52), de la bande d'onglets (40), du fil
+         d'Ariane (28) et de la barre de symboles (42) ; grand écran :
+         le rail et ses cibles (48), le retrait du rail (10), la
+         colonne d'arbre amarrée (240) et le volet d'aperçu (320) ;
+         bannière de compatibilité : retrait 14 et aération 7 ; FAB :
+         bas 84 (feuille repliée 72 + 12) et droite 20 (§3.7) — mêmes
+         jetons, conformité §6. -->
+    <dimen name="jo_hauteur_barre_atelier">52dp</dimen>
+    <dimen name="jo_hauteur_onglets_atelier">40dp</dimen>
+    <dimen name="jo_hauteur_fil_ariane_atelier">28dp</dimen>
+    <dimen name="jo_hauteur_barre_symboles_atelier">42dp</dimen>
+    <dimen name="jo_largeur_rail_atelier">48dp</dimen>
+    <dimen name="jo_pad_rail_atelier">10dp</dimen>
+    <dimen name="jo_largeur_colonne_arbre_atelier">240dp</dimen>
+    <dimen name="jo_largeur_volet_apercu_atelier">320dp</dimen>
+    <dimen name="jo_pad_banniere_compat">14dp</dimen>
+    <dimen name="jo_ecart_banniere_compat">7dp</dimen>
+    <dimen name="jo_fab_bas">84dp</dimen>
+    <dimen name="jo_fab_droite">20dp</dimen>
 </resources>

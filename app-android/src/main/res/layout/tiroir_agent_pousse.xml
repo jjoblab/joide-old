@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A6 (ADR-085 décision 1) — le tiroir agent (lot P, ADR-É11) :
+  le <ViewStub> de l'atelier (stub_tiroir_agent) porte CE fichier et
+  se monte À LA DEMANDE (première ouverture du tiroir — le service
+  d'agent ne démarre qu'avec lui). TiroirPousse adopte son enfant XML
+  dans son panneau (onFinishInflate) : le TiroirPousse est le tiroir
+  poussé droite 360 dp, VueAgent le contenu — le côté droit se pose
+  par code au montage (config, pas instanciation). Aucune couleur ni
+  dimension : les zones restent maîtresses de leur identité.
+-->
+<jo.joide.app.android.ui.TiroirPousse
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tiroir_agent_pousse">
+
+    <jo.joide.app.android.atelier.agent.VueAgent
+        android:id="@+id/vue_agent" />
+</jo.joide.app.android.ui.TiroirPousse>

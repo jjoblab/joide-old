@@ -280,12 +280,13 @@
                     android:singleLine="true" />
             </LinearLayout>
 
-            <LinearLayout
+            <!-- l'histogramme du débit logcat (§3.6) : les 9 barres se
+                 DESSINENT au Canvas (lot A6 — la vue maison remplace
+                 la rangée de vues posées une à une par code) -->
+            <jo.joide.app.android.ui.atelier.HistogrammeLogcat
                 android:id="@+id/logcat_histogramme"
                 android:layout_width="wrap_content"
-                android:layout_height="22dp"
-                android:orientation="horizontal"
-                android:gravity="bottom" />
+                android:layout_height="22dp" />
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>

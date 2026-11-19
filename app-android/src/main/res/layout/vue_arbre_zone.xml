@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A6 (ADR-085 décision 1) — l'arborescence (VueArbre, lot A5) se
+  déclare dans un layout GONFLABLE SANS PARENT : la coque de l'atelier
+  gonfle CE fichier UNE fois puis pose la vue dans le conteneur de la
+  disposition courante (le cadre du tiroir fichiers en écran compact,
+  la colonne amarrée en layout-w720dp — le même arbre, deux amarrages,
+  jamais deux instances). VueArbre gonfle elle-même son <merge>
+  (vue_arbre.xml) : aucune dimension ni couleur ici.
+-->
+<jo.joide.app.android.atelier.VueArbre
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/vue_arbre" />

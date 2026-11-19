@@ -58,12 +58,30 @@
                 android:gravity="center_vertical" />
 
             <!-- le contenu de la section active (la vue de section se
-                 pose par code : VueConsole existant, listes de
-                 problèmes, journal, logcat) -->
+                 pose par code : VueConsole montée par stub au premier
+                 besoin, les TROIS LISTES vivent ICI depuis le lot A6 —
+                 la feuille les adopte à sa construction, plus de vues
+                 instanciées par l'écran) -->
             <FrameLayout
                 android:id="@+id/contenu_feuille"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content">
+
+                <jo.joide.app.android.ui.atelier.ListeProblemes
+                    android:id="@+id/liste_problemes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <jo.joide.app.android.ui.atelier.ListeJournal
+                    android:id="@+id/liste_journal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <jo.joide.app.android.ui.atelier.ListeLogcat
+                    android:id="@+id/liste_logcat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </FrameLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
