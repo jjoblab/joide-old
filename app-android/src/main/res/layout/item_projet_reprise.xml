@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Carte de reprise (ADR-085, lot A2) : la carte tonale du kit (dégradé
+  accent 8 % → surface, bord accent 35 %) — les couleurs dépendent de
+  l'accent du nuancier, elles se posent AU BIND (décision 8 : couleurs
+  calculées dynamiquement, jamais de jeton figé) ; le chevron ouvre.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/carte_reprise"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/jo_ecart_accueil"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="?attr/jo_surface"
+    app:cardElevation="3dp"
+    app:strokeColor="?attr/jo_bord_fin"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/jo_pad_carte">
+
+        <jo.joide.app.android.ui.TuileProjet
+            android:id="@+id/tuile_reprise"
+            android:layout_width="@dimen/jo_tuile"
+            android:layout_height="@dimen/jo_tuile"
+            android:layout_marginRight="@dimen/jo_ecart_carte_interieur" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/legende_reprise"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="@string/accueil_reprendre"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte3" />
+
+            <TextView
+                android:id="@+id/nom_reprise"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/meta_reprise"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.Note"
+                android:textColor="?attr/jo_texte2" />
+        </LinearLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/chevron_reprise"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="@dimen/jo_ecart_carte_interieur"
+            android:contentDescription="@null"
+            android:clickable="false"
+            android:focusable="false"
+            app:jo_icone_glyphe="chevron"
+            app:jo_icone_couleur="?attr/jo_texte3" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

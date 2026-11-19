@@ -69,4 +69,16 @@
         </attr>
         <attr name="jo_icone_couleur" format="reference|color" />
     </declare-styleable>
+
+    <!-- Tuile de projet (lot A2, ADR-085) : le type porté par la tuile
+         des cartes — fond et glyphe suivent ChoixCarte (calculés depuis
+         la palette : jamais une couleur en XML). -->
+    <declare-styleable name="JoTuileProjet">
+        <attr name="jo_tuile_type" format="enum">
+            <enum name="projet_android" value="0" />
+            <enum name="console" value="1" />
+            <enum name="bibliotheque" value="2" />
+            <enum name="vide" value="3" />
+        </attr>
+    </declare-styleable>
 </resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aucun résultat de recherche (ADR-085, lot A2). -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/aucun_resultat"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/jo_ecart_aucun"
+    android:textAppearance="@style/TextAppearance.Jo.Note"
+    android:textColor="?attr/jo_texte2" />

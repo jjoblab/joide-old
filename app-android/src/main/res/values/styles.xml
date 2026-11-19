@@ -76,4 +76,50 @@
     <style name="ShapeAppearance.Jo.Pilule" parent="ShapeAppearance.Material3.Corner.Full">
         <item name="cornerSize">@dimen/jo_rayon_puce</item>
     </style>
+
+    <!-- Boutons Graphite (ADR-085 D2, lot A2) : hauteur 52, retrait
+         horizontal 24, corps 15/22, rayon 12 (thème) — les couleurs
+         suivent ChoixBouton (PRIMAIRE accent/texte-sur-accent, TONAL
+         surface-haute/texte : M3 ne sait pas dire « surface haute »
+         en tonal, l'habillage le dit pour lui). -->
+    <style name="Widget.Jo.Button.Primaire" parent="Widget.Material3.Button">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Corps</item>
+        <item name="android:minHeight">@dimen/jo_bouton_hauteur</item>
+        <item name="android:paddingLeft">@dimen/jo_bouton_retrait</item>
+        <item name="android:paddingRight">@dimen/jo_bouton_retrait</item>
+        <item name="android:textColor">?attr/jo_texte_sur_accent</item>
+        <item name="backgroundTint">?attr/jo_accent</item>
+    </style>
+
+    <style name="Widget.Jo.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Corps</item>
+        <item name="android:minHeight">@dimen/jo_bouton_hauteur</item>
+        <item name="android:paddingLeft">@dimen/jo_bouton_retrait</item>
+        <item name="android:paddingRight">@dimen/jo_bouton_retrait</item>
+        <item name="android:textColor">?attr/jo_texte</item>
+        <item name="backgroundTint">?attr/jo_surface_haute</item>
+    </style>
+
+    <style name="Widget.Jo.Button.Texte" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAppearance">@style/TextAppearance.Jo.Corps</item>
+        <item name="android:minHeight">@dimen/jo_bouton_hauteur</item>
+        <item name="android:paddingLeft">@dimen/jo_bouton_retrait</item>
+        <item name="android:paddingRight">@dimen/jo_bouton_retrait</item>
+        <item name="android:textColor">?attr/jo_accent</item>
+    </style>
+
+    <!-- Champ Graphite (ADR-085 D2, lot A2) : le kit Champ est un fond
+         surface, liseré bord-fin 1 dp, rayon 12, hint estompé, texte
+         corps — TextInputLayout OutlinedBox habillé aux mêmes jetons
+         (ChoixChamp en reste la source). -->
+    <style name="Widget.Jo.Champ" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="hintEnabled">false</item>
+        <item name="boxBackgroundColor">?attr/jo_surface</item>
+        <item name="boxStrokeColor">?attr/jo_bord_fin</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxCornerRadiusTopStart">@dimen/jo_rayon_composant</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/jo_rayon_composant</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/jo_rayon_composant</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/jo_rayon_composant</item>
+    </style>
 </resources>

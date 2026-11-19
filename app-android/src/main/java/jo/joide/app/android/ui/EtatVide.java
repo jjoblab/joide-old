@@ -5,8 +5,12 @@ import android.graphics.Canvas;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * État vide du kit : zone en pointillés (rayon 28 dp, bord 1,5 dp,
@@ -22,6 +26,10 @@ public final class EtatVide extends LinearLayout {
     private LinearLayout rangeeActions;
     private TextView vueTitre;
     private TextView vueAide;
+    /** Les actions déclarées en XML, adoptées à l'attachement (lot A2,
+     * ADR-085) : la rangée reste TOUJOURS en fin de zone, l'ordre du kit
+     * (glyphe, titre, aide, actions) est préservé. */
+    private final List<View> actionsXml = new ArrayList<>();
 
     public EtatVide(Context contexte) {
         this(contexte, null);
@@ -94,6 +102,15 @@ public final class EtatVide extends LinearLayout {
      * accueil : rangée d'actions en colonne).
      */
     public void addAction(Bouton action) {
+        addAction((View) action);
+    }
+
+    /**
+     * Ajoute une action empilée — la version View (lot A2, ADR-085) :
+     * les boutons Material déclarés dans {@code item_etat_vide_accueil.xml}
+     * entrent par ici, le kit ne décide rien de leur rendu.
+     */
+    public void addAction(View action) {
         if (rangeeActions == null) {
             rangeeActions = new LinearLayout(getContext());
             rangeeActions.setOrientation(VERTICAL);
@@ -106,6 +123,30 @@ public final class EtatVide extends LinearLayout {
                 new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT));
+    }
+
+    /**
+     * Les actions déclarées EN XML partent en attente : elles seront
+     * rangées dans la rangée d'actions à l'attachement — APRÈS le
+     * glyphe, le titre et l'aide posés par les setters du kit.
+     */
+    @Override
+    protected void onFinishInflate() {
+        super.onFinishInflate();
+        for (int i = getChildCount() - 1; i >= 0; i--) {
+            actionsXml.add(0, getChildAt(i));
+        }
+        removeAllViews();
+    }
+
+    /** L'attachement range les actions déclarées en XML (fin de zone). */
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        for (View action : actionsXml) {
+            addAction(action);
+        }
+        actionsXml.clear();
     }
 
     @Override

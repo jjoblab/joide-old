@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pilule du compteur de section (lot A2) : surface haute du THÈME
+     (?attr), rayon pilule Graphite — jamais de couleur codée en dur. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface_haute" />
+    <corners android:radius="@dimen/jo_rayon_puce" />
+</shape>

@@ -64,6 +64,7 @@ androidxAppcompat = "1.8.0"
 androidxCore = "1.19.1"
 androidxActivity = "1.13.0"
 material = "1.14.0"
+androidxRecyclerview = "1.4.0"
 
 [libraries]
 # Alias de classpath pour build-logic (application du plugin AGP par les
@@ -100,6 +101,7 @@ androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "a
 androidx-core = { module = "androidx.core:core", version.ref = "androidxCore" }
 androidx-activity = { module = "androidx.activity:activity", version.ref = "androidxActivity" }
 material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidxRecyclerview" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 # Éditeur (celeris) : le POM d'android-host tire android-view (et par lui

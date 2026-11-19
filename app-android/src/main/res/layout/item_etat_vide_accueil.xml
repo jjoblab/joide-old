@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- État vide de première visite (ADR-085, lot A2) : la vue du kit
+     EtatVide (conservée : pas d'équivalent Material) se déclare en XML ;
+     les boutons Material déclarés en enfants sont ADOPTÉS par la vue
+     dans sa rangée d'actions (fin de zone, l'ordre du kit préservé). -->
+<jo.joide.app.android.ui.EtatVide xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/vide_accueil"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/action_vide_creer"
+        style="@style/Widget.Jo.Button.Primaire"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/accueil_vide_creer" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/action_vide_importer"
+        style="@style/Widget.Jo.Button.Tonal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/accueil_vide_importer" />
+</jo.joide.app.android.ui.EtatVide>

@@ -1,19 +1,14 @@
 package jo.joide.app.android;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.TypedValue;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,49 +23,44 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jo.joide.app.android.ui.ActiviteJoide;
+import jo.joide.app.android.accueil.AdaptateurAccueil;
 import jo.joide.app.android.accueil.AgeRelatif;
 import jo.joide.app.android.accueil.ClassifieurProjet;
 import jo.joide.app.android.accueil.EtatAccueil;
+import jo.joide.app.android.accueil.ElementAccueil;
 import jo.joide.app.android.accueil.ProjetsRecents;
-import jo.joide.app.android.accueil.Salutation;
 import jo.joide.app.android.accueil.TypeProjet;
+import jo.joide.app.android.databinding.ActivityAccueilBinding;
 import jo.joide.app.android.ecrans.Ecrans;
-import jo.joide.app.android.ecrans.creation.EcranCreation;
-import jo.joide.app.android.ecrans.atelier.EcranAtelier;
-import jo.joide.app.android.ui.Bouton;
-import jo.joide.app.android.ui.Carte;
-import jo.joide.app.android.ui.Champ;
 import jo.joide.app.android.ui.Dialogue;
-import jo.joide.app.android.ui.EtatVide;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
-import jo.joide.app.android.ui.Icone;
-import jo.joide.app.android.ui.choix.ChoixBouton;
 import jo.joide.model.Workspace;
 import jo.joide.model.WorkspaceLoader;
 import jo.joide.platform.Clock;
 
 /**
- * L'accueil « Mes projets » (ADR-É3, lot H) : le hub de projets, écran
- * de lancement de l'application. Il ne monte aucun moteur (aucune
- * résolution, aucun index) — il est instantané et ne quitte jamais la
- * barre d'application. La création est au premier plan (bouton
- * primaire), l'import SAF est l'action secondaire visible, la carte
- * « Reprendre » rouvre le projet le plus récent, l'état vide est un
- * état de première classe.
+ * L'accueil « Mes projets » (ADR-É3, lot H ; racine XML + liste recyclée
+ * au lot A2 de l'ADR-085) : le hub de projets, écran de lancement — il ne
+ * monte aucun moteur, reste instantané et ne quitte jamais la barre
+ * d'application.
  *
- * <p>Vue mince : le tri, la fusion de la reprise, le filtrage et le
- * compteur vivent dans {@link EtatAccueil} (purs, testés JVM) ; la
- * persistance dans {@link ProjetsRecents} (JSON atomique, ADR-049) ;
- * la classification dans {@link ClassifieurProjet}. Les actions ⋮
- * (renommer l'affichage, supprimer avec ses deux conséquences
- * distinctes) et la recherche filtrent l'état, jamais l'inverse.</p>
+ * <p>Coque mince (décision 2) : la hiérarchie vit dans
+ * {@code activity_accueil.xml} (barre d'application, champ de recherche
+ * Material, progression, RecyclerView), la liste dans
+ * {@link AdaptateurAccueil} (ListAdapter/DiffUtil, view-holders
+ * {@code *Binding}) ; le tri, la fusion de la reprise, le filtrage et le
+ * compteur vivent dans {@link EtatAccueil} (purs, testés JVM), la
+ * persistance dans {@link ProjetsRecents}, la classification dans
+ * {@link ClassifieurProjet}. Les actions ⋮ et les dialogues existants
+ * restent en {@link Dialogue} jusqu'au lot A7 (D3 : les usages existants
+ * deviennent des popups ; aucun nouveau dialogue n'est introduit).</p>
  */
 public final class MainActivity extends ActiviteJoide {
 
     /**
      * L'import SAF par CONTRAT typé (ADR-085, décision 13 — lot A1) :
-     * le code de requête PICK_IMPORT=41 disparaît, l'arbre choisi
+     * le code de requête PICK_IMPORT=41 a disparu, l'arbre choisi
      * arrive directement au greffon — plus d'onActivityResult.
      */
     private final ActivityResultLauncher<Uri> importLauncher =
@@ -85,11 +75,9 @@ public final class MainActivity extends ActiviteJoide {
             });
     private final AtomicLong compteImport = new AtomicLong();
 
+    private ActivityAccueilBinding ecran;
+    private AdaptateurAccueil adaptateur;
     private Graphite.Palette palette;
-    private TextView legende;
-    private Champ champRecherche;
-    private TextView ligneProgression;
-    private LinearLayout colonneContenu;
 
     private List<ProjetsRecents.Entree> entrees = List.of();
     private String filtre = "";
@@ -100,7 +88,31 @@ public final class MainActivity extends ActiviteJoide {
         super.onCreate(state);
         palette = GraphiteVue.palette(this);
         GraphiteVue.fondEcran(this, palette);
-        setContentView(construireUi());
+        ecran = monter(ActivityAccueilBinding::inflate);
+        adaptateur = new AdaptateurAccueil(new Hote());
+        ecran.listeAccueil.setLayoutManager(new LinearLayoutManager(this));
+        ecran.listeAccueil.setAdapter(adaptateur);
+        ecran.actionRecherche.setOnClickListener(v -> basculerRecherche());
+        ecran.actionMenu.setOnClickListener(v -> menuApplication());
+        ecran.editionRecherche.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a,
+                                          int b, int c) {
+                // rien : le changement se traite après
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int a,
+                                      int b, int c) {
+                // rien : le changement se traite après
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                filtre = s.toString();
+                rendre();
+            }
+        });
     }
 
     @Override
@@ -109,86 +121,6 @@ public final class MainActivity extends ActiviteJoide {
         // le retour d'un autre écran (création, atelier) peut avoir
         // changé la liste : elle se relit, la salutation se recale
         recharger();
-    }
-
-    private LinearLayout construireUi() {
-        LinearLayout racine = new LinearLayout(this);
-        racine.setOrientation(LinearLayout.VERTICAL);
-
-        // Barre d'application (ADR-É3) : titre d'écran, salutation
-        // datée, actions recherche et ⋮.
-        LinearLayout barreApp = new LinearLayout(this);
-        barreApp.setOrientation(LinearLayout.HORIZONTAL);
-        barreApp.setPadding(GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 10), GraphiteVue.dp(this, 12),
-                GraphiteVue.dp(this, 2));
-        LinearLayout titres = new LinearLayout(this);
-        titres.setOrientation(LinearLayout.VERTICAL);
-        TextView titre = new TextView(this);
-        GraphiteVue.typographie(titre, Graphite.TITRE_ECRAN);
-        titre.setTextColor(palette.texte);
-        titre.setText(R.string.accueil_titre);
-        titres.addView(titre);
-        legende = new TextView(this);
-        GraphiteVue.typographie(legende, Graphite.NOTE);
-        legende.setTextColor(palette.texteSecondaire);
-        titres.addView(legende);
-        barreApp.addView(titres, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        barreApp.addView(boutonIcone(Icone.Glyphe.RECHERCHE,
-                v -> basculerRecherche()));
-        barreApp.addView(boutonIcone(Icone.Glyphe.POINTS,
-                v -> menuApplication()));
-        racine.addView(barreApp);
-
-        // Recherche (cachée jusqu'à l'action) et progression d'import.
-        champRecherche = new Champ(this);
-        champRecherche.sansEtiquette();
-        champRecherche.setIndice(R.string.accueil_rechercher_indice);
-        champRecherche.setVisibility(View.GONE);
-        champRecherche.edition().addTextChangedListener(
-                new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence s, int a,
-                                                  int b, int c) {
-                        // rien : le changement se traite après
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence s, int a,
-                                              int b, int c) {
-                        // rien : le changement se traite après
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable s) {
-                        filtre = s.toString();
-                        rendre();
-                    }
-                });
-        racine.addView(champRecherche, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        ligneProgression = new TextView(this);
-        GraphiteVue.typographie(ligneProgression, Graphite.NOTE);
-        ligneProgression.setTextColor(palette.texteSecondaire);
-        ligneProgression.setPadding(GraphiteVue.dp(this, Graphite.MARGE),
-                0, GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 4));
-        ligneProgression.setVisibility(View.GONE);
-        racine.addView(ligneProgression);
-
-        ScrollView defile = new ScrollView(this);
-        colonneContenu = new LinearLayout(this);
-        colonneContenu.setOrientation(LinearLayout.VERTICAL);
-        colonneContenu.setPadding(GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 12), GraphiteVue.dp(this, Graphite.MARGE),
-                GraphiteVue.dp(this, 8));
-        defile.addView(colonneContenu);
-        racine.addView(defile, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
-        return racine;
     }
 
     // ---- État ----
@@ -218,42 +150,18 @@ public final class MainActivity extends ActiviteJoide {
     private void rendre() {
         majLegende();
         EtatAccueil.Vue vue = EtatAccueil.composer(entrees, filtre);
-        colonneContenu.removeAllViews();
-        if (vue.premiereFois()) {
-            colonneContenu.addView(etatVide());
-            return;
-        }
-        if (vue.reprise() != null) {
-            colonneContenu.addView(carte(vue.reprise(), true),
-                    marges(0, GraphiteVue.dp(this, 10)));
-        }
-        colonneContenu.addView(rangeeActions(),
-                marges(0, GraphiteVue.dp(this, 10)));
-        if (vue.sectionVisible()) {
-            colonneContenu.addView(enteteSection(vue),
-                    marges(GraphiteVue.dp(this, 6), 0));
-            for (ProjetsRecents.Entree e : vue.section()) {
-                colonneContenu.addView(carte(e, false),
-                        marges(0, GraphiteVue.dp(this, Graphite.GOUTTIERE / 2)));
-            }
-            if (vue.aucunResultat()) {
-                TextView aucun = new TextView(this);
-                GraphiteVue.typographie(aucun, Graphite.NOTE);
-                aucun.setTextColor(palette.texteSecondaire);
-                aucun.setText(getString(R.string.accueil_aucun_resultat,
-                        filtre));
-                colonneContenu.addView(aucun,
-                        marges(0, GraphiteVue.dp(this, 8)));
-            }
-        }
+        adaptateur.submitList(ElementAccueil.composer(vue,
+                getString(R.string.accueil_aucun_resultat, filtre)));
     }
 
     private void majLegende() {
         LocalDateTime maintenant = LocalDateTime.now();
-        int mot = Salutation.de(maintenant.getHour()) == Salutation.Moment.BONJOUR
+        int mot = jo.joide.app.android.accueil.Salutation.de(
+                maintenant.getHour()) == jo.joide.app.android.accueil
+                .Salutation.Moment.BONJOUR
                 ? R.string.accueil_salutation_bonjour
                 : R.string.accueil_salutation_bonsoir;
-        legende.setText(getString(mot) + " — "
+        ecran.legendeAccueil.setText(getString(mot) + " — "
                 + dateLegende(maintenant.toLocalDate()));
     }
 
@@ -266,194 +174,19 @@ public final class MainActivity extends ActiviteJoide {
         return DateTimeFormatter.ofPattern(motif, locale).format(jour);
     }
 
-    // ---- Composants ----
-
-    private View boutonIcone(Icone.Glyphe glyphe,
-                             View.OnClickListener auditeur) {
-        FrameLayout bouton = new FrameLayout(this);
-        TypedValue indication = new TypedValue();
-        getTheme().resolveAttribute(
-                android.R.attr.selectableItemBackgroundBorderless,
-                indication, true);
-        bouton.setBackgroundResource(indication.resourceId);
-        bouton.setClickable(true);
-        bouton.setOnClickListener(auditeur);
-        Icone icone = new Icone(this);
-        icone.setGlyphe(glyphe);
-        icone.setCouleur(palette.texteSecondaire);
-        int cote = GraphiteVue.dp(this, 40);
-        FrameLayout.LayoutParams placements = new FrameLayout.LayoutParams(
-                GraphiteVue.dp(this, 22), GraphiteVue.dp(this, 22),
-                android.view.Gravity.CENTER);
-        bouton.addView(icone, placements);
-        LinearLayout.LayoutParams parametres = new LinearLayout.LayoutParams(
-                cote, cote);
-        parametres.leftMargin = GraphiteVue.dp(this, 4);
-        bouton.setLayoutParams(parametres);
-        return bouton;
-    }
-
-    private View etatVide() {
-        EtatVide vide = new EtatVide(this);
-        vide.setGlypheDossier();
-        vide.setTitre(R.string.accueil_vide_titre);
-        vide.setAide(R.string.accueil_vide_aide);
-        Bouton creer = new Bouton(this);
-        creer.setVariante(ChoixBouton.Variante.PRIMAIRE);
-        creer.setTexte(R.string.accueil_vide_creer);
-        creer.setOnClickListener(v -> nouveauProjet());
-        vide.addAction(creer);
-        Bouton importer = new Bouton(this);
-        importer.setVariante(ChoixBouton.Variante.TONAL);
-        importer.setTexte(R.string.accueil_vide_importer);
-        importer.setOnClickListener(v -> importerDossier());
-        vide.addAction(importer);
-        return vide;
-    }
-
-    private View rangeeActions() {
-        LinearLayout rangee = new LinearLayout(this);
-        rangee.setOrientation(LinearLayout.HORIZONTAL);
-        Bouton nouveau = new Bouton(this);
-        nouveau.setVariante(ChoixBouton.Variante.PRIMAIRE);
-        nouveau.setTexte(R.string.accueil_nouveau_projet);
-        nouveau.setOnClickListener(v -> nouveauProjet());
-        rangee.addView(nouveau, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        Bouton importer = new Bouton(this);
-        importer.setVariante(ChoixBouton.Variante.TONAL);
-        importer.setTexte(R.string.accueil_importer);
-        importer.setOnClickListener(v -> importerDossier());
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.leftMargin = GraphiteVue.dp(this, 10);
-        rangee.addView(importer, placements);
-        return rangee;
-    }
-
-    private View enteteSection(EtatAccueil.Vue vue) {
-        LinearLayout section = new LinearLayout(this);
-        section.setOrientation(LinearLayout.HORIZONTAL);
-        section.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        TextView nom = new TextView(this);
-        GraphiteVue.typographie(nom, Graphite.NOTE);
-        nom.setTypeface(GraphiteVue.police(this, 600, false));
-        nom.setTextColor(palette.texteSecondaire);
-        nom.setText(R.string.accueil_section_projets);
-        section.addView(nom);
-        TextView compte = new TextView(this);
-        GraphiteVue.typographie(compte, Graphite.LEGENDE);
-        compte.setTextColor(palette.texteSecondaire);
-        compte.setText(vue.texteCompteur());
-        android.graphics.drawable.GradientDrawable fond =
-                new android.graphics.drawable.GradientDrawable();
-        fond.setColor(palette.surfaceHaute);
-        fond.setCornerRadius(GraphiteVue.dp(this, Graphite.RAYON_PUCE));
-        compte.setBackground(fond);
-        compte.setPadding(GraphiteVue.dp(this, 8),
-                GraphiteVue.dp(this, 1), GraphiteVue.dp(this, 8),
-                GraphiteVue.dp(this, 1));
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.leftMargin = GraphiteVue.dp(this, 8);
-        section.addView(compte, placements);
-        return section;
-    }
-
-    private View carte(ProjetsRecents.Entree entree, boolean reprise) {
-        Carte carte = new Carte(this);
-        carte.setTonale(reprise);
-        carte.setTuile(entree.type().tuile());
-        LinearLayout corps = carte.corps();
-        if (reprise) {
-            TextView legendeCarte = Carte.ligneLegende(this);
-            legendeCarte.setText(R.string.accueil_reprendre);
-            corps.addView(legendeCarte);
-        }
-        TextView nom = Carte.ligneNom(this);
-        nom.setText(entree.nomAffiche());
-        corps.addView(nom);
-        TextView meta = Carte.ligneMeta(this);
-        meta.setText(metaLigne(entree));
-        corps.addView(meta);
-        if (reprise) {
-            Icone chevron = new Icone(this);
-            chevron.setGlyphe(Icone.Glyphe.CHEVRON);
-            chevron.setCouleur(palette.texteEstompe);
-            carte.addAccessoire(chevron);
-        } else {
-            FrameLayout points = (FrameLayout) boutonIcone(
-                    Icone.Glyphe.POINTS, v -> menuProjet(entree));
-            carte.addAccessoire(points);
-        }
-        carte.setOnClickListener(v -> ouvrir(entree));
-        carte.setClickable(true);
-        return carte;
-    }
-
-    private String metaLigne(ProjetsRecents.Entree entree) {
-        if (entree.type() == TypeProjet.GRADLE) {
-            return getString(R.string.type_gradle_meta);
-        }
-        AgeRelatif.Age age = AgeRelatif.de(
-                Clock.system().wallTimeMillis(),
-                entree.dernierOuverture());
-        String modules = entree.nbModules() == 1
-                ? getString(R.string.meta_module_1, entree.nbModules())
-                : getString(R.string.meta_modules, entree.nbModules());
-        return getString(R.string.meta_projet, typeTexte(entree.type()),
-                modules, ageTexte(age));
-    }
-
-    private String typeTexte(TypeProjet type) {
-        int id = switch (type) {
-            case ANDROID -> R.string.type_android;
-            case CONSOLE -> R.string.type_console;
-            case BIBLIOTHEQUE -> R.string.type_bibliotheque;
-            case VIDE -> R.string.type_vide;
-            case GRADLE -> R.string.type_gradle_meta;
-        };
-        return getString(id);
-    }
-
-    private String ageTexte(AgeRelatif.Age age) {
-        return switch (age.unite()) {
-            case INSTANT -> getString(R.string.age_instant);
-            case MINUTES -> getString(R.string.age_minutes, age.valeur());
-            case HEURES -> getString(R.string.age_heures, age.valeur());
-            case HIER -> getString(R.string.age_hier);
-            case JOURS -> getString(R.string.age_jours, age.valeur());
-            case SEMAINE_DERNIERE -> getString(R.string.age_semaine_derniere);
-            case SEMAINES -> getString(R.string.age_semaines, age.valeur());
-            case MOIS -> getString(R.string.age_mois, age.valeur());
-            case ANNEE -> getString(R.string.age_annee);
-        };
-    }
-
-    private static LinearLayout.LayoutParams marges(int dessus, int dessous) {
-        LinearLayout.LayoutParams placements = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        placements.topMargin = dessus;
-        placements.bottomMargin = dessous;
-        return placements;
-    }
-
-    // ---- Actions ----
+    // ---- Actions (les dialogues existants attendent A7, D3) ----
 
     private void nouveauProjet() {
-        startActivity(new Intent(this, EcranCreation.class));
+        startActivity(Ecrans.creation(this));
     }
 
     private void basculerRecherche() {
-        if (champRecherche.getVisibility() == View.VISIBLE) {
-            champRecherche.setVisibility(View.GONE);
-            champRecherche.edition().setText("");
+        if (ecran.champRecherche.getVisibility() == View.VISIBLE) {
+            ecran.champRecherche.setVisibility(View.GONE);
+            ecran.editionRecherche.setText("");
         } else {
-            champRecherche.setVisibility(View.VISIBLE);
-            champRecherche.edition().requestFocus();
+            ecran.champRecherche.setVisibility(View.VISIBLE);
+            ecran.editionRecherche.requestFocus();
         }
     }
 
@@ -467,9 +200,7 @@ public final class MainActivity extends ActiviteJoide {
                         getString(R.string.accueil_menu_a_propos)},
                 (dialog, lequel) -> {
                     if (lequel == 0) {
-                        startActivity(new Intent(this,
-                                jo.joide.app.android.ecrans.parametres
-                                        .EcranParametres.class));
+                        startActivity(Ecrans.parametres(this));
                     } else {
                         aPropos();
                     }
@@ -510,13 +241,10 @@ public final class MainActivity extends ActiviteJoide {
                         entree.nomAffiche(), entree.type(),
                         entree.dossier(), maintenant, entree.nbModules()));
         persister();
-        Intent intention = new Intent(this, EcranAtelier.class);
-        intention.putExtra(EcranAtelier.EXTRA_RACINE, racine.toString());
-        if (entree.type() == TypeProjet.GRADLE) {
-            intention.putExtra(EcranAtelier.EXTRA_BANNIERE,
-                    getString(R.string.ide_gradle_banniere));
-        }
-        startActivity(intention);
+        String banniere = entree.type() == TypeProjet.GRADLE
+                ? getString(R.string.ide_gradle_banniere) : null;
+        startActivity(Ecrans.atelier(this, racine.toString(), banniere,
+                null));
     }
 
     private void menuProjet(ProjetsRecents.Entree entree) {
@@ -534,7 +262,8 @@ public final class MainActivity extends ActiviteJoide {
     }
 
     private void renommer(ProjetsRecents.Entree entree) {
-        Champ champ = new Champ(this);
+        jo.joide.app.android.ui.Champ champ =
+                new jo.joide.app.android.ui.Champ(this);
         champ.setEtiquette(R.string.accueil_nom_etiquette);
         champ.edition().setText(entree.nomAffiche());
         Dialogue.saisie(this, palette,
@@ -690,22 +419,19 @@ public final class MainActivity extends ActiviteJoide {
     private void ouvrirIdeImporte(Path cible, boolean gradle) {
         runOnUiThread(() -> {
             importEnCours = false;
-            ligneProgression.setVisibility(View.GONE);
+            ecran.ligneProgression.setVisibility(View.GONE);
             rendre();
-            Intent intention = new Intent(this, EcranAtelier.class);
-            intention.putExtra(EcranAtelier.EXTRA_RACINE, cible.toString());
-            if (gradle) {
-                intention.putExtra(EcranAtelier.EXTRA_BANNIERE,
-                        getString(R.string.ide_gradle_banniere));
-            }
-            startActivity(intention);
+            String banniere = gradle
+                    ? getString(R.string.ide_gradle_banniere) : null;
+            startActivity(Ecrans.atelier(this, cible.toString(), banniere,
+                    null));
         });
     }
 
     private void finirImportErreur(String message) {
         runOnUiThread(() -> {
             importEnCours = false;
-            ligneProgression.setVisibility(View.GONE);
+            ecran.ligneProgression.setVisibility(View.GONE);
             Dialogue.information(this, palette,
                     getString(R.string.import_echoue_titre), message,
                     R.string.action_ok);
@@ -714,8 +440,8 @@ public final class MainActivity extends ActiviteJoide {
     }
 
     private void montrerProgression(String texte) {
-        ligneProgression.setText(texte);
-        ligneProgression.setVisibility(View.VISIBLE);
+        ecran.ligneProgression.setText(texte);
+        ecran.ligneProgression.setVisibility(View.VISIBLE);
     }
 
     private static String nomAfficheArbre(Uri arbre) {
@@ -755,5 +481,29 @@ public final class MainActivity extends ActiviteJoide {
     protected void onDestroy() {
         fond.shutdown();
         super.onDestroy();
+    }
+
+    /** L'hôte étroit de l'adaptateur (décision 3 : jamais l'écran entier). */
+    private final class Hote implements AdaptateurAccueil.Auditeur {
+
+        @Override
+        public void ouvrir(ProjetsRecents.Entree entree) {
+            MainActivity.this.ouvrir(entree);
+        }
+
+        @Override
+        public void menuProjet(ProjetsRecents.Entree entree) {
+            MainActivity.this.menuProjet(entree);
+        }
+
+        @Override
+        public void nouveauProjet() {
+            MainActivity.this.nouveauProjet();
+        }
+
+        @Override
+        public void importerDossier() {
+            MainActivity.this.importerDossier();
+        }
     }
 }

@@ -37,4 +37,34 @@
     <dimen name="jo_texte_code_interligne">22sp</dimen>
     <dimen name="jo_texte_code_compact">12.5sp</dimen>
     <dimen name="jo_texte_code_compact_interligne">20sp</dimen>
+
+    <!-- Composants (lot A2) : le bouton du kit fait 52 dp de haut, 24 dp
+         de retrait horizontal (Bouton.java HAUTEUR_DP/RETRAIT_H_DP) -->
+    <dimen name="jo_bouton_hauteur">52dp</dimen>
+    <dimen name="jo_bouton_retrait">24dp</dimen>
+
+    <!-- Écran de rappel MCP (lot A2) : marge de carte 24, aération du
+         statut 14, pied de bouton 16 — les valeurs du code d'hier -->
+    <dimen name="jo_marge_mcp">24dp</dimen>
+    <dimen name="jo_pad_rappel_vertical">14dp</dimen>
+    <dimen name="jo_pad_rappel_bas">16dp</dimen>
+
+    <!-- Accueil (lot A2) : la barre d'application et le contenu portent
+         les paddings du code d'hier (20/10/12/2 et 20/12/20/8) -->
+    <dimen name="jo_barre_app_haut">10dp</dimen>
+    <dimen name="jo_barre_app_droite">12dp</dimen>
+    <dimen name="jo_barre_app_bas">2dp</dimen>
+    <dimen name="jo_pad_contenu_haut">12dp</dimen>
+    <dimen name="jo_pad_contenu_bas">8dp</dimen>
+    <dimen name="jo_pad_progression">4dp</dimen>
+    <dimen name="jo_ecart_accueil">10dp</dimen>
+    <dimen name="jo_ecart_cartes">10dp</dimen>
+    <dimen name="jo_ecart_entete">6dp</dimen>
+    <dimen name="jo_ecart_aucun">8dp</dimen>
+    <dimen name="jo_pad_carte">14dp</dimen>
+    <dimen name="jo_ecart_carte_interieur">14dp</dimen>
+    <dimen name="jo_ecart_actions">10dp</dimen>
+    <dimen name="jo_ecart_entete_interieur">8dp</dimen>
+    <dimen name="jo_pad_pilule_cote">8dp</dimen>
+    <dimen name="jo_pad_pilule_haut">1dp</dimen>
 </resources>

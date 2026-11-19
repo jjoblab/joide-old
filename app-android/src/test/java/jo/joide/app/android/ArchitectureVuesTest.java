@@ -97,8 +97,6 @@ class ArchitectureVuesTest {
      * A5/A6 (atelier), A7 (contrôleurs agent).
      */
     private static final Set<String> ECRANS_EXCUSSES_VUES = Set.of(
-            "MainActivity.java",
-            "ecrans/mcp/EcranCallbackMcp.java",
             "ecrans/creation/EcranCreation.java",
             "ecrans/parametres/EcranParametres.java",
             "ecrans/atelier/EcranAtelier.java",

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Écran de rappel OAuth MCP (ADR-085, lot A2 — pilote) : la racine d'écran
+  vit EN XML (plus de hiérarchie en code) ; la carte est un MaterialCardView
+  habillé Graphite (fond surface, liseré bord-fin, rayon du thème), le
+  bouton un MaterialButton tonal Widget.Jo (ChoixBouton TONAL :
+  surface-haute/texte). Le voile d'attente est le rideau Graphite.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/jo_rideau">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/carte_rappel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/jo_marge_mcp"
+        app:cardBackgroundColor="?attr/jo_surface"
+        app:strokeColor="?attr/jo_bord_fin"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/titre_rappel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/jo_marge_mcp"
+                android:paddingRight="@dimen/jo_marge_mcp"
+                android:paddingTop="@dimen/jo_marge_mcp"
+                android:text="@string/mcp_rappel_titre"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/statut_rappel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/jo_pad_rappel_vertical"
+                android:paddingLeft="@dimen/jo_marge_mcp"
+                android:paddingRight="@dimen/jo_marge_mcp"
+                android:paddingTop="@dimen/jo_pad_rappel_vertical"
+                android:text="@string/mcp_rappel_en_cours"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/bouton_rappel"
+                style="@style/Widget.Jo.Button.Tonal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/jo_pad_rappel_bas"
+                android:layout_marginLeft="@dimen/jo_marge_mcp"
+                android:layout_marginRight="@dimen/jo_marge_mcp"
+                android:text="@string/action_ok"
+                android:visibility="gone" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

@@ -158,6 +158,9 @@
     <string name="accueil_salutation_bonjour">Bonjour</string>
     <string name="accueil_salutation_bonsoir">Bonsoir</string>
     <string name="accueil_rechercher_indice">Rechercher un projet…</string>
+    <string name="accueil_desc_recherche">Rechercher un projet</string>
+    <string name="accueil_desc_menu">Menu de l’application</string>
+    <string name="accueil_desc_carte_menu">Menu du projet</string>
     <string name="accueil_menu_a_propos">À propos</string>
     <string name="accueil_a_propos_message">JoIDE %1$s — un IDE qui tourne sur Android : les projets JVM se construisent sur l\'appareil ; les APK Android se construisent depuis le bureau.</string>
     <string name="accueil_reprendre">Reprendre</string>

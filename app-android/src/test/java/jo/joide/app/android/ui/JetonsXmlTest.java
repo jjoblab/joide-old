@@ -156,12 +156,14 @@ class JetonsXmlTest {
             throws Exception {
         Map<String, String> couleurs = couleursXml();
         Map<String, String> attributs = attributsXml();
-        // les attributs de VUE (declare-styleable du kit, lot L2)
-        // ne sont PAS des jetons de thème : le test de complétude
-        // ne porte que les ?attr/jo_* de couleur réellement posés
-        // par les thèmes
+        // les attributs de VUE (declare-styleable du kit, lot L2 ; tuile
+        // de projet lot A2 de l'ADR-085) ne sont PAS des jetons de thème :
+        // le test de complétude ne porte que les ?attr/jo_* de couleur
+        // réellement posés par les thèmes
         attributs.keySet().removeIf(nom -> nom.startsWith(
                 "jo_icone_"));
+        attributs.keySet().removeIf(nom -> nom.startsWith(
+                "jo_tuile_"));
         Document themes = document(RES.resolve("themes.xml").toFile());
         NodeList styles = themes.getElementsByTagName("style");
         assertTrue(styles.getLength() >= 2,

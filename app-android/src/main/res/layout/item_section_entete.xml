@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- En-tête de section « Projets » (ADR-085, lot A2) : nom note
+     demi-gras + compteur en pilule (fond surface haute du thème, rayon
+     pilule Graphite par drawable). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/jo_ecart_entete"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/nom_section"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/accueil_section_projets"
+        android:textAppearance="@style/TextAppearance.Jo.Note"
+        android:textColor="?attr/jo_texte2" />
+
+    <TextView
+        android:id="@+id/compte_section"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/jo_ecart_entete_interieur"
+        android:background="@drawable/pilule_compte"
+        android:paddingLeft="@dimen/jo_pad_pilule_cote"
+        android:paddingTop="@dimen/jo_pad_pilule_haut"
+        android:paddingRight="@dimen/jo_pad_pilule_cote"
+        android:paddingBottom="@dimen/jo_pad_pilule_haut"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte2" />
+</LinearLayout>

@@ -406,6 +406,9 @@ dependencies {
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity)
     implementation(libs.material)
+    // A2 (décision 11) : les listes recyclées — l'accueil migre sa liste
+    // de projets en RecyclerView + ListAdapter/DiffUtil.
+    implementation(libs.androidx.recyclerview)
 }
 
 // lot XX : le JAR ORIGINAL du plugin Compose en ASSET — résolu du

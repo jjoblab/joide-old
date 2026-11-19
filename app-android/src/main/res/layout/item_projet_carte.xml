@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Carte de projet (ADR-085, lot A2) : MaterialCardView habillé Graphite —
+  fond surface, liseré bord-fin 1 dp, élévation 3 dp, rayon 16 (thème).
+  La tuile tonale (glyphe dossier dessiné) reste une vue du kit (Canvas,
+  couleurs calculées depuis la palette : l'accent du nuancier décide).
+  L'accessoire ⋮ ouvre le menu du projet.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/carte_projet"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/jo_ecart_cartes"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="?attr/jo_surface"
+    app:cardElevation="3dp"
+    app:strokeColor="?attr/jo_bord_fin"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="@dimen/jo_pad_carte">
+
+        <jo.joide.app.android.ui.TuileProjet
+            android:id="@+id/tuile_projet"
+            android:layout_width="@dimen/jo_tuile"
+            android:layout_height="@dimen/jo_tuile"
+            android:layout_marginRight="@dimen/jo_ecart_carte_interieur" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/nom_projet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/meta_projet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.Jo.Note"
+                android:textColor="?attr/jo_texte2" />
+        </LinearLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_menu_projet"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="@dimen/jo_ecart_carte_interieur"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/accueil_desc_carte_menu"
+            android:focusable="true"
+            app:jo_icone_glyphe="points"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

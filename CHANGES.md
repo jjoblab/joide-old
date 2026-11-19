@@ -1,3 +1,23 @@
+# CHANGES — le pilote des vues Material : l'accueil et le rappel MCP quittent le code (2026-11-19)
+
+**Lot A2 de l'ADR-085** : `MainActivity` et `EcranCallbackMcp` deviennent
+des coques minces sur layouts racine — `activity_accueil.xml` (barre
+d'application, champ de recherche `TextInputLayout` habillé Graphite,
+`RecyclerView` de projets) et `activity_callback_mcp.xml`
+(`MaterialCardView` + bouton tonal). La liste des projets migre en
+`ListAdapter`/`DiffUtil` (items scellés d'`ElementAccueil`, view-holders
+`*Binding`) ; les cartes en `MaterialCardView` portent les jetons Graphite
+(surface, bord-fin, élévation 3, rayon 16), la tuile tonale devient
+`TuileProjet` déclarable en XML (`jo_tuile_type`), l'état vide du kit adopte
+les boutons `Widget.Jo.Button.*` déclarés en XML, les couleurs tonales de
+la reprise se posent au bind (l'accent du nuancier décide). Les styles
+`Widget.Jo.Button.Primaire/Tonal/Texte` et `Widget.Jo.Champ` naissent ;
+`androidx.recyclerview` 1.4.0 entre au catalogue. Filet :
+`ArchitectureVuesTest` retire les deux écrans de ses exceptions (185 vues
+instanciées restantes, −18) ; APK 15 172 977 → 15 581 637 o (+0,39 Mio),
+`verifierOmbreApk` vert ; 340 tests verts. Écarts visuels documentés au
+rapport (ripple, dégradé de reprise en aplat, liseré d'élévation).
+
 # CHANGES — l'architecture des vues passe à AndroidX + Material 3 habillé Graphite, plus aucun dialogue (2026-11-19)
 
 **Chantier ADR-085 (directives du propriétaire du 2026-11-18)** : les vues

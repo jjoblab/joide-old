@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Accueil « Mes projets » (ADR-085, lot A2) : la racine de l'écran vit EN
+  XML (plus de hiérarchie en code) — barre d'application (titre d'écran +
+  salutation + actions recherche/⋮), champ de recherche Material (gone
+  jusqu'à l'action), ligne de progression, liste des projets en
+  RecyclerView (décision 11 : ListAdapter/DiffUtil, view-holders *Binding).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingTop="@dimen/jo_barre_app_haut"
+        android:paddingRight="@dimen/jo_barre_app_droite"
+        android:paddingBottom="@dimen/jo_barre_app_bas">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/titre_accueil"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/accueil_titre"
+                android:textAppearance="@style/TextAppearance.Jo.TitreEcran"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/legende_accueil"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.Note"
+                android:textColor="?attr/jo_texte2" />
+        </LinearLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_recherche"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="@dimen/jo_grille"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/accueil_desc_recherche"
+            android:focusable="true"
+            app:jo_icone_glyphe="recherche"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/action_menu"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/accueil_desc_menu"
+            android:focusable="true"
+            app:jo_icone_glyphe="points"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+    </LinearLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/champ_recherche"
+        style="@style/Widget.Jo.Champ"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edition_recherche"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/accueil_rechercher_indice"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte"
+            android:textColorHint="?attr/jo_texte3" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/ligne_progression"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingTop="@dimen/jo_pad_progression"
+        android:paddingRight="@dimen/jo_marge"
+        android:textAppearance="@style/TextAppearance.Jo.Note"
+        android:textColor="?attr/jo_texte2"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/liste_accueil"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingLeft="@dimen/jo_marge"
+        android:paddingTop="@dimen/jo_pad_contenu_haut"
+        android:paddingRight="@dimen/jo_marge"
+        android:paddingBottom="@dimen/jo_pad_contenu_bas"
+        android:scrollbars="none" />
+</LinearLayout>

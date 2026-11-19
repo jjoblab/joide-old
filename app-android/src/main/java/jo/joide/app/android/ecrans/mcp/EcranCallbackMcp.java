@@ -1,43 +1,43 @@
 package jo.joide.app.android.ecrans.mcp;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+
+import com.google.android.material.button.MaterialButton;
 
 import jo.joide.app.android.AgentService;
 import jo.joide.app.android.R;
-import jo.joide.app.android.ui.Bouton;
-import jo.joide.app.android.ui.Graphite;
-import jo.joide.app.android.ui.GraphiteVue;
-import jo.joide.app.android.ui.choix.ChoixBouton;
+import jo.joide.app.android.databinding.ActivityCallbackMcpBinding;
+import jo.joide.app.android.ui.ActiviteJoide;
 
 /**
- * L'écran de rappel OAuth MCP (lot U, ADR-066) : le navigateur
- * revient à {@code joide://mcp/oauth} — CET écran transparent
- * récupère le code et l'état, les porte au service de l'agent, et
- * raconte HONNÊTEMENT ce qui se passe : « signé » ou le motif de
- * l'échec, jamais un silence. L'atelier reste derrière ; un bouton
- * rend la main.
+ * L'écran de rappel OAuth MCP (lot U, ADR-066 ; racine XML + Material au
+ * lot A2 de l'ADR-085) : le navigateur revient à
+ * {@code joide://mcp/oauth} — CET écran récupère le code et l'état, les
+ * porte au service de l'agent, et raconte HONNÊTEMENT ce qui se passe :
+ * « signé » ou le motif de l'échec, jamais un silence. L'atelier reste
+ * derrière ; un bouton rend la main.
+ *
+ * <p>Coque mince (ADR-085 décision 2) : la hiérarchie vit dans
+ * {@code activity_callback_mcp.xml} (MaterialCardView + MaterialButton
+ * tonal habillés Graphite), le montage passe par
+ * {@link ActiviteJoide#monter(Function)}, aucune vue n'est instanciée en
+ * code — seule la liaison du service et le récit restent ici.</p>
  */
-public final class EcranCallbackMcp extends Activity {
+public final class EcranCallbackMcp extends ActiviteJoide {
 
     private static final String PREFIXE_SUCCES = "signed-in:";
     private static final String PREFIXE_ECHEC = "failed:";
 
     private AgentService.AgentBinder agent;
-    private TextView statut;
-    private Bouton bouton;
+    private ActivityCallbackMcpBinding ecran;
+    private MaterialButton bouton;
     private int essaisLiaison;
 
     private final ServiceConnection connexion =
@@ -59,56 +59,9 @@ public final class EcranCallbackMcp extends Activity {
     @Override
     protected void onCreate(Bundle etat) {
         super.onCreate(etat);
-        Graphite.Palette palette = GraphiteVue.palette(this);
-
-        FrameLayout racine = new FrameLayout(this);
-        racine.setBackgroundColor(Graphite.melange(
-                palette.texte, 0.35f, palette.fond));
-
-        LinearLayout carte = new LinearLayout(this);
-        carte.setOrientation(LinearLayout.VERTICAL);
-        int rayon = GraphiteVue.dp(this, Graphite.RAYON_CARTE);
-        GradientDrawable fond = new GradientDrawable();
-        fond.setColor(palette.surface);
-        fond.setCornerRadius(rayon);
-        fond.setStroke(GraphiteVue.dp(this, 1), palette.bordFin);
-        carte.setBackground(fond);
-        int marge = GraphiteVue.dp(this, 24);
-        FrameLayout.LayoutParams paramsCarte = new FrameLayout
-                .LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT);
-        paramsCarte.setMargins(marge, marge, marge, marge);
-        paramsCarte.gravity = Gravity.CENTER;
-        racine.addView(carte, paramsCarte);
-
-        TextView titre = new TextView(this);
-        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(palette.texte);
-        titre.setText(R.string.mcp_rappel_titre);
-        titre.setPadding(marge, marge, marge, 0);
-        carte.addView(titre);
-
-        statut = new TextView(this);
-        GraphiteVue.typographie(statut, Graphite.CORPS);
-        statut.setTextColor(palette.texteSecondaire);
-        statut.setText(R.string.mcp_rappel_en_cours);
-        int vertical = GraphiteVue.dp(this, 14);
-        statut.setPadding(marge, vertical, marge, vertical);
-        carte.addView(statut);
-
-        bouton = new Bouton(this);
-        bouton.setTexte(getString(R.string.action_ok));
-        bouton.setVariante(ChoixBouton.Variante.TONAL);
-        int bas = GraphiteVue.dp(this, 16);
-        LinearLayout.LayoutParams paramsBouton = new LinearLayout
-                .LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        paramsBouton.setMargins(marge, 0, marge, bas);
+        ecran = monter(ActivityCallbackMcpBinding::inflate);
+        bouton = ecran.boutonRappel;
         bouton.setOnClickListener(vue -> finish());
-        bouton.setVisibility(View.GONE);
-        carte.addView(bouton, paramsBouton);
-
-        setContentView(racine);
         // le service de l'agent est la SEULE route : il porte le
         // gestionnaire MCP et le flux de signature vivant
         startService(new Intent(this, AgentService.class));
@@ -132,10 +85,10 @@ public final class EcranCallbackMcp extends Activity {
                 raconter(getString(R.string.mcp_rappel_service));
                 return;
             }
-            statut.postDelayed(this::completer, 200L);
+            ecran.statutRappel.postDelayed(this::completer, 200L);
             return;
         }
-        statut.setText(R.string.mcp_rappel_echange);
+        ecran.statutRappel.setText(R.string.mcp_rappel_echange);
         agent.completerOAuthMcp(donnees.toString(), message -> {
             if (isFinishing()) {
                 return;
@@ -156,7 +109,7 @@ public final class EcranCallbackMcp extends Activity {
 
     /** Pose le texte final et montre le bouton de sortie. */
     private void raconter(CharSequence texte) {
-        statut.setText(texte);
+        ecran.statutRappel.setText(texte);
         bouton.setVisibility(View.VISIBLE);
     }
 
