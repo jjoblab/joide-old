@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — la carte CHOISIE (fournisseur sélectionné, serveur
+     actif) : conteneur tonal haut, liseré accent 2 dp, rayon 14 —
+     la sélection se voit au premier regard. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_haut" />
+    <stroke android:width="2dp" android:color="?attr/jo_accent" />
+    <corners android:radius="14dp" />
+</shape>

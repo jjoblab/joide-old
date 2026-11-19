@@ -463,4 +463,53 @@
     <string name="crash_quitter">Quitter</string>
     <string name="crash_precedent">Plus ancien</string>
     <string name="crash_suivant">Plus récent</string>
+
+    <!-- Lot C6 — l\'écran Connexions au dessin de référence : les
+         serveurs MCP (déclarés par le projet et ajoutés à la main)
+         et les compétences, chaque tête de section avec son action. -->
+    <string name="agent_connexions_intro">Donnez à l\'agent plus d\'outils et de savoir-faire. Les serveurs MCP le relient à des services comme GitHub, Linear ou vos propres API ; les compétences lui apprennent des tâches précises.</string>
+    <string name="agent_connexions_serveurs">Serveurs MCP</string>
+    <string name="agent_connexions_ajouter_serveur">Ajouter un serveur</string>
+    <string name="agent_connexions_serveurs_vide">Aucun serveur pour l\'instant. Ajoutez-en un par son URL, ou posez un .mcp.json dans le projet.</string>
+    <string name="agent_connexions_portee_projet">Ce projet</string>
+    <string name="agent_connexions_portee_app">Tous les projets</string>
+    <string name="agent_connexions_modifier">Modifier</string>
+    <string name="agent_connexions_retirer">Retirer</string>
+    <string name="agent_connexions_cible_outils">%1$d outils</string>
+    <string name="agent_connexions_ajout_titre">Ajouter un serveur</string>
+    <string name="agent_connexions_edition_titre">Modifier le serveur</string>
+    <string name="agent_connexions_champ_nom">Nom</string>
+    <string name="agent_connexions_champ_ou">Où s\'applique-t-il ?</string>
+    <string name="agent_connexions_champ_type">Type</string>
+    <string name="agent_connexions_type_http">HTTP</string>
+    <string name="agent_connexions_type_sse">SSE</string>
+    <string name="agent_connexions_type_stdio">STDIO</string>
+    <string name="agent_connexions_champ_url">URL</string>
+    <string name="agent_connexions_champ_entetes">En-têtes — une ligne « clé : valeur »</string>
+    <string name="agent_connexions_indice_entetes">Facultatif, seulement si le serveur exige une clé.</string>
+    <string name="agent_connexions_champ_commande">Commande</string>
+    <string name="agent_connexions_champ_arguments">Arguments — un par ligne</string>
+    <string name="agent_connexions_champ_environnement">Environnement — CLE=valeur par ligne</string>
+    <string name="agent_connexions_enregistrer">Enregistrer</string>
+    <string name="agent_connexions_erreur_nom">Le serveur demande un nom.</string>
+    <string name="agent_connexions_erreur_url">Le serveur demande une URL http(s).</string>
+    <string name="agent_connexions_erreur_commande">Le serveur demande une commande.</string>
+    <string name="agent_connexions_erreur_nom_pris">Un serveur porte déjà ce nom.</string>
+    <string name="agent_connexions_competences">Compétences</string>
+    <string name="agent_connexions_nouvelle_competence">Nouvelle compétence</string>
+    <string name="agent_connexions_competences_vide">Aucune compétence pour l\'instant. Créez-en une, ou copiez un dossier de compétence (avec son SKILL.md) dans un dossier de compétences.</string>
+    <string name="agent_connexions_dossiers_competences">Dossiers des compétences :</string>
+    <string name="agent_connexions_nom_competence">Nom de la compétence</string>
+    <string name="agent_connexions_creer">Créer</string>
+    <string name="agent_connexions_competence_echec">La compétence n\'a pas pu être créée — vérifiez le nom.</string>
+
+    <!-- Lot C6 — l\'écran des fournisseurs IA au dessin de référence. -->
+    <string name="agent_fournisseurs_titre">Fournisseurs IA</string>
+    <string name="agent_fournisseurs_sous_titre">Choisissez un fournisseur et posez votre clé. Les clés restent sur cet appareil.</string>
+    <string name="agent_fournisseurs_connecte">Connecté</string>
+    <string name="agent_fournisseurs_cle">Clé API</string>
+    <string name="agent_fournisseurs_cle_indice">sk-…</string>
+    <string name="agent_fournisseurs_url_libre">URL de base (facultative)</string>
+    <string name="agent_fournisseurs_url_indice">https://… — passerelle compatible OpenAI</string>
+    <string name="agent_fournisseurs_cle_sauvee">Clé enregistrée sur cet appareil</string>
 </resources>

@@ -238,6 +238,11 @@ final class ControleurAgent {
         // le .mcp.json du projet, lu borné, part au service : les
         // serveurs déclarés sont parsés, pas activés (ADR-063)
         hote.agent().poserMcpJson(connexions.lireMcpJson());
+        // lot C6 : les serveurs ajoutés à la main et le bloc des
+        // compétences actives partent AU SERVICE dès la liaison —
+        // une session qui revient les retrouve appliqués
+        connexions.poserServeursManuels();
+        connexions.poserCompetences();
         // l'approbation PERSISTÉE par projet (lot T, ADR-065) : liée
         // à la signature du fichier qui l'a motivée — le même
         // .mcp.json retrouve ses serveurs, un fichier changé redemande

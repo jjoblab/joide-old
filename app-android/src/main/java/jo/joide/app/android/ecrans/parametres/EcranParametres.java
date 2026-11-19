@@ -5,6 +5,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -31,10 +32,12 @@ import com.google.android.material.button.MaterialButton;
 import jo.joide.app.android.BuildConfig;
 import jo.joide.app.android.R;
 import jo.joide.app.android.databinding.ActivityParametresBinding;
+import jo.joide.app.android.databinding.ItemFournisseurIaBinding;
 import jo.joide.app.android.databinding.ItemParamActionBinding;
 import jo.joide.app.android.databinding.ItemParamCommutateurBinding;
 import jo.joide.app.android.databinding.ItemParamGroupeBinding;
 import jo.joide.app.android.databinding.ItemParamInfoBinding;
+import jo.joide.app.android.databinding.PopupFournisseursIaBinding;
 import jo.joide.app.android.databinding.ItemParamMesureBinding;
 import jo.joide.app.android.databinding.ItemParamNuancierBinding;
 import jo.joide.app.android.databinding.ItemParamSegmentBinding;
@@ -888,20 +891,152 @@ public final class EcranParametres extends ActiviteJoide {
      * Le fournisseur IA (lot C2) : le MÊME réglage que la puce du
      * tiroir agent, posable ICI — la remontée du terrain nommait
      * « le provider n'est pas chargé » : le tiroir tuait l'app à
-     * l'ouverture, le seul sélecteur était mort-né. Le menu ANCRÉ à
-     * la rangée porte les quatre fournisseurs, le tap FERME le menu
-     * PUIS agit (le gabarit du menu de clé, lot A7).
+     * l'ouverture, le seul sélecteur était mort-né. Lot C6 : la
+     * rangée ouvre L'ÉCRAN DES FOURNISSEURS IA (les cartes au
+     * dessin de référence — point radio, puce Connecté, champ de
+     * clé, sauvegarde à mesure).
      */
     private void gererFournisseurIa(View ancre) {
-        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        ouvrirFournisseursIa();
+    }
+
+    /**
+     * Lot C6 — LES FOURNISSEURS IA au dessin de référence : une carte
+     * par fournisseur (le point radio, le nom, la puce Connecté
+     * quand une clé existe), la carte choisie porte le liseré accent
+     * et ouvre le champ de clé — tout se sauvegarde à mesure (la clé
+     * au coffre chiffré, l'URL de la passerelle libre aux réglages).
+     */
+    private void ouvrirFournisseursIa() {
+        PopupFournisseursIaBinding corps =
+                PopupFournisseursIaBinding.inflate(
+                        getLayoutInflater());
+        corps.fermerFournisseurs.setOnClickListener(
+                vue -> popups.fermer());
+        LayoutInflater gonfleur = getLayoutInflater();
         for (Reglages.FournisseurIa fournisseur
                 : Reglages.FournisseurIa.values()) {
-            entrees.add(new PortePopups.EntreeMenu(
-                    nomFournisseurIa(fournisseur),
-                    () -> choisirFournisseurIa(fournisseur)));
+            ItemFournisseurIaBinding carte =
+                    ItemFournisseurIaBinding.inflate(gonfleur,
+                            corps.fournisseursIa, true);
+            boolean choisi = reglages.fournisseurIa == fournisseur;
+            majCarteFournisseur(carte, fournisseur, choisi);
+            carte.getRoot().setOnClickListener(vue -> {
+                choisirFournisseurIa(fournisseur);
+                popups.fermer();
+                ouvrirFournisseursIa();
+            });
         }
-        popups.menu(ancre, getString(R.string.parametres_fournisseur_ia),
-                240, entrees);
+        popups.centrer(corps.getRoot(),
+                getString(R.string.agent_fournisseurs_titre));
+    }
+
+    /** La carte d'un fournisseur : la sélection, la puce, les champs. */
+    private void majCarteFournisseur(ItemFournisseurIaBinding carte,
+                                     Reglages.FournisseurIa fournisseur,
+                                     boolean choisi) {
+        String nom = nomTechniqueFournisseur(fournisseur);
+        carte.nomFournisseur.setText(nomFournisseurIa(fournisseur));
+        carte.getRoot().setBackgroundResource(choisi
+                ? R.drawable.carte_serveur_choisi
+                : R.drawable.carte_serveur_connexions);
+        boolean clePosee = cles.estPosee(nom);
+        carte.puceConnecteFournisseur.setVisibility(
+                clePosee ? View.VISIBLE : View.GONE);
+        // le point radio : rempli accent quand choisi
+        if (choisi) {
+            carte.pointFournisseur.setImageTintList(
+                    android.content.res.ColorStateList.valueOf(
+                            paletteAccent()));
+        } else {
+            carte.pointFournisseur.setImageTintList(null);
+        }
+        carte.champCleFournisseur.setVisibility(
+                choisi ? View.VISIBLE : View.GONE);
+        carte.noteCleFournisseur.setVisibility(
+                choisi ? View.VISIBLE : View.GONE);
+        boolean passerelle = fournisseur
+                == Reglages.FournisseurIa.OPENAI;
+        carte.libelleUrlFournisseur.setVisibility(
+                choisi && passerelle ? View.VISIBLE : View.GONE);
+        carte.champUrlFournisseur.setVisibility(
+                choisi && passerelle ? View.VISIBLE : View.GONE);
+        if (choisi) {
+            try {
+                carte.champCleFournisseur.setText(
+                        cles.lire(nom) == null ? "" : cles.lire(nom));
+            } catch (IOException e) {
+                carte.champCleFournisseur.setText("");
+            }
+            carte.champCleFournisseur.addTextChangedListener(
+                    new android.text.TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s,
+                                int debut, int avant, int apres) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s,
+                                int debut, int avant, int apres) {
+                            // la sauvegarde À MESURE du dessin de
+                            // référence : chaque frappe pose la clé
+                            try {
+                                cles.poser(nom, s.toString().trim());
+                            } catch (IOException e) {
+                                // le coffre refusait : la frappe
+                                // suivante retentera
+                            }
+                        }
+
+                        @Override
+                        public void afterTextChanged(android.text.Editable s) {
+                        }
+                    });
+            if (passerelle) {
+                carte.champUrlFournisseur.setText(Reglages.lireUrlPour(
+                        source, fournisseur));
+                carte.champUrlFournisseur.addTextChangedListener(
+                        new android.text.TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s,
+                                    int debut, int avant, int apres) {
+                            }
+
+                            @Override
+                            public void onTextChanged(CharSequence s,
+                                    int debut, int avant, int apres) {
+                                try {
+                                    Reglages.ecrireUrlPour(source,
+                                            fournisseur, s.toString());
+                                } catch (IllegalArgumentException e) {
+                                    // l'URL se complète : la frappe
+                                    // suivante retentera
+                                }
+                            }
+
+                            @Override
+                            public void afterTextChanged(
+                                    android.text.Editable s) {
+                            }
+                        });
+            }
+        }
+    }
+
+    /** Le nom technique d'un fournisseur (la clé du coffre). */
+    private static String nomTechniqueFournisseur(
+            Reglages.FournisseurIa f) {
+        return switch (f) {
+            case ANTHROPIC -> "anthropic";
+            case GEMINI -> "gemini";
+            case OPENROUTER -> "openrouter";
+            default -> "openai";
+        };
+    }
+
+    /** L'accent courant du thème (la teinte du point radio). */
+    private int paletteAccent() {
+        return jo.joide.app.android.ui.GraphiteVue.palette(this).accent;
     }
 
     /**

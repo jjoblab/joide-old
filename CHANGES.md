@@ -1,3 +1,68 @@
+# CHANGES — le chat qui vivait enfin, les connexions et fournisseurs au dessin de référence (2026-11-20)
+
+**Lot C6 — le rapport du terrain : « en tapant "hello" aucun
+résultat, uniquement réflexion… plus le minuteur sans s\'arrêter,
+même le bouton stop » ; les écrans Connexions (avec ses popups
+d\'ajout de serveurs MCP et de compétences), Usages et Fournisseurs
+IA exigés au dessin et aux fonctionnalités de CodeAssist
+(consultation autorisée par le propriétaire, mandat du lot C5 — la
+licence de référence est GPLv3+exception de lien : le DESSIN et les
+comportements sont reproduits, le code reste celui de JoIDE, aucune
+ligne n\'est copiée).**
+
+**Le chat vivait ENFIN (la correction du flot).** Les trois
+adaptateurs (Anthropic, OpenAI-compatible, Gemini) tamponnaient TOUT
+le flux SSE avant d\'en diffuser la première trame : le tiroir ne
+voyait RIEN pendant toute la génération — « réflexion » et le
+minuteur comptaient, la réponse n\'arrivait qu\'à la fin (ou jamais
+quand la passerelle tenait la connexion ouverte). La trame part
+MAINTENANT à l\'écouteur AU MOMENT où elle arrive : le raisonnement
+s\'écrit dans la carte pendant que le modèle pense, le texte coule
+pendant l\'écriture — l\'identique du flux de référence. L\'ARRÊT
+devient honnête : l\'annulation remonte en fin ANNULÉE (pas une
+carte d\'erreur), et le tour est entièrement gardé par un try/
+catch (Throwable) — plus AUCUNE exception, même avant la requête
+(réglages, coffre, bascule), ne peut laisser le tiroir EN_COURS pour
+toujours : hier un crash du bas de tour mourait dans le Future sans
+fin consignée, le bouton ■ ne montrait rien (la cause exacte du
+« stop ne marche pas »).
+
+**L\'écran Connexions au dessin de référence.** Deux sections :
+SERVEURS MCP (la tête de section, l\'action « Ajouter un serveur »,
+les cartes — point d\'état 9 dp teinté par statut, nom, pilule de
+portée « ce projet » / « tous les projets », interrupteur, cible en
+monospace, état publié, actions texte) et COMPÉTENCES (la tête de
+section, « Nouvelle compétence », les cartes avec interrupteur et
+description, les dossiers listés). L\'ÉDITEUR DE SERVEUR (la grande
+carte centrée) : nom, portée en pilules (le choix projet écrit dans
+le .mcp.json du projet — lisible par les autres outils —, le choix
+tous-les-projets vit dans les réglages), type en pilules
+(HTTP/SSE/STDIO), l\'URL et les en-têtes — ou la commande, les
+arguments, l\'environnement en stdio — l\'erreur honnête, Annuler/
+Enregistrer. La NOUVELLE COMPÉTENCE : le nom, la portée, le dossier
+naît avec son SKILL.md. Les serveurs manuels sont LE choix
+explicite : ils se branchent sans le geste d\'approbation réservé
+aux serveurs déclarés par les fichiers du projet (ADR-063), un
+serveur du projet OMBRE un manuel du même nom ; les compétences
+actives rejoignent le contexte volatile du tour, chaque SKILL.md lu
+borné à 8 Kio. Persistance : `atelier.agent.mcp.serveurs`
+(grammaire .mcp.json) et `atelier.agent.competences.eteintes`.
+
+**L\'écran Fournisseurs IA au dessin de référence** (la rangée
+Fournisseur des Paramètres l\'ouvre) : une carte par fournisseur —
+le point radio (rempli accent au choix), le nom, la puce Connecté
+quand une clé existe ; la carte choisie porte le liseré accent et
+ouvre le champ de clé (monospace, la sauvegarde À MESURE au coffre
+chiffré) et, pour la passerelle libre OpenAI-compatible, le champ
+d\'URL de base (sauvegarde à mesure aux réglages). L\'écran Usages
+du lot C5 reste au dessin (titre, Actualisation/Fermeture 30 dp,
+compteurs par fenêtre, Terminé plein cadre).
+
+**Le décapage du nom se maintient** : aucun fichier de code ou de
+ressource ne porte le nom de référence (contrôlé par grep) ; la
+présente note, le CHANGES et les rapports md demeurent les seuls
+lieux où il s\'écrit.
+
 # CHANGES — les écrans IA refaits au dessin de référence, sans trace du nom : la copie demandée (2026-11-20)
 
 **Lot C5 — le mandat du propriétaire, mot pour mot : « il faut

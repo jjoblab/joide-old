@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot C6 — UNE CARTE DE FOURNISSEUR au dessin de référence : le
+  point radio, le nom, la puce Connecté ; la carte choisie porte le
+  liseré accent et ouvre le champ de clé (monospace) et l\'URL de
+  la passerelle libre — gonflé par binding depuis les
+  Fournisseurs IA.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/carte_serveur_connexions"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/point_fournisseur"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="10dp"
+            android:contentDescription="@string/agent_fournisseurs_connecte"
+            android:src="@drawable/point_radio_fournisseur" />
+
+        <TextView
+            android:id="@+id/nom_fournisseur"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/puce_connecte_fournisseur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/pilule_portee"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:text="@string/agent_fournisseurs_connecte"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_sur_contenant_secondaire"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/champ_cle_fournisseur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:padding="10dp"
+        android:background="@drawable/champ_editeur_serveur"
+        android:fontFamily="monospace"
+        android:textSize="13sp"
+        android:inputType="textPassword"
+        android:singleLine="true"
+        android:hint="@string/agent_fournisseurs_cle_indice"
+        android:textColor="?attr/jo_texte"
+        android:textColorHint="?attr/jo_texte3"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/note_cle_fournisseur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="4dp"
+        android:text="@string/agent_fournisseurs_cle_sauvee"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte2"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/libelle_url_fournisseur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/jo_ecart_ligne_popup"
+        android:text="@string/agent_fournisseurs_url_libre"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte2"
+        android:visibility="gone" />
+
+    <EditText
+        android:id="@+id/champ_url_fournisseur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:padding="10dp"
+        android:background="@drawable/champ_editeur_serveur"
+        android:fontFamily="monospace"
+        android:textSize="13sp"
+        android:inputType="textUri"
+        android:singleLine="true"
+        android:hint="@string/agent_fournisseurs_url_indice"
+        android:textColor="?attr/jo_texte"
+        android:textColorHint="?attr/jo_texte3"
+        android:visibility="gone" />
+</LinearLayout>

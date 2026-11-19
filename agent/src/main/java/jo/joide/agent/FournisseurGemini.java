@@ -173,21 +173,23 @@ public final class FournisseurGemini implements FournisseurLlm {
         } catch (IOException e) {
             throw ErreursLlm.classifier(e, false);
         }
-        List<TransportHttp.TrameSse> trames = new ArrayList<>();
+        // LA DIFFUSION EN DIRECT (lot C6) : chaque trame part à
+        // l'écouteur AU MOMENT où elle arrive — le raisonnement et le
+        // texte s'écrivent dans le tiroir pendant que le modèle
+        // travaille (le tampon d'hier rejouait le flux APRÈS sa fin :
+        // un message long ne montrait RIEN pendant toute la
+        // génération — rapporté le 2026-11-20).
+        Lecture lecture = new Lecture();
         try {
             TransportHttp.TrameSse trame;
             while ((trame = reponse.suivante()) != null) {
                 jeton.checkCancelled();
-                trames.add(trame);
+                lecture.trame(trame, ecouteur);
             }
         } catch (IOException e) {
             // des octets ont coulé : le tour s'arrête ici, jamais de
             // texte déjà montré dupliqué (ADR-É9, transport)
             throw ErreursLlm.classifier(e, true);
-        }
-        Lecture lecture = new Lecture();
-        for (TransportHttp.TrameSse t : trames) {
-            lecture.trame(t, ecouteur);
         }
         if (lecture.aRienRendu()) {
             // un flux qui n'a rien rendu est illisible : jamais un

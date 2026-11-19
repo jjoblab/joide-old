@@ -1,53 +1,146 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12) — UN SERVEUR MCP : nom au corps, état
-  publié en légende (se teinte à l'erreur si le serveur approuvé a
-  échoué — couleur par ligne, décision 8), motif, et les actions
-  visibles selon l'état : la signature OAuth (se connecter, lot U) et
-  la reconnexion. La carte porte le fond de ligne_popup.
+  Lot C6 — UNE CARTE DE SERVEUR au dessin de référence : le point
+  d\'état, le nom, la pilule de portée, l\'interrupteur ; la cible
+  en monospace ; l\'état publié ; les actions texte (se connecter,
+  reconnecter, modifier, retirer) — gonflé par binding depuis les
+  Connexions.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/ligne_popup"
-    android:padding="@dimen/jo_pad_ligne_popup"
-    android:layout_marginTop="@dimen/jo_ecart_ligne_popup"
-    android:layout_marginBottom="@dimen/jo_ecart_ligne_popup">
+    android:background="@drawable/carte_serveur_connexions"
+    android:padding="14dp"
+    android:layout_marginBottom="8dp">
 
-    <TextView
-        android:id="@+id/nom_serveur"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Jo.Corps"
-        android:textColor="?attr/jo_texte" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/point_serveur"
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:layout_marginEnd="8dp"
+            android:contentDescription="@string/agent_connexions_statut_connexion"
+            android:src="@drawable/point_statut_serveur" />
+
+        <TextView
+            android:id="@+id/nom_serveur"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/portee_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/pilule_portee"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_sur_contenant_secondaire" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/interrupteur_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/cible_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="monospace"
+        android:textSize="12sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:textColor="?attr/jo_texte2" />
 
     <TextView
         android:id="@+id/statut_serveur"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:layout_marginTop="2dp"
+        android:textAppearance="@style/TextAppearance.Jo.Corps"
+        android:textColor="?attr/jo_texte" />
+
+    <TextView
+        android:id="@+id/erreur_serveur"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="4"
+        android:ellipsize="end"
         android:textAppearance="@style/TextAppearance.Jo.Legende"
-        android:textColor="?attr/jo_texte3" />
-
-    <TextView
-        android:id="@+id/connecter_serveur"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
-        android:minHeight="@dimen/jo_hauteur_cible"
-        android:gravity="center_vertical"
-        android:textAppearance="@style/TextAppearance.Jo.Corps"
-        android:textColor="?attr/jo_accent"
+        android:textColor="?attr/jo_erreur"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/reconnecter_serveur"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="@dimen/jo_hauteur_cible"
-        android:gravity="center_vertical"
-        android:textAppearance="@style/TextAppearance.Jo.Corps"
-        android:textColor="?attr/jo_accent"
-        android:visibility="gone" />
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/connecter_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/pilule_action_texte"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_accent"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/reconnecter_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/pilule_action_texte"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_accent"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/modifier_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/pilule_action_texte"
+            android:text="@string/agent_connexions_modifier"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_accent" />
+
+        <TextView
+            android:id="@+id/retirer_serveur"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@drawable/pilule_action_texte"
+            android:text="@string/agent_connexions_retirer"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_erreur" />
+    </LinearLayout>
 </LinearLayout>

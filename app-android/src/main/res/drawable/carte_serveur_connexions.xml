@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — la CARTE D\'UN SERVEUR des Connexions : conteneur tonal
+     haut, liseré bord-fin, rayon 14 (la carte du dessin de
+     référence, l\'état vit dans le point et le texte). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_haut" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="14dp" />
+</shape>

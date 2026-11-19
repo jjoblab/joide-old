@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LES
-  CONNEXIONS MCP (ADR-063/064) : les serveurs déclarés par le projet,
-  leur état publié, le geste d'approbation qui seul connecte — un
-  dépôt cloné n'est pas un choix de l'utilisateur. L'avertissement
-  dit l'état (approuvé ou non), l'action active/désactive (persistée
-  par projet, liée à la signature du .mcp.json — lot T, ADR-065), le
-  compte des outils suit ; les serveurs se gonflent
-  d'item_serveur_connexions par binding (déclarés par le projet,
-  bornés par le .mcp.json lu à 64 Kio).
+  Lot C6 (gabarit CENTRÉ AVEC VOILE) — LES CONNEXIONS au dessin de
+  référence : l\'intro honnête, la tête de section SERVEURS MCP avec
+  son action « Ajouter un serveur », les cartes de serveurs (le
+  projet garde son geste d\'approbation ADR-063 — un dépôt cloné
+  n\'est pas un choix), la tête de section COMPÉTENCES avec son
+  action « Nouvelle compétence », les dossiers des compétences.
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -61,14 +58,14 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/vide_connexions"
+                android:id="@+id/intro_connexions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingTop="@dimen/jo_pad_ligne_popup"
                 android:paddingBottom="@dimen/jo_pad_ligne_popup"
+                android:text="@string/agent_connexions_intro"
                 android:textAppearance="@style/TextAppearance.Jo.Corps"
-                android:textColor="?attr/jo_texte3"
-                android:visibility="gone" />
+                android:textColor="?attr/jo_texte2" />
 
             <TextView
                 android:id="@+id/avertissement_connexions"
@@ -87,6 +84,7 @@
                 android:gravity="center_vertical"
                 android:paddingBottom="@dimen/jo_pad_ligne_popup"
                 android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textStyle="bold"
                 android:textColor="?attr/jo_accent" />
 
             <TextView
@@ -99,10 +97,101 @@
                 android:visibility="gone" />
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="@dimen/jo_pad_ligne_tonale">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/agent_connexions_serveurs"
+                    android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                    android:textColor="?attr/jo_texte" />
+
+                <TextView
+                    android:id="@+id/action_ajouter_serveur_connexions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/jo_hauteur_cible"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:background="@drawable/pilule_action_texte"
+                    android:text="@string/agent_connexions_ajouter_serveur"
+                    android:textAppearance="@style/TextAppearance.Jo.Corps"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_accent" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/vide_serveurs_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/jo_pad_ligne_popup"
+                android:paddingBottom="@dimen/jo_pad_ligne_popup"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte3" />
+
+            <LinearLayout
                 android:id="@+id/serveurs_connexions"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="@dimen/jo_pad_ligne_tonale">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/agent_connexions_competences"
+                    android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                    android:textColor="?attr/jo_texte" />
+
+                <TextView
+                    android:id="@+id/action_nouvelle_competence_connexions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/jo_hauteur_cible"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:background="@drawable/pilule_action_texte"
+                    android:text="@string/agent_connexions_nouvelle_competence"
+                    android:textAppearance="@style/TextAppearance.Jo.Corps"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_accent" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/vide_competences_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/jo_pad_ligne_popup"
+                android:paddingBottom="@dimen/jo_pad_ligne_popup"
+                android:textAppearance="@style/TextAppearance.Jo.Corps"
+                android:textColor="?attr/jo_texte3" />
+
+            <LinearLayout
+                android:id="@+id/competences_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/dossiers_competences_connexions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/jo_pad_ligne_tonale"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte2"
+                android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 </ScrollView>

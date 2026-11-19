@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — le CHAMP de l\'éditeur de serveur : conteneur tonal
+     max, liseré bord-fin, rayon 12 (le champ du dessin de
+     référence). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_max" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="12dp" />
+</shape>

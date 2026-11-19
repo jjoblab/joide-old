@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — le POINT RADIO d\'un fournisseur (10 dp, contour
+     bord-fin ; rempli accent au choix — posé au bind). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <size android:width="10dp" android:height="10dp" />
+    <solid android:color="?attr/jo_surface" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+</shape>

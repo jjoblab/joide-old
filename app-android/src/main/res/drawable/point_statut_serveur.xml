@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — le POINT D\'ÉTAT d\'un serveur (9 dp) : la couleur se
+     pose au bind (réussite, alerte, erreur, estompé). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <size android:width="9dp" android:height="9dp" />
+    <solid android:color="?attr/jo_texte3" />
+</shape>

@@ -463,4 +463,53 @@
     <string name="crash_quitter">Quit</string>
     <string name="crash_precedent">Earlier</string>
     <string name="crash_suivant">Later</string>
+
+    <!-- Lot C6 — the Connections screen at the reference drawing: the
+         MCP servers (project-declared and manually added) and the
+         skills, each section header with its add action. -->
+    <string name="agent_connexions_intro">Give the agent more tools and know-how. MCP servers connect it to services such as GitHub, Linear or your own APIs; skills teach it how to do specific tasks.</string>
+    <string name="agent_connexions_serveurs">MCP servers</string>
+    <string name="agent_connexions_ajouter_serveur">Add server</string>
+    <string name="agent_connexions_serveurs_vide">No servers yet. Add one by its URL, or put an .mcp.json file in your project.</string>
+    <string name="agent_connexions_portee_projet">This project</string>
+    <string name="agent_connexions_portee_app">All projects</string>
+    <string name="agent_connexions_modifier">Edit</string>
+    <string name="agent_connexions_retirer">Remove</string>
+    <string name="agent_connexions_cible_outils">%1$d tools</string>
+    <string name="agent_connexions_ajout_titre">Add server</string>
+    <string name="agent_connexions_edition_titre">Edit server</string>
+    <string name="agent_connexions_champ_nom">Name</string>
+    <string name="agent_connexions_champ_ou">Where does it apply?</string>
+    <string name="agent_connexions_champ_type">Type</string>
+    <string name="agent_connexions_type_http">HTTP</string>
+    <string name="agent_connexions_type_sse">SSE</string>
+    <string name="agent_connexions_type_stdio">STDIO</string>
+    <string name="agent_connexions_champ_url">URL</string>
+    <string name="agent_connexions_champ_entetes">Headers — one "Key: value" per line</string>
+    <string name="agent_connexions_indice_entetes">Optional, only if the server requires a key.</string>
+    <string name="agent_connexions_champ_commande">Command</string>
+    <string name="agent_connexions_champ_arguments">Arguments — one per line</string>
+    <string name="agent_connexions_champ_environnement">Environment — KEY=value per line</string>
+    <string name="agent_connexions_enregistrer">Save</string>
+    <string name="agent_connexions_erreur_nom">The server needs a name.</string>
+    <string name="agent_connexions_erreur_url">The server needs an http(s) URL.</string>
+    <string name="agent_connexions_erreur_commande">The server needs a command.</string>
+    <string name="agent_connexions_erreur_nom_pris">A server already goes by this name.</string>
+    <string name="agent_connexions_competences">Skills</string>
+    <string name="agent_connexions_nouvelle_competence">New skill</string>
+    <string name="agent_connexions_competences_vide">No skills yet. Create one, or copy a skill folder (with its SKILL.md) into a skills folder.</string>
+    <string name="agent_connexions_dossiers_competences">Skills folders:</string>
+    <string name="agent_connexions_nom_competence">Skill name</string>
+    <string name="agent_connexions_creer">Create</string>
+    <string name="agent_connexions_competence_echec">Could not create the skill — check the name.</string>
+
+    <!-- Lot C6 — the AI providers screen at the reference drawing. -->
+    <string name="agent_fournisseurs_titre">AI providers</string>
+    <string name="agent_fournisseurs_sous_titre">Choose a provider and add your key. Keys are stored on this device.</string>
+    <string name="agent_fournisseurs_connecte">Connected</string>
+    <string name="agent_fournisseurs_cle">API key</string>
+    <string name="agent_fournisseurs_cle_indice">sk-…</string>
+    <string name="agent_fournisseurs_url_libre">Base URL (optional)</string>
+    <string name="agent_fournisseurs_url_indice">https://… — OpenAI-compatible gateway</string>
+    <string name="agent_fournisseurs_cle_sauvee">Key saved on this device</string>
 </resources>

@@ -398,8 +398,38 @@ public final class AgentService extends Service {
             synchronized (AgentService.this) {
                 configsMcp = configs;
             }
-            if (approuveMcp) {
-                gestionnaireMcp.maj(configs);
+            appliquerMcp();
+        }
+
+        /**
+         * Lot C6 — les serveurs ajoutés À LA MAIN depuis l'écran
+         * Connexions (le JSON des réglages, même grammaire que le
+         * .mcp.json) : le CHOIX EXPLICITE de l'utilisateur, ils se
+         * connectent sans le geste d'approbation réservé aux serveurs
+         * déclarés par les fichiers du projet. Un serveur du projet
+         * OMBRE un serveur manuel du même nom.
+         *
+         * @param json le JSON brut des serveurs manuels, vide si aucun
+         */
+        public void poserServeursManuels(String json) {
+            List<ConfigServeurMcp> configs =
+                    GestionnaireMcp.lireFichier(json);
+            synchronized (AgentService.this) {
+                configsManuelles = configs;
+            }
+            appliquerMcp();
+        }
+
+        /**
+         * Lot C6 — le bloc des COMPÉTENCES actives (les SKILL.md des
+         * dossiers activés) : il rejoint le contexte volatile du tour,
+         * chaque compétence s'y lit bornée (8 Kio, l'écran coupe).
+         *
+         * @param bloc le bloc des compétences actives, vide si aucune
+         */
+        public void poserCompetences(String bloc) {
+            synchronized (AgentService.this) {
+                competencesBloc = bloc == null ? "" : bloc;
             }
         }
 
@@ -425,11 +455,33 @@ public final class AgentService extends Service {
          */
         public void poserApprobationMcp(boolean accordee) {
             approuveMcp = accordee;
-            List<ConfigServeurMcp> configs;
+            appliquerMcp();
+        }
+
+        /**
+         * Lot C6 — l'application MCP : les serveurs manuels (le choix
+         * explicite, étincelle ou éteints) vivent SEULS sans
+         * approbation ; ceux du projet ne se branchent qu'après le
+         * geste (ADR-063) et OMBRENT un manuel du même nom.
+         */
+        private void appliquerMcp() {
+            List<ConfigServeurMcp> projet;
+            List<ConfigServeurMcp> manuels;
+            boolean approuve;
             synchronized (AgentService.this) {
-                configs = configsMcp;
+                projet = configsMcp;
+                manuels = configsManuelles;
+                approuve = approuveMcp;
             }
-            gestionnaireMcp.maj(accordee ? configs : List.of());
+            List<ConfigServeurMcp> voulus =
+                    new ArrayList<>(manuels);
+            if (approuve) {
+                for (ConfigServeurMcp config : projet) {
+                    voulus.removeIf(c -> c.nom.equals(config.nom));
+                    voulus.add(config);
+                }
+            }
+            gestionnaireMcp.maj(voulus);
         }
 
         /** @return les états publiés des serveurs connectés */
@@ -592,6 +644,10 @@ public final class AgentService extends Service {
     private String idConversation = "";
     private GestionnaireMcp gestionnaireMcp;
     private List<ConfigServeurMcp> configsMcp = List.of();
+    /** Les serveurs ajoutés à la main (lot C6, JSON des réglages). */
+    private List<ConfigServeurMcp> configsManuelles = List.of();
+    /** Le bloc des compétences actives (lot C6, contexte du tour). */
+    private String competencesBloc = "";
     private volatile boolean approuveMcp;
     /** Le transport MCP partagé (gestionnaire et flux OAuth). */
     private jo.joide.agent.TransportHttp transportMcp;
@@ -773,95 +829,105 @@ public final class AgentService extends Service {
     }
 
     private void deroulerTour() {
-        String message = dernierMessage();
-        if (message == null || historique == null) {
-            historique = HistoriqueAgent.vide();
-        }
-        jo.joide.app.android.parametres.Reglages reglages =
-                jo.joide.app.android.parametres.Reglages.lire(
-                        jo.joide.app.android.parametres.PreferencesAndroid
-                                .source(this));
-        // lot U/6 : le fournisseur PART DES RÉGLAGES RELUS à
-        // l'instant — le champ en mémoire n'est qu'un cache de
-        // session qui restait SUR ANTHROPIC quand le choix était posé
-        // pendant que le binder n'était pas encore lié (sélecteur
-        // ouvert avant la connexion du service) ou posé dans
-        // Paramètres après le démarrage : la requête partait sur
-        // anthropic (« no anthropic key », rapporté le 2026-11-17).
-        // Le choix PERSISTÉ (sélecteur, dialogue personnalisé,
-        // Paramètres — tous écrivent avant de pousser) est le
-        // dernier choix explicite de l'utilisateur.
-        fournisseur = reglages.fournisseurIa;
-        String nomFournisseur = switch (fournisseur) {
-            case ANTHROPIC -> "anthropic";
-            case GEMINI -> "gemini";
-            case OPENROUTER -> "openrouter";
-            default -> "openai";
-        };
-        String cle = lireCle(nomFournisseur);
-        if (cle == null) {
-            consigner(new Entree(EvenementAgent.erreur(
-                    new ErreursLlm.ErreurLlm(
-                            ErreursLlm.Genre.CLE_MANQUANTE,
-                            "no key for " + nomFournisseur, -1)), null));
-            consigner(new Entree(EvenementAgent.fin(
-                    EvenementAgent.RaisonFin.ERREUR), null));
-            tourFini();
-            return;
-        }
-        String modeleChoisi = modeleDuFournisseur(fournisseur, reglages);
-        // le lot Q : la clé du stockage chiffré porte PLUSIEURS clés
-        // séparées par saut de ligne ou virgule — le banc et la
-        // bascule survivent à la conversation (les limites apprises
-        // aussi), ils ne se reconstruisent que si les clés changent
-        FournisseurLlm fournisseurLlm = bascule(nomFournisseur, cle);
-        EspaceTravailAgent espacePonte = espace;
-        EspaceCheckpoint checkpoints = espacePonte instanceof
-                EspaceCheckpoint verrou ? verrou : null;
-        if (checkpoints != null) {
-            checkpoints.commencerTour();
-        }
-        EspaceTravailAgent espaceQuestions =
-                new EspaceTravailInjecteur(espacePonte) {
-                    @Override
-                    public String demanderUtilisateur(
-                            List<QuestionUtilisateur> posees) {
-                        return poserQuestions(posees);
-                    }
-                };
-        requetesDuTour = 0;
-        FournisseurLlm compteur = new FournisseurLlm() {
-            @Override
-            public String nom() {
-                return fournisseurLlm.nom();
-            }
-
-            @Override
-            public jo.joide.agent.MessageAgent envoyer(
-                    jo.joide.agent.TransportHttp transport,
-                    jo.joide.agent.RequeteLlm requete, CancelToken jeton,
-                    Consumer<jo.joide.agent.EvenementFlux> ecouteur) {
-                requetesDuTour++;
-                return fournisseurLlm.envoyer(transport, requete,
-                        jeton, ecouteur);
-            }
-        };
-        ExecuteurOutils executeurOutils = new ExecuteurOutils(
-                portOutils(espaceQuestions, espacePonte),
-                chemin -> {
-                    try {
-                        return espacePonte.lireFichier(chemin);
-                    } catch (IOException e) {
-                        return null;
-                    }
-                });
-        BoucleAgent boucle = new BoucleAgent(compteur, modeleChoisi,
-                new TransportOkHttp(), executeurOutils, null, null);
+        // lot C6 : le jeton du tour, capturé AVANT le travail. Un
+        // tour finit TOUJOURS par un événement de fin — l'arrêt de
+        // l'utilisateur se dit ANNULÉ (pas une carte d'erreur), et
+        // AUCUNE exception, même hors RuntimeException, même avant
+        // la requête (réglages, coffre, bascule), ne laisse plus le
+        // tiroir en réflexion éternelle : hier une exception du bas
+        // du tour mourait dans le Future sans fin consignée, le
+        // composeur restait EN_COURS pour toujours et le bouton ■ ne
+        // montrait rien (rapporté le 2026-11-20).
+        CancelToken jetonTour = jeton;
+        ExecuteurOutils executeurOutils = null;
         try {
+            String message = dernierMessage();
+            if (message == null || historique == null) {
+                historique = HistoriqueAgent.vide();
+            }
+            jo.joide.app.android.parametres.Reglages reglages =
+                    jo.joide.app.android.parametres.Reglages.lire(
+                            jo.joide.app.android.parametres.PreferencesAndroid
+                                    .source(this));
+            // lot U/6 : le fournisseur PART DES RÉGLAGES RELUS à
+            // l'instant — le champ en mémoire n'est qu'un cache de
+            // session qui restait SUR ANTHROPIC quand le choix était posé
+            // pendant que le binder n'était pas encore lié (sélecteur
+            // ouvert avant la connexion du service) ou posé dans
+            // Paramètres après le démarrage : la requête partait sur
+            // anthropic (« no anthropic key », rapporté le 2026-11-17).
+            // Le choix PERSISTÉ (sélecteur, dialogue personnalisé,
+            // Paramètres — tous écrivent avant de pousser) est le
+            // dernier choix explicite de l'utilisateur.
+            fournisseur = reglages.fournisseurIa;
+            String nomFournisseur = switch (fournisseur) {
+                case ANTHROPIC -> "anthropic";
+                case GEMINI -> "gemini";
+                case OPENROUTER -> "openrouter";
+                default -> "openai";
+            };
+            String cle = lireCle(nomFournisseur);
+            if (cle == null) {
+                consigner(new Entree(EvenementAgent.erreur(
+                        new ErreursLlm.ErreurLlm(
+                                ErreursLlm.Genre.CLE_MANQUANTE,
+                                "no key for " + nomFournisseur, -1)), null));
+                consigner(new Entree(EvenementAgent.fin(
+                        EvenementAgent.RaisonFin.ERREUR), null));
+                return;
+            }
+            String modeleChoisi = modeleDuFournisseur(fournisseur, reglages);
+            // le lot Q : la clé du stockage chiffré porte PLUSIEURS clés
+            // séparées par saut de ligne ou virgule — le banc et la
+            // bascule survivent à la conversation (les limites apprises
+            // aussi), ils ne se reconstruisent que si les clés changent
+            FournisseurLlm fournisseurLlm = bascule(nomFournisseur, cle);
+            EspaceTravailAgent espacePonte = espace;
+            EspaceCheckpoint checkpoints = espacePonte instanceof
+                    EspaceCheckpoint verrou ? verrou : null;
+            if (checkpoints != null) {
+                checkpoints.commencerTour();
+            }
+            EspaceTravailAgent espaceQuestions =
+                    new EspaceTravailInjecteur(espacePonte) {
+                        @Override
+                        public String demanderUtilisateur(
+                                List<QuestionUtilisateur> posees) {
+                            return poserQuestions(posees);
+                        }
+                    };
+            requetesDuTour = 0;
+            FournisseurLlm compteur = new FournisseurLlm() {
+                @Override
+                public String nom() {
+                    return fournisseurLlm.nom();
+                }
+
+                @Override
+                public jo.joide.agent.MessageAgent envoyer(
+                        jo.joide.agent.TransportHttp transport,
+                        jo.joide.agent.RequeteLlm requete, CancelToken jetonCompteur,
+                        Consumer<jo.joide.agent.EvenementFlux> ecouteur) {
+                    requetesDuTour++;
+                    return fournisseurLlm.envoyer(transport, requete,
+                            jetonCompteur, ecouteur);
+                }
+            };
+            executeurOutils = new ExecuteurOutils(
+                    portOutils(espaceQuestions, espacePonte),
+                    chemin -> {
+                        try {
+                            return espacePonte.lireFichier(chemin);
+                        } catch (IOException e) {
+                            return null;
+                        }
+                    });
+            BoucleAgent boucle = new BoucleAgent(compteur, modeleChoisi,
+                    new TransportOkHttp(), executeurOutils, null, null);
             BoucleAgent.ResultatTour resultat = boucle.tour(message,
                     historique, mode,
                     this::demanderPermission,
-                    contexteVolatile(), jeton,
+                    contexteVolatile(), jetonTour,
                     evenement -> consigner(
                             new Entree(evenement, null)),
                     imagesDuTour);
@@ -870,19 +936,44 @@ public final class AgentService extends Service {
             transcript.add(resultat.texteFinal == null
                     ? "" : resultat.texteFinal);
             persiste();
-        } catch (RuntimeException e) {
-            ErreursLlm.ErreurLlm erreur = e instanceof
-                    ErreursLlm.ErreurLlm classifie ? classifie
-                    : new ErreursLlm.ErreurLlm(
-                            ErreursLlm.Genre.REPONSE_ILLISIBLE,
-                            String.valueOf(e.getMessage()), -1);
+    } catch (java.util.concurrent.CancellationException annule) {
+        // l'arrêt de l'utilisateur : la fin ANNULÉE, pas une erreur
+        consigner(new Entree(EvenementAgent.fin(
+                EvenementAgent.RaisonFin.ANNULE), null));
+    } catch (ErreursLlm.ErreurLlm erreur) {
+        if (jetonTour != null && jetonTour.isCancelled()) {
+            // l'appel HTTP coupé par l'arrêt remonte en IOException :
+            // c'est l'ANNULATION, jamais une carte d'erreur
+            consigner(new Entree(EvenementAgent.fin(
+                    EvenementAgent.RaisonFin.ANNULE), null));
+        } else {
             consigner(new Entree(EvenementAgent.erreur(erreur), null));
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ERREUR), null));
-        } finally {
-            executeurOutils.close();
-            tourFini();
         }
+    } catch (Throwable probleme) {
+        // lot C6 : même un crash inattendu FINIT le tour — le tiroir
+        // ne reste jamais EN_COURS sans événement (le Future avalait
+        // hier l'exception en silence)
+        if (jetonTour != null && jetonTour.isCancelled()) {
+            consigner(new Entree(EvenementAgent.fin(
+                    EvenementAgent.RaisonFin.ANNULE), null));
+        } else {
+            ErreursLlm.ErreurLlm erreur = probleme instanceof
+                    ErreursLlm.ErreurLlm classifie ? classifie
+                    : new ErreursLlm.ErreurLlm(
+                            ErreursLlm.Genre.REPONSE_ILLISIBLE,
+                            String.valueOf(probleme.getMessage()), -1);
+            consigner(new Entree(EvenementAgent.erreur(erreur), null));
+            consigner(new Entree(EvenementAgent.fin(
+                    EvenementAgent.RaisonFin.ERREUR), null));
+        }
+    } finally {
+        if (executeurOutils != null) {
+            executeurOutils.close();
+        }
+        tourFini();
+    }
     }
 
     private void tourFini() {
@@ -897,7 +988,8 @@ public final class AgentService extends Service {
         });
     }
 
-    /** Le contexte volatile du tour (note de fin, ADR-055). */
+    /** Le contexte volatile du tour (note de fin, ADR-055) — les
+     *  compétences actives le rejoignent (lot C6). */
     private String contexteVolatile() {
         StringBuilder contexte = new StringBuilder("Project context.");
         if (!transcript.isEmpty()) {
@@ -906,6 +998,14 @@ public final class AgentService extends Service {
                     .append(" completed turn(s).");
         }
         contexte.append(" Permission mode: ").append(mode);
+        String competences;
+        synchronized (this) {
+            competences = competencesBloc;
+        }
+        if (competences != null && !competences.isEmpty()) {
+            contexte.append(" Active skills:")
+                    .append(competences);
+        }
         return contexte.toString();
     }
 

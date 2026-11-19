@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C6 — la PILULE D\'ACTION TEXTE (« Modifier », « Retirer »,
+     « Ajouter un serveur ») : pressable, rayon pilule, sans fond. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="250dp" />
+</shape>
