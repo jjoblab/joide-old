@@ -163,7 +163,7 @@ foi du commit hérité.
 | `EtatCreationTest` | `defautsUniquesEtDerivesDuModele` étendu : `suitPaquet()` vrai à la sélection et après renommage, faux après saisie directe du paquet (le paquet touché ne suit plus) |
 | `ThemesM3Test` | + `lesStylesDuLotCreationOntUnParentM3EtDesJetonsExistants` (parents M3, teintes `@color/`, paddings 14/7, 11/16, rayon arbo 14) ; le test des sélecteurs devient `lesSelecteursDeCouleurNePortentQueDesAttrsJo` (11 sélecteurs : 5 du lot A3 + 6 du lot A4) |
 | `values{,-fr}/strings.xml` | + `creation_desc_retour` (parité bilingue) |
-| `res/values/dimens.xml`, `item_projet_carte.xml`, `item_projet_reprise.xml`, `item_modele_projet.xml`, `ui/ThemesM3Test.java` (reprise d'audit) | `@dimen/jo_elevation_carte` (3 dp) et ses trois consommateurs (cartes projet, reprise, modèle — dimension répétée ≥ 3 fois en `@dimen/`, contrainte §6) + assertion de parité ; valeur inchangée, aucun écart visuel |
+| `res/values/dimens.xml`, `item_projet_carte.xml`, `item_projet_reprise.xml`, `item_modele_projet.xml`, `ui/ThemesM3Test.java` (reprise d'audit) | `@dimen/jo_elevation_carte` (3 dp) et ses trois consommateurs (cartes projet, reprise, modèle — dimension répétée ≥ 3 fois en `@dimen/`, contrainte §6) + assertion de parité ; valeur inchangée, aucun écart visuel |
 
 ## 4. Mesures avant/après
 
@@ -179,7 +179,7 @@ foi du commit hérité.
 | `Dialogue.` usages | 58 | 58 (inchangé — A7 ; aucun nouveau dialogue, D3) |
 | Imports Compose | 0 | **0** ; imports AndroidX/Material dans la liste blanche (`androidx.activity`, `material.chip/button`, `material.button`) |
 | Lignes d'écran | 879 | 746 |
-| APK debug (R8 + shrink) | 15 649 057 o | **15 743 828 o (+94 771 o, +0,09 Mio)** — `Chip`/`ChipGroup` entrent à l'APK (R8 en garde les classes) ; +96 o à la reprise d'audit (le dimen d'élévation en ressource) |
+| APK debug (R8 + shrink) | 15 649 057 o | **15 743 828 o (+94 771 o, +0,09 Mio)** — `Chip`/`ChipGroup` entrent à l'APK (R8 en garde les classes) ; +96 o à la reprise d'audit (le dimen d'élévation en ressource) |
 | `verifierOmbreApk` | vert | **vert** (« APK sans ombre, éléments vitaux présents (15743828 o) ») |
 | Tests JVM `:app-android:test` | 343 verts | **344 verts, 0 échec** (+1 parité du lot A4) |
 
@@ -217,7 +217,7 @@ dépôt modifié pour cela.
     accueil A2 et paramètres A3) ;
   - `SetTextI18n` ×1 (`EcranCreation.java:471` : le préfixe
     `":" + module.id()` des puces de module — identifiant
-    technique non traduisible, exactement le code d'hier ; à la reprise
+    technique non traduisible, exactement le code d'hier ; à la reprise
     d'audit la description était fausse (l'indentation d'arborescence
     n'est pas signalée) ;
   - pas de `DuplicateIncludedIds` nouveau : les deux includes de

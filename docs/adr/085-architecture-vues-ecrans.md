@@ -146,8 +146,8 @@ socle de build :
    `EtatAtelier.SEUIL_GRAND_ECRAN_DP` (720) ; **pas `sw720dp`**.
 10. **Politique de cycle de vie de l'atelier** : déclarer
     `android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`
-    sur `EcranAtelier` (**posé au lot A8** — la géométrie SEULE : thème,
-    langue, densité et taille de police restent des recréations) ;
+    sur `EcranAtelier` (**posé au lot A8** — la géométrie SEULE : thème,
+    langue, densité et taille de police restent des recréations) ;
     `onConfigurationChanged` ré-inflamme **seulement la
     racine** (le `puits` portant la scène éditeur est détaché AVANT et
     rattaché APRÈS, jamais reconstruit, la session d'IDE n'est pas fermée),
@@ -225,8 +225,8 @@ popups fermés »** : retenue (décision 10, **POSÉE au lot A8**). γ « conte
 indexé par racine » : à évaluer en suite (robuste aux recréations, état
 global à gérer). δ `onRetainNonConfigurationInstance` : écartée (dépréciée
 depuis l'API 28). ε `ViewModel` : **autorisée, évaluée en A8 — ÉCARTÉE**
-(la décision motivée vit à « Évaluations du lot A8 » : β couvre la
-géométrie, l'état minimal couvre les recréations restantes ; la session
+(la décision motivée vit à « Évaluations du lot A8 » : β couvre la
+géométrie, l'état minimal couvre les recréations restantes ; la session
 d'IDE y déménagerait avec un `Context` d'activité — interdit — aucun
 changement de propriété n'a donc lieu à consigner).
 
@@ -252,16 +252,16 @@ changement de propriété n'a donc lieu à consigner).
 
 Les quatre composants de la table ont été évalués sur le comportement
 spécifié (§005 + maquettes `atelier.html`/`atelier-v2.html`, qui font
-foi) ; la conclusion de chaque évaluation :
+foi) ; la conclusion de chaque évaluation :
 
-- **Onglets → `RecyclerView` horizontal** (retenu) : l'onglet
+- **Onglets → `RecyclerView` horizontal** (retenu) : l'onglet
   FERMABLE (× sur l'actif, appui long sur un autre) et l'indicateur
   accent 2 dp exigent une vue d'onglet personnalisée — `TabLayout`
   garderait sa propre mécanique de sélection (indicateur/ripple) qui
-  doublerait l'indicateur maison ; la bande recycle en plus
+  doublerait l'indicateur maison ; la bande recycle en plus
   (ListAdapter/DiffUtil, décision 11).
 - **Feuille basse → `FeuilleBasse` conservée** (la clause « si les
-  détentes ne s'expriment pas » s'applique) : la spécification veut
+  détentes ne s'expriment pas » s'applique) : la spécification veut
   que la feuille soit une VOISINE À POIDS qui RESSERRE le corps (le
   puits perd sa hauteur quand elle se déplie — hauteur utile = feuille
   + voisins à poids, mesurée par le câblage du lot L3), avec trois
@@ -269,10 +269,10 @@ foi) ; la conclusion de chaque évaluation :
   et le tap qui cycle — `BottomSheetBehavior` est une feuille DANS un
   `CoordinatorLayout` qui recouvre son parent sans jamais retenir la
   taille des voisins (pas de comportement d'appui stock pour
-  redimensionner un frère à poids) ; l'exprimer exigerait un
+  redimensionner un frère à poids) ; l'exprimer exigerait un
   `Behavior` maison, contredisant le gain cherché. `EtatFeuille`
   reste la source de vérité (décision inchangée).
-- **Tiroirs → `TiroirPousse` conservé** : la maquette spécifie le
+- **Tiroirs → `TiroirPousse` conservé** : la maquette spécifie le
   panneau glissant du bord avec RIDEAU teinté `jo_rideau` et fermeture
   au rideau (`.tiroir-rang` de `atelier.html`), discipline PIEGE-31
   (le rideau fermé ne porte jamais la cliquabilité) et mouvement de
@@ -283,7 +283,7 @@ foi) ; la conclusion de chaque évaluation :
   le grand écran n'a qu'un seul tiroir — le conteneur `DrawerLayout`
   n'apporterait qu'un niveau de plus. Aucun changement de comportement
   voulu.
-- **Barre haute → `BarreHaut` conservée** : la barre (52 dp, lot L2)
+- **Barre haute → `BarreHaut` conservée** : la barre (52 dp, lot L2)
   porte des zones sans équivalent `MaterialToolbar` — pilule d'état de
   l'index (point + libellé teintés, tap = détail), puce « n modules »,
   point d'activité de l'agent, bouton tiroir — l'équivalent menu/entrée
@@ -296,150 +296,150 @@ foi) ; la conclusion de chaque évaluation :
 
 La décision 12 laissait le voile ouvert entre
 `FLAG_DIM_BEHIND` sur la fenêtre du popup **ou** vue-voile du layout
-racine. Le lot tranche et consigne :
+racine. Le lot tranche et consigne :
 
 - **Vue-voile du layout racine, RETENUE** (l'autre voie est
-  **impraticable**) : `PopupWindow` n'expose PAS sa fenêtre — aucun
-  `getWindow()` public, aucun drapeau posable ; `FLAG_DIM_BEHIND`
+  **impraticable**) : `PopupWindow` n'expose PAS sa fenêtre — aucun
+  `getWindow()` public, aucun drapeau posable ; `FLAG_DIM_BEHIND`
   s'applique à une fenêtre de DIALOGUE, interdite par D3. Le voile est
   donc une vue `voile_popup` déclarée DERNIER enfant du layout racine
   de chaque écran porteur (accueil, atelier compact, atelier
-  `w720dp`, paramètres) : `?attr/jo_rideau`, cliquable (elle RETIENT le
+  `w720dp`, paramètres) : `?attr/jo_rideau`, cliquable (elle RETIENT le
   toucher hors de la carte — pas de fermeture au dehors pour ce qui
-  exige une réponse), `gone` au repos ; `PopupCentre` la montre et la
+  exige une réponse), `gone` au repos ; `PopupCentre` la montre et la
   cache. La carte centrée vit dans sa PROPRE fenêtre au-dessus du
   voile (`PopupWindow` focusable — le retour la ferme en premier).
-- **Un seul porte-popups par écran** (`PortePopups`) : le registre des
+- **Un seul porte-popups par écran** (`PortePopups`) : le registre des
   fenêtres ouvertes (ancrées et centrées), les corps communs gonflés
   de `popup_*.xml` par binding (menu ancré, information,
   confirmation, destructive, saisie, écran texte) — l'ordre du retour
   (popup AVANT feuille/tiroirs) se lit du registre et vit dans
-  l'état pur `EtatPopups` (testé JVM) ; la fermeture de cycle de vie
+  l'état pur `EtatPopups` (testé JVM) ; la fermeture de cycle de vie
   (`onPause`/`onDestroy`/`onConfigurationChanged`) est UN appel
   idempotent.
-- **La carte porte le fond, le cadre reste transparent** : cartes
+- **La carte porte le fond, le cadre reste transparent** : cartes
   centrées en `MaterialCardView` (surface, liseré bord-fin, rayon
   carte — `popup_confirmation`, `popup_saisie`, …), cartes ancrées en
-  drawable `carte_popup` (`popup_menu_noeud`) : le `GradientDrawable`
+  drawable `carte_popup` (`popup_menu_noeud`) : le `GradientDrawable`
   fabriqué en code par `PopupAncre` d'hier vit désormais en XML
   (décision « le voile/la carte portent le fond » du prompt §4.4).
 - Les listes courtes et bornées des popups (entrées de menu, lignes
   de conversation, serveurs) restent des inflations par binding au
-  lieu d'un `RecyclerView` (décision 11 : « une liste courte et
+  lieu d'un `RecyclerView` (décision 11 : « une liste courte et
   statique peut rester dans le layout », le plafond des menus et des
   conversations est déjà borné par construction).
 
 ### Évaluations du lot A8 (cycle de vie et configuration — décision 10)
 
-La décision 10 est posée ; les choix qu'elle laissait ouverts sont tranchés
-et consignés ici :
+La décision 10 est posée ; les choix qu'elle laissait ouverts sont tranchés
+et consignés ici :
 
 - **`configChanges` de GÉOMÉTRIE seul, sur `EcranAtelier` seul**
   (`orientation|screenSize|smallestScreenSize|screenLayout`) — le filet
   `ArchitectureVuesTest` verrouille la liste EXACTE du manifest et qu'aucune
   autre activité ne déclare de changements. Thème, langue, densité et
-  police restent des recréations : l'état d'UI minimal les couvre par
+  police restent des recréations : l'état d'UI minimal les couvre par
   `onSaveInstanceState`.
-- **La décision est une classe PUR JVM** (`DecisionConfiguration`) : donnée
+- **La décision est une classe PUR JVM** (`DecisionConfiguration`) : donnée
   la classe de géométrie avant/après, elle répond ré-infler/fermer les
   popups/ne JAMAIS fermer l'IDE — le critère §6.10 (un changement de
   géométrie n'appelle pas `fermerIde()`) y est testé dans toute la grille.
 - **Même classe de géométrie → PAS de ré-inflation** (économie documentée)
   : un layout neuf de la même classe ne dit rien de plus, le re-câblage
   entier ne servirait à rien — mais les popups se ferment quand même
-  (décision 12 : TOUT changement de configuration les ferme).
+  (décision 12 : TOUT changement de configuration les ferme).
 - **La ré-inflation de la racine** détache le `puits` AVANT (la scène
   celeris et sa couche de popups, jamais reconstruites) et le rattache
-  APRÈS ; les zones montées (arborescence, console, aperçu, tiroir agent)
-  suivent — instances conservées, ré-amarrées ; les vues neuves se
+  APRÈS ; les zones montées (arborescence, console, aperçu, tiroir agent)
+  suivent — instances conservées, ré-amarrées ; les vues neuves se
   re-câblent et se re-posent depuis les états purs (`SessionAtelier`
-  n'est pas touché : moteurs LSP, sync, aperçu et écritures survivent).
-- **L'état d'UI minimal vit dans `onSaveInstanceState`** : l'export de
+  n'est pas touché : moteurs LSP, sync, aperçu et écritures survivent).
+- **L'état d'UI minimal vit dans `onSaveInstanceState`** : l'export de
   l'`EtatAtelier` (onglets ouverts, actif, points de modification,
   surcouches, section de feuille — aller-retour export/import testé JVM)
-  et les BROUILLONS de `EtatPopups` (le même passage : la saisie vit dans
-  l'état, le popup n'est jamais restauré). Le build ne s'exporte pas : la
+  et les BROUILLONS de `EtatPopups` (le même passage : la saisie vit dans
+  l'état, le popup n'est jamais restauré). Le build ne s'exporte pas : la
   pilule suit les événements du service (résiduel documenté au rapport).
-- **ε (ViewModel) ÉCARTÉE, évaluation motivée** : β couvre la géométrie et
+- **ε (ViewModel) ÉCARTÉE, évaluation motivée** : β couvre la géométrie et
   l'état minimal couvre les recréations restantes — un `ViewModel`
-  n'apporterait rien que le Bundle ne donne déjà ; y DÉMÉNAGER la session
-  d'IDE (scène, moteurs) est exclu : `SceneEditeur`/`ApercuLayouts` sont
+  n'apporterait rien que le Bundle ne donne déjà ; y DÉMÉNAGER la session
+  d'IDE (scène, moteurs) est exclu : `SceneEditeur`/`ApercuLayouts` sont
   construits sur le `Context` de l'activité (thème, ressources, fenêtre) —
   les y retenir violerait « jamais de `Context` d'activité retenu » et
   exigerait un protocole de re-attach au moins aussi lourd que la
   ré-inflation de β. La clause « À revisiter » (γ/ε si le coût de
   rechargement mesuré reste pénalisant) demeure.
-- **`saveEnabled=false` reste sur les saisies de l'assistant (A4)** : la
+- **`saveEnabled=false` reste sur les saisies de l'assistant (A4)** : la
   sauvegarde de l'état passe par l'export/import PUR de l'`EtatCreation`
-  (A4 : « A8 fera la sauvegarde ») — la vérité reste unique, la
+  (A4 : « A8 fera la sauvegarde ») — la vérité reste unique, la
   restauration du framework écrirait un deuxième avis (et marquerait le
-  paquet « touché » sans motif) ; les commutateurs des paramètres (A3)
+  paquet « touché » sans motif) ; les commutateurs des paramètres (A3)
   restent neutralisés pour la même raison d'unicité, leurs ids étant
   dupliqués PAR CONSTRUCTION entre `<include>` (la vérité = `Reglages`,
-  re-posée au montage). Le DÉFILEMENT, lui, se restaure par le cadre : les
+  re-posée au montage). Le DÉFILEMENT, lui, se restaure par le cadre : les
   racines d'étape de l'assistant deviennent des `NestedScrollView` (le
-  `ScrollView` du cadre ne sauve pas sa position ; l'id est porté par
+  `ScrollView` du cadre ne sauve pas sa position ; l'id est porté par
   l'`<include>` du `ViewFlipper`).
 
 ### Évaluations du lot A9 (consolidation — « une seule voie de thémage »)
 
-Le dernier lot consolide : le kit `ui/` ne garde que les vues **sans
-équivalent Material** (décision 6 : conservées avec justification), les
+Le dernier lot consolide : le kit `ui/` ne garde que les vues **sans
+équivalent Material** (décision 6 : conservées avec justification), les
 redondances de thémage disparaissent, la liste d'exceptions du filet
-est VIDE. Chaque choix, tranché et consigné :
+est VIDE. Chaque choix, tranché et consigné :
 
 - **Bouton/Champ/Carte/Segment/Interrupteur/Onglets SUPPRIMÉS du kit**
   (avec leurs états `ChoixBouton`/`ChoixChamp`/`ChoixTexte`/`ChoixSegment`
-  et leurs tests) : remplaçants Material déjà partout (screens A2-A8), les
+  et leurs tests) : remplaçants Material déjà partout (screens A2-A8), les
   deux derniers `Bouton` du composeur de l'agent migrent en
   `MaterialButton` (`Widget.Jo.Button.Tonal`, fond `?attr/jo_surface_haute`
   = l'ancien TONAL du kit — l'apparence ne change pas). La méthode Canvas
   `Carte.dessinerDossier` déménage dans `Icone` (conservée, glyphe).
-- **`Fab` CONSERVÉ** : le FAB Construire est un composant à double état
+- **`Fab` CONSERVÉ** : le FAB Construire est un composant à double état
   — rond 56 dp « réussite » avec triangle lecture DESSINÉ au Canvas au
   repos, PILULE d'état « build #n — phase » avec croix d'arrêt intégrée
   pendant le build, trois actions (lancer / ouvrir console / arrêter).
   `FloatingActionButton`/`ExtendedFloatingActionButton` ne savent
   exprimer ni la métamorphose, ni la croix d'arrêt intégrée, ni les
-  couleurs Graphite calculées (texte sur réussite) ; la maquette
-  `atelier.html` fait foi (§4.4 : « positions en dimens », déjà posé A6).
-- **`Pilule`/`Puce` CONSERVÉES** : la pilule est un point à RÔLE COLORÉ
+  couleurs Graphite calculées (texte sur réussite) ; la maquette
+  `atelier.html` fait foi (§4.4 : « positions en dimens », déjà posé A6).
+- **`Pilule`/`Puce` CONSERVÉES** : la pilule est un point à RÔLE COLORÉ
   DYNAMIQUE (neutre/accent/réussite/alerte/erreur — `Pilule.Role` lu à
-  l'exécution) + libellé teinté au rôle ; la puce porte sa sélection
+  l'exécution) + libellé teinté au rôle ; la puce porte sa sélection
   dans l'état pur `ChoixPuce` (fond accent 16 %, bord 45 %, texte
   demi-gras — calculs, décision 8) et ses teintes au déséquipement. Le
   `Chip` M3 imposerait ripple, états et cibles stock contraires à la
-  maquette (discipline PIEGE-31 : jamais de cliquabilité décorative) ;
+  maquette (discipline PIEGE-31 : jamais de cliquabilité décorative) ;
   l'évaluation A6 de la barre haute (zones sans équivalent) demeure.
-- **`TuileProjet` CONSERVÉE** : tuile tonale DESSINÉE au Canvas, fond et
-  glyphe calculés depuis `ChoixCarte` selon le type de projet (décision 8 :
-  couleurs calculées dynamiquement — jamais en XML) ; pas d'équivalent
+- **`TuileProjet` CONSERVÉE** : tuile tonale DESSINÉE au Canvas, fond et
+  glyphe calculés depuis `ChoixCarte` selon le type de projet (décision 8 :
+  couleurs calculées dynamiquement — jamais en XML) ; pas d'équivalent
   Material direct.
 - **`TiroirPousse`, `Nuancier`, `Stepper`, `EtatVide`, `Icone` :
   déjà conservées** (évaluations A6 et table §4.4 — raisons inchangées).
-- **`<merge>` des zones (I3)** : `BarreHaut`, `TiroirFichiers` et
+- **`<merge>` des zones (I3)** : `BarreHaut`, `TiroirFichiers` et
   `VueConsole`/`VueApercu`/`VueArbre` (déjà faits A5) ont leur racine en
   `<merge>` — la classe de zone EST le conteneur (un niveau de moins par
-  zone) ; `BarreSymboles` va plus loin : son layout racine était un
+  zone) ; `BarreSymboles` va plus loin : son layout racine était un
   LinearLayout VIDE (les touches se posent par code) — le fichier et son
   binding disparaissent, la classe se configure elle-même (orientation,
   gravité, retrait, fond, visibilité initiale). La feuille basse garde
-  son conteneur (id, fond, élévation y vivent — évaluation A6 inchangée) ;
+  son conteneur (id, fond, élévation y vivent — évaluation A6 inchangée) ;
   `tiroir_agent.xml` garde sa racine (un `<include>` du composeur vit
   dedans).
-- **Une seule voie de thémage** : les injections `palette.*` REDONDANTES
+- **Une seule voie de thémage** : les injections `palette.*` REDONDANTES
   disparaissent — les couleurs des items de l'agent vivaient DEUX FOIS
-  (XML `?attr/jo_*` posé en A7 + ré-injection identique en code) ;
+  (XML `?attr/jo_*` posé en A7 + ré-injection identique en code) ;
   les glyphes/couleurs des icônes du tiroir agent et du composeur se
   posent désormais en XML (`app:jo_icone_*`), la saisie du composeur
   prend `?attr/jo_texte`/`?attr/jo_texte3` ; la pastille du compteur de
   la feuille (couleur littérale `#FFFFFF`, DERNIÈRE exception du filet)
-  porte `?attr/colorOnError` (rôle M3 branché Graphite — décision 5 ;
+  porte `?attr/colorOnError` (rôle M3 branché Graphite — décision 5 ;
   le contraste sur `jo_erreur` s'améliore, l'identité ne change pas).
-  Les couleurs DYNAMIQUES restent en code (décision 8 : rôles, états,
+  Les couleurs DYNAMIQUES restent en code (décision 8 : rôles, états,
   mélanges calculés).
-- **`contentDescription`** : les icônes interactives du tiroir agent et
-  du composeur le portent en XML (visible à la relecture) ; les cibles
+- **`contentDescription`** : les icônes interactives du tiroir agent et
+  du composeur le portent en XML (visible à la relecture) ; les cibles
   < 48 dp des rails de la maquette Graphite (32-40 dp, densité voulue)
   demeurent un choix de design signalé au rapport — seuls les éléments
   interactifs SANS description restaient une faute.

@@ -76,7 +76,7 @@ réglages IA à clés chiffrées (ADR-060). Arrêt pour validation —
 la suite est le lot Q (robustesse, Gemini) puis R (MCP).
 
 Chantier « Architecture des vues » A0-A9 (2026-11-18 → 2026-11-19,
-[ADR-085](../adr/085-architecture-vues-ecrans.md), **Accepted**) :
+[ADR-085](../adr/085-architecture-vues-ecrans.md), **Accepted**) :
 les directives D1 (vues AndroidX), D2 (Material 3 habillé Graphite) et
 D3 (popups, plus aucun dialogue) du propriétaire sont livrées —
 chaque écran est une coque mince sur un layout racine (+
@@ -88,5 +88,5 @@ popups XML à deux gabarits (`PopupAncre`/`PopupCentre`,
 Material (`Icone`, `Nuancier`, `Stepper`, `EtatVide`, `TuileProjet`,
 `TiroirPousse`, `Fab` double état, `Pilule` à rôle dynamique,
 `Puce` à sélection pure) et le filet `ArchitectureVuesTest` verrouille
-l'architecture à **exceptions vides**. Rapports de phase :
+l'architecture à **exceptions vides**. Rapports de phase :
 `PHASE-A0-RAPPORT.md` à `PHASE-A9-RAPPORT.md` à la racine du dépôt.
