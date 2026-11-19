@@ -2,16 +2,15 @@ package jo.joide.app.android.ui.atelier;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.ModeleBarreSymboles;
-import jo.joide.app.android.databinding.AtelierBarreSymbolesBinding;
 import jo.joide.app.android.databinding.ItemToucheBinding;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
@@ -19,14 +18,18 @@ import jo.joide.app.android.ui.GraphiteVue;
 /**
  * Atelier v2, lot L2 (ADR-083) — la barre de symboles (§3.5) :
  * VISIBLE SEULEMENT quand le clavier est affiché (l'écran branche le
- * détecteur d'insets) ; la vue MINCE gonfle {@code atelier_barre_symboles}
- * et une {@code item_touche} par touche de {@link ModeleBarreSymboles}.
+ * détecteur d'insets) ; la vue MINCE gonfle une {@code item_touche}
+ * par touche de {@link ModeleBarreSymboles}.
  * Toucher = insertion intelligente via l'InputConnection de la vue
  * éditeur (fermeture auto des paires) ; flick haut = variante ; la
  * rangée d'actions « ⋯ » porte ses verbes réels. AUCUNE touche ne
  * prend le focus (le clavier système ne se ferme pas).
+ * Lot A9 (ADR-085, I3) : l'ancien layout racine était un LinearLayout
+ * VIDE (les touches se posent par code) — la classe EST désormais le
+ * conteneur (orientation, gravité, retrait 6/5, fond, visibilité
+ * initiale) ; plus aucun fichier de zone, plus aucun binding de zone.
  */
-public final class BarreSymboles extends FrameLayout {
+public final class BarreSymboles extends LinearLayout {
 
     /** Un auditeur d'insertion (la vue éditeur est connectée par
      *  l'écran — la vue ne connaît pas celéris). */
@@ -44,9 +47,6 @@ public final class BarreSymboles extends FrameLayout {
         void dupliquerLigne();
     }
 
-    /** Le binding de la barre. */
-    public final AtelierBarreSymbolesBinding binding;
-
     private Auditeur auditeur;
 
     public BarreSymboles(Context contexte) {
@@ -55,11 +55,17 @@ public final class BarreSymboles extends FrameLayout {
 
     public BarreSymboles(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
-        binding = AtelierBarreSymbolesBinding.inflate(
-                LayoutInflater.from(contexte), this, true);
-        binding.barreSymboles.setContentDescription(
-                getContext().getString(
-                        R.string.atelier_desc_barre_symboles));
+        // lot A9 : le conteneur se configure lui-même (l'ancien layout
+        // racine était vide) — l'apparence ne change pas
+        setOrientation(HORIZONTAL);
+        setGravity(Gravity.CENTER_VERTICAL);
+        int ecartH = GraphiteVue.dp(contexte, 6);
+        int ecartV = GraphiteVue.dp(contexte, 5);
+        setPadding(ecartH, ecartV, ecartH, ecartV);
+        setBackgroundResource(R.drawable.atelier_barre_symboles_fond);
+        setVisibility(GONE);
+        setContentDescription(getContext().getString(
+                R.string.atelier_desc_barre_symboles));
         gonflerTouches();
     }
 
@@ -73,23 +79,23 @@ public final class BarreSymboles extends FrameLayout {
     private void gonflerTouches() {
         Graphite.Palette palette = GraphiteVue.palette(getContext());
         LayoutInflater gonfleur = LayoutInflater.from(getContext());
-        LinearLayout rangee = binding.barreSymboles;
-        // les touches symboles (rangée par défaut)
+        // les touches symboles (rangée par défaut) — la classe EST la
+        // rangée (lot A9)
         for (ModeleBarreSymboles.Touche touche
                 : ModeleBarreSymboles.touches()) {
-            ajouterToucheSymbole(rangee, gonfleur, palette, touche);
+            ajouterToucheSymbole(this, gonfleur, palette, touche);
         }
         // la rangée d'actions « ⋯ » (§3.5) : des VERBES RÉELS —
         // commenter la ligne courante, la dupliquer, revenir aux
         // symboles ; « problème suivant » rejoindra la rangée au lot
         // L3 avec la source LSP (franchise : jamais un bouton mort)
-        ajouterToucheAction(rangee, gonfleur, palette,
+        ajouterToucheAction(this, gonfleur, palette,
                 getContext().getString(R.string.atelier_action_commenter),
                 v -> { if (auditeur != null) { auditeur.commenterLigne(); } });
-        ajouterToucheAction(rangee, gonfleur, palette,
+        ajouterToucheAction(this, gonfleur, palette,
                 getContext().getString(R.string.atelier_action_dupliquer),
                 v -> { if (auditeur != null) { auditeur.dupliquerLigne(); } });
-        ajouterToucheAction(rangee, gonfleur, palette,
+        ajouterToucheAction(this, gonfleur, palette,
                 getContext().getString(R.string.atelier_action_symboles),
                 v -> basculer(true));
     }
@@ -220,8 +226,8 @@ public final class BarreSymboles extends FrameLayout {
      *  les verbes d'actions remplacent les touches, jamais les deux
      *  en même temps. */
     private void basculer(boolean symboles) {
-        for (int i = 0; i < binding.barreSymboles.getChildCount(); i++) {
-            View touche = binding.barreSymboles.getChildAt(i);
+        for (int i = 0; i < getChildCount(); i++) {
+            View touche = getChildAt(i);
             boolean estAction = "action".equals(touche.getTag());
             touche.setVisibility(symboles == estAction
                     ? View.GONE : View.VISIBLE);

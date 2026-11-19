@@ -1,6 +1,6 @@
 # ADR-085 — Architecture des vues d'écran : AndroidX, Material 3, popups
 
-**Statut :** Proposed (→ Accepted au lot A9)
+**Statut :** Accepted (lot A9, 2026-11-19 — le chantier est livré, le filet `ArchitectureVuesTest` est à exceptions VIDES)
 **Date :** 2026-11-19 (chantier lancé le 2026-11-18 par les directives du propriétaire)
 **Deciders :** Olson (propriétaire, directives D1-D3) ; agent d'ingénierie (instruction et avis motivé)
 **Remplace partiellement :** [ADR-083](083-atelier-v2-layouts-viewbinding.md) §2 (« zéro AndroidX UI », viewbinding seule tolérée) ; la section « Implémentation — vues du cadre uniquement, zéro AndroidX » de `docs/ecrans/002-systeme-design.md` est caduque pour l'implémentation (le document spéculatif n'est pas modifié — maquettes et jetons demeurent contractuels).
@@ -380,6 +380,69 @@ et consignés ici :
   racines d'étape de l'assistant deviennent des `NestedScrollView` (le
   `ScrollView` du cadre ne sauve pas sa position ; l'id est porté par
   l'`<include>` du `ViewFlipper`).
+
+### Évaluations du lot A9 (consolidation — « une seule voie de thémage »)
+
+Le dernier lot consolide : le kit `ui/` ne garde que les vues **sans
+équivalent Material** (décision 6 : conservées avec justification), les
+redondances de thémage disparaissent, la liste d'exceptions du filet
+est VIDE. Chaque choix, tranché et consigné :
+
+- **Bouton/Champ/Carte/Segment/Interrupteur/Onglets SUPPRIMÉS du kit**
+  (avec leurs états `ChoixBouton`/`ChoixChamp`/`ChoixTexte`/`ChoixSegment`
+  et leurs tests) : remplaçants Material déjà partout (screens A2-A8), les
+  deux derniers `Bouton` du composeur de l'agent migrent en
+  `MaterialButton` (`Widget.Jo.Button.Tonal`, fond `?attr/jo_surface_haute`
+  = l'ancien TONAL du kit — l'apparence ne change pas). La méthode Canvas
+  `Carte.dessinerDossier` déménage dans `Icone` (conservée, glyphe).
+- **`Fab` CONSERVÉ** : le FAB Construire est un composant à double état
+  — rond 56 dp « réussite » avec triangle lecture DESSINÉ au Canvas au
+  repos, PILULE d'état « build #n — phase » avec croix d'arrêt intégrée
+  pendant le build, trois actions (lancer / ouvrir console / arrêter).
+  `FloatingActionButton`/`ExtendedFloatingActionButton` ne savent
+  exprimer ni la métamorphose, ni la croix d'arrêt intégrée, ni les
+  couleurs Graphite calculées (texte sur réussite) ; la maquette
+  `atelier.html` fait foi (§4.4 : « positions en dimens », déjà posé A6).
+- **`Pilule`/`Puce` CONSERVÉES** : la pilule est un point à RÔLE COLORÉ
+  DYNAMIQUE (neutre/accent/réussite/alerte/erreur — `Pilule.Role` lu à
+  l'exécution) + libellé teinté au rôle ; la puce porte sa sélection
+  dans l'état pur `ChoixPuce` (fond accent 16 %, bord 45 %, texte
+  demi-gras — calculs, décision 8) et ses teintes au déséquipement. Le
+  `Chip` M3 imposerait ripple, états et cibles stock contraires à la
+  maquette (discipline PIEGE-31 : jamais de cliquabilité décorative) ;
+  l'évaluation A6 de la barre haute (zones sans équivalent) demeure.
+- **`TuileProjet` CONSERVÉE** : tuile tonale DESSINÉE au Canvas, fond et
+  glyphe calculés depuis `ChoixCarte` selon le type de projet (décision 8 :
+  couleurs calculées dynamiquement — jamais en XML) ; pas d'équivalent
+  Material direct.
+- **`TiroirPousse`, `Nuancier`, `Stepper`, `EtatVide`, `Icone` :
+  déjà conservées** (évaluations A6 et table §4.4 — raisons inchangées).
+- **`<merge>` des zones (I3)** : `BarreHaut`, `TiroirFichiers` et
+  `VueConsole`/`VueApercu`/`VueArbre` (déjà faits A5) ont leur racine en
+  `<merge>` — la classe de zone EST le conteneur (un niveau de moins par
+  zone) ; `BarreSymboles` va plus loin : son layout racine était un
+  LinearLayout VIDE (les touches se posent par code) — le fichier et son
+  binding disparaissent, la classe se configure elle-même (orientation,
+  gravité, retrait, fond, visibilité initiale). La feuille basse garde
+  son conteneur (id, fond, élévation y vivent — évaluation A6 inchangée) ;
+  `tiroir_agent.xml` garde sa racine (un `<include>` du composeur vit
+  dedans).
+- **Une seule voie de thémage** : les injections `palette.*` REDONDANTES
+  disparaissent — les couleurs des items de l'agent vivaient DEUX FOIS
+  (XML `?attr/jo_*` posé en A7 + ré-injection identique en code) ;
+  les glyphes/couleurs des icônes du tiroir agent et du composeur se
+  posent désormais en XML (`app:jo_icone_*`), la saisie du composeur
+  prend `?attr/jo_texte`/`?attr/jo_texte3` ; la pastille du compteur de
+  la feuille (couleur littérale `#FFFFFF`, DERNIÈRE exception du filet)
+  porte `?attr/colorOnError` (rôle M3 branché Graphite — décision 5 ;
+  le contraste sur `jo_erreur` s'améliore, l'identité ne change pas).
+  Les couleurs DYNAMIQUES restent en code (décision 8 : rôles, états,
+  mélanges calculés).
+- **`contentDescription`** : les icônes interactives du tiroir agent et
+  du composeur le portent en XML (visible à la relecture) ; les cibles
+  < 48 dp des rails de la maquette Graphite (32-40 dp, densité voulue)
+  demeurent un choix de design signalé au rapport — seuls les éléments
+  interactifs SANS description restaient une faute.
 
 ## Gabarit cible
 

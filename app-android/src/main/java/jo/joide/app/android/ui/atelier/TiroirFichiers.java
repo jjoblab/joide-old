@@ -21,7 +21,7 @@ import jo.joide.app.android.ui.GraphiteVue;
  * nom vit dans la barre supérieure) ; le sélecteur attend qu'une
  * deuxième section soit réellement implémentée (franchise).
  */
-public final class TiroirFichiers extends FrameLayout {
+public final class TiroirFichiers extends LinearLayout {
 
     /** Un auditeur des actions du tiroir. */
     public interface Auditeur {
@@ -49,8 +49,11 @@ public final class TiroirFichiers extends FrameLayout {
 
     public TiroirFichiers(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
+        // lot A9 : la classe EST le LinearLayout vertical du tiroir —
+        // la racine du layout est un <merge> (I3)
+        setOrientation(VERTICAL);
         binding = TiroirFichiersBinding.inflate(
-                LayoutInflater.from(contexte), this, true);
+                LayoutInflater.from(contexte), this);
         binding.actionNouveauFichier.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.surNouveau(true);

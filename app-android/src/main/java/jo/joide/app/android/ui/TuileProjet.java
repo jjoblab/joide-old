@@ -69,7 +69,7 @@ public final class TuileProjet extends View {
         pinceau.setStrokeCap(Paint.Cap.ROUND);
         pinceau.setStrokeJoin(Paint.Join.ROUND);
         float cote = Graphite.TUILE * unite;
-        Carte.dessinerDossier(canvas, pinceau, unite,
+        Icone.dessinerDossier(canvas, pinceau, unite,
                 (cote - 24f * unite) / 2f,
                 (cote - 24f * unite) / 2f);
     }

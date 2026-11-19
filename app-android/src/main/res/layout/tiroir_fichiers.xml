@@ -9,11 +9,12 @@
   tout réduire, localiser), champ de filtre 36 dp rayon 12, puis
   l'arbre (VueArbre, lignes item_noeud).
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+<!--
+  Lot A9 (ADR-085) : la racine est un <merge> — TiroirFichiers EST le
+  LinearLayout vertical du tiroir, un conteneur de moins par zone (I3).
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <TextView
         android:layout_width="match_parent"
@@ -100,4 +101,4 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
-</LinearLayout>
+</merge>

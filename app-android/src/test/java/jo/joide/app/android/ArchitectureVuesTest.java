@@ -41,13 +41,17 @@ import org.junit.jupiter.api.Test;
  * l'ADR-085 — {@code androidx.compose} et
  * {@code androidx.fragment.app.DialogFragment} interdits absolus ;</li>
  * <li>chaque layout a un consommateur {@code *Binding} ;</li>
- * <li>aucune couleur ni texte littéraux dans les layouts (ADR-083 §3).</li>
+ * <li>aucune couleur ni texte littéraux dans les layouts (ADR-083 §3)
+ * — depuis le lot A9 la liste d'exceptions couleurs est VIDE
+ * (la pastille du compteur de la feuille porte
+ * {@code ?attr/colorOnError}).</li>
  * </ul>
  *
  * <p>Discipline de la liste d'exceptions : une entrée qui ne correspond
  * plus à aucune faute ÉCHOUE le test (« retire-la ») — la liste ne peut
  * que décroître, jamais végéter. Toute nouvelle faute hors liste échoue
- * aussi. La liste VIDE est l'état final (A9).</p>
+ * aussi. La liste VIDE est l'état final (A9) : TOUTES les listes sont
+ * vides depuis le lot A9 (consolidation) — le filet reste armé.</p>
  */
 class ArchitectureVuesTest {
 
@@ -129,11 +133,12 @@ class ArchitectureVuesTest {
 
     /**
      * Liste d'exceptions DÉCROISSANTE — layouts portant encore une couleur
-     * littérale : la pastille du compteur de la feuille (à remplacer par
-     * un jeton dans un lot de consolidation).
+     * littérale : VIDE depuis le lot A9 — la pastille du compteur de la
+     * feuille porte {@code ?attr/colorOnError} (rôle M3 branché sur
+     * Graphite, ADR-085 décision 5) ; le pattern reste armé, toute
+     * régression échoue.
      */
-    private static final Set<String> LAYOUTS_EXCUSSES_COULEUR = Set.of(
-            "feuille_entete.xml");
+    private static final Set<String> LAYOUTS_EXCUSSES_COULEUR = Set.of();
 
     /**
      * Liste d'exceptions DÉCROISSANTE — vues de zone et adaptateurs

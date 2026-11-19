@@ -31,8 +31,6 @@ import jo.joide.app.android.databinding.ItemRaisonnementBinding;
 import jo.joide.app.android.databinding.ItemUsageAgentBinding;
 import jo.joide.app.android.databinding.ItemVideAgentBinding;
 import jo.joide.app.android.databinding.TiroirAgentBinding;
-import jo.joide.app.android.ui.Bouton;
-import jo.joide.app.android.ui.Champ;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 import jo.joide.app.android.ui.Icone;
@@ -117,8 +115,8 @@ public final class VueAgent extends LinearLayout {
     private final ScrollView defilement;
     private final EditText saisie;
     private final LinearLayout rangeePieces;
-    private final Bouton envoyer;
-    private final Bouton arreter;
+    private final com.google.android.material.button.MaterialButton envoyer;
+    private final com.google.android.material.button.MaterialButton arreter;
     private final Puce puceModele;
     private final Puce puceMode;
     private final Icone vueMenu;
@@ -163,8 +161,10 @@ public final class VueAgent extends LinearLayout {
         texteActivite = coque.libelleActiviteAgent;
         tempsActivite = coque.ecouleActiviteAgent;
 
-        saisie.setTextColor(palette.texte);
-        saisie.setHintTextColor(palette.texteEstompe);
+        // lot A9 : les couleurs de la saisie et du bouton vivent en XML
+        // (?attr/jo_texte, ?attr/jo_texte3, Widget.Jo.Button.Tonal) ; la
+        // police Graphite (400) reste posée ici (ADR-085 décision 7 :
+        // graisse non exprimable en textAppearance).
         saisie.setTypeface(GraphiteVue.police(contexte, 400, false));
         envoyer.setOnClickListener(vue -> envoyer());
         arreter.setOnClickListener(vue -> {
@@ -174,28 +174,16 @@ public final class VueAgent extends LinearLayout {
         });
         puceModele.setOnClickListener(vue -> auditeurModele());
         puceMode.setOnClickListener(vue -> auditeurMode());
-        vueMenu.setGlyphe(Icone.Glyphe.POINTS);
-        vueMenu.setCouleur(palette.texte);
-        vueMenu.setClickable(true);
-        vueMenu.setContentDescription(
-                getContext().getString(R.string.agent_menu));
         vueMenu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirMenuAgent();
             }
         });
+        // lot A9 : glyphe, couleur et description des icônes (menu,
+        // fermer, ajouter) vivent en XML (app:jo_icone_* sur
+        // tiroir_agent/composeur_agent) — une seule voie de thémage
         Icone fermer = coque.btnFermerAgent;
-        fermer.setGlyphe(Icone.Glyphe.CROIX);
-        fermer.setCouleur(palette.texte);
-        fermer.setClickable(true);
-        fermer.setContentDescription(
-                getContext().getString(R.string.agent_fermer));
         fermer.setOnClickListener(vue -> demanderFermeture());
-        vueAjouter.setGlyphe(Icone.Glyphe.PLUS);
-        vueAjouter.setCouleur(palette.texteSecondaire);
-        vueAjouter.setClickable(true);
-        vueAjouter.setContentDescription(
-                getContext().getString(R.string.agent_ajouter));
         vueAjouter.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirAjouts();
@@ -295,13 +283,13 @@ public final class VueAgent extends LinearLayout {
             // instanciée ici)
             ItemVideAgentBinding vide = ItemVideAgentBinding.inflate(
                     LayoutInflater.from(contexte), colonneCartes, true);
-            vide.bulleVideAgent.setCouleur(palette.texteEstompe);
-            vide.consigneVideAgent.setTextColor(palette.texteEstompe);
+            // lot A9 : les couleurs (glyphe et consigne) vivent déjà en
+            // XML (?attr/jo_texte3, item_vide_agent) — injections
+            // redondantes supprimées
         }
         if (etat.plafondAnnonce()) {
             ItemBorneAgentBinding borne = ItemBorneAgentBinding.inflate(
                     LayoutInflater.from(contexte), colonneCartes, false);
-            borne.texteBorneAgent.setTextColor(palette.texteEstompe);
             borne.texteBorneAgent.setText(getContext().getString(
                     R.string.agent_plafond, etat.evictions()));
             colonneCartes.addView(borne.getRoot(), 0);
@@ -332,7 +320,6 @@ public final class VueAgent extends LinearLayout {
                         colonneCartes, false);
         TextView vue = item.texteMessage;
         GraphiteVue.typographie(vue, Graphite.CORPS);
-        vue.setTextColor(palette.texte);
         vue.setText(carte.texte);
         if (carte.pieces != null && !carte.pieces.isEmpty()) {
             for (String nom : carte.pieces) {
@@ -351,7 +338,6 @@ public final class VueAgent extends LinearLayout {
                 colonneCartes, false);
         TextView vue = item.texteReponse;
         GraphiteVue.typographie(vue, Graphite.CORPS);
-        vue.setTextColor(palette.texte);
         vue.setText(carte.reponse == null ? "" : carte.reponse);
         return item.getRoot();
     }
@@ -401,7 +387,6 @@ public final class VueAgent extends LinearLayout {
         if (ouverte && carte.raisonnement.length() > 0) {
             TextView texte = item.contenuRaisonnement;
             GraphiteVue.typographie(texte, Graphite.LEGENDE);
-            texte.setTextColor(palette.texteSecondaire);
             texte.setText(carte.raisonnement.toString());
             texte.setVisibility(View.VISIBLE);
         }
@@ -438,13 +423,11 @@ public final class VueAgent extends LinearLayout {
         nom.setText(carte.outil);
         TextView cible = item.cibleOutil;
         GraphiteVue.typographie(cible, Graphite.LEGENDE);
-        cible.setTextColor(palette.texteEstompe);
         cible.setText(carte.cible);
         if (carte.etatOutil != EtatOutil.EN_COURS
                 && carte.resultat != null) {
             TextView resume = item.libelleOutil;
             GraphiteVue.typographie(resume, Graphite.LEGENDE);
-            resume.setTextColor(palette.texteEstompe);
             resume.setText(carte.etatOutil == EtatOutil.REFUSE
                     ? contexte.getString(R.string.agent_refuse)
                     : contexte.getString(R.string.agent_lignes,
@@ -457,7 +440,6 @@ public final class VueAgent extends LinearLayout {
         if (carte.deplie && carte.resultat != null) {
             TextView texte = item.resultatOutil;
             texte.setTypeface(GraphiteVue.police(contexte, 400, true));
-            texte.setTextColor(palette.texteSecondaire);
             texte.setText(carte.resultat);
             texte.setVisibility(View.VISIBLE);
         }
@@ -489,7 +471,6 @@ public final class VueAgent extends LinearLayout {
         // d'item_usage_agent par binding
         ItemUsageAgentBinding vue = ItemUsageAgentBinding.inflate(
                 LayoutInflater.from(contexte), colonneCartes, false);
-        vue.texteUsageAgent.setTextColor(palette.texteEstompe);
         UsageLlm u = carte.usage;
         StringBuilder ligne = new StringBuilder();
         if (u.entrees > 0) {

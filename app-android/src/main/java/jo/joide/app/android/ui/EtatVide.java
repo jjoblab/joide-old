@@ -98,17 +98,11 @@ public final class EtatVide extends LinearLayout {
     }
 
     /**
-     * Ajoute une action empilée (largeur pleine, la maquette
-     * accueil : rangée d'actions en colonne).
-     */
-    public void addAction(Bouton action) {
-        addAction((View) action);
-    }
-
-    /**
      * Ajoute une action empilée — la version View (lot A2, ADR-085) :
      * les boutons Material déclarés dans {@code item_etat_vide_accueil.xml}
-     * entrent par ici, le kit ne décide rien de leur rendu.
+     * entrent par ici, le kit ne décide rien de leur rendu. Lot A9 :
+     * l'ancien overload {@code addAction(Bouton)} disparaît avec le kit
+     * (Bouton remplacé par MaterialButton, zéro appelant).
      */
     public void addAction(View action) {
         if (rangeeActions == null) {
@@ -189,7 +183,7 @@ public final class EtatVide extends LinearLayout {
             pinceau.setStrokeCap(Paint.Cap.ROUND);
             pinceau.setStrokeJoin(Paint.Join.ROUND);
             float unite = GraphiteVue.dp(getContext(), 56f) / 24f;
-            Carte.dessinerDossier(canvas, pinceau, unite, 0f, 0f);
+            Icone.dessinerDossier(canvas, pinceau, unite, 0f, 0f);
         }
     }
 }

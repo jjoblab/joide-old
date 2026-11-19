@@ -7,15 +7,12 @@
   glyphe accent) porte le point d'activité 8 dp réussite ; ⋮ ouvre le
   menu (le retour accueil y vit désormais). Les couleurs ne viennent
   QUE des ?attr/jo_* (franchise §0.4).
+  Lot A9 (ADR-085) : la racine est un <merge> — BarreHaut EST le
+  LinearLayout horizontal (orientation, gravité, retrait 10 dp), un
+  conteneur de moins par zone (I3).
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="52dp"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingStart="10dp"
-    android:paddingEnd="10dp">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <jo.joide.app.android.ui.Icone
         android:id="@+id/btn_tiroir_fichiers"
@@ -104,4 +101,4 @@
         android:focusable="true"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/atelier_desc_menu" />
-</LinearLayout>
+</merge>

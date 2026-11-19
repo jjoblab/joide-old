@@ -1,3 +1,46 @@
+# CHANGES — le kit ne garde que l'irremplaçable, une seule voie de thémage, exceptions vides (2026-11-19)
+
+**Lot A9 de l'ADR-085 (consolidation, le chantier est clos — statut
+Accepted)** : le kit `ui/` perd ses vues remplacées par Material —
+`Bouton` (les deux du composeur de l'agent migrent en `MaterialButton`
+`Widget.Jo.Button.Tonal` : fond surface haute, texte `?attr/jo_texte`
+— l'exact TONAL d'hier, apparence inchangée), `Carte`, `Champ`,
+`Segment`, `Interrupteur`, `Onglets`, avec leurs états
+`ChoixBouton`/`ChoixChamp`/`ChoixTexte`/`ChoixSegment` et leurs tests —
+SIX suppressions à zéro consommateur (imports réels vérifiés) ;
+`Carte.dessinerDossier` déménage dans `Icone` (glyphe Canvas).
+**Conservations motivées** (ADR-085 §Évaluations A9) : `Fab`
+(double état rond ↔ pilule « build #n — phase » avec croix d'arrêt,
+Canvas — FAB/ExtendedFAB ne savent pas), `Pilule`/`Puce` (rôles
+colorés dynamiques et sélection pure `ChoixPuce` — le Chip M3
+imposerait ripple et états stock contraires à la maquette),
+`TuileProjet` (Canvas, couleurs calculées), `TiroirPousse`,
+`Nuancier`, `Stepper`, `EtatVide`, `Icone` (déjà consignées A6).
+**`<merge>` (I3)** : `BarreHaut` et `TiroirFichiers` deviennent le
+conteneur de leur racine `<merge>` (un niveau de hiérarchie de moins
+par zone) ; `BarreSymboles` est DISSOUTE — son layout racine était
+un LinearLayout VIDE, fichier et binding supprimés, la classe se
+configure (même fond, retrait, visibilité, description). La feuille
+basse et `tiroir_agent.xml` gardent leur racine (id/fond/élévation ;
+`<include>` du composeur).
+**Une seule voie de thémage** : les 10 injections `palette.*`
+REDONDANTES de `VueAgent` disparaissent (les couleurs vivaient deux
+fois : XML A7 + ré-injection identique en code) ; glyphes, couleurs
+et descriptions des icônes du tiroir agent et du composeur se posent
+en XML (`app:jo_icone_*`) ; la saisie prend `?attr/jo_texte`/`?attr/jo_texte3`.
+La PASTILLE du compteur de la feuille — dernière couleur littérale
+du filet — porte `?attr/colorOnError` (rôle M3 Graphite testé ;
+en Sombre le contraste sur `jo_erreur` s'améliore nettement, écart
+délibéré consigné). `MaquetteCreationTest` vérifie désormais le
+contrat couleurs du segment sur le ColorStateList de la bascule.
+**Filet** : `ArchitectureVuesTest` à exceptions VIDES (les six
+listes). Mesures (base A8 → A9) : vues instanciées 22 → 12,
+`palette.*` 205 → 154, `dp(` 152 → 109, layouts 87 → 86 (+1 w720dp,
+5 racines `<merge>`), APK 15 853 241 → **15 848 929 o (−4 312)**,
+tests 383 → 370 (les 13 des classes supprimées ; 0 échec). Lint :
+11 erreurs préexistantes EXACTEMENT (aucune nouvelle). ADR-085 →
+**Accepted** ; `docs/ecrans/README.md` et `PHASE-A9-RAPPORT.md` à jour.
+
 # CHANGES — la géométrie ne détruit plus l'atelier : configChanges, ré-inflation sans fermerIde(), état minimal sauvegardé, gardes de cycle de vie (2026-11-19)
 
 **Lot A8 de l'ADR-085 (décision 10)** : le manifest déclare

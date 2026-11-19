@@ -12,7 +12,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import jo.joide.app.android.ui.choix.ChoixSegment;
 import jo.joide.app.android.ui.Graphite;
 
 /**
@@ -95,18 +94,32 @@ class MaquetteCreationTest {
         assertTrue(maquette.contains(
                 "<span class=\"seg\">24</span><span class=\"seg on\">28</span>"));
         assertEquals(List.of(28, 30), GenerateurProjet.MIN_SDK);
-        // les couleurs du segment : accent 18 % sur surface haute,
-        // texte accent — ChoixSegment (maquette : rgba(130,170,255,.18))
+        // les couleurs du segment (lot A9 : ChoixSegment d'hier a
+        // disparu avec le kit Segment — la source de vérité est le
+        // ColorStateList de la bascule Material) : cochée = accent à
+        // 18 % sur surface haute, texte accent (maquette :
+        // rgba(130,170,255,.18)) ; non cochée = texte estompé. La
+        // graisse 700 de la case cochée reste posée par l'écran
+        // (pas exprimable en ColorStateList).
+        String fond = resColor("bascule_fond.xml");
+        assertTrue(fond.contains("android:alpha=\"0.18\""
+                + " android:color=\"?attr/jo_accent\""
+                + " android:state_checked=\"true\""),
+                "case cochée : accent posé à 18 % (maquette rgba"
+                + "(130,170,255,.18))");
+        assertTrue(fond.contains("android:color=\"?attr/jo_surface_haute\""),
+                "case non cochée : surface haute du conteneur");
+        String texte = resColor("bascule_texte.xml");
+        assertTrue(texte.contains("android:color=\"?attr/jo_accent\""
+                + " android:state_checked=\"true\""),
+                "case cochée : texte accent");
+        assertTrue(texte.contains("android:color=\"?attr/jo_texte3\""),
+                "case non cochée : texte estompé");
+        // la définition Graphite du mélange 18 % reste la référence des
+        // jetons (l'alpha du ColorStateList compose de la même façon)
         Graphite.Palette sombre = Graphite.sombre();
-        ChoixSegment.Apparence active =
-                ChoixSegment.apparence(sombre, true);
-        assertEquals(Graphite.melange(sombre.accent, 0.18f,
-                sombre.surfaceHaute), active.fond());
-        assertEquals(sombre.accent, active.texte());
-        assertTrue(active.gras());
-        ChoixSegment.Apparence inactive =
-                ChoixSegment.apparence(sombre, false);
-        assertEquals(sombre.texteSecondaire, inactive.texte());
+        assertEquals(0xFF82AAFF, sombre.accent,
+                "l'accent sombre reste celui de la maquette");
     }
 
     @Test
@@ -152,6 +165,21 @@ class MaquetteCreationTest {
         // création atomique) est reprise telle quelle
         assertTrue(maquette.contains(
                 "Le projet sera créé dans le stockage privé de JoIDE"));
+    }
+
+    private static String resColor(String nom) throws IOException {
+        Path courant = Paths.get("").toAbsolutePath();
+        for (int i = 0; i < 5 && courant != null; i++) {
+            Path candidate = courant.resolve(
+                    "app-android/src/main/res/color/" + nom);
+            if (Files.isRegularFile(candidate)) {
+                return Files.readString(candidate,
+                        StandardCharsets.UTF_8);
+            }
+            courant = courant.getParent();
+        }
+        throw new IOException(nom + " not found from "
+                + Paths.get("").toAbsolutePath());
     }
 
     private static String maquette() throws IOException {

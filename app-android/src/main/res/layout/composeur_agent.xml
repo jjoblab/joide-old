@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 — le composeur migré : rangée de pièces (puces retirables,
-  masquée quand vide), saisie 14 sp dans la pilule discrète, bouton
-  envoyer ; la rangée d'arrêt (■ Arrêter le tour) reste masquée tant
-  qu'aucun tour ne vit. Les glyphes et auditeurs se posent par code.
+  Lot L5 — le composeur ; lot A9 (ADR-085) : les Boutons du kit
+  quittent le XML au profit de MaterialButton habillé Widget.Jo (D2),
+  la saisie prend ses couleurs par ?attr/jo_* et l'icône d'ajout son
+  glyphe par app:jo_icone_* (une seule voie de thémage). Rangée de
+  pièces (puces retirables, masquée quand vide), saisie 14 sp dans la
+  pilule discrète, bouton envoyer ; la rangée d'arrêt (■ Arrêter le
+  tour) reste masquée tant qu'aucun tour ne vit. Seuls les auditeurs
+  et la police Graphite se posent par code.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -31,8 +36,11 @@
             android:id="@+id/btn_ajouter_piece"
             android:layout_width="36dp"
             android:layout_height="36dp"
+            app:jo_icone_glyphe="plus"
+            app:jo_icone_couleur="?attr/jo_texte2"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:contentDescription="@string/agent_ajouter" />
 
         <EditText
             android:id="@+id/saisie_agent"
@@ -46,21 +54,25 @@
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
             android:hint="@string/agent_ecrire_indice"
+            android:textColor="?attr/jo_texte"
+            android:textColorHint="?attr/jo_texte3"
             android:textSize="14sp"
             android:inputType="textMultiLine"
             android:maxLines="4"
             android:importantForAutofill="no" />
 
-        <jo.joide.app.android.ui.Bouton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_envoyer_agent"
+            style="@style/Widget.Jo.Button.Tonal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:text="@string/agent_envoyer" />
     </LinearLayout>
 
-    <jo.joide.app.android.ui.Bouton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_arreter_agent"
+        style="@style/Widget.Jo.Button.Tonal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/agent_arreter_tour"

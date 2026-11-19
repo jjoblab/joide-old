@@ -218,7 +218,7 @@ public final class Icone extends View {
                 canvas.drawPath(chemin, pinceau);
                 canvas.drawPoint(10f * u, 15.8f * u, pinceau);
             }
-            case DOSSIER -> Carte.dessinerDossier(canvas, pinceau, u, 0f, 0f);
+            case DOSSIER -> dessinerDossier(canvas, pinceau, u, 0f, 0f);
             case TERMINAL -> {
                 chemin.moveTo(4f * u, 4f * u);
                 chemin.lineTo(16f * u, 4f * u);
@@ -320,6 +320,43 @@ public final class Icone extends View {
             default -> {
             }
         }
+    }
+
+    /**
+     * Dessine le glyphe dossier du kit (chemin en unités 24, arrondi
+     * ADR-048) — lot A9 : la méthode vit ici depuis la suppression de
+     * {@code Carte} (remplacée par MaterialCardView) ; l'état vide et la
+     * tuile de projet la consomment.
+     *
+     * @param canvas la surface
+     * @param pinceau le pinceau (trait et couleur posés par l'appelant)
+     * @param unite l'unité 1 dp en pixels
+     * @param dx le décalage horizontal en pixels
+     * @param dy le décalage vertical en pixels
+     */
+    public static void dessinerDossier(Canvas canvas, Paint pinceau,
+                                       float unite, float dx, float dy) {
+        pinceau.setStyle(Paint.Style.STROKE);
+        Path chemin = new Path();
+        chemin.moveTo(4f * unite, 6f * unite);
+        chemin.arcTo(new RectF(4f * unite, 4f * unite,
+                8f * unite, 8f * unite), 180f, 90f);
+        chemin.lineTo(10f * unite, 4f * unite);
+        chemin.lineTo(12f * unite, 6.5f * unite);
+        chemin.lineTo(18f * unite, 6.5f * unite);
+        chemin.arcTo(new RectF(16f * unite, 6.5f * unite,
+                20f * unite, 10.5f * unite), 270f, 90f);
+        chemin.lineTo(20f * unite, 18f * unite);
+        chemin.arcTo(new RectF(16f * unite, 16f * unite,
+                20f * unite, 20f * unite), 0f, 90f);
+        chemin.lineTo(6f * unite, 20f * unite);
+        chemin.arcTo(new RectF(4f * unite, 16f * unite,
+                8f * unite, 20f * unite), 90f, 90f);
+        chemin.close();
+        canvas.save();
+        canvas.translate(dx, dy);
+        canvas.drawPath(chemin, pinceau);
+        canvas.restore();
     }
 
     @Override
