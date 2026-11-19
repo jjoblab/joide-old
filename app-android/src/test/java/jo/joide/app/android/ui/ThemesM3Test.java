@@ -394,6 +394,13 @@ class ThemesM3Test {
                 "l'écart des puces du kit (marginRight d'hier)");
         assertEquals("14dp", dimens.get("jo_rayon_arbo"),
                 "le .arbo de la maquette : rayon 14 px = 14 dp");
+
+        // Élévation des cartes Material (convention posée au pilote A2,
+        // factorisée au lot A4 : la carte de modèle en est le TROISIÈME
+        // consommateur — contrainte §6, dimension répétée ≥ 3 fois en
+        // @dimen, les cartes projet/reprise de l'accueil suivent)
+        assertEquals("3dp", dimens.get("jo_elevation_carte"),
+                "l'élévation 3 dp des cartes Material (A2/A4)");
     }
 
     @Test

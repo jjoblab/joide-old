@@ -26,17 +26,21 @@ vie (I8 : `isDestroyed()`, binding muet après `onDestroy`,
 (navigation typée, décision 13). Latences d'hier réparées au passage :
 retraits latéraux du corps (perdus — la maquette les insettait de 20),
 recherche qui se vidait à chaque clic de catégorie, paquet dérivé mais
-jamais affiché (`EtatCreation.suitPaquet()`, testé JVM), coche du
-modèle choisi muet (0×0). `saveEnabled="false"` sur les champs/puces :
+jamais rafraîchi pendant la saisie (`EtatCreation.suitPaquet()`, testé
+JVM), coche du modèle choisi muet (0×0). `saveEnabled="false"` sur les
+champs/puces :
 la rotation réinitialise l'assistant comme aujourd'hui (A8 fera la
 sauvegarde). Filet : `ArchitectureVuesTest` retire l'écran de ses
 exceptions (3 restantes) ; `ThemesM3Test` gagne la parité du lot
 (paddings 14/7, 11/16, rayon arbo 14, 11 sélecteurs `?attr/jo_*`).
-APK 15 649 057 → 15 743 732 o (+0,09 Mio — `Chip` entre à l'APK),
+APK 15 649 057 → 15 743 828 o (+0,09 Mio — `Chip` entre à l'APK),
 `verifierOmbreApk` vert ; 344 tests verts (0 échec). Écarts documentés
 au rapport (bouton Créer accent, Retour texte-accent, bannières sans
 icône, rayon recherche 12 uni, segment pilule A3, graisses
-rapprochées, ripple Material).
+rapprochées, ripple Material). Conformité §6 consolidée en reprise :
+l'élévation 3 dp des cartes (pilote A2) atteint trois consommateurs au
+lot A4 et se FACTORISE en `@dimen/jo_elevation_carte` (cartes projet,
+reprise, modèle — dimension répétée ≥ 3 fois en `@dimen/`).
 
 # CHANGES — les paramètres quittent le code : un layout d'item par genre, bascules et commutateurs Material (2026-11-19)
 

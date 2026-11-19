@@ -14,7 +14,7 @@
     android:clickable="true"
     android:focusable="true"
     app:cardBackgroundColor="?attr/jo_surface"
-    app:cardElevation="3dp"
+    app:cardElevation="@dimen/jo_elevation_carte"
     app:strokeColor="?attr/jo_bord_fin"
     app:strokeWidth="1dp">
 

@@ -10,6 +10,25 @@
   thread de génération sous l'exécuteur de l'écran avec garde de cycle de
   vie.
 
+## 0. Circonstance de session (à connaître du propriétaire)
+
+Le prompt exigeait la base `8835a90` et un arbre propre. À la prise de
+session, l'arbre était bien propre mais portait un commit A4 **déjà
+posé** au-dessus de la base (`e822d5b` : message du lot A4, fichiers
+exactement circonscrits au lot). Conformément au mode de travail §1
+(ne jamais s'appuyer sur un travail hérité sans l'auditer), ce travail
+a été **audité intégralement** : lecture ligne à ligne du nouveau
+`EcranCreation` et des 9 layouts face au prompt, à l'ADR-085, à la
+maquette `creation-projet.html` et à la base A3 — les réparations
+revendiquées sur le code d'hier ont été vérifiées sur la base
+(reconstruction du champ de recherche à chaque catégorie, paddings
+latéraux du corps absents, coche laissé muet, `new Thread` sans garde
+en l.819), les mesures du rapport hérité **re-mesurées et confirmées**
+(§4). Une **correction de conformité** a été portée (élévation des
+cartes factorisée — §2/§3), puis tests, assemblage et APK ont été
+**re-exécutés** sur l'état final (§5). Rien n'a été laissé sur la seule
+foi du commit hérité.
+
 ## 1. Constats du prompt — vérifications A4
 
 - **C4 (EcranCreation entièrement programmatique) CONFIRMÉ** : la base
@@ -69,7 +88,9 @@
   (`majModeles`, comme `majListeModeles` d'hier).
 - **Le paquet suit le nom sous les yeux de l'utilisateur** :
   `EtatCreation.changerNom` re-défiait déjà le paquet tant qu'il n'était
-  pas touché, mais le champ ne se re-pose jamais — affichage périmé.
+  pas touché, mais le champ ne se re-pose jamais PENDANT LA SAISIE
+  (le code d’hier le posait à l’entrée sur l’étape 2 seulement) :
+  affichage périmé dès la première frappe.
   Nouveau getter pur `EtatCreation.suitPaquet()` (testé JVM) ; l'écran
   re-pose le champ en silence (garde `poseEnCours` contre les écouteurs
   de saisie). Comportement d'hier : bloqué sur la première valeur.
@@ -103,6 +124,16 @@
   documentées A3, décision 7) ; valeurs de fiche en gras (700 ≈ 600
   d'hier) ; écarts M3 inévitables : ripple des cartes/puces/boutons,
   état désactivé Material, élévation tonale nulle de la fiche.
+- **Élévation des cartes factorisée en reprise d'audit (conformité
+  §6)** : le lot A4 porte l'élévation `3dp` en littéral sur la carte
+  de modèle — le TROISIÈME consommateur du module avec les cartes
+  projet/reprise du pilote A2 ; la contrainte « dimensions répétées
+  ≥ 3 fois en `@dimen/` » s'applique donc. Nouveau jeton
+  `@dimen/jo_elevation_carte` (3 dp), appliqué aux trois cartes
+  (accueil ×2, création ×1) : valeur identique, aucun changement
+  visuel — les deux cartes de l'accueil (fichiers A2) suivent le jeton
+  pour que la dimension n'ait qu'une seule écriture (écart de périmètre
+  assumé et documenté ici). `ThemesM3Test` porte la parité.
 - **`saveEnabled="false"` partout dans l'assistant** (champs, puces,
   segment) : l'état de vérité vit dans `EtatCreation`, la rotation
   RÉINITIALISE l'assistant exactement comme aujourd'hui (le layout
@@ -132,6 +163,7 @@
 | `EtatCreationTest` | `defautsUniquesEtDerivesDuModele` étendu : `suitPaquet()` vrai à la sélection et après renommage, faux après saisie directe du paquet (le paquet touché ne suit plus) |
 | `ThemesM3Test` | + `lesStylesDuLotCreationOntUnParentM3EtDesJetonsExistants` (parents M3, teintes `@color/`, paddings 14/7, 11/16, rayon arbo 14) ; le test des sélecteurs devient `lesSelecteursDeCouleurNePortentQueDesAttrsJo` (11 sélecteurs : 5 du lot A3 + 6 du lot A4) |
 | `values{,-fr}/strings.xml` | + `creation_desc_retour` (parité bilingue) |
+| `res/values/dimens.xml`, `item_projet_carte.xml`, `item_projet_reprise.xml`, `item_modele_projet.xml`, `ui/ThemesM3Test.java` (reprise d'audit) | `@dimen/jo_elevation_carte` (3 dp) et ses trois consommateurs (cartes projet, reprise, modèle — dimension répétée ≥ 3 fois en `@dimen/`, contrainte §6) + assertion de parité ; valeur inchangée, aucun écart visuel |
 
 ## 4. Mesures avant/après
 
@@ -142,16 +174,24 @@
 | `GraphiteVue.dp(` | 362 | **297** (−65 ; 2 restent : liseré 1 dp et rayon 12 de la bannière) |
 | Layouts | 41 | **50** (+9, tous consommés par un `*Binding`) |
 | `<include` | 30 | **37** (+5 balises réelles : 3 étapes + 2 bannières ; +2 occurrences du mot dans des commentaires) |
-| dp littéraux | 246 | 258 (+12 : 11 idiomes `0dp` de `layout_weight`/élévation nulle + l'élévation 3 dp des cartes, convention A2) |
+| dp littéraux | 246 | **255** (le travail hérité en posait +12 — 11 idiomes `0dp` de `layout_weight`/élévation nulle + l'élévation 3 dp des cartes — puis la reprise d'audit FACTORISE cette élévation en `@dimen/jo_elevation_carte`, contrainte §6 atteinte à trois consommateurs : plus aucune dimension réelle littérale dans les layouts du lot) |
 | sp littéraux | 56 | 56 |
 | `Dialogue.` usages | 58 | 58 (inchangé — A7 ; aucun nouveau dialogue, D3) |
 | Imports Compose | 0 | **0** ; imports AndroidX/Material dans la liste blanche (`androidx.activity`, `material.chip/button`, `material.button`) |
 | Lignes d'écran | 879 | 746 |
-| APK debug (R8 + shrink) | 15 649 057 o | **15 743 732 o (+94 675 o, +0,09 Mio)** — `Chip`/`ChipGroup` entrent à l'APK (R8 en garde les classes) |
-| `verifierOmbreApk` | vert | **vert** (« APK sans ombre, éléments vitaux présents (15743732 o) ») |
+| APK debug (R8 + shrink) | 15 649 057 o | **15 743 828 o (+94 771 o, +0,09 Mio)** — `Chip`/`ChipGroup` entrent à l'APK (R8 en garde les classes) ; +96 o à la reprise d'audit (le dimen d'élévation en ressource) |
+| `verifierOmbreApk` | vert | **vert** (« APK sans ombre, éléments vitaux présents (15743828 o) ») |
 | Tests JVM `:app-android:test` | 343 verts | **344 verts, 0 échec** (+1 parité du lot A4) |
 
 ## 5. Validation
+
+**Reprise d'audit** : les exécutions ci-dessous ont été RE-JOUÉES sur
+l'état final (correction d'élévation comprise) par l'agent de la
+reprise — les chiffres sont les siens. Le démon Gradle est mort une fois
+en pleine charge R8 (contrainte d'environnement documentée aux rapports
+A1/A3) : l'assemblage a été re-joué avec succès à
+`-Dorg.gradle.jvmargs=-Xmx1500m` en ligne de commande, aucun fichier du
+dépôt modifié pour cela.
 
 - `./gradlew --init-script … :app-android:test` — **344 tests, 0 échec**
   (dont `EtatCreationTest` 9, `MaquetteCreationTest` 5 — la capture
@@ -161,7 +201,7 @@
   344/0/0.
 - `./gradlew … :app-android:assembleDebug` — vert ;
   `verifierOmbreApk` : « APK sans ombre, éléments vitaux présents
-  (15743732 o) ». Contrainte d'environnement connue (rapports A1/A3) :
+  (15743828 o) ». Contrainte d'environnement connue (rapports A1/A3) :
   le démon Gradle meurt au tas historique — l'assemblage de validation
   (et lint) sont menés à `-Dorg.gradle.jvmargs=-Xmx1500m` en ligne de
   commande, aucun fichier du dépôt modifié pour cela.
@@ -170,12 +210,16 @@
   `DiffUtilEquals` du lot A2). **Aucune nouvelle erreur
   `NewApi`/`HardcodedText`/`ContentDescription`.** Nouvelles alertes du
   lot, toutes warnings documentés :
-  - `RtlHardcoded` ×13 (marges/paddings Left/Right des layouts A4) :
+  - `RtlHardcoded` ×10 (marges/paddings Left/Right des layouts A4 :
+    6 racine, 1 étape identité, 1 ligne de fiche, 2 carte de modèle —
+    recompté à la reprise d'audit) :
     convention Left/Right du dépôt (manifest sans `supportsRtl`, idem
     accueil A2 et paramètres A3) ;
-  - `SetTextI18n` ×1 (`EcranCreation.java:471` : l'indentation
-    `"  ".repeat(profondeur)` de l'arborescence — concaténation
-    d'espaces d'indentation, exactement le code d'hier) ;
+  - `SetTextI18n` ×1 (`EcranCreation.java:471` : le préfixe
+    `":" + module.id()` des puces de module — identifiant
+    technique non traduisible, exactement le code d'hier ; à la reprise
+    d'audit la description était fausse (l'indentation d'arborescence
+    n'est pas signalée) ;
   - pas de `DuplicateIncludedIds` nouveau : les deux includes de
     `item_banniere` portent des ids distincts et le binding typé
     désambiguïse (les 14 des Paramètres restent seuls).

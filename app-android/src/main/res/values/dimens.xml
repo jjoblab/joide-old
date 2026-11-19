@@ -104,6 +104,13 @@
          le 40 dp des actions de l'accueil, ici factorisé) -->
     <dimen name="jo_action_icone">40dp</dimen>
 
+    <!-- Élévation des cartes Material (lots A2/A4) : la convention posée
+         au pilote A2 (élévation 3 dp des cartes cliquables) — factorisée
+         au lot A4, la dimension atteint trois consommateurs (carte projet,
+         carte de reprise, carte de modèle : contrainte §6, répétée ≥ 3
+         fois en @dimen). -->
+    <dimen name="jo_elevation_carte">3dp</dimen>
+
     <!-- Création (lot A4, maquette creation-projet.html — 1 px = 1 dp,
          1 px = 1 sp ; les valeurs du CODE d'hier font l'identité,
          la maquette comble ses trous) : la sous-barre (12/10/16/6),
