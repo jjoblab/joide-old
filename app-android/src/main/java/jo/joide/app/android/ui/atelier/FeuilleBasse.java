@@ -13,9 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.PathInterpolator;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import jo.joide.app.android.R;
@@ -27,18 +25,26 @@ import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
 
 /**
- * Atelier v2, lot L3 (ADR-083) — la feuille basse (§3.6), qui
- * REMPLACE le Dock au câblage (le retrait du Dock mort est prévu au
- * lot L6). Toute la géométrie vit dans le modèle PUR
- * {@link EtatFeuille} (détentes, ancrage, fling, section active) ;
- * la vue applique : poignée (toucher = cycle, glisser = suit le
- * doigt puis s'ancre, fling > 1 200 dp/s = détente suivante), rail
- * de sections, en-tête unique à zone vivante (tap = barre ↔ mi,
- * glissement horizontal = section suivante/précédente avec
- * bouclage), corps avec la barre d'outils puis le contenu posé par
- * l'écran. Les sections portent leurs états purs (EtatConsole
- * existant, EtatProblemes, EtatJournal, EtatLogcat) ; la vue est
- * MINCE et lisible.
+ * Atelier v2, lot L3 (ADR-083) — la feuille basse (§3.6). Toute la
+ * géométrie vit dans le modèle PUR {@link EtatFeuille} (détentes,
+ * ancrage, fling, section active) ; la vue applique : poignée
+ * (toucher = cycle, glisser = suit le doigt puis s'ancre, fling
+ * > 1 200 dp/s = détente suivante), rail de sections, en-tête unique
+ * à zone vivante (tap = barre ↔ mi, glissement horizontal = section
+ * suivante/précédente avec bouclage), corps avec la barre d'outils
+ * puis LE CONTENEUR DE FRAGMENTS. Les sections portent leurs états
+ * purs (EtatConsole existant, EtatProblemes, EtatJournal,
+ * EtatLogcat) ; la vue est MINCE et lisible.
+ *
+ * <p>Lot C3 (2026-11-19, demande du terrain) : le contenu des
+ * sections vit en FRAGMENTS (FragmentSection) montés par
+ * transaction par l'écran dans {@code contenu_feuille} — la feuille
+ * ne POSE plus ni ne DÉPLACE plus aucune vue (le « already has a
+ * parent » du lot C2 meurt avec la cause) ; elle garde le REGISTRE
+ * des listes montées ({@link #listeJournal()} etc. — les
+ * contrôleurs d'hier continuent de s'y adresser, nuls tant que la
+ * section n'est pas montée : l'état se re-pose au montage, jamais
+ * une section muette).</p>
  */
 public final class FeuilleBasse extends LinearLayout {
 
@@ -56,13 +62,13 @@ public final class FeuilleBasse extends LinearLayout {
          *  (section quittée) — le relais se tranche dans l'ADR dédié. */
         void surLogcat(boolean actif);
 
-        /** Lot A6 (décision 1 — zones différées) : la feuille montre
-         *  son CORPS et la section active n'a pas de contenu (la
-         *  console vit derrière un {@code ViewStub}, les listes non) —
-         *  l'écran monte la zone AVANT que le corps apparaisse, jamais
-         *  une feuille ouverte sur un vide muet. Idempotent : le
-         *  montage est gardé, l'appel répété ne fait rien. */
-        void surOuverture();
+        /** Lot C3 (fragments) : le corps de la feuille montre une
+         *  section — l'écran monte (ou montre) le FRAGMENT
+         *  correspondant dans {@code contenu_feuille}. Idempotent :
+         *  la feuille ne redemande PAS la même section deux fois,
+         *  repliée elle ne demande rien (le montage reste paresseux —
+         *  l'écran peut décider seul, pour la console du build). */
+        void surSection(EtatFeuille.Section section);
     }
 
     /** Le binding de la feuille. */
@@ -73,10 +79,19 @@ public final class FeuilleBasse extends LinearLayout {
 
     private final EtatFeuille etatFeuille = new EtatFeuille();
     private Auditeur auditeur;
-    /** Les contenus de section posés par l'écran (console = VueConsole
-     *  existant ; problèmes/journal/logcat = listes internes). */
-    private final View[] contenus = new View[4];
-    private final ScrollView[] corps = new ScrollView[4];
+
+    // ---- lot C3 : le registre des listes montées (les contrôleurs
+    // d'hier continuent de passer par listeJournal() etc. ; la vue
+    // nulle tant que le fragment correspondant n'est pas monté, la
+    // feuille ne pose RIEN elle-même)
+    private ListeProblemes listeProblemesMontee;
+    private ListeJournal listeJournalMontee;
+    private ListeLogcat listeLogcatMontee;
+
+    /** La dernière section demandée à l'auditeur (null : rien — la
+     *  repliée ne demande rien, le montage reste paresseux). */
+    private EtatFeuille.Section sectionDemandee;
+
     private int hauteurUtileDp;
     private boolean gesturesInstalles;
     private float toucherInitialeY;
@@ -92,16 +107,6 @@ public final class FeuilleBasse extends LinearLayout {
         binding = AtelierFeuilleBinding.inflate(
                 LayoutInflater.from(contexte), this, true);
         entete = binding.entete;
-        // lot A6 (ADR-085 décision 1) : les trois listes de section
-        // vivent dans le LAYOUT de la feuille (la feuille les adopte à
-        // sa construction — l'écran n'instancie plus rien ; la console
-        // reste posée par l'écran au gonflage de son stub)
-        contenus[EtatFeuille.Section.PROBLEMES.ordinal()] =
-                binding.listeProblemes;
-        contenus[EtatFeuille.Section.JOURNAL.ordinal()] =
-                binding.listeJournal;
-        contenus[EtatFeuille.Section.LOGCAT.ordinal()] =
-                binding.listeLogcat;
         installerGestes();
         installerRail();
         appliquerDetente(false);
@@ -155,26 +160,37 @@ public final class FeuilleBasse extends LinearLayout {
         auditeur = ecouteur;
     }
 
-    /** La liste des problèmes (l'écran câble ses auditions). */
+    /** La liste des problèmes (montée par le fragment de la section,
+     *  null tant qu'elle ne l'est pas — les contrôleurs vérifient). */
     public ListeProblemes listeProblemes() {
-        return binding.listeProblemes;
+        return listeProblemesMontee;
     }
 
-    /** La liste du journal de l'IDE. */
+    /** La liste du journal de l'IDE (montée par le fragment). */
     public ListeJournal listeJournal() {
-        return binding.listeJournal;
+        return listeJournalMontee;
     }
 
-    /** La liste du logcat de l'application. */
+    /** La liste du logcat de l'application (montée par le fragment). */
     public ListeLogcat listeLogcat() {
-        return binding.listeLogcat;
+        return listeLogcatMontee;
     }
 
-    /** Pose le contenu d'une section (la VueConsole existant pour la
-     *  console, une liste interne sinon). */
-    public void poserContenu(EtatFeuille.Section section, View vue) {
-        contenus[section.ordinal()] = vue;
-        majCorps();
+    /** Lot C3 : l'écran annonce la vue MONTÉE de la section — le
+     *  registre alimente les contrôleurs d'hier, la re-pose d'état
+     *  suit le montage (jamais une section muette). */
+    public void poserListeProblemes(ListeProblemes liste) {
+        listeProblemesMontee = liste;
+    }
+
+    /** Lot C3 : la liste du journal monte (fragment monté/détruit). */
+    public void poserListeJournal(ListeJournal liste) {
+        listeJournalMontee = liste;
+    }
+
+    /** Lot C3 : la liste du logcat monte (fragment monté/détruit). */
+    public void poserListeLogcat(ListeLogcat liste) {
+        listeLogcatMontee = liste;
     }
 
     /** La hauteur utile (l'écran la fournit après mise en page).
@@ -204,7 +220,9 @@ public final class FeuilleBasse extends LinearLayout {
      *  feuille repliée, le choix DÉPLIE à mi-hauteur (le 2026-11-18 :
      *  le contenu changeait dans une feuille à 72 dp — invisible, la
      *  barre paraissait morte). Déjà ouverte : la section seule
-     *  change, la hauteur reste. */
+     *  change, la hauteur reste. Le flux logcat suit le TAP du rail
+     *  aussi (il ne suivait que le glissement — le tap démarrait
+     *  rien : la section restait muette, lot C3). */
     public void poserSection(EtatFeuille.Section section) {
         etatFeuille.poserSection(section);
         if (etatFeuille.detente() == EtatFeuille.Detente.REPLIE) {
@@ -212,6 +230,10 @@ public final class FeuilleBasse extends LinearLayout {
             appliquerDetente(true);
         }
         majSection();
+        if (auditeur != null) {
+            auditeur.surLogcat(
+                    etatFeuille.section() == EtatFeuille.Section.LOGCAT);
+        }
     }
 
     /** @return la section active. */
@@ -532,41 +554,25 @@ public final class FeuilleBasse extends LinearLayout {
         majCorps();
     }
 
-    /** Le corps montre le contenu de la section active. */
+    /** Le corps suit la section active : le FRAGMENT correspondant
+     *  est demandé à l'auditeur dès que la feuille montre son corps
+     *  (montage paresseux, idempotent : la même section ne se
+     *  redemande pas ; repliée, rien ne se demande — l'écran reste
+     *  libre de monter la console du build de lui-même). Le
+     *  conteneur ne bouge pas, la transaction montre/cache : plus
+     *  AUCUNE vue posée/déplacée ici (le « already has a parent » du
+     *  lot C2 meurt avec sa cause). */
     private void majCorps() {
-        FrameLayout receptacle = binding.contenuFeuille;
-        if (receptacle.getChildCount() == 1
-                && receptacle.getChildAt(0) == contenus[
-                etatFeuille.section().ordinal()]) {
+        EtatFeuille.Section section = etatFeuille.section();
+        if (sectionDemandee == section) {
             return;
         }
-        View contenu = contenus[etatFeuille.section().ordinal()];
-        if (contenu == null
-                && etatFeuille.detente() != EtatFeuille.Detente.REPLIE) {
-            // lot A6 : le contenu de la section CONSOLE se monte À LA
-            // DEMANDE (ViewStub de l'écran) — la feuille LE DEMANDE dès
-            // que son corps doit se montrer, jamais un vide muet (pas
-            // de boucle : l'auditeur monte la zone, la pose par
-            // poserContenu et le contenu devient non null)
-            if (auditeur != null) {
-                auditeur.surOuverture();
-            }
-            contenu = contenus[etatFeuille.section().ordinal()];
+        if (etatFeuille.detente() == EtatFeuille.Detente.REPLIE) {
+            return;
         }
-        receptacle.removeAllViews();
-        if (contenu != null) {
-            // lot C2 (fix du garde-crash) : une zone montée par stub
-            // (la console, posée au z-bas de la racine par son stub
-            // — « remplacée puis déplacée ») arrive avec un parent :
-            // addView jette « already has a parent » sinon — la
-            // feuille détache ELLE-MÊME la vue de son ancien parent,
-            // n'importe quel montage à venir est couvert
-            if (contenu.getParent() instanceof ViewGroup ancien) {
-                ancien.removeView(contenu);
-            }
-            receptacle.addView(contenu, new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT));
+        sectionDemandee = section;
+        if (auditeur != null) {
+            auditeur.surSection(section);
         }
     }
 

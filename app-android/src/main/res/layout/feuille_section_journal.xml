@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot C3 (2026-11-19, demande du terrain) — la section JOURNAL de la
+  feuille basse en FRAGMENT : la liste recyclée (ListeJournal, lot A6)
+  vit dans son PROPRE layout, gonflée par
+  FeuilleSectionJournalBinding dans FragmentSection. Plein parent :
+  la liste défile SEULE, l'état (EtatJournal) se re-pose au montage —
+  jamais une section muette ; aucune couleur, aucun texte littéral
+  (ADR-083 §3).
+-->
+<jo.joide.app.android.ui.atelier.ListeJournal
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/liste_journal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

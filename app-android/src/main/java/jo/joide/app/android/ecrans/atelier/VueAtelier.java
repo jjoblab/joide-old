@@ -12,8 +12,11 @@ import android.widget.LinearLayout;
 
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,7 +49,6 @@ import jo.joide.app.android.databinding.ActivityAtelierBinding;
 import jo.joide.app.android.databinding.TiroirAgentPousseBinding;
 import jo.joide.app.android.databinding.VueApercuZoneBinding;
 import jo.joide.app.android.databinding.VueArbreZoneBinding;
-import jo.joide.app.android.databinding.VueConsoleZoneBinding;
 import jo.joide.app.android.logcat.FluxLogcat;
 import jo.joide.app.android.parametres.PreferencesAndroid;
 import jo.joide.app.android.parametres.Reglages;
@@ -60,6 +62,9 @@ import jo.joide.app.android.ui.atelier.BarreOnglets;
 import jo.joide.app.android.ui.atelier.BarreSymboles;
 import jo.joide.app.android.ui.atelier.FeuilleBasse;
 import jo.joide.app.android.ui.atelier.FilAriane;
+import jo.joide.app.android.ui.atelier.FragmentSection;
+import jo.joide.app.android.ui.atelier.ListeJournal;
+import jo.joide.app.android.ui.atelier.ListeLogcat;
 import jo.joide.app.android.ui.atelier.ListeProblemes;
 import jo.joide.app.android.ui.atelier.TiroirFichiers;
 import jo.joide.ide.apercu.ApercuLayouts;
@@ -181,8 +186,15 @@ final class VueAtelier implements HoteAtelier {
     private AgentService.AgentBinder agent;
     private boolean buildEnCours;
 
-    // ---- les zones différées (ViewStub) : console, aperçu, agent
+    // ---- les zones différées : l'aperçu et le tiroir agent par
+    // ViewStub ; les sections de la feuille par FRAGMENTS (lot C3 —
+    // le registre des fragments montés ; l'étiquette retrouve
+    // l'instance après une restauration du FragmentManager, la
+    // section MONTRÉE se garde pour éviter les transactions vides)
     private VueConsole vueConsole;
+    private final EnumMap<EtatFeuille.Section, FragmentSection>
+            fragmentsFeuille = new EnumMap<>(EtatFeuille.Section.class);
+    private EtatFeuille.Section sectionMontreeFeuille;
     private VueApercu vueApercu;
     private TiroirPousse tiroirAgent;
     private VueAgent vueAgent;
@@ -362,9 +374,9 @@ final class VueAtelier implements HoteAtelier {
                     return insets;
                 });
 
-        // ---- la feuille basse (lot L3) : le contenu CONSOLE reste la
-        // VueConsole (montée par stub), les listes vivent dans son
-        // layout
+        // ---- la feuille basse (lot L3 puis C3) : les SECTIONS vivent
+        // en fragments (FragmentSection), montées par transaction
+        // dans contenu_feuille — la feuille demande, l'écran monte
         binding.feuille.setAuditeur(new FeuilleBasse.Auditeur() {
             @Override
             public void surOuvrirProbleme(String chemin, int ligne) {
@@ -378,11 +390,8 @@ final class VueAtelier implements HoteAtelier {
             }
 
             @Override
-            public void surOuverture() {
-                // la feuille montre son corps et la console n'est
-                // pas montée : zone différée, montage À LA DEMANDE
-                // (idempotent — le garde interne fait le reste)
-                monterConsole();
+            public void surSection(EtatFeuille.Section section) {
+                monterSectionFeuille(section);
             }
 
             @Override
@@ -399,13 +408,6 @@ final class VueAtelier implements HoteAtelier {
                 controleurEdition.viderFluxDansEtatLogcat();
             }
         });
-        binding.feuille.listeProblemes().setAuditeur(
-                new ListeProblemes.Auditeur() {
-                    @Override
-                    public void surOuvrir(String chemin, int ligne) {
-                        controleurEdition.ouvrirFichier(chemin, ligne);
-                    }
-                });
         binding.feuille.boutonProblemeSuivant().setOnClickListener(
                 vue -> {
                     // §3.6 : le ↓ saute à l'erreur suivante SANS
@@ -499,48 +501,158 @@ final class VueAtelier implements HoteAtelier {
     }
 
     // ------------------------------------------------------------------
-    // Les zones différées : console, aperçu, tiroir agent (ViewStub —
-    // le rattachement des contrôleurs suit l'inflation)
+    // Lot C3 — la feuille en FRAGMENTS : le montage par transaction
+    // (paresseux comme le ViewStub d'hier, sans vue déplacée)
     // ------------------------------------------------------------------
 
-    /** Monte la zone console (première mise à jour ou feuille ouverte)
-     *  et la pose dans la feuille. */
-    private void monterConsole() {
-        if (vueConsole != null || binding.stubConsole == null) {
+    /**
+     * Monte (ou montre) le FRAGMENT d'une section de la feuille dans
+     * {@code contenu_feuille} : paresseux (rien n'existe tant que la
+     * section n'est pas demandée), la transaction cache les autres
+     * (instances conservées, coût par changement borné).
+     * {@code commitNow} : la vue existe AU RETOUR — le câblage et la
+     * re-pose d'état suivent (jamais une section muette). L'étiquette
+     * retrouve l'instance après une restauration du FragmentManager
+     * (recréation de thème/langue/police) : JAMAIS une double pose.
+     */
+    private void monterSectionFeuille(EtatFeuille.Section section) {
+        if (sectionMontreeFeuille == section
+                && fragmentsFeuille.containsKey(section)) {
             return;
         }
-        vueConsole = VueConsoleZoneBinding.bind(
-                binding.stubConsole.inflate()).getRoot();
-        vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
-            @Override
-            public void surArreter() {
-                controleurBuild.arreterBuild();
+        FragmentManager gestionnaire = ecran.getSupportFragmentManager();
+        FragmentTransaction transaction = gestionnaire.beginTransaction();
+        FragmentSection cible = fragmentsFeuille.get(section);
+        if (cible == null) {
+            cible = (FragmentSection) gestionnaire.findFragmentByTag(
+                    FragmentSection.etiquette(section));
+            if (cible == null) {
+                cible = FragmentSection.cree(section);
+                transaction.add(R.id.contenu_feuille, cible,
+                        FragmentSection.etiquette(section));
             }
+            fragmentsFeuille.put(section, cible);
+        }
+        for (FragmentSection fragment : fragmentsFeuille.values()) {
+            transaction.hide(fragment);
+        }
+        transaction.show(cible);
+        transaction.commitNow();
+        sectionMontreeFeuille = section;
+    }
 
-            @Override
-            public void surVider() {
-                confirmerVidage();
-            }
+    /**
+     * La console se monte EN RÉSERVE (ajoutée cachée) : le premier
+     * événement de build l'exige (le verdict vit dans sa vue) même
+     * si une AUTRE section est visible — la feuille décide seule de
+     * ce qui se MONTRÉ. Paresseuse comme hier : jamais pendant le
+     * chargement de session.
+     */
+    private void assurerConsoleMontee() {
+        if (fragmentsFeuille.containsKey(EtatFeuille.Section.CONSOLE)) {
+            return;
+        }
+        FragmentManager gestionnaire = ecran.getSupportFragmentManager();
+        FragmentSection console = (FragmentSection) gestionnaire
+                .findFragmentByTag(
+                        FragmentSection.etiquette(EtatFeuille.Section
+                                .CONSOLE));
+        if (console == null) {
+            console = FragmentSection.cree(EtatFeuille.Section.CONSOLE);
+            FragmentTransaction transaction = gestionnaire
+                    .beginTransaction();
+            transaction.add(R.id.contenu_feuille, console,
+                    FragmentSection.etiquette(EtatFeuille.Section.CONSOLE));
+            transaction.hide(console);
+            transaction.commitNow();
+        }
+        fragmentsFeuille.put(EtatFeuille.Section.CONSOLE, console);
+    }
 
-            @Override
-            public void surFiltre(EtatConsole.Filtre filtre) {
-                etatConsole.setFiltre(filtre);
+    /**
+     * Lot C3 : la vue d'une section vient d'être créée (fragment
+     * monté ou restauré) — câblage des auditeurs et RE-POSE de
+     * l'état courant : le symptôme du terrain (« aucune vue »)
+     * meurt ici, chaque section arrive déjà remplie.
+     */
+    void surVueSection(EtatFeuille.Section section, View vue) {
+        switch (section) {
+            case CONSOLE -> {
+                vueConsole = (VueConsole) vue;
+                vueConsole.setAuditeur(new VueConsole.AuditeurConsole() {
+                    @Override
+                    public void surArreter() {
+                        controleurBuild.arreterBuild();
+                    }
+
+                    @Override
+                    public void surVider() {
+                        confirmerVidage();
+                    }
+
+                    @Override
+                    public void surFiltre(EtatConsole.Filtre filtre) {
+                        etatConsole.setFiltre(filtre);
+                        majConsole();
+                    }
+
+                    @Override
+                    public void surPhase(
+                            jo.joide.app.android.ConsoleBuild.Phase phase) {
+                        etatConsole.setFiltrePhase(phase);
+                        majConsole();
+                    }
+
+                    @Override
+                    public void surOuvrir(String cible) {
+                        controleurEdition.ouvrirCible(cible);
+                    }
+                });
                 majConsole();
             }
-
-            @Override
-            public void surPhase(jo.joide.app.android.ConsoleBuild.Phase phase) {
-                etatConsole.setFiltrePhase(phase);
-                majConsole();
+            case PROBLEMES -> {
+                ListeProblemes liste = (ListeProblemes) vue;
+                binding.feuille.poserListeProblemes(liste);
+                liste.setAuditeur(new ListeProblemes.Auditeur() {
+                    @Override
+                    public void surOuvrir(String chemin, int ligne) {
+                        controleurEdition.ouvrirFichier(chemin, ligne);
+                    }
+                });
+                controleurEdition.reposerFeuille();
             }
-
-            @Override
-            public void surOuvrir(String cible) {
-                controleurEdition.ouvrirCible(cible);
+            case JOURNAL -> {
+                binding.feuille.poserListeJournal((ListeJournal) vue);
+                controleurEdition.reposerFeuille();
             }
-        });
-        binding.feuille.poserContenu(EtatFeuille.Section.CONSOLE,
-                vueConsole);
+            case LOGCAT -> {
+                binding.feuille.poserListeLogcat((ListeLogcat) vue);
+                // le flux démarre AU MONTAGE aussi (le tap du rail ne
+                // le démarrait pas — la section restait muette) : le
+                // tampon se vide dans l'état, liste et verdict suivent
+                FluxLogcat.tampon().poserAuditeur(
+                        controleurEdition.auditeurFluxLogcat);
+                controleurEdition.viderFluxDansEtatLogcat();
+                controleurEdition.reposerFeuille();
+            }
+        }
+    }
+
+    /**
+     * Lot C3 : la vue d'une section meurt (ré-inflation de racine,
+     * fermeture) — le registre s'oublie, le flux logcat lâche
+     * l'auditeur (jamais une vue morte alimentée).
+     */
+    void surSectionDetruite(EtatFeuille.Section section) {
+        switch (section) {
+            case CONSOLE -> vueConsole = null;
+            case PROBLEMES -> binding.feuille.poserListeProblemes(null);
+            case JOURNAL -> binding.feuille.poserListeJournal(null);
+            case LOGCAT -> {
+                binding.feuille.poserListeLogcat(null);
+                FluxLogcat.tampon().poserAuditeur(null);
+            }
+        }
     }
 
     /** Monte la zone d'aperçu (plein écran ou volet droit demandé) et
@@ -714,10 +826,12 @@ final class VueAtelier implements HoteAtelier {
             binding.boutonRailConsole.setCouleur(etat.consoleDepliee()
                     ? palette.accent : palette.texteSecondaire);
         }
-        // la console se monte à la première OUVERTURE de feuille (zone
-        // différée : repliée et sans build, elle ne sert pas)
-        if (etat.consoleDepliee() && vueConsole == null) {
-            monterConsole();
+        // la section VISIBLE de la feuille se monte à la première
+        // OUVERTURE (lot C3 : paresseux — repliée et sans build, elle
+        // ne sert pas ; le montage par transaction remplace le stub
+        // d'hier, SANS vue déplacée)
+        if (etat.consoleDepliee()) {
+            monterSectionFeuille(binding.feuille.section());
         }
         boolean plein = etat.apercuPleinEcran();
         boolean miseEnPage = session.fichierCourant != null
@@ -851,11 +965,11 @@ final class VueAtelier implements HoteAtelier {
 
     @Override
     public void majConsole() {
-        // la zone console se monte à la première mise à jour (différée :
-        // jamais pendant le chargement de session)
-        if (vueConsole == null) {
-            monterConsole();
-        }
+        // la console se monte à la première mise à jour (paresseuse :
+        // jamais pendant le chargement de session) — EN RÉSERVE si
+        // une autre section est visible, la feuille décide seule de
+        // ce qui se MONTRÉ
+        assurerConsoleMontee();
         if (vueConsole == null) {
             return;
         }
@@ -1113,12 +1227,24 @@ final class VueAtelier implements HoteAtelier {
         EtatFeuille.Section section = binding.feuille.section();
 
         // 2) détacher les zones montées de l'ANCIENNE racine (elles se
-        //    ré-amorrent à la neuve dans la passe qui suit)
+        //    ré-amorrent à la neuve dans la passe qui suit) — les
+        //    fragments de la feuille meurent EXPLICITEMENT : le
+        //    conteneur remplacé ne les reçoit plus, les instances
+        //    neuves se posent depuis les états (lot C3)
         binding.vueEditeur.removeAllViews();
         detacher(vueArbre);
-        detacher(vueConsole);
         detacher(vueApercu);
         detacher(tiroirAgent);
+        if (!fragmentsFeuille.isEmpty()) {
+            FragmentTransaction suppression =
+                    ecran.getSupportFragmentManager().beginTransaction();
+            for (FragmentSection fragment : fragmentsFeuille.values()) {
+                suppression.remove(fragment);
+            }
+            suppression.commitNow();
+            fragmentsFeuille.clear();
+            sectionMontreeFeuille = null;
+        }
 
         // 3) gonfler la racine NEUVE (le layout suit la configuration
         //    déjà commutée) et la poser en place de l'ancienne
@@ -1148,10 +1274,6 @@ final class VueAtelier implements HoteAtelier {
             conteneur.addView(vueArbre,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT);
-        }
-        if (vueConsole != null) {
-            binding.feuille.poserContenu(EtatFeuille.Section.CONSOLE,
-                    vueConsole);
         }
         if (tiroirAgent != null && binding.stubTiroirAgent != null) {
             ViewGroup racine = (ViewGroup) binding.getRoot();

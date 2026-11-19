@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.SecureRandom;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -20,9 +19,10 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Le stockage chiffré des clés éprouvé JVM avec une clé forgée (lot
  * P, ADR-058) : aller-retour chiffré, IV aléatoire par écriture
- * (deux poses du même texte diffèrent), l'en-tête se lit, un fichier
- * d'une autre clé est un absent honnête — jamais de clés de secours
- * en clair, jamais de crash de démarrage.
+ * (deux poses du même texte diffèrent — l'IV vient du Cipher, lot
+ * C3 : la clé Keystore refuse un IV posé par l'appelant), l'en-tête
+ * se lit, un fichier d'une autre clé est un absent honnête — jamais
+ * de clés de secours en clair, jamais de crash de démarrage.
  */
 class ClesChiffreesTest {
 
@@ -37,8 +37,7 @@ class ClesChiffreesTest {
         KeyGenerator generateur = KeyGenerator.getInstance("AES");
         generateur.init(256);
         cle = generateur.generateKey();
-        stockage = new ClesChiffrees(cle, bac,
-                new SecureRandom());
+        stockage = new ClesChiffrees(cle, bac);
     }
 
     @Test
@@ -77,7 +76,7 @@ class ClesChiffreesTest {
         byte[] seconde = Files.readAllBytes(bac.resolve("openai.cle"));
         assertFalse(java.util.Arrays.equals(premiere, seconde),
                 "deux ecritures du meme texte doivent différer "
-                        + "(IV aléatoire)");
+                        + "(IV aléatoire fourni par le Cipher, lot C3)");
         // ... et pourtant la reliture donne la meme cle
         assertEquals("la-meme-cle", stockage.lire("openai"));
     }
@@ -88,7 +87,7 @@ class ClesChiffreesTest {
         KeyGenerator generateur = KeyGenerator.getInstance("AES");
         generateur.init(256);
         ClesChiffrees autreCle = new ClesChiffrees(
-                generateur.generateKey(), bac, new SecureRandom());
+                generateur.generateKey(), bac);
         // réinstallation / clé perdue : null, pas d'exception
         assertNull(autreCle.lire("anthropic"));
         assertFalse(autreCle.estPosee("anthropic"));

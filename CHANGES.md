@@ -1,3 +1,68 @@
+# CHANGES — le coffre qui refusait l'IV, la feuille en fragments : les quatre sections vivent (2026-11-19)
+
+**Lot C3 — le second rapport `joide.crash/1` nommé, la demande du
+terrain exaucée.** La remontée du 2026-11-19 10:23:01 (build
+`0.1.0 (ef88743)`, motorola moto g06, Android 15) :
+`IllegalStateException: AES-GCM unavailable: Caller-provided IV not
+permitted`, pile `MaterialButton.performClick → EcranParametres.U2 →
+ClesChiffrees` — le « restart » à la sauvegarde de la clé d'API est
+ce plantage : l'exception non interceptée tue le processus, le
+système relance. **La cause est NOMMÉE : l'asymétrie AOSP de l'IV
+GCM.** La clé de chiffrement vit dans l'Android Keystore
+(`KeystoreCles`, `KeyGenParameterSpec` — randomisation exigée PAR
+DÉFAUT) : un IV fourni par l'appelant est REFUSÉ en chiffrement
+(c'est ce que dit le message), REQUIS en déchiffrement (il faut bien
+relire celui du fichier). `ClesChiffrees.poser` fabriquait son IV
+(SecureRandom injecté) et le passait en `GCMParameterSpec` à
+`init(ENCRYPT_MODE, cle)` : refus systématique sur TOUT appareil —
+la clé n'a jamais pu être sauvée (d'où « la clé api n'est pas
+sauvegardé », et l'agent sans clé). **Le fix respecte l'asymétrie** :
+l'init se fait SANS spécification (le fournisseur génère l'IV
+aléatoire), `getIV()` le relit et l'écrit dans le fichier comme
+avant — le FORMAT `joide.cles/1` ne change PAS, la randomisation
+par écriture demeure (le test l'éprouve : deux poses du même texte
+diffèrent), le déchiffrement relit l'IV du fichier (permis,
+inchangé). Le `SecureRandom` injecté disparaît (l'aléa vit chez le
+fournisseur, plus chez l'appelant), les tests suivent.
+**La feuille basse passe aux FRAGMENTS (la demande du terrain : « le
+bottomsheet n'affiche toujours pas aucune vue, utiliser des
+fragments que ce soit les logcat, journal, etc. »)** : chaque section
+— console de build, problèmes LSP, journal de l'IDE, logcat — vit
+dans son PROPRE fragment (`FragmentSection`, un layout par section
+`feuille_section_*.xml`, la console garde
+`vue_console_zone.xml`), monté par TRANSACTION dans le
+`FragmentContainerView` `contenu_feuille`. Le montage reste
+paresseux (rien n'existe tant que la section n'est pas demandée —
+le ViewStub `stub_console` des DEUX racines disparaît), la
+transaction cache les autres (instances conservées, coût borné),
+`commitNow` rend la vue AU RETOUR. **La classe des bugs meurt avec
+la cause** : plus de vue POSÉE puis DÉPLACÉE de parent en parent
+(le « already has a parent » du lot C2 n'avait pas de raison d'être),
+plus de trois listes DÉTACHÉES au premier passage de la console,
+plus de transcript AFFAMÉ — le `0dp`+poids de la console mesuré
+dans un `wrap_content` sous ScrollView donnait ZÉRO pixel au
+transcript (le symptôme « aucune vue ») : le conteneur PLEIN PARENT
+lui rend sa hauteur, les listes défilent seules. **L'état se re-pose
+au MONTAGE** (`surVueSection` : câblage des auditeurs puis re-pose
+depuis les états purs — jamais une section montée muette, y compris
+après restauration du FragmentManager : le constructeur sans
+argument et l'étiquette `feuille_*` couvrent les recréations de
+thème/langue/police ; la ré-inflation de géométrie retire et
+remonte, `reposerFeuille` redéroule). Le REGISTRE des listes montées
+garde les contrôleurs d'hier (`feuille().listeJournal()` etc.,
+nuls tant que la section n'est pas montée — ils vérifient déjà) ;
+le TAP du rail logcat démarre le flux (il ne démarrait qu'au
+glissement — la section restait muette) ; la console se monte EN
+RÉSERVE au premier événement de build (cachée si une autre section
+est visible — la feuille décide seule de ce qui se montre). La
+coque `EcranAtelier` implémente `FragmentSection.Hote` (la voie
+unique du câblage), l'auditeur de la feuille gagne `surSection`
+(`surOuverture` disparaît). Discipline A0 tenue : `androidx.fragment`
+est blanc, aucun dialogue, chaque layout a son `*Binding`, aucune
+vue instanciée en code, aucune couleur ni texte littéraux.
+Construction et APK mesurés par la CI (ADR-048). Docs :
+`PHASE-C3-RAPPORT.md` à la racine.
+
 # CHANGES — les tiroirs qui tuaient l'app : dimensions des zones différées, la feuille détache, le fournisseur IA depuis les Paramètres (2026-11-19)
 
 **Lot C2 — le garde-crash a nommé, le lot C2 éteint.** La remontée du

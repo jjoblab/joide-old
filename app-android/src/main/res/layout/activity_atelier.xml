@@ -21,15 +21,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- la zone console, RARE/coûteuse (3 listes recyclées + carte) :
-         montée à la demande par stub, posée dans la feuille aussitôt
-         (z-plan bas : remplacée puis déplacée dans la même passe) -->
-    <ViewStub
-        android:id="@+id/stub_console"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout="@layout/vue_console_zone" />
-
     <LinearLayout
         android:id="@+id/colonne"
         android:layout_width="match_parent"

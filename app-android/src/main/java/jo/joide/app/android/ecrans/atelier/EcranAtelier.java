@@ -2,6 +2,7 @@ package jo.joide.app.android.ecrans.atelier;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -10,11 +11,13 @@ import java.nio.file.Paths;
 
 import jo.joide.app.android.ProprietesConstruction;
 import jo.joide.app.android.R;
+import jo.joide.app.android.atelier.EtatFeuille;
 import jo.joide.app.android.databinding.ActivityAtelierBinding;
 import jo.joide.app.android.ecrans.Ecrans;
 import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
+import jo.joide.app.android.ui.atelier.FragmentSection;
 
 /**
  * L'atelier adaptatif (lot J, ADR-É5) — LA COQUE MINCE du lot A6
@@ -53,7 +56,8 @@ import jo.joide.app.android.ui.GraphiteVue;
  * L, ADR-É7). Le retour système ferme les surcouches une à une —
  * jamais un état zombie.</p>
  */
-public final class EcranAtelier extends ActiviteJoide {
+public final class EcranAtelier extends ActiviteJoide
+        implements FragmentSection.Hote {
 
     /** La vue d'écran de l'atelier (binding, zones, mises à jour). */
     private VueAtelier vue;
@@ -91,6 +95,29 @@ public final class EcranAtelier extends ActiviteJoide {
     /** Le launcher du contrat de photo (l'hôte le délègue à l'agent). */
     ActivityResultLauncher<Uri> contratPrendrePhoto() {
         return prendrePhoto;
+    }
+
+    // ------------------------------------------------------------------
+    // Lot C3 — l'hôte des fragments de la feuille basse : le
+    // FRAGMENT (console, problèmes, journal, logcat) monte sa vue,
+    // la coque délègue à la vue d'écran (câblage + re-pose d'état :
+    // jamais une section montée muette) ; la vue meurt, la coque
+    // oublie. La restauration du FragmentManager appelle ICI aussi —
+    // la coque reste la voie UNIQUE.
+    // ------------------------------------------------------------------
+
+    @Override
+    public void surVueSection(EtatFeuille.Section section, View vueSection) {
+        if (vue != null) {
+            vue.surVueSection(section, vueSection);
+        }
+    }
+
+    @Override
+    public void surSectionDetruite(EtatFeuille.Section section) {
+        if (vue != null) {
+            vue.surSectionDetruite(section);
+        }
     }
 
     @Override

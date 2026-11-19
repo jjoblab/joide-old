@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot C3 (2026-11-19, demande du terrain) — la section LOGCAT de la
+  feuille basse en FRAGMENT : la liste recyclée (ListeLogcat, lot A6)
+  vit dans son PROPRE layout, gonflée par
+  FeuilleSectionLogcatBinding dans FragmentSection. Plein parent : la
+  liste défile SEULE ; le flux du relais (ADR-084) démarre à la
+  première montre, l'état se re-pose au montage — jamais une section
+  muette ; aucune couleur, aucun texte littéral (ADR-083 §3).
+-->
+<jo.joide.app.android.ui.atelier.ListeLogcat
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/liste_logcat"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

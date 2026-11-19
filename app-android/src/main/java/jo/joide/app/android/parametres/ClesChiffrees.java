@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -25,6 +24,15 @@ import jo.joide.platform.AtomicFiles;
  * brut IV (12 octets) + texte. Le cœur est PUR : testé JVM avec une
  * clé forgée ; seule la fabrication de la clé est un composant
  * Android.</p>
+ *
+ * <p>Lot C3 (2026-11-19) : l'IV aléatoire vient DU FOURNISSEUR — le
+ * Cipher le génère à l'{@code init} de CHIFFREMENT (sans
+ * {@code GCMParameterSpec}), on le relit par {@code getIV()} et on
+ * l'écrit dans le fichier. La clé Keystore EXIGE la randomisation :
+ * un IV posé par l'appelant est REFUSÉ en chiffrement
+ * (« Caller-provided IV not permitted » — le plantage du bouton
+ * Sauver du 2026-11-19 10:23) ; le déchiffrement, lui, le REQUIERT
+ * (il relit l'IV du fichier) — asymétrie de l'AOSP, respectée ici.</p>
  */
 public final class ClesChiffrees {
 
@@ -39,29 +47,27 @@ public final class ClesChiffrees {
 
     private final SecretKey cle;
     private final Path dossier;
-    private final SecureRandom alea;
 
     /**
      * @param cle     la clé de chiffrement (Keystore en production)
      * @param dossier le dossier des fichiers (filesDir/cles)
      */
     public ClesChiffrees(SecretKey cle, Path dossier) {
-        this(cle, dossier, new SecureRandom());
-    }
-
-    /**
-     * @param cle     la clé de chiffrement
-     * @param dossier le dossier des fichiers
-     * @param alea    la source d'aléa (les tests l'injectent)
-     */
-    ClesChiffrees(SecretKey cle, Path dossier, SecureRandom alea) {
         this.cle = cle;
         this.dossier = dossier;
-        this.alea = alea;
     }
 
     /**
      * Pose (ou remplace) la clé d'un fournisseur.
+     *
+     * <p>Lot C3 : l'IV ne se FABRIQUE plus côté appelant — le
+     * fournisseur le génère (le Keystore l'EXIGE : randomisation
+     * armée par défaut, un IV fourni est refusé en chiffrement), le
+     * {@code init} sans {@code GCMParameterSpec} le produit et
+     * {@code getIV()} le relit aussitôt : il s'écrit dans le fichier
+     * comme avant, le FORMAT ne change pas. La randomisation reste
+     * effective : deux poses du même texte diffèrent (le test
+     * l'éprouve).</p>
      *
      * @param fournisseur l'identifiant du fournisseur
      * @param cleApi      la clé d'API (en clair à l'entrée seulement)
@@ -69,10 +75,23 @@ public final class ClesChiffrees {
      */
     public void poser(String fournisseur, String cleApi)
             throws IOException {
-        byte[] iv = new byte[TAILLE_IV];
-        alea.nextBytes(iv);
-        byte[] chiffre = chiffrer(iv,
-                cleApi.getBytes(StandardCharsets.UTF_8));
+        byte[] iv;
+        byte[] chiffre;
+        try {
+            Cipher chiffreur = Cipher.getInstance("AES/GCM/NoPadding");
+            chiffreur.init(Cipher.ENCRYPT_MODE, cle);
+            iv = chiffreur.getIV();
+            if (iv == null || iv.length != TAILLE_IV) {
+                throw new GeneralSecurityException("IV aleatoire absent ("
+                        + (iv == null ? "null" : iv.length + " octets")
+                        + ", " + TAILLE_IV + " attendus)");
+            }
+            chiffre = chiffreur.doFinal(
+                    cleApi.getBytes(StandardCharsets.UTF_8));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(
+                    "AES-GCM unavailable: " + e.getMessage(), e);
+        }
         byte[] fichier = new byte[ENTETE.length() + 1
                 + TAILLE_IV + chiffre.length];
         System.arraycopy(ENTETE.getBytes(StandardCharsets.US_ASCII),
@@ -144,18 +163,9 @@ public final class ClesChiffrees {
                 dossier.resolve(nomFichier(fournisseur)));
     }
 
-    private byte[] chiffrer(byte[] iv, byte[] clair) {
-        try {
-            Cipher chiffre = Cipher.getInstance("AES/GCM/NoPadding");
-            chiffre.init(Cipher.ENCRYPT_MODE, cle,
-                    new GCMParameterSpec(TAG_BITS, iv));
-            return chiffre.doFinal(clair);
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException(
-                    "AES-GCM unavailable: " + e.getMessage());
-        }
-    }
-
+    /** Le déchiffrement relit l'IV du fichier : l'appelant le
+     *  fournit — PERMIS en mode DÉCHIFFREMENT (l'asymétrie AOSP :
+     *  exigée au relire, refusée au chiffrer). */
     private byte[] dechiffrer(byte[] iv, byte[] chiffre)
             throws GeneralSecurityException {
         Cipher dechiffre;

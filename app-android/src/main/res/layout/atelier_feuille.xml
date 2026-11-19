@@ -2,10 +2,22 @@
 <!--
   Atelier v2, lot L3 (ADR-083) — la feuille basse (§3.6) : la poignée
   (20 dp de zone tactile), l'en-tête unique (52 dp, rail + zone
-  vivante), le corps (barre d'outils de la section puis contenu —
-  aucun chiffre ni statut répété entre l'en-tête et la barre
-  d'outils). Les détentes et la section active portent dans
+  vivante), le corps. Les détentes et la section active portent dans
   EtatFeuille (pur) ; la vue ne décide rien.
+
+  Lot C3 (2026-11-19, demande du terrain : « utiliser des fragments,
+  que ce soit les logcat, journal, etc. ») — le corps porte UN
+  conteneur de fragments : chaque section (console, problèmes,
+  journal, logcat) est un FRAGMENT monté par transaction dans
+  contenu_feuille (FragmentSection, l'écran pilote). Le ScrollView
+  d'hier MEURT : il affamait le transcript pondéré de la console
+  (0dp + poids à wrap_content = zéro pixel) et les listes défilaient
+  dedans au lieu de défiler seules ; le conteneur PLEIN PARENT donne
+  à chaque vue la hauteur du corps — jamais une section muette. Plus
+  de trois listes embarquées ICI (elles vivent dans leurs propres
+  layouts de section) ni de contenu POSÉ puis DÉPLACÉ de parent en
+  parent (« already has a parent », lot C2) : le conteneur ne bouge
+  pas, la transaction montre/cache.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/feuille_basse"
@@ -31,57 +43,37 @@
         android:id="@+id/entete"
         layout="@layout/feuille_entete" />
 
-    <!-- le corps : visible en mi-hauteur et plein, caché à la barre -->
-    <ScrollView
+    <!-- le corps : visible en mi-hauteur et plein, caché à la barre ;
+         la barre d'outils de la section puis LE CONTENEUR DE
+         FRAGMENTS au poids (§3.6 : sous l'en-tête, jamais de doublon
+         d'en-tête) -->
+    <LinearLayout
         android:id="@+id/corps_feuille"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:orientation="vertical"
         android:visibility="gone"
-        android:fillViewport="true">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp">
 
+        <!-- barre d'outils de la section (§3.6) -->
         <LinearLayout
+            android:id="@+id/outils_feuille"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:paddingBottom="12dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
 
-            <!-- barre d'outils de la section (§3.6 : sous l'en-tête,
-                 puis le contenu — jamais de doublon d'en-tête) -->
-            <LinearLayout
-                android:id="@+id/outils_feuille"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical" />
-
-            <!-- le contenu de la section active (la vue de section se
-                 pose par code : VueConsole montée par stub au premier
-                 besoin, les TROIS LISTES vivent ICI depuis le lot A6 —
-                 la feuille les adopte à sa construction, plus de vues
-                 instanciées par l'écran) -->
-            <FrameLayout
-                android:id="@+id/contenu_feuille"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <jo.joide.app.android.ui.atelier.ListeProblemes
-                    android:id="@+id/liste_problemes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <jo.joide.app.android.ui.atelier.ListeJournal
-                    android:id="@+id/liste_journal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <jo.joide.app.android.ui.atelier.ListeLogcat
-                    android:id="@+id/liste_logcat"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-            </FrameLayout>
-        </LinearLayout>
-    </ScrollView>
+        <!-- le contenu de la section active (lot C3) : UN conteneur de
+             fragments, plein parent — FragmentSection s'y monte par
+             transaction (console, problèmes, journal, logcat), jamais
+             de vue déplacée ici par code -->
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/contenu_feuille"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
 </LinearLayout>

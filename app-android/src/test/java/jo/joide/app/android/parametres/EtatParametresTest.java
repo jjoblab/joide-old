@@ -172,8 +172,8 @@ class EtatParametresTest {
                 vues.add(rangee.cle());
             }
         }
-        assertEquals(21, vues.size(),
-                "le lot U ajoute la rangée de clé OpenRouter");
+        assertEquals(22, vues.size(),
+                "le lot C2 ajoute la rangée du fournisseur IA (21 avant)");
     }
 
     @Test

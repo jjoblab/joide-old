@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot C3 (2026-11-19, demande du terrain) — la section PROBLÈMES de la
+  feuille basse en FRAGMENT : la liste recyclée (ListeProblemes, lot
+  A6) vit dans son PROPRE layout, gonflée par
+  FeuilleSectionProblemesBinding dans FragmentSection. Plein parent :
+  la liste défile SEULE (plus de ScrollView autour — l'enfant pondéré
+  affamé de l'ancien corps meurt ici) ; aucune couleur, aucun texte
+  littéral (la liste dessine ses lignes, ADR-083 §3).
+-->
+<jo.joide.app.android.ui.atelier.ListeProblemes
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/liste_problemes"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />
