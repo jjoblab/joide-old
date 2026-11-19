@@ -3,7 +3,8 @@ package jo.joide.app.android.ui;
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
-import android.widget.TextView;
+
+import androidx.appcompat.widget.AppCompatTextView;
 
 import jo.joide.app.android.ui.choix.ChoixPuce;
 
@@ -12,9 +13,11 @@ import jo.joide.app.android.ui.choix.ChoixPuce;
  * La puce de catégorie est sélectionnable — la sélection
  * ({@link ChoixPuce}) teinte le fond accent 16 %, bord accent 45 %,
  * texte accent demi-gras. La puce simple est un libellé. Les
- * couleurs viennent de ChoixPuce ; la vue ne décide rien.
+ * couleurs viennent de ChoixPuce ; la vue ne décide rien. Le parent
+ * AppCompatTextView (ADR-085, lot A1) est le TextView de la coque
+ * AppCompat — même rendu, l'alerte AppCompatCustomView se tait.
  */
-public final class Puce extends TextView {
+public final class Puce extends AppCompatTextView {
 
     /** Écoute le basculement d'une puce de catégorie par l'utilisateur. */
     public interface AuditeurPuce {

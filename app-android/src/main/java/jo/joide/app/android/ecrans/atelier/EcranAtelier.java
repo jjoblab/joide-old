@@ -8,6 +8,8 @@ import android.net.Uri;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import jo.joide.app.android.ui.ActiviteJoide;
 import jo.joide.app.android.ProprietesConstruction;
 import android.view.View;
@@ -542,12 +544,14 @@ public final class EcranAtelier extends ActiviteJoide {
         colonne.addView(barreSymboles, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 GraphiteVue.dp(this, 42)));
-        // le détecteur d'insets du CADRE (pas d'AndroidX) : le clavier
-        // affiché montre la barre, le cache sinon (§3.5)
-        racineVue.setOnApplyWindowInsetsListener((vue, insets) -> {
-            android.graphics.Insets ime = insets
-                    .getInsets(android.view.WindowInsets.Type.ime());
-            boolean clavier = ime.bottom > 0;
+        // le détecteur d'insets passe par COMPAT (ADR-085 décision 14,
+        // lot A1 — correctif C5) : l'API 30 directe d'hier
+        // (WindowInsets.Type.ime() levait NoClassDefFoundError sur
+        // API 28-29, minSdk 28) ; le clavier montre la barre de symboles,
+        // le cache sinon (§3.5)
+        ViewCompat.setOnApplyWindowInsetsListener(racineVue, (vue, insets) -> {
+            boolean clavier = insets.getInsets(
+                    WindowInsetsCompat.Type.ime()).bottom > 0;
             if (barreSymboles != null) {
                 barreSymboles.poserVisible(clavier);
             }
