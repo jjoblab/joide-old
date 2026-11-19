@@ -1,32 +1,98 @@
-# CHANGES — le coffre qui refusait l'IV, la feuille en fragments : les quatre sections vivent (2026-11-19)
+# CHANGES — le corps affamé, le thinking à l'identique, la liste vivante : les écrans de l'agent parités (2026-11-20)
+
+**Lot C4 — le rapport du terrain nommé, la parité CodeAssist demandée
+mot pour mot.** Trois remontées du 2026-11-20 : les boutons du
+bottomsheet « rien ne se passe pour la section correspondante, elle
+n'est pas visible » ; la section thinking « doit être identique à
+celui ce CodeAssist de tyron12233, branche main, avec toutes les
+fonctionnalités incluses » ; le popup de modèles « doit comprendre
+les options de filtrage, charger la liste des modèles » ; l'écran
+usages « mêmes fonctionnalités ».
+
+**La feuille vide avait DEUX causes géométriques, l'une depuis le
+lot C3.** La vue EXTERNE (`FeuilleBasse`) porte la hauteur ANIMÉE
+des détentes ; la racine INTERNE de `atelier_feuille.xml` gardait
+`72dp` FIXE : le corps (`0dp` + poids sous poignée 20 + en-tête 52)
+recevait ZÉRO pixel à TOUTES les détentes — le tap du rail
+sélectionnait la section, la zone vivante suivait, le CONTENU
+restait invisible. Ensuite l'animation mélangeait ses unités :
+départ lu en PIXELS, cible passée en DP BRUT — la valeur animée
+s'écrivait telle quelle dans `params.height`, atterrissant à ~36 %
+de la hauteur voulue sur la densité du moto g06 ; une hauteur utile
+encore nulle repliait mi et plein à zéro pixel. Le lot C4 rend la
+racine `match_parent`, convertit la cible, borne une détente ouverte
+à la hauteur repliée, et déclare la colonne VERTICALE.
+
+**La parité CodeAssist (consultation clean-room n° 7, mandat du
+propriétaire).** Le travail d'un tour se replie en UN bloc
+(`item_travail_agent.xml`) : point d'état agrégé, « N outils · M
+fichiers », le DERNIER appel replié, chevron ; déplié, le RAIL de
+1 dp porte les étapes dans l'ordre — la découpe est PURE
+(`EtatAgentChat.tranches()`, testée JVM, la clé de pli est
+l'identifiant d'appel du dernier outil : elle SURVIT aux évictions
+du plafond de cartes). La carte de réflexion vit à l'IDENTIQUE du
+ThinkingStep : point accent PULSANT et « Réflexion… » tant que le
+tour la remplit, repliée à une ligne « Pensée » rouvrable au tap,
+plus de compte de lignes dans l'en-tête. Le sélecteur de modèles
+gagne la LISTE VIVANTE (le `/models` de la passerelle pointée, fil
+de fond puis fil d'UI, transport de l'agent — OpenRouter répond
+SANS clé, Gemini par en-tête, Anthropic par les siens ; un échec
+rend la liste vide, le catalogue honnête reste) ; les FILTRES de
+CodeAssist : recherche multi-terme avec l'indice à compte, le
+fournisseur d'identifiant en menu déroulant à compte, le tri
+nom ↔ fournisseur, les gratuits seulement (chaque contrôle
+DISPARAÎT s'il ne peut pas rétrécir la liste), les sections
+favoris/récents/tout sans doublon, la LIGNE à nom nu + puce
+« Gratuit » + identifiant dessous + coche + étoile, le TRI NATUREL
+(« GPT-4.1 » avant « GPT-5 ») — `ModelesAgent`, modèle pur testé
+JVM. L'écran Usages gagne « N sur M utilisés » et
+« réinitialisé dans X » qui DÉCOMPTE à la seconde (la sortie de la
+plus ancienne requête de la fenêtre glissante — `RegulateurDebit`
+et `FournisseurBascule` exposent comptes et relances, jamais une
+limite inventée), la puce « En cours » sur la fenêtre qui PORTE le
+modèle, et la BANDE D'AVERTISSEMENT au-dessus du composeur dès
+80 % (« N requêtes restantes · réinitialisé dans 12 s »), tapable
+vers l'écran Usages — « rien sous le seuil, jamais de harcèlement ».
+
+**Dette préexistante consignée** (rien du lot C4) : `./gradlew check`
+à la racine échouait DÉJÀ à HEAD sur deux fronts étrangers à ce lot —
+la typographie française des fichiers Markdown (2 152 « espace
+sécable avant : » — corrigée d'un trait par le `--fix` du script,
+commit séparé) et `:build-android:checkApi28` (17 violations :
+des RECORDS de `RBytecode`/`JarWriter`, non couverts par la liste
+des constructions réécrites par D8, et `Attributes$Name(String)`
+absent du fichier de signatures du platform 28). Le présent lot ne
+touche ni l'un ni l'autre — la décision appartient au propriétaire.
+
+# CHANGES — le coffre qui refusait l'IV, la feuille en fragments : les quatre sections vivent (2026-11-19)
 
 **Lot C3 — le second rapport `joide.crash/1` nommé, la demande du
 terrain exaucée.** La remontée du 2026-11-19 10:23:01 (build
-`0.1.0 (ef88743)`, motorola moto g06, Android 15) :
+`0.1.0 (ef88743)`, motorola moto g06, Android 15) :
 `IllegalStateException: AES-GCM unavailable: Caller-provided IV not
 permitted`, pile `MaterialButton.performClick → EcranParametres.U2 →
 ClesChiffrees` — le « restart » à la sauvegarde de la clé d'API est
-ce plantage : l'exception non interceptée tue le processus, le
-système relance. **La cause est NOMMÉE : l'asymétrie AOSP de l'IV
+ce plantage : l'exception non interceptée tue le processus, le
+système relance. **La cause est NOMMÉE : l'asymétrie AOSP de l'IV
 GCM.** La clé de chiffrement vit dans l'Android Keystore
 (`KeystoreCles`, `KeyGenParameterSpec` — randomisation exigée PAR
-DÉFAUT) : un IV fourni par l'appelant est REFUSÉ en chiffrement
+DÉFAUT) : un IV fourni par l'appelant est REFUSÉ en chiffrement
 (c'est ce que dit le message), REQUIS en déchiffrement (il faut bien
 relire celui du fichier). `ClesChiffrees.poser` fabriquait son IV
 (SecureRandom injecté) et le passait en `GCMParameterSpec` à
 `init(ENCRYPT_MODE, cle)` : refus systématique sur TOUT appareil —
 la clé n'a jamais pu être sauvée (d'où « la clé api n'est pas
-sauvegardé », et l'agent sans clé). **Le fix respecte l'asymétrie** :
+sauvegardé », et l'agent sans clé). **Le fix respecte l'asymétrie** :
 l'init se fait SANS spécification (le fournisseur génère l'IV
 aléatoire), `getIV()` le relit et l'écrit dans le fichier comme
 avant — le FORMAT `joide.cles/1` ne change PAS, la randomisation
-par écriture demeure (le test l'éprouve : deux poses du même texte
+par écriture demeure (le test l'éprouve : deux poses du même texte
 diffèrent), le déchiffrement relit l'IV du fichier (permis,
 inchangé). Le `SecureRandom` injecté disparaît (l'aléa vit chez le
 fournisseur, plus chez l'appelant), les tests suivent.
-**La feuille basse passe aux FRAGMENTS (la demande du terrain : « le
+**La feuille basse passe aux FRAGMENTS (la demande du terrain : « le
 bottomsheet n'affiche toujours pas aucune vue, utiliser des
-fragments que ce soit les logcat, journal, etc. »)** : chaque section
+fragments que ce soit les logcat, journal, etc. »)** : chaque section
 — console de build, problèmes LSP, journal de l'IDE, logcat — vit
 dans son PROPRE fragment (`FragmentSection`, un layout par section
 `feuille_section_*.xml`, la console garde
@@ -36,127 +102,127 @@ paresseux (rien n'existe tant que la section n'est pas demandée —
 le ViewStub `stub_console` des DEUX racines disparaît), la
 transaction cache les autres (instances conservées, coût borné),
 `commitNow` rend la vue AU RETOUR. **La classe des bugs meurt avec
-la cause** : plus de vue POSÉE puis DÉPLACÉE de parent en parent
+la cause** : plus de vue POSÉE puis DÉPLACÉE de parent en parent
 (le « already has a parent » du lot C2 n'avait pas de raison d'être),
 plus de trois listes DÉTACHÉES au premier passage de la console,
 plus de transcript AFFAMÉ — le `0dp`+poids de la console mesuré
 dans un `wrap_content` sous ScrollView donnait ZÉRO pixel au
-transcript (le symptôme « aucune vue ») : le conteneur PLEIN PARENT
+transcript (le symptôme « aucune vue ») : le conteneur PLEIN PARENT
 lui rend sa hauteur, les listes défilent seules. **L'état se re-pose
 au MONTAGE** (`surVueSection` : câblage des auditeurs puis re-pose
 depuis les états purs — jamais une section montée muette, y compris
-après restauration du FragmentManager : le constructeur sans
+après restauration du FragmentManager : le constructeur sans
 argument et l'étiquette `feuille_*` couvrent les recréations de
-thème/langue/police ; la ré-inflation de géométrie retire et
+thème/langue/police ; la ré-inflation de géométrie retire et
 remonte, `reposerFeuille` redéroule). Le REGISTRE des listes montées
 garde les contrôleurs d'hier (`feuille().listeJournal()` etc.,
-nuls tant que la section n'est pas montée — ils vérifient déjà) ;
+nuls tant que la section n'est pas montée — ils vérifient déjà) ;
 le TAP du rail logcat démarre le flux (il ne démarrait qu'au
-glissement — la section restait muette) ; la console se monte EN
+glissement — la section restait muette) ; la console se monte EN
 RÉSERVE au premier événement de build (cachée si une autre section
 est visible — la feuille décide seule de ce qui se montre). La
 coque `EcranAtelier` implémente `FragmentSection.Hote` (la voie
 unique du câblage), l'auditeur de la feuille gagne `surSection`
-(`surOuverture` disparaît). Discipline A0 tenue : `androidx.fragment`
+(`surOuverture` disparaît). Discipline A0 tenue : `androidx.fragment`
 est blanc, aucun dialogue, chaque layout a son `*Binding`, aucune
 vue instanciée en code, aucune couleur ni texte littéraux.
-Construction et APK mesurés par la CI (ADR-048). Docs :
+Construction et APK mesurés par la CI (ADR-048). Docs :
 `PHASE-C3-RAPPORT.md` à la racine.
 
-# CHANGES — les tiroirs qui tuaient l'app : dimensions des zones différées, la feuille détache, le fournisseur IA depuis les Paramètres (2026-11-19)
+# CHANGES — les tiroirs qui tuaient l'app : dimensions des zones différées, la feuille détache, le fournisseur IA depuis les Paramètres (2026-11-19)
 
 **Lot C2 — le garde-crash a nommé, le lot C2 éteint.** La remontée du
 terrain du 2026-11-19 09:55:35 porte le premier rapport `joide.crash/1`
-NOMMÉ : `UnsupportedOperationException: Binary XML file line #14 …
+NOMMÉ : `UnsupportedOperationException: Binary XML file line #14 …
 tiroir_agent_pousse: You must supply a layout_width attribute` (motorola
 moto g06, Android 15, build `0.1.0 (68f72b9)`), pile
 `ViewStub.inflate → generateLayoutParams → getLayoutDimension`, au tap
-d'ouverture du tiroir agent. « Plusieurs erreurs de ce genre » : **quatre
+d'ouverture du tiroir agent. « Plusieurs erreurs de ce genre » : **quatre
 layouts de zone portaient des racines SANS `layout_width`/
 `layout_height`** — `tiroir_agent_pousse.xml` (racine `TiroirPousse` ET
 enfant `VueAgent`), `vue_console_zone.xml`, `vue_apercu_zone.xml`
-(les trois ViewStub : tiroir agent, console, aperçu — chacun plantait
-à son premier montage) et `vue_arbre_zone.xml` (gonflé sans parent :
+(les trois ViewStub : tiroir agent, console, aperçu — chacun plantait
+à son premier montage) et `vue_arbre_zone.xml` (gonflé sans parent :
 non fatale, piège armé). L'inflation par ViewStub exige les dimensions
 (« line #14 » = le chevron de la balise racine). **Les dimensions
-PASSEPARTOUTS** : `match_parent` posé, qui ne décide rien — le ViewStub
+PASSEPARTOUTS** : `match_parent` posé, qui ne décide rien — le ViewStub
 les remplace, le panneau adopte au MATCH_PARENT, la feuille repose son
-contenu : la géométrie reste celle du montage, l'identité celle de la
+contenu : la géométrie reste celle du montage, l'identité celle de la
 zone (consigné dans chaque layout).
-**La chaîne des trois symptômes du terrain, éteinte à la racine** : le
-tiroir agent plantait au tap (le rapport nommé) ; la feuille ne
+**La chaîne des trois symptômes du terrain, éteinte à la racine** : le
+tiroir agent plantait au tap (le rapport nommé) ; la feuille ne
 s'ouvrait JAMAIS sans mourir — la CONSOLE est la section par défaut,
 tout dépliage passait par `majCorps → surOuverture →
 monterConsole() → stub_console.inflate()` → LE MÊME plantage (« le
-bottomsheet n'affiche rien, que ce soit pour build, journal ») ; le
+bottomsheet n'affiche rien, que ce soit pour build, journal ») ; le
 SEUL sélecteur de fournisseur vivait dans la puce du tiroir mort-né
 (« le provider n'est pas chargé ») — la SAISIE des clés était saine
 (audit C1), c'est le tiroir qui tuait l'app avant la première requête.
-**Le second piège, nommé par l'audit avant qu'il ne tue** : la console
+**Le second piège, nommé par l'audit avant qu'il ne tue** : la console
 gonflée arrive ATTACHÉE à la racine (le ViewStub la pose à sa place,
 « z-plan bas ») — `FeuilleBasse.majCorps → receptacle.addView` jetterait
-`IllegalStateException: already has a parent` (AOSP `addViewInner`) ;
+`IllegalStateException: already has a parent` (AOSP `addViewInner`) ;
 le lot A8 a son `detacher()` à l'écran pour ce cas, la feuille ne
-l'avait pas : **`majCorps` détache maintenant ELLE-MÊME** le contenu
+l'avait pas : **`majCorps` détache maintenant ELLE-MÊME** le contenu
 de son ancien parent avant de le poser — tout montage à venir couvert.
 **Le fournisseur IA se choisit AUSSI depuis les Paramètres** (rangée
 « Fournisseur IA », première de la carte IA, menu ANCRÉ du porte-popups
-— le gabarit du menu de clé) : le choix persiste
+— le gabarit du menu de clé) : le choix persiste
 (`Reglages.ecrireFournisseurIa`) et normalise le modèle comme la puce
 du tiroir (modèle par fournisseur → modèle partagé s'il appartient →
 premier du catalogue, le MIROIR de
-`ControleurModelesAgent.catalogueModele`) ; plus jamais un sélecteur
+`ControleurModelesAgent.catalogueModele`) ; plus jamais un sélecteur
 unique derrière un crash. Chaînes `parametres_fournisseur_ia`
 paritaires (FR/EN), les noms de fournisseurs repris du tiroir.
-Tests : **2 gardes mises à jour 21 → 22 rangées**
+Tests : **2 gardes mises à jour 21 → 22 rangées**
 (`vingtDeuxRangeesEtDeuxActionsDestructricesExactement`,
 `lesReglagesReelsSeulementAucuneRangeeOrpheline` : messages
-documentant le lot C2), 0 échec ;
-l'audit scripté : 39 signalements sans dimensions, 35 `<include>`
+documentant le lot C2), 0 échec ;
+l'audit scripté : 39 signalements sans dimensions, 35 `<include>`
 légitimes, 4 défauts réels — les quatre corrigés. Construction et APK
-mesurés par la CI (ADR-048). Docs : `PHASE-C2-RAPPORT.md` à la racine.
+mesurés par la CI (ADR-048). Docs : `PHASE-C2-RAPPORT.md` à la racine.
 
-# CHANGES — le garde-crash : l'activité qui détecte TOUT type de plantage, la dette NewApi éteinte (2026-11-19)
+# CHANGES — le garde-crash : l'activité qui détecte TOUT type de plantage, la dette NewApi éteinte (2026-11-19)
 
-**Lot C1 (garde-crash) — la demande du terrain du 2026-11-19** : « créé
+**Lot C1 (garde-crash) — la demande du terrain du 2026-11-19** : « créé
 une activity crash que détecte tout le type de crash ». L'application
 plantait (tiroir agent, saisie des clés, feuille de build muette)
-SANS trace récupérable ; le garde en écrit désormais une pour CHAQUE
+SANS trace récupérable ; le garde en écrit désormais une pour CHAQUE
 type de panne, et la montre.
 **`AppJoide`** (nouvelle `Application` au manifeste) pose le garde
 AVANT toute activité, dans TOUT processus (le démon `:build` compris).
-**`GardienCrash`** — trois voies de détection : 1) les exceptions non
+**`GardienCrash`** — trois voies de détection : 1) les exceptions non
 interceptées SUR TOUT FIL (`Thread.setDefaultUncaughtExceptionHandler`)
 avec la classe exacte (NPE, InflateException, NoSuchMethodError,
 OOM…) et la pile complète, PLUS la pile du fil principal (le contexte
-quand un fil de fond casse) ; 2) le GEL du fil d'interface (classe ANR)
-par chien de garde : une impulsion au fil principal toutes les 2 s, non
+quand un fil de fond casse) ; 2) le GEL du fil d'interface (classe ANR)
+par chien de garde : une impulsion au fil principal toutes les 2 s, non
 courue en 8 s = gel — la PILE du fil principal bloqué est capturée DEPUIS
-le chien (LE diagnostic : où il est coincé), débogueur branché = jamais
-de faux gel ; 3) les fractures des processus secondaires (`:build`) :
+le chien (LE diagnostic : où il est coincé), débogueur branché = jamais
+de faux gel ; 3) les fractures des processus secondaires (`:build`) :
 rapport écrit SANS voler l'atelier vivant — l'ACCUEIL le montre au
 retour (`MainActivity.onResume` + marqueur `.vus` : un plantage ne
 meurt jamais en silence, la feuille de build muette de la remontée
 trouve enfin son auteur).
-**`EcranCrash`** (l'écran demandé) : UI **100 % programmatique** sous
+**`EcranCrash`** (l'écran demandé) : UI **100 % programmatique** sous
 thème du CADRE (`Theme.Material.NoActionBar`, pas Graphite) — l'écran
 d'urgence doit survivre à un thème cassé, CAUSE POSSIBLE du plantage
-qu'il montre ; type NOMMÉ + classe + message + moment + fil, pile
+qu'il montre ; type NOMMÉ + classe + message + moment + fil, pile
 complète monospace sélectionnable, historique des 20 derniers rapports
-(plus ancien/plus récent), actions Relancer / Effacer / Quitter ;
-repli nu (TextView) si même son montage échoue ; lancement en tâche
+(plus ancien/plus récent), actions Relancer / Effacer / Quitter ;
+repli nu (TextView) si même son montage échoue ; lancement en tâche
 neuve par le garde PUIS mort propre du processus (600 ms de souse à
 AMS) — le système relance l'écran dans un processus frais, jamais un
-zombie. **`RapportCrash`** : le cœur PUR (testé JVM, 6 tests) — format
+zombie. **`RapportCrash`** : le cœur PUR (testé JVM, 6 tests) — format
 `joide.crash/1` (en-tête, identité, piles, version/Android/appareil),
 CLASSIFICATION du genre (FRACTURE avec classe exacte vs
 GEL_INTERFACE), cause première dépliée, nom de fichier classé par
-moment ; écriture atomique, plafond 20 rapports.
-**Écart motivé au filet** : `ZONES_EXCUSSEES_VUES` porte
+moment ; écriture atomique, plafond 20 rapports.
+**Écart motivé au filet** : `ZONES_EXCUSSEES_VUES` porte
 `crash/EcranCrash.java` (l'unique vue du produit qui DOIT se passer du
 Graphite — consigné dans le filet et ici).
 **La dette NewApi éteinte (8 erreurs de lint — crashs RÉELS en
-`NoSuchMethodError` sur appareils ≤ Android 13/14)** : `Path.of` →
+`NoSuchMethodError` sur appareils ≤ Android 13/14)** : `Path.of` →
 `Paths.get` (×3, `ControleurFichiers` : dupliquer/renommer/supprimer),
 `Stream.toList` → `collect(toList())` (`EtatProblemes.suivant` : le ↓
 « problème suivant »), `readAllBytes` → lecture bornée à la main (×2,
@@ -166,72 +232,72 @@ L'ATELIER — Android ≤ 12L ne pouvait PAS OUVRIR l'atelier),
 `Files.readString` → `readAllBytes`+UTF-8 (`SpecsBuild.identifiantPaquet`
 : LE BUILD SUR ANDROID ≤ 13 mourait à la lecture du manifeste du projet
 — la « feuille qui n'affiche rien pour build » de la remontée).
-Lint : **11 → 3 erreurs** (les 3 restantes : `DiffUtilEquals` faux
-positifs connus sur les records). Mesures : tests 370 → **376** (6
-nouveaux, 0 échec) ; APK 15 848 929 → **15 868 489 o** (+19 560 o :
-le garde) ; manifeste `android:name=".AppJoide"` + l'activité de crash
+Lint : **11 → 3 erreurs** (les 3 restantes : `DiffUtilEquals` faux
+positifs connus sur les records). Mesures : tests 370 → **376** (6
+nouveaux, 0 échec) ; APK 15 848 929 → **15 868 489 o** (+19 560 o :
+le garde) ; manifeste `android:name=".AppJoide"` + l'activité de crash
 (non exportée, hors recents). Chaînes `crash_*` paritaires (FR/EN).
-Docs : `PHASE-C1-RAPPORT.md` à la racine.
+Docs : `PHASE-C1-RAPPORT.md` à la racine.
 
 # CHANGES — le kit ne garde que l'irremplaçable, une seule voie de thémage, exceptions vides (2026-11-19)
 
 **Lot A9 de l'ADR-085 (consolidation, le chantier est clos — statut
-Accepted)** : le kit `ui/` perd ses vues remplacées par Material —
+Accepted)** : le kit `ui/` perd ses vues remplacées par Material —
 `Bouton` (les deux du composeur de l'agent migrent en `MaterialButton`
 `Widget.Jo.Button.Tonal` : fond surface haute, texte `?attr/jo_texte`
 — l'exact TONAL d'hier, apparence inchangée), `Carte`, `Champ`,
 `Segment`, `Interrupteur`, `Onglets`, avec leurs états
 `ChoixBouton`/`ChoixChamp`/`ChoixTexte`/`ChoixSegment` et leurs tests —
-SIX suppressions à zéro consommateur (imports réels vérifiés) ;
+SIX suppressions à zéro consommateur (imports réels vérifiés) ;
 `Carte.dessinerDossier` déménage dans `Icone` (glyphe Canvas).
-**Conservations motivées** (ADR-085 §Évaluations A9) : `Fab`
+**Conservations motivées** (ADR-085 §Évaluations A9) : `Fab`
 (double état rond ↔ pilule « build #n — phase » avec croix d'arrêt,
 Canvas — FAB/ExtendedFAB ne savent pas), `Pilule`/`Puce` (rôles
 colorés dynamiques et sélection pure `ChoixPuce` — le Chip M3
 imposerait ripple et états stock contraires à la maquette),
 `TuileProjet` (Canvas, couleurs calculées), `TiroirPousse`,
 `Nuancier`, `Stepper`, `EtatVide`, `Icone` (déjà consignées A6).
-**`<merge>` (I3)** : `BarreHaut` et `TiroirFichiers` deviennent le
+**`<merge>` (I3)** : `BarreHaut` et `TiroirFichiers` deviennent le
 conteneur de leur racine `<merge>` (un niveau de hiérarchie de moins
-par zone) ; `BarreSymboles` est DISSOUTE — son layout racine était
+par zone) ; `BarreSymboles` est DISSOUTE — son layout racine était
 un LinearLayout VIDE, fichier et binding supprimés, la classe se
 configure (même fond, retrait, visibilité, description). La feuille
-basse et `tiroir_agent.xml` gardent leur racine (id/fond/élévation ;
+basse et `tiroir_agent.xml` gardent leur racine (id/fond/élévation ;
 `<include>` du composeur).
-**Une seule voie de thémage** : les 10 injections `palette.*`
+**Une seule voie de thémage** : les 10 injections `palette.*`
 REDONDANTES de `VueAgent` disparaissent (les couleurs vivaient deux
-fois : XML A7 + ré-injection identique en code) ; glyphes, couleurs
+fois : XML A7 + ré-injection identique en code) ; glyphes, couleurs
 et descriptions des icônes du tiroir agent et du composeur se posent
-en XML (`app:jo_icone_*`) ; la saisie prend `?attr/jo_texte`/`?attr/jo_texte3`.
+en XML (`app:jo_icone_*`) ; la saisie prend `?attr/jo_texte`/`?attr/jo_texte3`.
 La PASTILLE du compteur de la feuille — dernière couleur littérale
-du filet — porte `?attr/colorOnError` (rôle M3 Graphite testé ;
+du filet — porte `?attr/colorOnError` (rôle M3 Graphite testé ;
 en Sombre le contraste sur `jo_erreur` s'améliore nettement, écart
 délibéré consigné). `MaquetteCreationTest` vérifie désormais le
 contrat couleurs du segment sur le ColorStateList de la bascule.
-**Filet** : `ArchitectureVuesTest` à exceptions VIDES (les six
-listes). Mesures (base A8 → A9) : vues instanciées 22 → 12,
+**Filet** : `ArchitectureVuesTest` à exceptions VIDES (les six
+listes). Mesures (base A8 → A9) : vues instanciées 22 → 12,
 `palette.*` 205 → 154, `dp(` 152 → 109, layouts 87 → 86 (+1 w720dp,
 5 racines `<merge>`), APK 15 853 241 → **15 848 929 o (−4 312)**,
-tests 383 → 370 (les 13 des classes supprimées ; 0 échec). Lint :
+tests 383 → 370 (les 13 des classes supprimées ; 0 échec). Lint :
 11 erreurs préexistantes EXACTEMENT (aucune nouvelle). ADR-085 →
-**Accepted** ; `docs/ecrans/README.md` et `PHASE-A9-RAPPORT.md` à jour.
+**Accepted** ; `docs/ecrans/README.md` et `PHASE-A9-RAPPORT.md` à jour.
 
-# CHANGES — la géométrie ne détruit plus l'atelier : configChanges, ré-inflation sans fermerIde(), état minimal sauvegardé, gardes de cycle de vie (2026-11-19)
+# CHANGES — la géométrie ne détruit plus l'atelier : configChanges, ré-inflation sans fermerIde(), état minimal sauvegardé, gardes de cycle de vie (2026-11-19)
 
-**Lot A8 de l'ADR-085 (décision 10)** : le manifest déclare
+**Lot A8 de l'ADR-085 (décision 10)** : le manifest déclare
 `android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`
 sur `EcranAtelier` **seul** — la GÉOMÉTRIE seule (thème, langue,
-densité, police restent des recréations) ; le filet
+densité, police restent des recréations) ; le filet
 `ArchitectureVuesTest` verrouille la liste EXACTE et le compte 1.
 `onConfigurationChanged` déroule la décision **PURE JVM**
 (`DecisionConfiguration`, 4 tests — le critère §6.10 « un changement
 de géométrie n'appelle pas `fermerIde()` » y est asserté dans toute
-la grille) : les popups se ferment TOUJOURS (avant tout, décision 12),
+la grille) : les popups se ferment TOUJOURS (avant tout, décision 12),
 la racine se ré-influe SEULEMENT si la CLASSE de géométrie change
-(économie documentée : même classe, même layout), l'IDE **jamais**
+(économie documentée : même classe, même layout), l'IDE **jamais**
 fermé. La **ré-inflation de la racine** (`VueAtelier.reinflerRacine`)
 détache le PUITS avant (la scène celeris et sa couche de popups,
-jamais reconstruites — `SessionAtelier` n'est pas touché : moteurs
+jamais reconstruites — `SessionAtelier` n'est pas touché : moteurs
 LSP, sync, aperçu et écritures survivent), gonfle la racine neuve
 (compact ↔ `layout-w720dp`), rattache la scène, ré-amarre les zones
 montées (arbre, console, tiroir agent au rang du stub), re-pose le
@@ -242,50 +308,50 @@ aux recréations restantes (et à la mort du processus) par
 `onSaveInstanceState` : export pur de l'`EtatAtelier` (onglets,
 actif, points de modification, surcouches, section de feuille —
 aller-retour export→import→export ÉGAL testé), brouillons de
-`EtatPopups` (le même passage), assistant `EtatCreation` (A4 : « A8
+`EtatPopups` (le même passage), assistant `EtatCreation` (A4 : « A8
 fera la sauvegarde » — étape, recherche, catégorie, modèle,
-identité, minSdk, modules) ; l'ACTIF restauré devient le fichier
-initial de la session (rebranchement, pas reconstruction, ADR-É5) ;
+identité, minSdk, modules) ; l'ACTIF restauré devient le fichier
+initial de la session (rebranchement, pas reconstruction, ADR-É5) ;
 les racines d'étape deviennent des `NestedScrollView` (le cadre
 restaure le DÉFILEMENT, id portés par les `<include>` ;
 `saveEnabled=false` RESTE — la vérité unique vit dans les états,
 consigné à l'ADR). **Option ε (`ViewModel`) ÉVALUÉE et ÉCARTÉE**,
 motivée à l'ADR-085 (β couvre la géométrie, le Bundle couvre le
-reste ; y déménager la session violerait « jamais de `Context`
-d'activité retenu » — aucun changement de propriété à consigner ;
-aucune dépendance nouvelle). **Revue I8 exigée** : les 14 sites
+reste ; y déménager la session violerait « jamais de `Context`
+d'activité retenu » — aucun changement de propriété à consigner ;
+aucune dépendance nouvelle). **Revue I8 exigée** : les 14 sites
 `runOnUiThread` du module sont TOUS gardés `isDestroyed()` (7
-nouveaux : accueil ×5, rappel MCP, relance de mesure) ; l'atelier
+nouveaux : accueil ×5, rappel MCP, relance de mesure) ; l'atelier
 concentre ses callbacks dans `HoteAtelier.executerSurFilUi`, garde
-posée une fois avant le post ET à l'exécution. Circonstance :
+posée une fois avant le post ET à l'exécution. Circonstance :
 travail A8 non commetté d'un agent interrompu, **audité face au
 brief** (ré-inflation vérifiée membre à membre face aux deux
 layouts, états et tests lus ligne à ligne, 14 sites revus un par
 un), 3 corrections de robustesse portées (bornage des ordinaux
 d'étape/section lus du Bundle, garde `Categorie.valueOf`, re-pose de
 la détente de feuille restaurée — repliée reste repliée), validation
-**re-exécutée** (`--rerun` : **383 tests verts**, 0 échec ;
-`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
-exactement, aucune nouvelle). Module : vues instanciées **22**
+**re-exécutée** (`--rerun` : **383 tests verts**, 0 échec ;
+`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
+exactement, aucune nouvelle). Module : vues instanciées **22**
 inchangées (kit seul), `palette.*` 205 → 209, `dp(` 152 inchangé,
 87 layouts inchangés, APK 15 844 349 → **15 853 241 o** (+8 892 o,
-aucune dépendance nouvelle). Sans appareil : rotation, pliage,
+aucune dépendance nouvelle). Sans appareil : rotation, pliage,
 multi-fenêtre et recréations restantes à vérifier par le
 propriétaire (rapport A8 §6).
 
-# CHANGES — plus aucun dialogue : popups XML à deux gabarits, découpage du contrôleur agent, contrats typés (2026-11-19)
+# CHANGES — plus aucun dialogue : popups XML à deux gabarits, découpage du contrôleur agent, contrats typés (2026-11-19)
 
-**Lot A7 de l'ADR-085 (D3, décision 12)** : `ui/Dialogue.java` (9
+**Lot A7 de l'ADR-085 (D3, décision 12)** : `ui/Dialogue.java` (9
 fabriques `AlertDialog`, 58 usages sur neuf fichiers) est **SUPPRIMÉE**
-— grep Annexe B des dialogues : **0** sur les sources principales.
+— grep Annexe B des dialogues : **0** sur les sources principales.
 Chaque cas modal devient un **popup `popup_*.xml` gonflé par binding**,
-deux gabarits stricts : **ANCRÉ** (`PopupAncre` GÉNÉRALISÉE — plus
+deux gabarits stricts : **ANCRÉ** (`PopupAncre` GÉNÉRALISÉE — plus
 aucune vue fabriquée, la carte porte le fond par le drawable
 `carte_popup`, dimensions par `@dimen` : `popup_menu_noeud` devient LE
 gabarit de tous les menus ancrés — arbre, options/ajouts de l'agent,
 mode de permission, ⋮ de l'atelier et de l'accueil, carte projet, clés
 des paramètres, dimensions de l'aperçu) et **CENTRÉ AVEC VOILE**
-(`PopupCentre`, nouveau : fenêtre focusable bornée, clavier
+(`PopupCentre`, nouveau : fenêtre focusable bornée, clavier
 `INPUT_METHOD_NEEDED`+`ADJUST_RESIZE` des saisies, pane TalkBack,
 focus initial) pour confirmation (`popup_confirmation`), destructive
 deux actions (`popup_destructive`), information (`popup_information`),
@@ -294,72 +360,72 @@ saisie (`popup_saisie`, champ inclus), écran texte
 déplié (`popup_permission_diff` — fermer = REFUSER), usages
 (`popup_usages`), historique (`popup_historique`), connexions MCP
 (`popup_connexions_mcp`). **Le voile** (question ouverte de la
-décision 12, tranchée et consignée à l'ADR-085) : **vue-voile du layout
+décision 12, tranchée et consignée à l'ADR-085) : **vue-voile du layout
 racine** `voile_popup` (`?attr/jo_rideau`, cliquable, dernier enfant)
 sur les quatre écrans porteurs — `FLAG_DIM_BEHIND` est impraticable
-(`PopupWindow` n'expose pas sa fenêtre ; le drapeau est un drapeau de
+(`PopupWindow` n'expose pas sa fenêtre ; le drapeau est un drapeau de
 dialogue, interdit). **`PortePopups`** porte le registre des fenêtres
-d'un écran et les corps communs ; **`EtatPopups`** (pur, testé JVM)
+d'un écran et les corps communs ; **`EtatPopups`** (pur, testé JVM)
 porte l'**ordre du retour système** — le popup se ferme EN PREMIER,
 avant tiroir agent, feuille, tiroirs, confirmation et sortie
 (`EtatPopupsTest` : 6 tests) — et les **brouillons de saisie** (le popup
-n'est jamais restauré : `fichiers.nouveau`, `fichiers.renomme`,
+n'est jamais restauré : `fichiers.nouveau`, `fichiers.renomme`,
 `agent.modele`, `agent.url`). Fermeture explicite **`onPause`/
 `onDestroy`** (les trois écrans) et **`onConfigurationChanged`** (atelier,
-armé pour A8). **Découpage de `ControleurAgent`** (1 843 → **590 l.** :
-service, tour, pièces jointes, permission) : `ControleurModelesAgent`
+armé pour A8). **Découpage de `ControleurAgent`** (1 843 → **590 l.** :
+service, tour, pièces jointes, permission) : `ControleurModelesAgent`
 (**597**), `ControleurUsagesAgent` (**151**),
 `ControleurHistoriqueAgent` (**200**), `ControleurConnexionsMcp`
-(**241**) — tous < 600 ; **0 vue du cadre instanciée dans les
+(**241**) — tous < 600 ; **0 vue du cadre instanciée dans les
 contrôleurs** (les 3 `EditText` de `ControleurFichiers` d'hier
 disparaissent — le champ vit dans `champ_saisie_param` réorienté) et
 dans `VueAgent` (le transcript migre en `item_*` : vide, borne, lignes
 tonales, usages, erreurs, questions). **Contrats typés** (décision 13,
-passation A6) : `Ecrans.CHOISIR_IMAGE`/`PRENDRE_PHOTO` enregistrés
+passation A6) : `Ecrans.CHOISIR_IMAGE`/`PRENDRE_PHOTO` enregistrés
 AVANT `onCreate`, délégués par l'hôte — les codes 47101/47102 et
-`onActivityResult` disparaissent. Filet : les quatre listes
+`onActivityResult` disparaissent. Filet : les quatre listes
 d'exceptions d'`ArchitectureVuesTest` **VIDES** + l'assertion
-« `Dialogue.java` reste supprimée » ; +21 jetons (CIBLE 48 dp comprise)
-et `Widget.Jo.Button.Reussite`, parité `ThemesM3Test`. Circonstance :
+« `Dialogue.java` reste supprimée » ; +21 jetons (CIBLE 48 dp comprise)
+et `Widget.Jo.Button.Reussite`, parité `ThemesM3Test`. Circonstance :
 travail A7 non committé d'un agent interrompu, **audité face au
 prompt** (greps d'acceptation, lecture ciblée des gabarits, du montage
 et du découpage), 8 coquilles de commentaires corrigées, validation
-**re-exécutée** (`--rerun` : **371 tests verts**, 0 échec ;
-`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
-exactement, aucune nouvelle). Module : 84 → **22** vues instanciées
-(48 `ControleurAgent` → 0, 10 `VueAgent` → 0 ; restent le kit `ui/`
+**re-exécutée** (`--rerun` : **371 tests verts**, 0 échec ;
+`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
+exactement, aucune nouvelle). Module : 84 → **22** vues instanciées
+(48 `ControleurAgent` → 0, 10 `VueAgent` → 0 ; restent le kit `ui/`
 racine, A9), `palette.*` 218 → 205, `dp(` 245 → 152, 65 → 87 layouts,
 APK 15 798 411 → **15 844 349 o** (+0,04 Mio, aucune dépendance
 nouvelle).
 
-# CHANGES — la racine de l'atelier quitte le code : layouts racine + w720dp, puits et ViewStub, hôte étroit, onglets recyclés (2026-11-19)
+# CHANGES — la racine de l'atelier quitte le code : layouts racine + w720dp, puits et ViewStub, hôte étroit, onglets recyclés (2026-11-19)
 
-**Lot A6 de l'ADR-085** : `EcranAtelier` (1 526 → **180 l.**) devient
-une COQUE MINCE — la composition vit ENFIN en XML :
+**Lot A6 de l'ADR-085** : `EcranAtelier` (1 526 → **180 l.**) devient
+une COQUE MINCE — la composition vit ENFIN en XML :
 `activity_atelier.xml` + `layout-w720dp/activity_atelier.xml`
-(**`w720dp`**, parité `EtatAtelier.SEUIL_GRAND_ECRAN_DP`) : une
+(**`w720dp`**, parité `EtatAtelier.SEUIL_GRAND_ECRAN_DP`) : une
 colonne (barre haute 52, bannière compat, bande d'onglets 40, fil
 d'Ariane 28, CORPS À POIDS portant le **puits** — conteneur de la
 scène celeris, attaché au montage, JAMAIS reconstruit —, barre de
 symboles 42, feuille basse), le grand écran en rangée amarrée (rail
-48, arbre 240, puits au poids, volet d'aperçu 320, §005) ;
+48, arbre 240, puits au poids, volet d'aperçu 320, §005) ;
 `construireUi()`/`ContexteUi` SUPPRIMÉS (constats C1/C2). La
 **hauteur utile de la feuille** vit désormais sur le parent du layout
 racine (voisine `wrap_content` du corps à poids — le câblage du lot L3
-mesure dessus : le bug `6f2e899` meurt enfin). Zones rares par
-**`ViewStub`** (×3 par variante : console, aperçu — le dernier texte
+mesure dessus : le bug `6f2e899` meurt enfin). Zones rares par
+**`ViewStub`** (×3 par variante : console, aperçu — le dernier texte
 de mise en page est rejoué au montage —, tiroir agent). Le câblage
 passe dans `VueAtelier` (0 vue instanciée), le montage de session
 (`charger`/`monterIde`/`fermerIde`) dans `SessionAtelier`, et les
 quatre contrôleurs dépendent de **`HoteAtelier`** (l'union exacte de
 leurs 685 accès d'hier — grep `EcranAtelier` : **0**). Évaluations
-§4.4 consignées à l'ADR-085 : **onglets → `RecyclerView` horizontal
+§4.4 consignées à l'ADR-085 : **onglets → `RecyclerView` horizontal
 retenu** (l'onglet fermable + l'indicateur 2 dp exigent la vue
-d'onglet personnalisée — `TabLayout` doublerait l'indicateur) ;
+d'onglet personnalisée — `TabLayout` doublerait l'indicateur) ;
 **feuille/tiroirs/barre haute conservées** (détentes FRACTIONS de la
 hauteur utile vs `BottomSheetBehavior` qui recouvre sans redimensionner
-le frère ; rideau `jo_rideau`/PIEGE-31 vs le scrim de `DrawerLayout` ;
-zones sans équivalent `MaterialToolbar`) ; `EtatFeuille` reste la
+le frère ; rideau `jo_rideau`/PIEGE-31 vs le scrim de `DrawerLayout` ;
+zones sans équivalent `MaterialToolbar`) ; `EtatFeuille` reste la
 source de vérité. `BarreOnglets` recycle (ListAdapter/DiffUtil par
 `OngletVu`, record pur — plus de `removeAllViews()` à chaque maj, le
 coût est MESURÉ par `OngletVuTest` : activer un autre onglet = 2
@@ -367,22 +433,22 @@ re-liés). La feuille adopte ses trois listes dans SON layout et son
 histogramme logcat se dessine au Canvas (`HistogrammeLogcat`) —
 dernière vue instanciée de la zone, exceptions du filet réduites à
 `VueAgent` (A7). FAB 84/20 en `@dimen` (+13 jetons, parité
-`ThemesM3Test`). Retour système : `OnBackPressedDispatcher` (décision
-13, motif A2-A4, ordre INCHANGÉ ; l'erreur lint `MissingSuperCall`
-disparaît) ; `startActivityForResult` reste sous commentaire de
+`ThemesM3Test`). Retour système : `OnBackPressedDispatcher` (décision
+13, motif A2-A4, ordre INCHANGÉ ; l'erreur lint `MissingSuperCall`
+disparaît) ; `startActivityForResult` reste sous commentaire de
 passation — les contrats `Ecrans.CHOISIR_IMAGE`/`PRENDRE_PHOTO`
-prennent le relais en A7. Reprise d'audit de la session : travail
+prennent le relais en A7. Reprise d'audit de la session : travail
 hérité non committé audité ligne à ligne (mappings des 685 accès
 vérifiés face aux champs d'hier, constantes délocalisées retrouvées),
 correctifs portés — la console différée se monte à la PREMIÈRE
 ouverture de feuille (`FeuilleBasse.Auditeur.surOuverture()` : sinon le
 geste interne montrait un corps vide là où hier la console vivait),
 imports qualifiés nettoyés, commentaire de tiroir corrigé (360 dp,
-ADR-É2). Module : 94 → 84 vues instanciées, `dp(` 261 → 245, 60 → 65
+ADR-É2). Module : 94 → 84 vues instanciées, `dp(` 261 → 245, 60 → 65
 layouts (+1 `w720dp`), 6 `ViewStub`, `Dialogue.` **58 inchangés**, 0
 Compose, APK 15 775 929 → 15 798 411 o (+0,02 Mio — aucune dépendance
-nouvelle), `verifierOmbreApk` vert ; **364 tests verts** (356 + 1 parité
-+ 7 onglets) ; lint : 11 erreurs = 12 d'A5 − `MissingSuperCall`
+nouvelle), `verifierOmbreApk` vert ; **364 tests verts** (356 + 1 parité
++ 7 onglets) ; lint : 11 erreurs = 12 d'A5 − `MissingSuperCall`
 (disparu), aucune nouvelle.
 
 # CHANGES — les vues d'atelier quittent le code : console, aperçu et arbre en layouts, listes recyclées, coût par mise à jour borné (2026-11-19)
@@ -474,18 +540,18 @@ APK 15 649 057 → 15 743 828 o (+0,09 Mio — `Chip` entre à l'APK),
 `verifierOmbreApk` vert ; 344 tests verts (0 échec). Écarts documentés
 au rapport (bouton Créer accent, Retour texte-accent, bannières sans
 icône, rayon recherche 12 uni, segment pilule A3, graisses
-rapprochées, ripple Material). Conformité §6 consolidée en reprise :
+rapprochées, ripple Material). Conformité §6 consolidée en reprise :
 l'élévation 3 dp des cartes (pilote A2) atteint trois consommateurs au
 lot A4 et se FACTORISE en `@dimen/jo_elevation_carte` (cartes projet,
 reprise, modèle — dimension répétée ≥ 3 fois en `@dimen/`).
 
-# CHANGES — les paramètres quittent le code : un layout d'item par genre, bascules et commutateurs Material (2026-11-19)
+# CHANGES — les paramètres quittent le code : un layout d'item par genre, bascules et commutateurs Material (2026-11-19)
 
-**Lot A3 de l'ADR-085** : `EcranParametres` devient une coque mince sur
+**Lot A3 de l'ADR-085** : `EcranParametres` devient une coque mince sur
 `activity_parametres.xml` — barre (retour + titre 20 gras), recherche
-`TextInputLayout`, `NestedScrollView` + `<include>` (décision 11 : liste
+`TextInputLayout`, `NestedScrollView` + `<include>` (décision 11 : liste
 courte et STATIQUE — 6 sections, 21 rangées, la recherche ne fait que
-cacher des rangées ; la carte groupée de la maquette ne s'exprimerait pas
+cacher des rangées ; la carte groupée de la maquette ne s'exprimerait pas
 en liste plate recyclée). Un layout d'item par `Genre` d'`EtatParametres.
 Rangee` (`groupe/segment/stepper/commutateur/nuancier/mesure/action/info`),
 le séparateur de carte vit dans l'item et s'arrête avant la dernière
@@ -495,22 +561,22 @@ case cochée accent 18 % + texte accent, conteneur `fond_bascule` surface
 haute + liseré bord-fin) et `MaterialSwitch` le kit `Interrupteur`
 (`Widget.Jo.Interrupteur` : piste surface haute/réussite 25 %, pouce
 texte3/réussite, liseré bord/réussite 60 % — teintes en `res/color/` par
-`?attr/jo_*`) ; `Stepper` et `Nuancier` restent (sans équivalent Material).
+`?attr/jo_*`) ; `Stepper` et `Nuancier` restent (sans équivalent Material).
 Les corps des dialogues existants (clé, modèle, URL, licences, journal) se
 gonflent depuis `champ_saisie_param.xml`/`page_texte_param.xml` — plus
 AUCUNE vue instanciée dans l'écran (185 → 165 vues dans le module), les
 fabriques `Dialogue.*` attendent A7. Les 3 `recreate()` (thème, accent,
 échelle UI) conservent défilement ET recherche (`onSaveInstanceState` ;
-`saveEnabled="false"` sur le commutateur : l'état de vérité relit
+`saveEnabled="false"` sur le commutateur : l'état de vérité relit
 `Reglages` au montage, une restauration croisée par id dupliqué devient
-impossible). Filet : `ArchitectureVuesTest` retire l'écran de ses
-exceptions ; `ThemesM3Test` gagne la parité des nouveaux jetons (styles,
+impossible). Filet : `ArchitectureVuesTest` retire l'écran de ses
+exceptions ; `ThemesM3Test` gagne la parité des nouveaux jetons (styles,
 teintes, paddings 6/13 de la maquette, titre 20/26) et les sélecteurs
-`res/color` ne portent que des `?attr/jo_*` déclarés ; deux chaînes
+`res/color` ne portent que des `?attr/jo_*` déclarés ; deux chaînes
 orphelines (`parametres_echelle_legende`, `parametres_fils_legende`)
 partent (code mort révélé par la migration, parité values/values-fr
-intacte : 387 = 387). APK 15 581 637 → 15 649 057 o (+0,06 Mio),
-`verifierOmbreApk` vert ; 343 tests verts (0 échec). Écarts documentés au
+intacte : 387 = 387). APK 15 581 637 → 15 649 057 o (+0,06 Mio),
+`verifierOmbreApk` vert ; 343 tests verts (0 échec). Écarts documentés au
 rapport (couleur du vidage m2 posée par l'écran — un seul layout par
 genre, barre transparente comme l'accueil, graisse de la case cochée
 posée au choix, `DuplicateIncludedIds` du lint expliqué).
@@ -562,63 +628,63 @@ propres documents sont conformes.
 
 # CHANGES — la feuille à trois détentes, l'URL par fournisseur, les contrôleurs de l'écran (2026-11-18)
 
-**Corrections demandées** : (1) la feuille basse a ses TROIS détentes
+**Corrections demandées** : (1) la feuille basse a ses TROIS détentes
 partout — le tap de la zone vivante cycle replié → mi → plein →
-replié (avant : barre ↔ mi seulement, le plein n'était atteignable
+replié (avant : barre ↔ mi seulement, le plein n'était atteignable
 que par la poignée de 20 dp), le glissement vertical traîne depuis la
 zone vivante aussi et s'ancre à la détente la plus proche, le fling
-saute une détente ; les balayages horizontaux gardent les sections.
-(2) l'API d'un fournisseur lui est LIÉE : l'URL libre vit pour un
+saute une détente ; les balayages horizontaux gardent les sections.
+(2) l'API d'un fournisseur lui est LIÉE : l'URL libre vit pour un
 fournisseur (ia.url.<fournisseur>, la manière du lot U/7 pour les
-modèles) — une URL OpenRouter ne part plus chez OpenAI ; chez OpenAI,
+modèles) — une URL OpenRouter ne part plus chez OpenAI ; chez OpenAI,
 l'URL globale héritée reste lue.
 
-**L6 poursuivi** : ControleurAgent (1 802 lignes — service, tour,
+**L6 poursuivi** : ControleurAgent (1 802 lignes — service, tour,
 pièces, MCP, sélecteur, usages, historique, permissions, questions),
 ControleurEdition (534 — fichiers ouverts, édition, diagnostics,
 journaux), ControleurFichiers (435 — arbre, menu contextuel,
 création, index) quittent EcranAtelier, corps inchangés, le montage
 et le cycle de vie restent câblés sur les mêmes noms (délégués d'une
-ligne). EcranAtelier : 4 241 → 1 517 lignes.
+ligne). EcranAtelier : 4 241 → 1 517 lignes.
 
-**Le geste des touches** (§3.5, le restant du lot) : flick HAUT sur
-une touche de symboles = la variante (la fermante d'une ouvrante) ;
+**Le geste des touches** (§3.5, le restant du lot) : flick HAUT sur
+une touche de symboles = la variante (la fermante d'une ouvrante) ;
 appui long puis glisser = le trackpad du curseur (14 dp = un
-caractère, SceneEditeur.deplacerCurseur). Le sélecteur de modèle :
+caractère, SceneEditeur.deplacerCurseur). Le sélecteur de modèle :
 la coque vient de popup_modeles.xml + ViewBinding (recherche,
 favoris et récents persistés — l'état reste dans Reglages).
 
-**Restant (franchise)** : la conversion layout-w720dp/atelier.xml —
-le shell de l'écran est encore codé (construireUi, ~550 lignes) ; sa
+**Restant (franchise)** : la conversion layout-w720dp/atelier.xml —
+le shell de l'écran est encore codé (construireUi, ~550 lignes) ; sa
 migration + la variante grand écran est le dernier morceau pour la
 cible « < 500 lignes ». EcranAtelier est à 1 517 lignes.
 
 # CHANGES — L5 le tiroir agent aux bindings + L6 le contrôleur du build (2026-11-18)
 
-**L5 — tiroir agent (layouts + ViewBinding)** : `VueAgent` (1 024
+**L5 — tiroir agent (layouts + ViewBinding)** : `VueAgent` (1 024
 lignes) gonfle désormais `tiroir_agent.xml` + `composeur_agent.xml`
 (en-tête, transcript, ligne d'activité au-dessus du composeur, saisie
 en pilule, envoyer + rangée d'arrêt) et ses cartes depuis les items
 (`item_msg_utilisateur`, `item_msg_agent`, `item_raisonnement`,
 `item_outil`, `item_question`, `item_erreur_agent`) — 1 024 → 824
 lignes, la LOGIQUE 1:1 (plis de réflexion, états d'outil, questions
-tapables, erreurs actionnables). `item_permission` retiré : la
+tapables, erreurs actionnables). `item_permission` retiré : la
 permission inline (diff + Refuser/Appliquer) est un lot FUTUR, la
 permission vit aujourd'hui dans un dialogue — pas de layout mort.
-Reste du lot : `PopupModeles` (recherche + favoris persistés) et
+Reste du lot : `PopupModeles` (recherche + favoris persistés) et
 l'extraction `ControleurAgent` — le sélecteur actuel reste le
 dialogue éprouvé (le fix du 2026-11-17 « le fournisseur se persiste
 au tap » y vit).
 
-**L6 — contrôleur du build + retrait du Dock** : `ControleurBuild`
+**L6 — contrôleur du build + retrait du Dock** : `ControleurBuild`
 (347 lignes) quitte `EcranAtelier` — la chaîne construire →
 constitution → service ou en processus → événements → fin, corps
 inchangés, champs partagés en package-private (même paquet), les
-trois sites d'appel délèguent. `ui/Dock.java` (204 lignes) RETIRÉ :
+trois sites d'appel délèguent. `ui/Dock.java` (204 lignes) RETIRÉ :
 aucune instanciation depuis le lot L3 (« la feuille basse REMPLACE le
-Dock ») ; `majDock` → `majVerdictConsole` (le nom suit la feuille).
+Dock ») ; `majDock` → `majVerdictConsole` (le nom suit la feuille).
 `EcranAtelier` : 4 241 → 3 931 lignes. Reste du lot pour la cible
-« < 500 lignes » : l'extraction `ControleurAgent` (bloc 1831-3205,
+« < 500 lignes » : l'extraction `ControleurAgent` (bloc 1831-3205,
 interlock profond avec l'écran), les contrôleurs fichiers/édition, la
 conversion du grand écran en `layout-w720dp/atelier.xml` (le
 comportement actuel en code reste conforme §3.11).
@@ -626,35 +692,35 @@ comportement actuel en code reste conforme §3.11).
 # CHANGES — ADR-084 + correction du crash du thème des écrans (2026-11-18)
 
 **Le crash du terrain** (« Failed to resolve attribute at index 5 »
-sur `jo_texte` à l'ouverture d'un projet, thème framework) : le
+sur `jo_texte` à l'ouverture d'un projet, thème framework) : le
 manifeste déclare un thème FRAMEWORK et le kit programmatique n'a
 jamais dépendu du thème — tout se peint depuis l'objet palette. Les
 layouts XML des lots L2+ sont les PREMIERS à lire les `?attr/jo_*` :
 sans thème d'application posé avant inflation, la résolution échoue
-au premier TextView. **Le fix** : `GraphiteVue.resTheme(Context)`
+au premier TextView. **Le fix** : `GraphiteVue.resTheme(Context)`
 résout la RESSOURCE de thème depuis les réglages (même résolution que
 `palette()`) et la nouvelle `ActiviteJoide` le pose AVANT toute
-inflation ; les quatre écrans en héritent. Poussé 2b195ba, CI verte.
+inflation ; les quatre écrans en héritent. Poussé 2b195ba, CI verte.
 
-**ADR-084** (`docs/adr/084-relais-logcat-flux-par-apk-signe.md`) : le
+**ADR-084** (`docs/adr/084-relais-logcat-flux-par-apk-signe.md`) : le
 relais de journal du Logcat vit DANS l'APK construit (brique
 `jo.joide:relais-logcat`, ajoutée par l'utilisateur — rien d'injecté
 à l'insu) et pousse ses lots vers le provider IDE
 `joide.logcat` (exporté, permission SIGNATURE
 `joide.permission.RELAIS_LOGCAT` — l'IDE signe l'APK construit,
 ADR-047, donc la frontière d'UID se franchit par la signature).
-Implémenté côté IDE : `RelaisLogcatProvider` (protocole
+Implémenté côté IDE : `RelaisLogcatProvider` (protocole
 `call("ecrire")`, lots « N|Tag|Message »), le tampon thread-safe
 `FluxLogcat` (+ `FluxLogcatTest` : protocole, plafond 400 annoncé,
 lignes mal formées sautées, auditeur notifié), le branchement de la
 section Logcat de l'atelier (tampon → `EtatLogcat` → zone vivante et
-histogramme). La brique utilisateur reste le lot suivant : la section
+histogramme). La brique utilisateur reste le lot suivant : la section
 garde ses états honnêtes (« En attente d'application ») d'ici là.
 
-# CHANGES — Atelier v2, lots L3 et L4 : FeuilleBasse + sections + tiroir fichiers (2026-11-18)
+# CHANGES — Atelier v2, lots L3 et L4 : FeuilleBasse + sections + tiroir fichiers (2026-11-18)
 
-**Lot L3 — la feuille basse et ses quatre sections** (§3.6) :
-1. **`EtatFeuille`** (pur + `EtatFeuilleTest`) : les trois détentes
+**Lot L3 — la feuille basse et ses quatre sections** (§3.6) :
+1. **`EtatFeuille`** (pur + `EtatFeuilleTest`) : les trois détentes
    (replié 72 dp = poignée 20 + en-tête 52 · mi 55 % · plein 90 %),
    le cycle au toucher de poignée, l'ancrage à la détente la plus
    proche, le fling > 1 200 dp/s vers la détente suivante dans le sens
@@ -662,76 +728,76 @@ garde ses états honnêtes (« En attente d'application ») d'ici là.
    journal → logcat → console), `poserDetente` pour l'écran.
 2. **`FeuilleBasse`** (vue liée, `atelier_feuille` +
    `feuille_entete`) REMPLACE le Dock au câblage (le retrait de la
-   classe morte reste au L6) : poignée (cycle, glissement suivi et
+   classe morte reste au L6) : poignée (cycle, glissement suivi et
    ancré, fling), rail de 4 boutons avec badge d'erreurs LSP sur ⚠,
    en-tête UNIQUE à zone vivante (4 variantes, une visible — pas de
    barre de navigation repliée ni de puces de section, doublons
    interdits), tap zone = barre ↔ mi, glissement horizontal > 40 dp =
    section suivante/précédente avec entrée glissée 14 dp + fondu
    (220 ms), corps (barre d'outils + contenu posé par l'écran).
-3. **États purs des sections** : `EtatProblemes` (groupes par fichier,
+3. **États purs des sections** : `EtatProblemes` (groupes par fichier,
    compteurs ✕/▲, première erreur du fichier ACTIF, saut « problème
    suivant » avec bouclage et erreurs seules), `EtatJournal` (sources
    INDEX/SYNC/AGENT/MCP/BUILD, plafond 400 ANNONCÉ, filtres de
    niveau), `EtatLogcat` (plafond 400, pause, filtre tag/texte,
    HISTOGRAMME du débit 9 barres avec barres d'erreur) — chacun avec
    ses tests (`SectionsFeuilleTest`).
-4. **Vues de sections** : `ListeProblemes` (items `item_probleme`,
+4. **Vues de sections** : `ListeProblemes` (items `item_probleme`,
    groupées par fichier, tap = ouvrir à la ligne + replier),
    `ListeJournal` (`item_ligne_journal`, source accent/MCP alerte/
    erreur rouge), `ListeLogcat` (`item_ligne_logcat`, colorée par
    niveau, scrolle en bas). La CONSOLE reste la VueConsole existante.
-5. **La source LSP** : `SceneEditeur` expose ses diagnostics BRUTS
+5. **La source LSP** : `SceneEditeur` expose ses diagnostics BRUTS
    (`poserAuditeurDiagnosticsEcran`) — l'atelier alimente
    `EtatProblemes`, le badge du rail et la zone vivante (✕ n ▲ n ou
    « Aucun problème », franchement).
-6. **Le journal de l'IDE** reçoit des événements RÉELS : INDEX au
+6. **Le journal de l'IDE** reçoit des événements RÉELS : INDEX au
    montage du projet, BUILD au démarrage du service — la zone vivante
    suit (heure, chiffres).
-7. **FAB réancré** (§3.7) : bas = 84 dp (feuille repliée 72 + 12) ;
+7. **FAB réancré** (§3.7) : bas = 84 dp (feuille repliée 72 + 12) ;
    il disparaît dès que la feuille dépasse la barre OU que le clavier
    sort (insets du cadre).
-8. **Écart écrit** : le relais de journal pour le Logcat (l'appli de
+8. **Écart écrit** : le relais de journal pour le Logcat (l'appli de
    l'utilisateur est un autre UID — fournisseur de contenu ou socket
-   local, §3.6 « à trancher dans l'ADR ») est SON lot : la section
+   local, §3.6 « à trancher dans l'ADR ») est SON lot : la section
    porte d'ores et déjà ses états honnêtes (« Application non lancée »)
-   et l'état pur est complet ; le flick haut et le trackpad de curseur
+   et l'état pur est complet ; le flick haut et le trackpad de curseur
    de la barre de symboles restent à câbler.
 
-**Lot L4 — le tiroir fichiers** (§3.8) :
+**Lot L4 — le tiroir fichiers** (§3.8) :
 1. **`tiroir_fichiers.xml`** + vue liée `ui/atelier/TiroirFichiers` :
    PAS de rangée projet (le nom vit dans la barre supérieure — aucun
-   doublon) ; le sélecteur attend qu'une deuxième section soit réelle
-   (franchise §3.8 : un simple titre « Fichiers ») ; actions 34×34
+   doublon) ; le sélecteur attend qu'une deuxième section soit réelle
+   (franchise §3.8 : un simple titre « Fichiers ») ; actions 34×34
    RÉELLES — nouveau fichier/dossier (dialogues existants), tout
    réduire (les dossiers ouverts se ferment), localiser le fichier
-   actif (les ancêtres s'ouvrent, le filtre se lève) ; champ de
+   actif (les ancêtres s'ouvrent, le filtre se lève) ; champ de
    filtre 36 dp rayon 12.
-2. **Le filtre est PUR** : `Arborescence.cheminsFiltres` (nom contient
+2. **Le filtre est PUR** : `Arborescence.cheminsFiltres` (nom contient
    le filtre, insensible à la casse) + `ancetresDe` —
-   `SectionsFeuilleTest` le couvre ; l'arbre filtré se montre déplié.
+   `SectionsFeuilleTest` le couvre ; l'arbre filtré se montre déplié.
 3. **Les lignes de l'arbre se gonflent depuis `item_noeud.xml`**
-   (§2 : plus de construction programmatique dans les listes) —
+   (§2 : plus de construction programmatique dans les listes) —
    pastilles de type v2 (J ambre / K violet / ‹› réussite / ⚙
    accent / dossier glyphe texte2), barre active 3 dp accent inset 9,
    puce « build #… en cours » sur les sorties en construction.
-4. **Le menu contextuel** (appui long, §3.8) porte des VERBES RÉELS :
+4. **Le menu contextuel** (appui long, §3.8) porte des VERBES RÉELS :
    nouveau fichier/dossier ici, dupliquer (« (copie) » via
    Files.copy), renommer (Files.move + validation NouveauNom),
    supprimer (confirmation, suppression récursive, l'onglet ouvert se
    ferme) — PopupAncre.ligneMenu, jamais un item mort.
 
-**Commit unique L2+L3+L4** : le câblage d'EcranAtelier est entrelacé
+**Commit unique L2+L3+L4** : le câblage d'EcranAtelier est entrelacé
 (les mêmes blocs portent les migrations des trois lots) — un commit
-par lot casserait la compilation intermédiaire ; les trois lots
+par lot casserait la compilation intermédiaire ; les trois lots
 arrivent ensemble, vérifiés ensemble.
 
-# CHANGES — Atelier v2, lot L2 : barre supérieure, onglets, fil d'Ariane, barre de symboles — XML + ViewBinding (2026-11-18)
+# CHANGES — Atelier v2, lot L2 : barre supérieure, onglets, fil d'Ariane, barre de symboles — XML + ViewBinding (2026-11-18)
 
 **Ce que le lot migre** (§3.1-3.5 du prompt, maquette
-`docs/ecrans/design/atelier-v2.html` — 1 px = 1 dp) :
+`docs/ecrans/design/atelier-v2.html` — 1 px = 1 dp) :
 
-1. **Barre supérieure** (52 dp) : `res/layout/atelier_barre_haut.xml`
+1. **Barre supérieure** (52 dp) : `res/layout/atelier_barre_haut.xml`
    + vue liée `ui/atelier/BarreHaut` — ☰ ouvre le tiroir fichiers
    (le bouton dossier de l'ancien code disparaît, l'ordre ADR-É5
    garde le retour système), identité au centre (nom 16/20 + puce « n
@@ -739,7 +805,7 @@ arrivent ensemble, vérifiés ensemble.
    avec point d'activité 8 dp (visible UNIQUEMENT pendant un tour,
    §3.1), ⋮ ouvre le menu. « Retour accueil » passe dans ⋮ (§3.1) —
    l'écran continue de le servir par le menu existant.
-2. **Onglets** (bande 40 dp) : `atelier_onglets.xml` + `item_onglet.xml`
+2. **Onglets** (bande 40 dp) : `atelier_onglets.xml` + `item_onglet.xml`
    + vue liée `ui/atelier/BarreOnglets` — pastilles de type tonales
    (J ambre / K violet / ‹› réussite / ⚙ accent), point d'état
    7 dp (erreur prioritaire), indicateur 2 dp accent inset 10 dp,
@@ -747,70 +813,70 @@ arrivent ensemble, vérifiés ensemble.
    bouton d'aperçu à droite (téléphone). L'état des onglets quitte le
    widget `Onglets` pour le modèle PUR `atelier/ModeleOnglets`
    (ouvrir/activer/fermer avec report au voisin de gauche/
-   fermerAutres) ; `EtatAtelier` reste le propriétaire, la vue lit.
-3. **Fil d'Ariane** (28 dp) : `atelier_fil_ariane.xml` +
+   fermerAutres) ; `EtatAtelier` reste le propriétaire, la vue lit.
+3. **Fil d'Ariane** (28 dp) : `atelier_fil_ariane.xml` +
    `ui/atelier/FilAriane` — segments texte2 séparés par « › », le
    dernier en couleur fonction. Le découpage chemin→segments est PUR
    (`FormateurFilAriane.segmentsDepuisChemin` : module › paquet ›
-   classe) ; le symbole du curseur arrivera au lot L3 avec la source
-   LSP (absent aujourd'hui : le fil s'arrête à la classe, franchement).
-4. **Barre de symboles** (42 dp) : `atelier_barre_symboles.xml` +
+   classe) ; le symbole du curseur arrivera au lot L3 avec la source
+   LSP (absent aujourd'hui : le fil s'arrête à la classe, franchement).
+4. **Barre de symboles** (42 dp) : `atelier_barre_symboles.xml` +
    `item_touche.xml` + `ui/atelier/BarreSymboles` — VISIBLE seulement
    quand le clavier est affiché (détecteur d'insets du CADRE, pas
-   d'AndroidX) ; touches gonflées depuis le modèle PUR
+   d'AndroidX) ; touches gonflées depuis le modèle PUR
    `ModeleBarreSymboles` (Tab poids 1,6 accent, paires fermées
-   automatiquement par insertion intelligente) ; l'insertion passe par
+   automatiquement par insertion intelligente) ; l'insertion passe par
    l'InputConnection RÉELLE du EditorView celéris
    (`onCreateInputConnection`, fabrique légitime de la vue). Le « ⋯ »
-   bascule vers la rangée d'actions à VERBES RÉELS : « Commenter »
+   bascule vers la rangée d'actions à VERBES RÉELS : « Commenter »
    (// en tête de ligne) et « Dupliquer la ligne » via batch
-   InputConnection ; « problème suivant » rejoindra au lot L3 avec la
-   source LSP (franchise : jamais un bouton mort). Le flick haut et
+   InputConnection ; « problème suivant » rejoindra au lot L3 avec la
+   source LSP (franchise : jamais un bouton mort). Le flick haut et
    le trackpad de curseur restent à câbler (L3-L4, §3.5).
-5. **Kit en XML** : `Icone` lit `jo_icone_glyphe` (nouveau glyphe
+5. **Kit en XML** : `Icone` lit `jo_icone_glyphe` (nouveau glyphe
    `menu`) et `jo_icone_couleur` (`?attr/jo_*` exclusivement, défaut
    texte2) dans son constructeur `(Context, AttributeSet)` ;
    `Puce`/`Pilule`/`Fab` déjà conformes.
-6. **Jetons** : les 4 teintes de pastilles (16 % ambre/violet,
+6. **Jetons** : les 4 teintes de pastilles (16 % ambre/violet,
    14 % réussite, 12 % accent sur le puits) entrent dans
-   `colors.xml` + `attrs.xml` + les deux thèmes (clair compris) ;
+   `colors.xml` + `attrs.xml` + les deux thèmes (clair compris) ;
    `JetonsXmlTest` vérifie les mélanges recalculés.
 
-**Tests JVM** : `ModelesAtelierV2Test` (badges, ouverture/fermeture
+**Tests JVM** : `ModelesAtelierV2Test` (badges, ouverture/fermeture
 avec report d'actif, fermerAutres, points d'état, découpage du fil
 d'Ariane, ordre des touches, insertion intelligente, variantes flick).
 
-**Écarts écrits** (critères §5) : le symbole du curseur du fil
-d'Ariane et « problème suivant » attendent la source LSP (L3) ; les
+**Écarts écrits** (critères §5) : le symbole du curseur du fil
+d'Ariane et « problème suivant » attendent la source LSP (L3) ; les
 gestes flick/trackpad de la barre de symboles sont câblés aux lots
-suivants ; les écrans RESTANTS (`puitsCompact`, `Dock`, tiroirs) se
+suivants ; les écrans RESTANTS (`puitsCompact`, `Dock`, tiroirs) se
 migrent aux lots L3-L6 — le critère « zéro new LinearLayout » porte
-sur les zones migrées de ce lot (fait : `barreSuperieure()` et la
+sur les zones migrées de ce lot (fait : `barreSuperieure()` et la
 bande d'onglets programmatiques sont SUPPRIMÉES d'EcranAtelier).
 
-# CHANGES — Lot XXI/b : le pack bundletool est AUTOSUFFISANT — protobuf et guava dans le pack versionné (2026-11-18)
+# CHANGES — Lot XXI/b : le pack bundletool est AUTOSUFFISANT — protobuf et guava dans le pack versionné (2026-11-18)
 
-**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
+**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
 resolution of: Lcom/google/protobuf/GeneratedMessageV3; » — le lot
-XXI/a tient (`ApkWriter` se résout : la progression est réelle), le
-mur est maintenant traversé et l'échec s'est déplacé DANS le pack :
+XXI/a tient (`ApkWriter` se résout : la progression est réelle), le
+mur est maintenant traversé et l'échec s'est déplacé DANS le pack :
 son adaptateur charge bundletool, bundletool touche protobuf, et le
 pack ne porte ni protobuf ni guava.
 
-**La cause, mesurée** : le pack publié `bundletool-1.18.3.dex.zip`
+**La cause, mesurée** : le pack publié `bundletool-1.18.3.dex.zip`
 (5 039 808 octets, épinglé) définit 15 663 classes — bundletool SEUL.
 Les 60 descripteurs `com/google/protobuf/*` des dex n'étaient que des
-RÉFÉRENCES ; `dexdump` montre ZÉRO définition de
+RÉFÉRENCES ; `dexdump` montre ZÉRO définition de
 `GeneratedMessageV3` et ZÉRO définition d'`ImmutableList` (guava
 absente aussi). Le chemin bundle étant nouveau, l'omission n'avait
-jamais explosé. Consultation CodeAssist (tyron12233) : les outils
+jamais explosé. Consultation CodeAssist (tyron12233) : les outils
 voyagent toujours avec la TOTALITÉ de leurs dépendances (leur
 `SharedDexClasspath`/`DexRepository` ne séparent jamais un outil de
 ses deps) — la doctrine du dépôt le disait déjà (le pack Kotlin porte
-STAX et le jar stdlib) : **un pack est autosuffisant**.
+STAX et le jar stdlib) : **un pack est autosuffisant**.
 
-**Les corrections** :
-1. `scripts/fabrique-pack-bundletool.sh` (dans le dépôt) : jar
+**Les corrections** :
+1. `scripts/fabrique-pack-bundletool.sh` (dans le dépôt) : jar
    bundletool purifié (D8 refuse son archive mixte — des dex de
    fixtures de test sous `archive/dex/*/`), d8 sur bundletool + TOUTES
    les deps runtime du POM (guava 32.0.1-jre, protobuf-java 3.22.3,
@@ -828,45 +894,45 @@ STAX et le jar stdlib) : **un pack est autosuffisant**.
    succès pour un échec lors de la vérification des marqueurs).
 
 **Anticipation des prochaines erreurs de la série** (recherches
-étendues demandées) : les DEUX commandes bundletool (`BuildBundle`,
-`ValidateBundle`) sont définies dans le pack ✓ ; le chemin R8
+étendues demandées) : les DEUX commandes bundletool (`BuildBundle`,
+`ValidateBundle`) sont définies dans le pack ✓ ; le chemin R8
 (fat jar, deps relocalisées) et le chemin Kotlin (STAX + stdlib
 embarqués) sont autosuffisants de fait et prouvés sur l'appareil par
-les lots précédents ✓ ; l'adaptateur du pack ne référence plus que
+les lots précédents ✓ ; l'adaptateur du pack ne référence plus que
 l'interface SPI + `packaging.ApkWriter`, tous deux gardés non
-renommés dans l'APK par XXI/a ✓ ; le résolveur parent-d'abord rend
+renommés dans l'APK par XXI/a ✓ ; le résolveur parent-d'abord rend
 toute collision guava APK (33.x) / pack (32.0.1) bénigne (ABI
 compatible, le pack n'utilise guava que via les API stables).
 
-# CHANGES — Atelier v2, lot L1 : ADR-083 ViewBinding + jetons XML + thème + icônes (2026-11-18)
+# CHANGES — Atelier v2, lot L1 : ADR-083 ViewBinding + jetons XML + thème + icônes (2026-11-18)
 
 **Le chantier** (prompt `prompt-agent-atelier-v2.md`, maquette
-contractuelle `docs/ecrans/design/atelier-v2.html`, 370 dp, 1 px = 1 dp) :
+contractuelle `docs/ecrans/design/atelier-v2.html`, 370 dp, 1 px = 1 dp) :
 l'atelier passe à de **vrais layouts XML + ViewBinding** pour toute
 l'application, en six lots L1-L6. Le lot L1 pose les fondations —
 aucun écran migré encore, aucun comportement changé.
 
-**Ce que le lot pose** :
-1. **ADR-083** (`docs/adr/083-atelier-v2-layouts-viewbinding.md`) :
+**Ce que le lot pose** :
+1. **ADR-083** (`docs/adr/083-atelier-v2-layouts-viewbinding.md`) :
    amendement de « zéro AndroidX » (docs/ecrans/002-systeme-design.md)
    pour la SEULE dépendance `androidx.databinding:viewbinding`
    (Apache-2.0, `NOTICE` + `docs/third-party.md`) — bibliothèque de
    liaison sans composant d'UI, classes `*Binding` générées depuis
    nos layouts. L'« ADR-067 » du prompt (rédigé contre son propre
-   arbre) devient ADR-083 ici. Divergence tranchée et ancrée : le
+   arbre) devient ADR-083 ici. Divergence tranchée et ancrée : le
    prompt cite « texte sur réussite #06210F / accent #0B1426 »,
    `Graphite` porte `#07130C` / `#0B1424` — Graphite source de
    vérité (§1 du prompt), le test l'égalise.
-2. **`viewBinding = true`** (app-android) — aucun layout encore :
+2. **`viewBinding = true`** (app-android) — aucun layout encore :
    zéro classe générée, zéro risque.
-3. **Jetons XML** : `res/values/colors.xml` (palette sombre ET claire
-   + tonaux calculés : 12 % sur la surface, 14 % erreur/alerte, ligne
+3. **Jetons XML** : `res/values/colors.xml` (palette sombre ET claire
+   + tonaux calculés : 12 % sur la surface, 14 % erreur/alerte, ligne
    courante 7 % sur le puits), `res/values/attrs.xml` (les `?attr/jo_*`
    — les layouts ne liront JAMAIS une couleur directe),
    `res/values/themes.xml` (`Theme.JoIDE.Sombre` / `Theme.JoIDE.Clair`,
    parent `android:Theme.Material.NoActionBar` du cadre).
-4. **`JetonsXmlTest`** (4 tests JVM) : chaque jeton de colors.xml
-   égale `Graphite.sombre()`/`clair()` ; les tonaux se recalculent ;
+4. **`JetonsXmlTest`** (4 tests JVM) : chaque jeton de colors.xml
+   égale `Graphite.sombre()`/`clair()` ; les tonaux se recalculent ;
    les thèmes posent CHAQUE attribut déclaré et ne référencent que
    des couleurs existantes — les deux représentations ne peuvent
    plus diverger.
@@ -875,87 +941,87 @@ aucun écran migré encore, aucun comportement changé.
    options, fermer, rail de sections (console/problèmes/journal/
    logcat), FAB, envoi, arrêt, tiroirs, recherche, étoile, historique.
 
-**La suite** : L2 (barre supérieure, onglets, fil d'Ariane, barre de
+**La suite** : L2 (barre supérieure, onglets, fil d'Ariane, barre de
 symboles) → L3 (FeuilleBasse + sections + relais Logcat) → L4 (tiroir
 fichiers) → L5 (tiroir agent) → L6 (extraction des contrôleurs,
 EcranAtelier < 500 lignes, grand écran).
 
-# CHANGES — Lot XXI : le mur de chargeurs garde ses noms — l'APK ne renomme plus ce que le pack bundletool lie (2026-11-18)
+# CHANGES — Lot XXI : le mur de chargeurs garde ses noms — l'APK ne renomme plus ce que le pack bundletool lie (2026-11-18)
 
-**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
+**Le terrain** : « app:bundle[debug] : NoClassDefFoundError: Failed
 resolution of: Ljo/joide/build/android/packaging/ApkWriter; » — le
-build passe la compilation Kotlin (le lot XX/h tient : 8 tâches
+build passe la compilation Kotlin (le lot XX/h tient : 8 tâches
 exécutées, 5 à jour) et meurt à l'assemblage du bundle, SUR
 L'APPAREIL seulement.
 
-**La cause** : l'adaptateur `BundletoolAssembler` vit DANS le pack
+**La cause** : l'adaptateur `BundletoolAssembler` vit DANS le pack
 bundletool (jeu de sources `tools`, dexé dans l'archive publiée) et
 charge PAR NOM à travers le chargeur parent. Depuis le refactor de
 l'écrivain zip aligné, il référence `packaging.ApkWriter` — une
 classe du moteur. Dans l'APK minifié (les DEUX variantes le sont,
 doctrine lot VIII), R8 garde la classe (PackageTask l'atteint
-statiquement) mais la RENOMME : le pack, lui, lie le nom original →
+statiquement) mais la RENOMME : le pack, lui, lie le nom original →
 `Failed resolution`. Au bureau et en CI, l'adaptateur charge du
 classpath complet où tout porte son nom — d'où le vert partiel.
 C'est exactement la raison d'être des règles `-keep` de
 `dex.**`/`bundle.**`/`sign.**` : `packaging.**` manquait à l'appel.
 
-**Les corrections** :
+**Les corrections** :
 1. `-keep class jo.joide.build.android.packaging.** { *; }`
    (app-android/proguard-rules.pro, raison documentée).
-2. Sondes `verifierOmbreApk` complétées : `ApkWriter`,
+2. Sondes `verifierOmbreApk` complétées : `ApkWriter`,
    `ApkWriter$Entry`, `BundleAssembler`, `BundleAssembler$BaseModule`
    doivent exister SOUS LEUR NOM dans le dex de l'APK.
-3. **`MurEtancheTest`** (nouveau, build-android) : dérive la surface
+3. **`MurEtancheTest`** (nouveau, build-android) : dérive la surface
    gardée DES règles -keep elles-mêmes et vérifie que chaque
    référence `jo.joide.*` du jeu de sources `tools` y tombe — un
    nouvel import hors surface échoue AU BUREAU, plus jamais sur
    l'appareil.
 
-**La preuve** : build-android vert (dont MurEtancheTest) ; la CI
+**La preuve** : build-android vert (dont MurEtancheTest) ; la CI
 (le workflow apk exécute désormais `verifierOmbreApk` après
 l'assemblage) vérifie sur l'APK minifié que les quatre types
 sont présents sous leur nom dans le dex — la reproduction locale
 a buté sur les limites de débit de Maven Central (429), pas sur
 le code.
 
-# CHANGES — Lot XX/h : la doctrine CodeAssist — le R.jar n'entre plus dans le classpath de kotlinc (2026-11-18)
+# CHANGES — Lot XX/h : la doctrine CodeAssist — le R.jar n'entre plus dans le classpath de kotlinc (2026-11-18)
 
-**Le terrain** : « Classpath entry points to a non-existent location:
+**Le terrain** : « Classpath entry points to a non-existent location:
 app/r.jar » survit aux lots XX/d (bytecode), XX/e (reset ouvrière),
 XX/f (jar standard) et XX/g (le moteur regarde le disque — les sorties
 manquantes se restaurent maintenant). Sur directive, consultation de
-CodeAssist (tyron12233/CodeAssist, AndroidBuildSystem.kt) :
+CodeAssist (tyron12233/CodeAssist, AndroidBuildSystem.kt) :
 
 > `// The Java compile resolves R from the generated R.jar
 > (Kotlin keeps resolving it from R.java source).`
 > `val compileClasspath = kotlinClasspath + listOf(layout.rJar) + …`
 
-**CodeAssist ne met JAMAIS le R.jar dans le classpath Kotlin** : le
+**CodeAssist ne met JAMAIS le R.jar dans le classpath Kotlin** : le
 jar nourrit la compilation Java, le dexage et la preview — le
 compilateur Kotlin résout `R` depuis les SOURCES R.java générées,
 passées comme fichiers de résolution. Pour kotlinc, aucun jar à
-ouvrir : l'erreur devient structurellement impossible. joide, lui,
+ouvrir : l'erreur devient structurellement impossible. joide, lui,
 poussait le r.jar dans les DEUX classpaths (upstreamJava ET
 upstreamKotlin).
 
-**Les corrections** :
-1. `ClasspathEntry.Kind.EXTERNAL_R` (build-jvm) : le R.jar du module
+**Les corrections** :
+1. `ClasspathEntry.Kind.EXTERNAL_R` (build-jvm) : le R.jar du module
    — classpath de la compilation Java, empreinte PARTOUT (le
    manifeste ABI invalide toujours le Kotlin quand R change).
 2. `IncrementalJvmCompile.compileRequest` : l'entrée EXTERNAL_R SAUTE
    le -classpath quand `language` vaut « kotlin » — la requête Kotlin
    ne voit plus jamais le jar.
-3. `AndroidTaskFactory` : `rEntry` passe à EXTERNAL_R ; les racines
+3. `AndroidTaskFactory` : `rEntry` passe à EXTERNAL_R ; les racines
    de résolution Kotlin (`javaRootsKotlin`) gagnent le gen du module
    (`android/<name>/gen`, les R.java d'aapt2) — `KotlinArgs` passe
    chaque fichier .java individuellement, `R` se résout depuis la
    source, la manière CodeAssist.
-4. `RJarResolutionSourceTest` (nouveau, 3 tests) : la requête Kotlin
-   ne porte pas le jar et porte le gen ; la requête Java garde le
-   jar ; l'empreinte Kotlin regarde toujours `r.abi.manifest`.
+4. `RJarResolutionSourceTest` (nouveau, 3 tests) : la requête Kotlin
+   ne porte pas le jar et porte le gen ; la requête Java garde le
+   jar ; l'empreinte Kotlin regarde toujours `r.abi.manifest`.
 
-**La preuve** : les pipelines Android (vrais compilateurs, Kotlin
+**La preuve** : les pipelines Android (vrais compilateurs, Kotlin
 référençant `R` intra- et inter-module) passent SANS aucun jar R
 dans le classpath kotlinc — build-jvm 68, build-android et
 build-daemon verts.
@@ -963,24 +1029,24 @@ build-daemon verts.
 | Zone | Fichiers | Nature du changement |
 |---|---|---|
 | build-jvm | `ClasspathEntry` | `Kind.EXTERNAL_R` ; `isModule` au doigt |
-| build-jvm | `IncrementalJvmCompile` | le saut EXTERNAL_R côté Kotlin ; `compileRequest` visible pour les tests |
-| build-android | `AndroidTaskFactory` | `rEntry` EXTERNAL_R ; `javaRootsKotlin` (+gen) |
+| build-jvm | `IncrementalJvmCompile` | le saut EXTERNAL_R côté Kotlin ; `compileRequest` visible pour les tests |
+| build-android | `AndroidTaskFactory` | `rEntry` EXTERNAL_R ; `javaRootsKotlin` (+gen) |
 | build-jvm | `RJarResolutionSourceTest` | la doctrine vérifiée au niveau requête |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/g : le moteur regarde le disque — un « Clean » qui garde le store ne condamne plus les builds (2026-11-18)
+# CHANGES — Lot XX/g : le moteur regarde le disque — un « Clean » qui garde le store ne condamne plus les builds (2026-11-18)
 
-**Le terrain** : l'erreur « Classpath entry points to a non-existent
+**Le terrain** : l'erreur « Classpath entry points to a non-existent
 location: app/r.jar » résiste aux lots XX/d (bytecode R), XX/e (le
 reset de l'ouvrière à la frontière de build) et XX/f (le jar standard
 du JDK) — TOUS trois utiles, AUCUN décisif. L'explication qui tient
-toutes les observations : la persistance à travers des ouvrières
+toutes les observations : la persistance à travers des ouvrières
 fraîches et des octets neufs.
 
-**La cause** : le raccourci « tout à jour » du MOTEUR ne regarde
+**La cause** : le raccourci « tout à jour » du MOTEUR ne regarde
 jamais le disque. Les racines de sorties ne portent pas de
 comptabilité de suppression (le daemon vide leur ensemble sale en
-dur : « les sorties relisent fraîches ») — `outputsTouched` ne peut
+dur : « les sorties relisent fraîches ») — `outputsTouched` ne peut
 jamais s'allumer pour OUT, et le verdict à-jour tombe sur la seule
 empreinte. Dès qu'un « Clean » (ou tout effacement de l'arbre `out/`)
 épargne le store, generateRJar est « à jour » POUR TOUJOURS, r.jar
@@ -989,24 +1055,24 @@ commentaire de RJarTask (« la restauration du cache doit le remettre
 sur le disque ») décrivait une intention que le court-circuit
 à-jour empêchait d'atteindre.
 
-**Les corrections** (core-tasks/BuildEngine) :
+**Les corrections** (core-tasks/BuildEngine) :
 1. `outputsPresentOnDisk(task)` : toute sortie DÉCLARÉE doit exister
-   sur le disque — le disque reste la vérité ; quelques syscalls par
+   sur le disque — le disque reste la vérité ; quelques syscalls par
    tâche à-jour, négligeable devant le coût d'un faux « à jour ».
 2. Le raccourci « tout à jour » (`tryHotNoChangePass`) casse et tombe
    dans le chemin complet dès qu'une sortie déclarée manque.
-3. Le chemin complet : le hit à-jour exige `outputsPresent` — les
+3. Le chemin complet : le hit à-jour exige `outputsPresent` — les
    sorties manquantes tombent dans la restauration du cache (le
    comment de RJarTask devient vrai) ou, cache purgé, dans la
    réexécution.
-4. `silentlyCleanedOutputsRestoreWithoutHints` (nouveau test) : la
+4. `silentlyCleanedOutputsRestoreWithoutHints` (nouveau test) : la
    suppression SANS hint — exactement ce que le daemon passe — se
-   restaure ; l'ancien test `cleanedOutputsRestoreFromCache` portait
+   restaure ; l'ancien test `cleanedOutputsRestoreFromCache` portait
    des hints explicites que le daemon ne fournit jamais.
 
-**La preuve** : core-tasks 50/50 vert — le test reproduit d'abord le
+**La preuve** : core-tasks 50/50 vert — le test reproduit d'abord le
 bug au bureau (UP_TO_DATE sur sortie supprimée, comme sur l'appareil),
-puis passe avec le fix : FROM_CACHE, le fichier est de retour.
+puis passe avec le fix : FROM_CACHE, le fichier est de retour.
 
 | Zone | Fichiers | Nature du changement |
 |---|---|---|
@@ -1014,27 +1080,27 @@ puis passe avec le fix : FROM_CACHE, le fichier est de retour.
 | core-tasks | `BuildEngineTest` | le test SANS hints reproduit le terrain et passe |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/f : le R.jar au jar STANDARD du JDK — les octets, pas le cache (2026-11-18)
+# CHANGES — Lot XX/f : le R.jar au jar STANDARD du JDK — les octets, pas le cache (2026-11-18)
 
-**Le terrain** : la même erreur après le lot XX/e (« Classpath entry
+**Le terrain** : la même erreur après le lot XX/e (« Classpath entry
 points to a non-existent location: app/r.jar » + « Unresolved
-reference 'R' ») — et un fait capital : le logcat porte le
+reference 'R' ») — et un fait capital : le logcat porte le
 DÉMARRAGE d'une VM dalvikvm64 fraîche (l'ouvrière re-forkée par le
 reset du lot XX/e) — l'erreur était donc sur une ouvrière NEUVE.
 
-**La cause** : les OCTETS du jar. `JarWriter` sortait un zip d'APK
+**La cause** : les OCTETS du jar. `JarWriter` sortait un zip d'APK
 via `ApkWriter` (entrées STORED alignées pour l'mmap de
 resources.arsc, en-têtes écrits à la main) — le R.jar n'a JAMAIS
 besoin de ces propriétés (il n'est ni installé ni mmapé, il ne sert
 qu'aux compilations ecj/kotlinc et au hachage ABI) — et sur ART le
 ZipFile du compilateur (libziparchive) est PLUS STRICT que le bureau
-sur un zip aux particularités d'APK : un jar qu'il n'ouvre pas, kotlinc
+sur un zip aux particularités d'APK : un jar qu'il n'ouvre pas, kotlinc
 le nomme « Classpath entry points to a non-existent location » puis
 « Unresolved reference 'R' ». Le bureau lisait ces octets (java.util.zip
 tolérant) — d'où des tests verts et un terrain rouge.
 
-**Les corrections** :
-1. `JarWriter` réécrit au jar STANDARD du JDK : `JarOutputStream`,
+**Les corrections** :
+1. `JarWriter` réécrit au jar STANDARD du JDK : `JarOutputStream`,
    META-INF/MANIFEST.MF (la manière CodeAssist — un jar porte son
    manifeste même sans classes), entrées triées, compression
    standard, horodatage fixe (la déterminisme pour le hachage ABI).
@@ -1043,18 +1109,18 @@ tolérant) — d'où des tests verts et un terrain rouge.
 2. `KotlinForkedDriver` : les entrées de classpath absentes du disque
    se NOMMENT avant la requête (code `classpath.missing`, un
    diagnostic par chemin) — plus jamais le vague kotlinc.
-3. `RJarForkedReadTest` (nouveau, paquet tasks) : la chaîne RÉELLE
+3. `RJarForkedReadTest` (nouveau, paquet tasks) : la chaîne RÉELLE
    (R.java aapt2 → `RBytecode.parse` → `RBytecode.emettre` →
    `JarWriter.write`) sert une compilation Kotlin PAR LA FOURCHE
    (ouvrière `java`, le même chemin que `dalvikvm64`), le jar est
    RÉÉCRIT avec un NOUVEAU symbole sous le même chemin et la MÊME
    ouvrière relit le neuf — le flux terrain complet. Audit
-   structurel au passage : `JarFile` ouvre, le manifeste vit.
-4. Diagnostic testé : une entrée de classpath fantôme échoue NOMMÉE
+   structurel au passage : `JarFile` ouvre, le manifeste vit.
+4. Diagnostic testé : une entrée de classpath fantôme échoue NOMMÉE
    (code `classpath.missing`), sans fourche ni pack.
 
-**La preuve** : build-android vert — le jar standard se lit par la
-fourche, R se résout, la réécriture se relit ; l'ouvrière du
+**La preuve** : build-android vert — le jar standard se lit par la
+fourche, R se résout, la réécriture se relit ; l'ouvrière du
 lot XX/e reste utile (la frontière de build garde un état frais
 garanti quel que soit le JAR FS d'ART).
 
@@ -1065,33 +1131,33 @@ garanti quel que soit le JAR FS d'ART).
 | build-android | `RJarForkedReadTest` | la chaîne réelle lue PAR LA FOURCHE + réécriture + relecture + l'audit structurel |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/e : la frontière de build tue l'ouvrière Kotlin — le R.jar des builds suivants redevient lisible (2026-11-18)
+# CHANGES — Lot XX/e : la frontière de build tue l'ouvrière Kotlin — le R.jar des builds suivants redevient lisible (2026-11-18)
 
-**Le terrain** : « :app:compileKotlin : Classpath entry points to a
+**Le terrain** : « :app:compileKotlin : Classpath entry points to a
 non-existent location: app/r.jar » + « Unresolved reference 'R' » —
 le PREMIER build appareil qui a jamais atteint compileKotlin (les
-trois terrains précédents mouraient tous à generateRJar ; le chemin
+trois terrains précédents mouraient tous à generateRJar ; le chemin
 Kotlin+R.jar n'avait JAMAIS été couvert par le bureau).
 
-**La cause** : l'ouvrière Kotlin PERSISTE par espace de travail (le
+**La cause** : l'ouvrière Kotlin PERSISTE par espace de travail (le
 lot VII) et le JAR FS de kotlinc GARDE les snapshots des jars du
 classpath ouverts — le r.jar RÉÉCRIT sous le même chemin (chaque
-generateRJar, replace-existing) rend l'ancien snapshot caduc ; la
+generateRJar, replace-existing) rend l'ancien snapshot caduc ; la
 compilation d'un build suivant lit un jar « non-existent » et résout
-plus R. Le bureau ne reproduisait RIEN : ses tempdirs sont jetables,
+plus R. Le bureau ne reproduisait RIEN : ses tempdirs sont jetables,
 jamais deux builds sur le même workspace.
 
-**Les corrections** :
+**Les corrections** :
 1. `KotlinForkedDriver.reinitialiser()` (nouveau) — appelé par
-   `BuildRunner.run` À LA FRONTIÈRE de chaque build : l'ouvrière
+   `BuildRunner.run` À LA FRONTIÈRE de chaque build : l'ouvrière
    re-fourche à la première compilation, état frais, snapshot JAR FS
    vierge. Idempotent.
-2. `KotlinCompilerDriver.stdlibEmbarquee()` (nouveau) : le pilote
+2. `KotlinCompilerDriver.stdlibEmbarquee()` (nouveau) : le pilote
    embarqué sonde la kotlin-stdlib dans son PROPRE classpath
    (`kotlin.Unit` → codeSource) — la stdlib est une entrée
    OBLIGATOIRE du classpath fourni (`-no-stdlib`, la manière
    CodeAssist) et le bureau ne l'avait JAMAIS câblée (le terrain de
-   CE lot : « Cannot access built-in declaration 'kotlin.Any' » dès
+   CE lot : « Cannot access built-in declaration 'kotlin.Any' » dès
    qu'un module Kotlin compilait au bureau).
 3. `AndroidPipelineTest` : le module app du projet réel porte une
    source KOTLIN référençant R (`Activite.kt`) ET le test enchaîne
@@ -1099,7 +1165,7 @@ jamais deux builds sur le même workspace.
    change → generateRJar réexécute → compileKotlin consomme le
    nouveau r.jar) — le flux appareil, jamais exercé au bureau.
 
-**La preuve** : build-jvm, build-android et build-daemon verts — le
+**La preuve** : build-jvm, build-android et build-daemon verts — le
 pipeline compile Kotlin contre le R.jar bytecode aux DEUX passes, et
 l'APK final porte les classes Kotlin. L'ouvrière re-forkée lit le
 jar neuf.
@@ -1112,30 +1178,30 @@ jar neuf.
 | build-android | `AndroidPipelineTest` | la source Kotlin + le second build incrémental |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/d : le R.jar en bytecode direct et la garde R8 des gabarits d'ecj — l'architecture CodeAssist adoptée (2026-11-18)
+# CHANGES — Lot XX/d : le R.jar en bytecode direct et la garde R8 des gabarits d'ecj — l'architecture CodeAssist adoptée (2026-11-18)
 
-**Le terrain** : « :app:generateRJar : ExceptionInInitializerError:
+**Le terrain** : « :app:generateRJar : ExceptionInInitializerError:
 Missing message: t in: org.eclipse.jdt.internal.compiler.messages ».
 Deux chantiers, tous deux dictés par la consultation de CodeAssist
-(l'approche exacte, pas le code) — et une fausse piste assumée :
+(l'approche exacte, pas le code) — et une fausse piste assumée :
 
 **1. Le R.jar est un artefact de BYTECODE, jamais une compilation**
 (la divergence majeure, corrigée). CodeAssist
-(`RBytecodeGenerator`) : avec `--extra-packages` aapt2 émet des
+(`RBytecodeGenerator`) : avec `--extra-packages` aapt2 émet des
 R.java de millions de lignes qu'ECJ OOM à tas plafonné, et un R n'est
 que des constantes `int`/`int[]` — le compiler n'a rien à y apporter.
 Notre `generateRJar` compilait le R.java par ecj pour rien.
 `RBytecode.java` (nouveau, zéro dépendance) parse la forme rigide de
-l'R.java d'aapt2 et écrit les class files À LA MAIN : champs `final`
+l'R.java d'aapt2 et écrit les class files À LA MAIN : champs `final`
 avec `ConstantValue` (inlinable — `switch` sur un id), tableaux
 `styleable` posés en `<clinit>`, attribut `InnerClasses` où vit seul
 le `static` des nichées. Trois pièges du bytecode dormaient dedans,
-révélés par le vérificateur JVM : `constant_pool_count` = NOMBRE
+révélés par le vérificateur JVM : `constant_pool_count` = NOMBRE
 D'ENTRÉES **+ 1** (la place #0 réservée — un de moins déclaré
-glissait tout : « Invalid this class index ») ; `NEWARRAY` = 0xBC
-(pas 0xBB = `new` — « Illegal constant pool index 2649 ») ;
+glissait tout : « Invalid this class index ») ; `NEWARRAY` = 0xBC
+(pas 0xBB = `new` — « Illegal constant pool index 2649 ») ;
 `IASTORE` = 0x4F (javac vérifié — 0x4E est `astore_3` de la table
-0x4B-0x4E : « Bad type on operand stack »). La preuve : les octets
+0x4B-0x4E : « Bad type on operand stack »). La preuve : les octets
 émis sont chargés par réflexion et les valeurs lues EXACTES
 (`RBytecodeTest`), le lecteur ABI du dépôt les parse, le pipeline de
 projet réel passe. **La tâche qui plantait ne touchera plus JAMAIS un
@@ -1148,78 +1214,78 @@ de `org.eclipse.jdt.internal.compiler.util.Messages` DEPUIS
 `messages.properties` PAR NOM DE CHAMP (`Field.getName()` → clé du
 properties). En RELEASE (`isMinifyEnabled = true`), R8 renommait ces
 champs (`compilation_request` → « t ») — le chargeur itère les noms
-RENOMMÉS, ne trouve aucune clé du properties, lève. **La preuve** :
+RENOMMÉS, ne trouve aucune clé du properties, lève. **La preuve** :
 l'APK du CI (93002f2) porte bien les quatre bundles
 `messages.properties` et les tables `.rsc` du parseur (vérifiés par
-désarchivage) — les resources N'étaient PAS le problème ; et
+désarchivage) — les resources N'étaient PAS le problème ; et
 `Messages` du jar ecj-art s'initialise proprement sur JVM même avec
 un classpath minimal. **La garde** (celle de CodeAssist,
-proguard-rules.pro:61) : `-keep class org.eclipse.jdt.** { public
+proguard-rules.pro:61) : `-keep class org.eclipse.jdt.** { public
 protected *; <init>(...); volatile <fields>; }` — l'ecj compagnon ne
-s'obfusque pas. **La fausse piste assumée** : un premier module
+s'obfusque pas. **La fausse piste assumée** : un premier module
 (`ecj-appareil`, le jar Central re-publié en jar de projet à la
 manière art-compat) a été écrit sur la théorie « resources perdues au
-dexage » — RÉFUTÉE par l'inspection de l'APK du CI ; le module est
+dexage » — RÉFUTÉE par l'inspection de l'APK du CI ; le module est
 retiré, l'APK gardait déjà les resources depuis le lot XIII
 (`runtimeOnly(libs.codelsp.ecj.art)` d'ide-integration + l'exclusion
-de l'ecj Central chez app-android : une seule copie de classes, la
+de l'ecj Central chez app-android : une seule copie de classes, la
 doctrine CodeAssist anti-doublons, déjà en place).
 
 | Zone | Fichiers | Nature du changement |
 |---|---|---|
 | build-android | `RBytecode.java` (nouveau) | le parseur R.java + l'émetteur class files faits main |
 | build-android | `RJarTask` | le bytecode direct remplace la compilation ecj |
-| build-android | `RBytecodeTest` (nouveau) | 4 tests : parse+charge réflexive, déterminisme, lecture ABI, tolérance aux lignes hors forme |
+| build-android | `RBytecodeTest` (nouveau) | 4 tests : parse+charge réflexive, déterminisme, lecture ABI, tolérance aux lignes hors forme |
 | app-android | `proguard-rules.pro` | la garde R8 des classes org.eclipse.jdt (les gabarits réflexifs d'ecj) |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/c : le jrt interdit sur ART et les stubs de l'indy — les projets réels rendus au moteur (2026-11-18)
+# CHANGES — Lot XX/c : le jrt interdit sur ART et les stubs de l'indy — les projets réels rendus au moteur (2026-11-18)
 
-**Le terrain 1** : « :app:generateRJar : IllegalStateException:
+**Le terrain 1** : « :app:generateRJar : IllegalStateException:
 Failed to init packages for /apex/com.android.art ». La suite du lot
-XX/b : le pilote ECJ sondait SANS garde le jrt du JDK courant
+XX/b : le pilote ECJ sondait SANS garde le jrt du JDK courant
 (`FileSystem.getJrtClasspath(java.home)`) — sur l'appareil,
 `java.home` est `/apex/com.android.art` : PAS de jimage, PAS de layout
 JDK, le sondage lève. La consultation de CodeAssist donne la doctrine
-(`ImageFreeJavaCompiler.kt:19-26`) : à compliance ≥ 9, le front-end
+(`ImageFreeJavaCompiler.kt:19-26`) : à compliance ≥ 9, le front-end
 batch refuse `-bootclasspath android.jar`, un jar non modulaire n'est
 pas un `--system` valide et ART n'a pas de jimage — ECJ doit rester
 NON-modulaire et lier `java.lang.*` aux OCTETS du jar de plateforme.
 Le pilote saute donc le jrt dès qu'un `android.jar` est au classpath
 (la détection par NOM, comme `JdtSourceAnalyzer.isAndroidPlatform`
-chez CodeAssist) ; hors plateforme Android, le sondage est encadré
-(bureau : il réussit ; ART sans android.jar : échec silencieux,
+chez CodeAssist) ; hors plateforme Android, le sondage est encadré
+(bureau : il réussit ; ART sans android.jar : échec silencieux,
 diagnostics propres au lieu du crash de tâche). Kotlin était déjà
 ART-safe (`-no-jdk`, lot XIV) — le pilote Java était le seul hors-la-
 doctrine.
 
 **Le terrain 2** (masqué par le premier — `compileJava` n'avait JAMAIS
-tourné sur l'appareil) : « The type java.lang.invoke.StringConcatFactory
+tourné sur l'appareil) : « The type java.lang.invoke.StringConcatFactory
 cannot be resolved » sur `lib:compileJava` — reproduit par les tests du
 pipeline dès le déblocage du terrain 1 (`app:generateRJar:SUCCEEDED`,
 puis l'échec). android.jar OMET les fabriques `java.lang.invoke` ; à
 compliance ≥ 9, la moindre concaténation ou lambda du Java utilisateur
 émet un `invokedynamic` dont la bootstrap doit se résoudre au
-compile-time ; le plateau 35 ne porte que `LambdaMetafactory` dans son
+compile-time ; le plateau 35 ne porte que `LambdaMetafactory` dans son
 `core-for-system-modules.jar`. AGP pose `core-lambda-stubs.jar` du
 build-tools, CodeAssist exige la même pièce sur les libraries — nous
 l'embarquons (17 Ko, Apache-2.0) en asset de l'app ET en ressource du
-module : l'app l'extrait UNE fois dans le cache d'outillage
+module : l'app l'extrait UNE fois dans le cache d'outillage
 (`ProprietesConstruction`, la même idempotence que le plugin Compose),
 le localisateur la trouve DANS CE MÊME CACHE (puis env
 `JOIDE_LAMBDA_STUBS`, puis la ressource du classpath au bureau), la
 fabrique la pose au classpath plateforme. Jamais dexé — D8 désugare
-l'indy au dexage (minSdk 28 : ART n'a `StringConcatFactory` qu'à
+l'indy au dexage (minSdk 28 : ART n'a `StringConcatFactory` qu'à
 l'API 30).
 
-**La consultation du moteur** (le reste, à la lumière de CodeAssist) :
+**La consultation du moteur** (le reste, à la lumière de CodeAssist) :
 kotlin (`-no-jdk`), le dexage (D8 désugare records/indy — tests déjà
-là), l'outillage (épinglé, la doctrine du lot XX) sont CONFORMES ;
-la divergence restante est documentée : CodeAssist synthétise le R.jar
+là), l'outillage (épinglé, la doctrine du lot XX) sont CONFORMES ;
+la divergence restante est documentée : CodeAssist synthétise le R.jar
 en BYTECODE direct (`RBytecodeGenerator`) parce qu'avec
 `--extra-packages` aapt2 émet des R.java de millions de lignes qu'ECJ
 OOM à tas plafonné — notre `generateRJar` compile le R.java non
-transitif (1 source par module dans les tests du pipeline) ; à l'échelle
+transitif (1 source par module dans les tests du pipeline) ; à l'échelle
 CodeAssist, la synthèse bytecode reste à écrire si un projet réel y
 butte.
 
@@ -1232,31 +1298,31 @@ butte.
 | build-android | `src/main/resources/…/core-lambda-stubs.jar` | la pièce embarquée (bureau/tests) |
 | app-android | `src/main/assets/toolchain/core-lambda-stubs.jar` | la pièce embarquée (appareil), extraite par `ProprietesConstruction` |
 | app-android | `ProprietesConstruction` | + `extraireStubs` (la même idempotence que le plugin Compose) |
-| build-jvm | `CompilerDriverTest` | + 2 discriminateurs : le jrt sauté (le faux ToolProvider dans un android.jar factice), l'indy résolu par les stubs (et en échec propre sans eux) |
+| build-jvm | `CompilerDriverTest` | + 2 discriminateurs : le jrt sauté (le faux ToolProvider dans un android.jar factice), l'indy résolu par les stubs (et en échec propre sans eux) |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX/b : le patch ART de SourceVersion — le generateRJar rendu à l'appareil (2026-11-17)
+# CHANGES — Lot XX/b : le patch ART de SourceVersion — le generateRJar rendu à l'appareil (2026-11-17)
 
-**Le terrain** : « :app:generateRJar : NoSuchMethodError: No static
+**Le terrain** : « :app:generateRJar : NoSuchMethodError: No static
 method version()Ljava/lang/Runtime$Version; in class Ljava/lang/Runtime;
 (declaration of 'java.lang.Runtime' appears in
-/apex/com.android.art/javalib/core-oj.jar) ». La suite du lot XIX :
+/apex/com.android.art/javalib/core-oj.jar) ». La suite du lot XIX :
 l'API javax.* extraite du JDK 21 embarquait le `<clinit>` de
 `javax/lang/model/SourceVersion`, qui appelle
 `Runtime.version().feature()` — une API JDK 9+ ABSENTE d'ART. ECJ (le
 chemin batch → SourceVersion, déjà vu au lot XIX) déclenchait
 l'initialisation pendant la génération du R.jar et mourait.
 
-**Le correctif** : `SourceVersion` recompilée par
+**Le correctif** : `SourceVersion` recompilée par
 `javac --patch-module java.compiler` avec la version de feature figée
-à 21 (le jar EST celui du JDK 21 : comportement identique, ART-safe),
+à 21 (le jar EST celui du JDK 21 : comportement identique, ART-safe),
 API publique vérifiée IDENTIQUE (javap), ZÉRO invocation de
 `Runtime.version()` dans tout le jar (javap -c, classe par classe), la
 classe s'initialise et répond RELEASE_21. Recette reproduisible dans
-`scripts/javax-art-patch/` (source patchée + `applique.sh`). Noté :
+`scripts/javax-art-patch/` (source patchée + `applique.sh`). Noté :
 `javax/tools/ToolProvider` référence aussi `java.lang.Module` (JDK 9+)
 mais n'est jamais appelé — un descripteur seul ne plante pas ART,
-seule une INVOCATION le ferait ; il est laissé tel quel.
+seule une INVOCATION le ferait ; il est laissé tel quel.
 
 | Zone | Fichiers | Nature du changement |
 |---|---|---|
@@ -1264,50 +1330,50 @@ seule une INVOCATION le ferait ; il est laissé tel quel.
 | scripts | `scripts/javax-art-patch/` | la source patchée + le script d'application (compile `--patch-module`, vérif bytecode/API/jar) |
 | Racine | `CHANGES.md` | le présent fichier |
 
-# CHANGES — Lot XX : la refonte « tout embarqué » démarre, le pack redevient immuable (2026-11-17)
+# CHANGES — Lot XX : la refonte « tout embarqué » démarre, le pack redevient immuable (2026-11-17)
 
-**La question du propriétaire** : « Est-ce que CodeAssist utilise
-toutes ces opérations et modifications ? » **L'audit du dépôt de
-référence répond : NON** — aucun téléchargement d'outillage à
+**La question du propriétaire** : « Est-ce que CodeAssist utilise
+toutes ces opérations et modifications ? » **L'audit du dépôt de
+référence répond : NON** — aucun téléchargement d'outillage à
 l'exécution (décision explicite dans AndroidSdkInstaller.kt:26-27),
-aucun épinglage taille/SHA sur l'outillage, aucune re-publication ;
+aucun épinglage taille/SHA sur l'outillage, aucune re-publication ;
 le compilateur Kotlin est dexé par AGP dans l'APK et la VM forkée
 prend pour classpath l'APK lui-même (ForkedKotlinCompiler.kt:67-76).
-Coût assumé : APK ~180 Mo. Le propriétaire avait tranché en session
-antérieure : refonte pour reproduire CodeAssist. Le programme est
+Coût assumé : APK ~180 Mo. Le propriétaire avait tranché en session
+antérieure : refonte pour reproduire CodeAssist. Le programme est
 posé (ADR-082, cinq étapes).
 
-**Le terrain** : « pack size mismatch for kotlin : 20989461 octets,
-attendus 22198577 » — la faute du lot XIX : un artefact PUBLIÉ avait
+**Le terrain** : « pack size mismatch for kotlin : 20989461 octets,
+attendus 22198577 » — la faute du lot XIX : un artefact PUBLIÉ avait
 été muté (plugin Compose dexé dans le pack) sans remplacer le
-fichier de la release. Règle dorée désormais gravée dans ADR-082 :
+fichier de la release. Règle dorée désormais gravée dans ADR-082 :
 un artefact publié ne change JAMAIS — tout ajout vit dans l'APK ou
 dans un NOUVEAU fichier versionné.
 
 | Étape | Contenu |
 |---|---|
-| XX/1 | Revert de la mutation : recette du pack reprise à l'identique du lot XVI (sans Compose), empreintes anciennes restaurées, regen vérifié ÉGAL au SHA publié (9a9f48fc…) — l'appareil se remet à marcher sans AUCUNE action sur la release |
-| XX/2 | Compose dans l'APK (S1 de la refonte, ~2 Mo) : classes dexées par AGP (implementation), jar original en asset toolchain/ (stagerPluginCompose, jamais committé), extraction UNE fois par ProprietesConstruction (UNE vérité pour les deux processus, qui remplace les blocs dupliqués de BuildService et EcranAtelier) |
-| XX/3 | La VM ouvrière porte l'APK au classpath (joide.app.apk, la manière CodeAssist) — le registrar Compose se charge du dex de l'APK ; homeOuvriere extrait les ressources de la PREMIÈRE entrée .dex.zip ; PluginsKotlin lit joide.compose.plugin.jar d'abord ; bureau inchangé (ressource build-jvm) |
-| XX/4 | ADR-082 : l'audit CodeAssist + la règle d'immutabilité + le programme de refonte en cinq étapes (S2 r8/bundletool ~14 Mo, S3 le compilateur ~45 Mo avec patcheur ART en tâche Gradle, S4 android.jar en asset, S5 suppression de la mécanique) |
-| XX/5 | Tests nouveaux : la propriété d'abord (build-jvm), l'extraction multi-entrées (build-android) |
+| XX/1 | Revert de la mutation : recette du pack reprise à l'identique du lot XVI (sans Compose), empreintes anciennes restaurées, regen vérifié ÉGAL au SHA publié (9a9f48fc…) — l'appareil se remet à marcher sans AUCUNE action sur la release |
+| XX/2 | Compose dans l'APK (S1 de la refonte, ~2 Mo) : classes dexées par AGP (implementation), jar original en asset toolchain/ (stagerPluginCompose, jamais committé), extraction UNE fois par ProprietesConstruction (UNE vérité pour les deux processus, qui remplace les blocs dupliqués de BuildService et EcranAtelier) |
+| XX/3 | La VM ouvrière porte l'APK au classpath (joide.app.apk, la manière CodeAssist) — le registrar Compose se charge du dex de l'APK ; homeOuvriere extrait les ressources de la PREMIÈRE entrée .dex.zip ; PluginsKotlin lit joide.compose.plugin.jar d'abord ; bureau inchangé (ressource build-jvm) |
+| XX/4 | ADR-082 : l'audit CodeAssist + la règle d'immutabilité + le programme de refonte en cinq étapes (S2 r8/bundletool ~14 Mo, S3 le compilateur ~45 Mo avec patcheur ART en tâche Gradle, S4 android.jar en asset, S5 suppression de la mécanique) |
+| XX/5 | Tests nouveaux : la propriété d'abord (build-jvm), l'extraction multi-entrées (build-android) |
 
-Le propriétaire n'a PLUS RIEN à publier : rebuild APK depuis ce lot,
+Le propriétaire n'a PLUS RIEN à publier : rebuild APK depuis ce lot,
 rebuild projet sur l'appareil. Compose s'activera par la sonde dès
 qu'un jar androidx.compose.runtime est au classpath (la résolution
 des AAR compose reste le lot suivant, inchangé).
 
 ---
 
-# CHANGES — Lot XIX : aapt2 conscient de l'ABI, l'API javax.* dans l'APK, Compose par sonde (2026-11-17)
+# CHANGES — Lot XIX : aapt2 conscient de l'ABI, l'API javax.* dans l'APK, Compose par sonde (2026-11-17)
 
 **Le build console JVM est PASSÉ sur l'appareil** (le lot XVIII
-tient). La troisième vague de terrain : `app:processAndroidResources
+tient). La troisième vague de terrain : `app:processAndroidResources
 : aapt2 failed: …/aapt2[74]: syntax error: unexpected '('` et
-`app:generateRJar : NoClassDefFoundError:
-Ljavax/lang/model/SourceVersion;`. Analyses expertes : une source
+`app:generateRJar : NoClassDefFoundError:
+Ljavax/lang/model/SourceVersion;`. Analyses expertes : une source
 d'aapt2 Android VÉRIFIÉE par téléchargement (ReVanced v1.1.0, ELF
-AArch64 statique, 16 Ko aligné, SHA-256 épinglés) ; la recette
+AArch64 statique, 16 Ko aligné, SHA-256 épinglés) ; la recette
 CodeAssist pour javax.lang.model (un jar API committé et dexé dans
 l'APK — ecj 3.40 référence SourceVersion au chargement du batch, 53
 classes touchées) et pour le plugin Compose (sonde de classpath,
@@ -1315,134 +1381,134 @@ classes touchées) et pour le plugin Compose (sonde de classpath,
 
 | Étape | Contenu |
 |---|---|
-| XIX/1 | ToolchainLocator conscient de l'ABI : varianteAapt2 (android-arm64-v8a / android-x86_64 / linux) ; sur appareil, le repli télécharge le binaire ANDROID de ReVanced épinglé (la même source que les jniLibs de l'APK) — JAMAIS le jar linux (l'ELF x86_64 filé au shell par bionic était le « syntax error ») |
+| XIX/1 | ToolchainLocator conscient de l'ABI : varianteAapt2 (android-arm64-v8a / android-x86_64 / linux) ; sur appareil, le repli télécharge le binaire ANDROID de ReVanced épinglé (la même source que les jniLibs de l'APK) — JAMAIS le jar linux (l'ELF x86_64 filé au shell par bionic était le « syntax error ») |
 | XIX/2 | app-android/libs/java-compiler.jar (144 classes javax.lang.model + javax.annotation.processing + javax.tools, extraites du JDK 21 par scripts/jar-javax-api.sh), dexé dans l'APK — ecj charge sur ART (generateRJar d'abord, les modules Java ensuite) |
-| XIX/3 | Compose : PluginsKotlin (sonde androidx/compose/runtime/Composable.class dans jars ET dirs ; jar du plugin : pack jars/ sur appareil, ressources build-jvm au bureau ; échec NOMMÉ si sonde allumée et jar absent) ; KotlinArgs pluginJars → -Xplugin ; les deux pilotes branchés ; ZÉRO option -P |
-| XIX/4 | Le plugin Compose (kotlin-compose-compiler-plugin 2.3.0, version du compilateur du pack) : dexé dans le pack Kotlin (jarsKotlin, passage par le patcheur ART) + jar original en ressource jars/ ; PacksOutils taille/SHA à recalculer au regen |
-| XIX/5 | Suites build-jvm + build-android vertes ; cinq tests nouveaux |
+| XIX/3 | Compose : PluginsKotlin (sonde androidx/compose/runtime/Composable.class dans jars ET dirs ; jar du plugin : pack jars/ sur appareil, ressources build-jvm au bureau ; échec NOMMÉ si sonde allumée et jar absent) ; KotlinArgs pluginJars → -Xplugin ; les deux pilotes branchés ; ZÉRO option -P |
+| XIX/4 | Le plugin Compose (kotlin-compose-compiler-plugin 2.3.0, version du compilateur du pack) : dexé dans le pack Kotlin (jarsKotlin, passage par le patcheur ART) + jar original en ressource jars/ ; PacksOutils taille/SHA à recalculer au regen |
+| XIX/5 | Suites build-jvm + build-android vertes ; cinq tests nouveaux |
 
-Le pack Kotlin change : le nouveau kotlin-compiler-2.3.0.dex.zip est
+Le pack Kotlin change : le nouveau kotlin-compiler-2.3.0.dex.zip est
 à publier sur la release toolchain-v1 (les empreintes épinglées de
-PacksOutils suivent). Reste hors lot (écarts honnêtes) : la
+PacksOutils suivent). Reste hors lot (écarts honnêtes) : la
 résolution des AAR androidx.compose (classes.jar) et le bouton
 Exécuter console.
 
 ---
 
-# CHANGES — Lot XVIII : l'arête du R.jar pour Kotlin et le plateau d'appareil de la route console (2026-11-17)
+# CHANGES — Lot XVIII : l'arête du R.jar pour Kotlin et le plateau d'appareil de la route console (2026-11-17)
 
-**Les nouveaux logs** (2026-11-17) : `:app:compileKotlin :
+**Les nouveaux logs** (2026-11-17) : `:app:compileKotlin :
 cannot read input file: $OUT/android/:app/r.abi.manifest` et
-`console:compileKotlin : No class roots are found in the JDK path:
+`console:compileKotlin : No class roots are found in the JDK path:
 /apex/com.android.art`. Deux analyses expertes en parallèle (le
-moteur CodeAssist, référence de terrain ; le moteur joide) se
-recoupent : (A) l'entrée R.jar (avec r.abi.manifest en FileInput,
+moteur CodeAssist, référence de terrain ; le moteur joide) se
+recoupent : (A) l'entrée R.jar (avec r.abi.manifest en FileInput,
 déclaré par upstreamJava ET upstreamKotlin) n'avait son arête
 producteur que sur compileJava — le scheduler PARALLÈLE démarrait
 compileKotlin avant generateRJar et le moteur échouait AVANT
-l'exécution (ensureInputHashes) ; RJarTask est irréprochable (il
+l'exécution (ensureInputHashes) ; RJarTask est irréprochable (il
 écrit TOUJOURS le manifeste en cas de succès). (B) la route console
-JVM créait la tâche Kotlin avec sansJdk=false (« bureau : le JDK
+JVM créait la tâche Kotlin avec sansJdk=false (« bureau : le JDK
 réel fournit les racines ») — sur appareil java.home =
-/apex/com.android.art (ART, aucune racine), kotlinc échoue ; et
+/apex/com.android.art (ART, aucune racine), kotlinc échoue ; et
 AUCUN jar ne jouait java.* sur cette route (kotlinc a toujours
--no-stdlib : il lui faut un plateau au classpath).
+-no-stdlib : il lui faut un plateau au classpath).
 
 | Étape | Contenu |
 |---|---|
-| XVIII/1 | AndroidTaskFactory : l'arête jumelle compileKotlin → `<mod>:generateRJar` (conditionnée hasKotlin) à côté de l'historique compileJava |
-| XVIII/2 | BuildRunner : surAppareil() (vendor Android ou java.home /apex — la sonde de CodeAssist), ancre $SDK pour la route JVM sur appareil, plateau via ToolchainLocator.locate() (téléchargement épinglé SHA-256 à la demande) |
-| XVIII/3 | JvmTaskFactory.withPlateauAppareil : android.jar entre dans le classpath des DEUX langages (kotlinc ET ecj lisent java.* du classpath, manifeste ABI au schéma des jars externes) et la tâche Kotlin porte -no-jdk ; le bureau reste ENTIER (pas de plateau, pas de -no-jdk) |
-| XVIII/4 | Suites build-jvm, build-daemon, build-android vertes ; trois tests nouveaux (le graphe des deux arêtes ; plateau + -no-jdk + les deux classpaths ; le bureau inchangé) |
+| XVIII/1 | AndroidTaskFactory : l'arête jumelle compileKotlin → `<mod>:generateRJar` (conditionnée hasKotlin) à côté de l'historique compileJava |
+| XVIII/2 | BuildRunner : surAppareil() (vendor Android ou java.home /apex — la sonde de CodeAssist), ancre $SDK pour la route JVM sur appareil, plateau via ToolchainLocator.locate() (téléchargement épinglé SHA-256 à la demande) |
+| XVIII/3 | JvmTaskFactory.withPlateauAppareil : android.jar entre dans le classpath des DEUX langages (kotlinc ET ecj lisent java.* du classpath, manifeste ABI au schéma des jars externes) et la tâche Kotlin porte -no-jdk ; le bureau reste ENTIER (pas de plateau, pas de -no-jdk) |
+| XVIII/4 | Suites build-jvm, build-daemon, build-android vertes ; trois tests nouveaux (le graphe des deux arêtes ; plateau + -no-jdk + les deux classpaths ; le bureau inchangé) |
 
 La feuille de route langages (Java, Kotlin Compose, KMP — la parité
-CodeAssist) est posée : `docs/feuille-de-route-langages.md`
-(Compose : plugin -Xplugin + sonde de classpath + registrar dexé
-dans l'app hôte ; incrémental Kotlin maison car l'IC officielle
-mmap casse sur ART ; KMP collapsed via -Xcommon-sources ; R.jar ASM ;
+CodeAssist) est posée : `docs/feuille-de-route-langages.md`
+(Compose : plugin -Xplugin + sonde de classpath + registrar dexé
+dans l'app hôte ; incrémental Kotlin maison car l'IC officielle
+mmap casse sur ART ; KMP collapsed via -Xcommon-sources ; R.jar ASM ;
 INameEnvironment ecj si besoin).
 
 ---
 
-# CHANGES — Lot XVII : le manifeste enrichie — aapt2 exige l'attribut package (2026-11-17)
+# CHANGES — Lot XVII : le manifeste enrichie — aapt2 exige l'attribut package (2026-11-17)
 
-**Le nouveau log** (2026-11-17) : « build #1 échoué — 5 exécutées ·
-0 du cache · 0 à jour · 104,4 s » et `:app:linkAndroidResources :
+**Le nouveau log** (2026-11-17) : « build #1 échoué — 5 exécutées ·
+0 du cache · 0 à jour · 104,4 s » et `:app:linkAndroidResources :
 link failed: <manifest> must have a 'package' attribute`. La
-progression est franche : les murs d'environnement (W^X, JDK, StAX,
+progression est franche : les murs d'environnement (W^X, JDK, StAX,
 stdlib) sont franchis — la chaîne de build TOURNE sur l'appareil et
-l'échec est devenu MÉTIER. Diagnostic sur les artefacts : le gabarit
+l'échec est devenu MÉTIER. Diagnostic sur les artefacts : le gabarit
 du projet démo (`assets/modeles/application-android.toml`) écrit un
-manifeste SANS `package` (style AGP 8 : le package vit dans
+manifeste SANS `package` (style AGP 8 : le package vit dans
 `namespace`) alors que le paquet saisi à la création ne va que dans
 `MainActivity.kt` ; `Aapt2LinkTask` passait le manifeste SOURCE brut
-à aapt2 ; aapt2 est une couche basse qui exige l'attribut ; et
+à aapt2 ; aapt2 est une couche basse qui exige l'attribut ; et
 `Aapt2.LinkOptions.packageName` est `--rename-manifest-package`
 (l'identifiant FINAL de l'APK) — il ne remplace pas l'attribut que R
-et la table de ressources exigent. La manière AGP : le manifeste
+et la table de ressources exigent. La manière AGP : le manifeste
 MERGÉ porte l'attribut synthétisé.
 
 | Étape | Contenu |
 |---|---|
-| XVII/1 | `Aapt2LinkTask` écrit TOUJOURS un manifeste enrichie (`$OUT/android/<module>/manifest-enrichi.xml`, JAMAIS dans les sources) : copie du manifeste source avec `package="…"` injecté s'il manque ; les DEUX liens (APK et proto) le consomment ; il est déclaré en sortie |
-| XVII/2 | la chaîne de secours : manifeste `package=` → identifiant d'application de la variante (`identifiantPaquet` — l'application en a toujours un) → dérivation du nom du module, EXACTEMENT la règle d'`identifiantPaquet` (« : » → « _ ») ; une synthèse émet un WARN qui nomme le paquet et le correctif recommandé |
-| XVII/3 | le gabarit est corrigé : `package="{paquet}"` dans le manifeste du modèle — le paquet saisi à la création arrive enfin dans le manifeste (nouveaux projets droits) |
-| XVII/4 | suites build-jvm, build-android, build-daemon vertes ; cinq tests nouveaux (synthèse, dérivation, manifeste avec paquet intact, balise multiligne, règle EXACTE) |
+| XVII/1 | `Aapt2LinkTask` écrit TOUJOURS un manifeste enrichie (`$OUT/android/<module>/manifest-enrichi.xml`, JAMAIS dans les sources) : copie du manifeste source avec `package="…"` injecté s'il manque ; les DEUX liens (APK et proto) le consomment ; il est déclaré en sortie |
+| XVII/2 | la chaîne de secours : manifeste `package=` → identifiant d'application de la variante (`identifiantPaquet` — l'application en a toujours un) → dérivation du nom du module, EXACTEMENT la règle d'`identifiantPaquet` (« : » → « _ ») ; une synthèse émet un WARN qui nomme le paquet et le correctif recommandé |
+| XVII/3 | le gabarit est corrigé : `package="{paquet}"` dans le manifeste du modèle — le paquet saisi à la création arrive enfin dans le manifeste (nouveaux projets droits) |
+| XVII/4 | suites build-jvm, build-android, build-daemon vertes ; cinq tests nouveaux (synthèse, dérivation, manifeste avec paquet intact, balise multiligne, règle EXACTE) |
 
-Le projet DÉJÀ créé du terrain : la synthèse fait passer le lien ; le
+Le projet DÉJÀ créé du terrain : la synthèse fait passer le lien ; le
 WARN recommande d'écrire le paquet dans le manifeste — le paquet
-choisi à la création (première ligne de MainActivity.kt, ex. `jo.exemple.monapplication`) est la bonne valeur : R.java se
+choisi à la création (première ligne de MainActivity.kt, ex. `jo.exemple.monapplication`) est la bonne valeur : R.java se
 génère sous ce paquet et l'activité voit `R` sans import.
 
 ---
 
-# CHANGES — Lot XVI : le JAR réel de la stdlib dans le pack (2026-11-17)
+# CHANGES — Lot XVI : le JAR réel de la stdlib dans le pack (2026-11-17)
 
-**Le nouveau log** (2026-11-17) : après la pile StAX du lot XV (le
+**Le nouveau log** (2026-11-17) : après la pile StAX du lot XV (le
 compilateur charge ses descripteurs), `:core:compileKotlin` sèche sur
 « Cannot access built-in declaration 'kotlin.Any'. Ensure that you
 have a dependency on the Kotlin standard library. », avec le warning
 « Classpath entry points to a non-existent location:
 core/classes-kotlin » et la note « mapped buffer unmapping » (sans
-gravité). Le diagnostic sur les artefacts : `KotlinArgs` pose
-`-no-stdlib` (contrat : le classpath fourni porte la stdlib), mais le
+gravité). Le diagnostic sur les artefacts : `KotlinArgs` pose
+`-no-stdlib` (contrat : le classpath fourni porte la stdlib), mais le
 classpath de compile Android (`upstreamKotlin` : android.jar, sorties
 amont, R.jar, jars externes) ne contient JAMAIS la stdlib — et kotlinc
-résout son classpath avec son JAR FS : des FICHIERS sur disque. Les
-classes de la stdlib dexées dans le pack sont invisibles pour lui ; sur
+résout son classpath avec son JAR FS : des FICHIERS sur disque. Les
+classes de la stdlib dexées dans le pack sont invisibles pour lui ; sur
 l'appareil il n'existe AUCUN `kotlin-stdlib.jar`. `kotlin.Any` est de
-plus une déclaration intrinsèque SANS .class (vérifié : 978 classes
+plus une déclaration intrinsèque SANS .class (vérifié : 978 classes
 dans le jar, zéro kotlin/Any.class) — sa métadonnée vit dans
 `META-INF/kotlin-stdlib.kotlin_module`, que seul le jar fournit. La
-manière CodeAssist : leur outil télécharge le jar RÉEL de la stdlib et
+manière CodeAssist : leur outil télécharge le jar RÉEL de la stdlib et
 le pose au classpath.
 
 | Étape | Contenu |
 |---|---|
-| XVI/1 | le pack porte le jar ORIGINAL de la stdlib en ressource (`jars/kotlin-stdlib-2.3.0.jar`, +1,68 Mo — le jar Maven RÉSOLU, pas le patché : le compilateur lit du bytecode standard) ; `homeOuvriere` (lot XI) extrait déjà toutes les entrées non-dex du pack dans `kotlin-home/`, garde SHA — le jar arrive gratuitement |
-| XVI/2 | le pilote forké pose le jar EN TÊTE du classpath : `KotlinForkedDriver.compile` assure le pack puis `jarStdlib(homeOuvriere(classpath))` AVANT de bâtir les args, passés à `KotlinArgs.args(request, classpathAvant)` ; hors pack (essais bureau), aucune entrée ajoutée |
+| XVI/1 | le pack porte le jar ORIGINAL de la stdlib en ressource (`jars/kotlin-stdlib-2.3.0.jar`, +1,68 Mo — le jar Maven RÉSOLU, pas le patché : le compilateur lit du bytecode standard) ; `homeOuvriere` (lot XI) extrait déjà toutes les entrées non-dex du pack dans `kotlin-home/`, garde SHA — le jar arrive gratuitement |
+| XVI/2 | le pilote forké pose le jar EN TÊTE du classpath : `KotlinForkedDriver.compile` assure le pack puis `jarStdlib(homeOuvriere(classpath))` AVANT de bâtir les args, passés à `KotlinArgs.args(request, classpathAvant)` ; hors pack (essais bureau), aucune entrée ajoutée |
 | XVI/3 | les entrées de classpath inexistantes se FILTRENT (`KotlinArgs.classpathEntiere`) — fin du « points to a non-existent location », l'ordre se conserve |
-| XVI/4 | pack vérifié : 265 entrées, le jar stdlib (1 796 996 octets, 978 classes, les 3 `.kotlin_module`), constantes épinglées (`9a9f48fc…`, vérifié par téléchargement retour) ; r8 et bundletool ressortis IDENTIQUES (aucune republication) ; suites build-jvm, build-android, build-daemon vertes ; deux tests nouveaux |
+| XVI/4 | pack vérifié : 265 entrées, le jar stdlib (1 796 996 octets, 978 classes, les 3 `.kotlin_module`), constantes épinglées (`9a9f48fc…`, vérifié par téléchargement retour) ; r8 et bundletool ressortis IDENTIQUES (aucune republication) ; suites build-jvm, build-android, build-daemon vertes ; deux tests nouveaux |
 
 ---
 
-# CHANGES — Lot XV : la pile StAX dans le pack, l'analyse complète de CodeAssist (2026-11-17)
+# CHANGES — Lot XV : la pile StAX dans le pack, l'analyse complète de CodeAssist (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « Cela devient
+**Le mandat du propriétaire** (message du 2026-11-17) : « Cela devient
 frustrant, fait une analyse plus approfondie pour comment exactement
 CodeAssist fait avec son moteur de build, tous les outils nécessaires
 … s'il faut une refonte totale, fais-la, fais tous les tests possibles
-» — et le nouveau log : `NoClassDefFoundError: Failed resolution of:
+» — et le nouveau log : `NoClassDefFoundError: Failed resolution of:
 Lorg/jetbrains/kotlin/org/codehaus/stax2/typed/TypedXMLStreamReader`
 depuis `PluginDescriptorLoader.loadDescriptorFromDir` à
 :core:compileKotlin. L'analyse faite sur les ARTEFACTS (pas sur des
-hypothèses) : le pack contient bien `TypedXMLStreamReader` et les 18
+hypothèses) : le pack contient bien `TypedXMLStreamReader` et les 18
 classes stax2 shadées, mais AUCUNE classe `javax.xml.stream` définie,
 AUCUN fichier de services, et l'aalto shadé de l'embeddable est
 partiel (pas d'usines). Au bureau, le JDK fournit l'API StAX ET son
-parseur par défaut ; sur ART, `javax.xml.stream` n'existe pas — la
+parseur par défaut ; sur ART, `javax.xml.stream` n'existe pas — la
 vérification de classe échoue sur sa hiérarchie. CodeAssist le dit
-dans son propre catalogue (`libs.versions.toml`) : « StAX on ART
+dans son propre catalogue (`libs.versions.toml`) : « StAX on ART
 (which ships none): the standalone JSR-173 API, and aalto as its
 implementation. Used by the on-device Kotlin compiler (IntelliJ-core's
 descriptor parsing) and by R8's resource shrinker » — ils embarquent
@@ -1453,43 +1519,43 @@ VM forkée sondée, W^X, aapt2/bundletool/apksig/d8/desugar/bouncycastle).
 
 | Étape | Contenu |
 |---|---|
-| XV/1 | les trois jars StAX de CodeAssist (mêmes versions) dans la fermeture `jarsKotlin` du pack : API + impl complète unshadée (les usines que la copie shadée n'a pas) + stax2-api ; ils traversent la pipeline existante (patcheur ART → assainir → dexage par lots → ressources), les `META-INF/services` d'aalto partent avec les usines qu'ils désignent |
-| XV/2 | le pack se RÉGÉNÈRE réellement (`:app-android:dexPacksOutils` contre android.jar 35) ; les constantes épinglées se reportent pour les TROIS packs (le marqueur D8/javac de la machine fait dériver r8/bundletool de quelques octets ; les trois assets de la release toolchain-v1 sont remplacés ensemble) |
-| XV/3 | vérification matérielle du pack nouveau : 37 descripteurs `javax.xml.stream` définis (dont `XMLStreamReader`), les trois usines aalto (`InputFactoryImpl`, `OutputFactoryImpl`, `EventFactoryImpl`), les trois services corrects, 264 entrées (contre 253) ; SHA-256 recalculé indépendamment = constantes ; suites build-jvm, build-android, build-daemon au vert |
+| XV/1 | les trois jars StAX de CodeAssist (mêmes versions) dans la fermeture `jarsKotlin` du pack : API + impl complète unshadée (les usines que la copie shadée n'a pas) + stax2-api ; ils traversent la pipeline existante (patcheur ART → assainir → dexage par lots → ressources), les `META-INF/services` d'aalto partent avec les usines qu'ils désignent |
+| XV/2 | le pack se RÉGÉNÈRE réellement (`:app-android:dexPacksOutils` contre android.jar 35) ; les constantes épinglées se reportent pour les TROIS packs (le marqueur D8/javac de la machine fait dériver r8/bundletool de quelques octets ; les trois assets de la release toolchain-v1 sont remplacés ensemble) |
+| XV/3 | vérification matérielle du pack nouveau : 37 descripteurs `javax.xml.stream` définis (dont `XMLStreamReader`), les trois usines aalto (`InputFactoryImpl`, `OutputFactoryImpl`, `EventFactoryImpl`), les trois services corrects, 264 entrées (contre 253) ; SHA-256 recalculé indépendamment = constantes ; suites build-jvm, build-android, build-daemon au vert |
 
 ---
 
-# CHANGES — Lot XIV : -no-jdk, la manière CodeAssist (2026-11-17)
+# CHANGES — Lot XIV : -no-jdk, la manière CodeAssist (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : nouveau
-logcat après le lot XIII — DEUX progrès visibles : `dalvikvm64`
+**Le mandat du propriétaire** (message du 2026-11-17) : nouveau
+logcat après le lot XIII — DEUX progrès visibles : `dalvikvm64`
 démarre (« Using generational CollectorTypeCMC GC », plus aucun
-« Writable dex file », plus de 134 : le W^X du lot XIII est levé),
-le compilateur Kotlin se charge — puis refuse d'aller plus loin :
+« Writable dex file », plus de 134 : le W^X du lot XIII est levé),
+le compilateur Kotlin se charge — puis refuse d'aller plus loin :
 **« No class roots are found in the JDK path: /apex/com.android.art »**.
-Cause : `KotlinArgs` posait `-no-stdlib` et `-no-reflect` mais jamais
+Cause : `KotlinArgs` posait `-no-stdlib` et `-no-reflect` mais jamais
 `-no-jdk` ; sans ce drapeau, `K2JVMCompiler` cherche les racines JDK
-sous `java.home` — au bureau, un vrai JDK, ça passe sans bruit ; sur
+sous `java.home` — au bureau, un vrai JDK, ça passe sans bruit ; sur
 l'appareil, ce chemin est ART (`/apex/com.android.art`, aucun jar) et
 la détection échoue avant toute compilation. Le lot XIV (ADR-076)
 porte la forme complète de CodeAssist (`ForkedKotlincArtSpike.kt` :
 « -no-jdk, -no-stdlib, -no-reflect » + android.jar au classpath) sur
-la chaîne des demandes de compilation :
+la chaîne des demandes de compilation :
 
 | Étape | Contenu |
 |---|---|
-| XIV/1 | `CompileRequest.noJdk` (champ explicite + bâtisseur) ; `KotlinArgs.args()` pose `-no-jdk` quand la demande le réclame — la même fabrique alimente le pilote embarqué (bureau) et la VM forkée (appareil), les deux routes le reçoivent |
+| XIV/1 | `CompileRequest.noJdk` (champ explicite + bâtisseur) ; `KotlinArgs.args()` pose `-no-jdk` quand la demande le réclame — la même fabrique alimente le pilote embarqué (bureau) et la VM forkée (appareil), les deux routes le reçoivent |
 | XIV/2 | `IncrementalJvmCompile`/`JvmCompileTask` transportent l'option et l'incluent dans l'empreinte d'options (`spec()`) — une bascule invalide l'incrémental correctement |
-| XIV/3 | `AndroidTaskFactory` : `-no-jdk` pour KOTLIN (son classpath porte déjà android.jar, « bibliothèque de plateforme » — la moitié de la forme CodeAssist était en place) ; `JvmTaskFactory` (bureau, modules JVM purs) : faux — le JDK réel fournit les racines, le comportement desktop ne change pas |
-| XIV/4 | l'essai `KotlinArgsTest` prouve les deux chemins : la demande Android contient `-no-jdk` (+ `-no-stdlib`, `-no-reflect`), la demande bureau pas de drapeau — suites build-jvm, build-daemon et build-android au vert |
+| XIV/3 | `AndroidTaskFactory` : `-no-jdk` pour KOTLIN (son classpath porte déjà android.jar, « bibliothèque de plateforme » — la moitié de la forme CodeAssist était en place) ; `JvmTaskFactory` (bureau, modules JVM purs) : faux — le JDK réel fournit les racines, le comportement desktop ne change pas |
+| XIV/4 | l'essai `KotlinArgsTest` prouve les deux chemins : la demande Android contient `-no-jdk` (+ `-no-stdlib`, `-no-reflect`), la demande bureau pas de drapeau — suites build-jvm, build-daemon et build-android au vert |
 
 ---
 
-# CHANGES — Lot XIII : le pack en lecture seule, la cause racine du 134 (2026-11-17)
+# CHANGES — Lot XIII : le pack en lecture seule, la cause racine du 134 (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « Toujours la
+**Le mandat du propriétaire** (message du 2026-11-17) : « Toujours la
 même erreur » — MAIS le logcat envoyé cette fois nomme la cause
-racine que le stderr vide du lot X ne pouvait pas montrer :
+racine que le stderr vide du lot X ne pouvait pas montrer :
 `SecurityException: Writable dex file
 '.../files/toolchain/packs/kotlin-compiler-2.3.0.dex.zip' is not
 allowed` au démarrage de la VM ouvrière
@@ -1497,126 +1563,126 @@ allowed` au démarrage de la VM ouvrière
 `DexFile.openDexFileNative`), puis `Check failed:
 system_class_loader != nullptr` — l'abort 134 sans stderr de TOUS
 les rapports depuis le lot X. La politique W^X d'Android refuse de
-charger un dex/jar MODIFIABLE ; l'échelle de tas des lots X/XII
+charger un dex/jar MODIFIABLE ; l'échelle de tas des lots X/XII
 travaillait sur une cause orthogonale (correcte et utile, mais pas
 celle-ci). Le lot XIII (ADR-075) porte la manière CodeAssist
 (`ArtKotlinPluginLoader.kt` : « Android 14+ won't load a writable
-dex/jar through a class loader (W^X) ») sur le pipeline des packs :
+dex/jar through a class loader (W^X) ») sur le pipeline des packs :
 
 | Étape | Contenu |
 |---|---|
-| XIII/1 | `PacksOutils.fichierAssure` impose la LECTURE SEULE à CHAQUE résolution (`imposerLectureSeule`, idempotent, « au mieux » — la même tolérance que `ChargeurDexAndroid`, qui le faisait déjà au chargeur en processus depuis le lot VIII) : le point d'étranglement couvre le chargeur en processus ET le classpath de la VM forkée ; surtout, la réparation au chargement rattrape les packs déjà sur le disque posés MODIFIABLES par les versions antérieures (sains en taille + SHA-256, donc JAMAIS re-téléchargés — l'état exact de l'appareil du propriétaire), sans re-téléchargement ni nettoyage manuel |
-| XIII/2 | `telechargePinned` fait naître le fichier en lecture seule : le staging passe en lecture seule AVANT le move atomique (le patron exact d'`ArtKotlinPluginLoader` — chmod le temporaire puis move) ; une cible déjà posée se SUPPRIME avant le move (un pack corrompu en lecture seule doit pouvoir se ré-écrire — le fichier se remplace, il ne se ré-ouvre pas en écriture) ; le staging résiduel se nettoie en `finally` |
-| XIII/3 | les essais desktop prouvent le chemin exact du terrain (`PacksOutilsTest`) : un pack posé modifiable, sain pour son épinglage, passe en lecture seule au premier `fichierAssure`, reste sain, est idempotent au second passage et son contenu ne bouge pas ; `imposerLectureSeule` est « au mieux » (fichier absent : aucun échec) — suites build-android, build-jvm et build-daemon au vert |
+| XIII/1 | `PacksOutils.fichierAssure` impose la LECTURE SEULE à CHAQUE résolution (`imposerLectureSeule`, idempotent, « au mieux » — la même tolérance que `ChargeurDexAndroid`, qui le faisait déjà au chargeur en processus depuis le lot VIII) : le point d'étranglement couvre le chargeur en processus ET le classpath de la VM forkée ; surtout, la réparation au chargement rattrape les packs déjà sur le disque posés MODIFIABLES par les versions antérieures (sains en taille + SHA-256, donc JAMAIS re-téléchargés — l'état exact de l'appareil du propriétaire), sans re-téléchargement ni nettoyage manuel |
+| XIII/2 | `telechargePinned` fait naître le fichier en lecture seule : le staging passe en lecture seule AVANT le move atomique (le patron exact d'`ArtKotlinPluginLoader` — chmod le temporaire puis move) ; une cible déjà posée se SUPPRIME avant le move (un pack corrompu en lecture seule doit pouvoir se ré-écrire — le fichier se remplace, il ne se ré-ouvre pas en écriture) ; le staging résiduel se nettoie en `finally` |
+| XIII/3 | les essais desktop prouvent le chemin exact du terrain (`PacksOutilsTest`) : un pack posé modifiable, sain pour son épinglage, passe en lecture seule au premier `fichierAssure`, reste sain, est idempotent au second passage et son contenu ne bouge pas ; `imposerLectureSeule` est « au mieux » (fichier absent : aucun échec) — suites build-android, build-jvm et build-daemon au vert |
 
 ---
 
-# CHANGES — Lot XII : la remontée de rung, l'OOM mid-run nommé (2026-11-17)
+# CHANGES — Lot XII : la remontée de rung, l'OOM mid-run nommé (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : après le lot
+**Le mandat du propriétaire** (message du 2026-11-17) : après le lot
 XI, toujours « sortie 134 puis 134 » à :core:compileKotlin — MAIS le
-diagnostic du lot X parle enfin : « Android 35, inlining JIT actif ;
-stderr : vide (un abort natif sans message) », tas 512 Mo aux deux
-tentatives. Le lot XII (ADR-074) en tire le fil :
+diagnostic du lot X parle enfin : « Android 35, inlining JIT actif ;
+stderr : vide (un abort natif sans message) », tas 512 Mo aux deux
+tentatives. Le lot XII (ADR-074) en tire le fil :
 
 | Étape | Contenu |
 |---|---|
-| XII/1 | la lecture du terrain : Android 35 (hors des tables de crash connues — le JIT #1748 est ≤ 30, le pack ART-patché du lot XI couvre le reste) + « tas 512 Mo aux DEUX tentatives » = la première tentative RÉPONDAIT puis abortait : le tas était trop PETIT (sur ~4 Go, la garde de démarrage rejette 1024 de justesse — l'échelle plafonne à 768/512, l'OOM d'ART aborte SANS message en plein compile) ; la reprise du lot X restait au même rung — elle DESCEND pour un abort de démarrage et RESTAIT pour une mort après réponse : les deux sens de l'échelle manquaient |
-| XII/2 | la REMONTÉE de rung : une morte APRÈS réponse gravit l'échelle de remontée (échelle de démarrage + tas demandé + rung 1536, garde ASSOULIE rung × 2 ≤ 80 % de la RAM, ascendante) — la VM démarre déjà au rung essayé, l'engagement physique suit l'usage, et l'autre option est un build qui échoue ; la garde de DÉMARRAGE (rung × 2 ≤ RAM/2, la LADDER CodeAssist) reste inchangée — elle teste une réservation SANS engagement, un rung trop grand aborte net au démarrage |
-| XII/3 | TROIS tentatives par lot (512 → 1024 → 1536 sur ~4 Go) ; l'échec final nomme les TAS ESSAYÉS (« tas essayés : 512 puis 1024 puis 1536 ») et, si la remontée a plafonné sans guérir, porte le soupçon d'OOM avec la RAM et la garde explicites — la prochaine console dira l'un des trois états : succès au rung supérieur, plafond nommé, ou cause stderr réelle |
-| XII/4 | les essais desktop prouvent la remontée SANS dépendre de la RAM du bac à sable : la fausse VM journalise son `-Xmx` à chaque lancement (`fausseVmAvecJournal`), le test compare aux échelles calculées (`echelleRemontee`, garde 0.8 : 1024 gravissable sur 3 Go, 1536 sur 4 Go) et rejoue le cas du terrain (échelle [768, 512, 384] du bac à sable : la reprise APRÈS réponse monte 768 → 1024 et le lot réussit) ; les trois morts-sans-réponse restent nommées (TROIS tentatives, descente) |
+| XII/1 | la lecture du terrain : Android 35 (hors des tables de crash connues — le JIT #1748 est ≤ 30, le pack ART-patché du lot XI couvre le reste) + « tas 512 Mo aux DEUX tentatives » = la première tentative RÉPONDAIT puis abortait : le tas était trop PETIT (sur ~4 Go, la garde de démarrage rejette 1024 de justesse — l'échelle plafonne à 768/512, l'OOM d'ART aborte SANS message en plein compile) ; la reprise du lot X restait au même rung — elle DESCEND pour un abort de démarrage et RESTAIT pour une mort après réponse : les deux sens de l'échelle manquaient |
+| XII/2 | la REMONTÉE de rung : une morte APRÈS réponse gravit l'échelle de remontée (échelle de démarrage + tas demandé + rung 1536, garde ASSOULIE rung × 2 ≤ 80 % de la RAM, ascendante) — la VM démarre déjà au rung essayé, l'engagement physique suit l'usage, et l'autre option est un build qui échoue ; la garde de DÉMARRAGE (rung × 2 ≤ RAM/2, la LADDER CodeAssist) reste inchangée — elle teste une réservation SANS engagement, un rung trop grand aborte net au démarrage |
+| XII/3 | TROIS tentatives par lot (512 → 1024 → 1536 sur ~4 Go) ; l'échec final nomme les TAS ESSAYÉS (« tas essayés : 512 puis 1024 puis 1536 ») et, si la remontée a plafonné sans guérir, porte le soupçon d'OOM avec la RAM et la garde explicites — la prochaine console dira l'un des trois états : succès au rung supérieur, plafond nommé, ou cause stderr réelle |
+| XII/4 | les essais desktop prouvent la remontée SANS dépendre de la RAM du bac à sable : la fausse VM journalise son `-Xmx` à chaque lancement (`fausseVmAvecJournal`), le test compare aux échelles calculées (`echelleRemontee`, garde 0.8 : 1024 gravissable sur 3 Go, 1536 sur 4 Go) et rejoue le cas du terrain (échelle [768, 512, 384] du bac à sable : la reprise APRÈS réponse monte 768 → 1024 et le lot réussit) ; les trois morts-sans-réponse restent nommées (TROIS tentatives, descente) |
 
 ---
 
-# CHANGES — Lot IX : le rebouclage IPv4, les racines déclarées, le démon qui survit (2026-11-17)
+# CHANGES — Lot IX : le rebouclage IPv4, les racines déclarées, le démon qui survit (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « La CI est
-rouge. J'ai ouvert l'application puis le bouton build » — build #1 :
+**Le mandat du propriétaire** (message du 2026-11-17) : « La CI est
+rouge. J'ai ouvert l'application puis le bouton build » — build #1 :
 « service de build injoignable (port publié mais connexion refusée
 6 fois — le démon :build meurt juste après publication) », repli en
-processus, « :core:compileKotlin : cannot scan input directory:
-$PROJECT/core/src/main/kotlin » ; build #2 : « port non publié en
+processus, « :core:compileKotlin : cannot scan input directory:
+$PROJECT/core/src/main/kotlin » ; build #2 : « port non publié en
 30 s et le processus :build n'a JAMAIS démarré ». Le lot IX (ADR-071)
 ferme les DEUX pannes du premier build sur appareil — et le démon
 n'était même pas mort.
 
 | Étape | Contenu |
 |---|---|
-| IX/1 | le REBOUCLAGE IPv4 EXPLICITE : `InetAddress.getLoopbackAddress()` rend **::1** sur Android (libcore) — le démon écoutait sur `[::1]:port` pendant que le client composait `127.0.0.1:port` : connexion refusée à CHAQUE build, démon vivant ; la JVM de bureau rend 127.0.0.1, les tests passaient, l'appareil échouait. Bind explicite `127.0.0.1` (`getByAddress`, test `leServeurEcouteEnIpv4Explicite`), la VIE suit le port à chaque republication (le faux « JAMAIS démarré » du build #2 venait d'un service VIVANT qui ne repassait pas par onCreate), et le message du client n'accuse plus le démon de « mourir » sans preuve |
-| IX/2 | les RACINES DÉCLARÉES existent dès la création (`Generation.dossiers` → `EcrireProjet` crée `core/src/main/kotlin` vide : le modèle le déclare, aucun fichier n'y vit) ET le moteur TOLÈRE l'absent (`BuildEngine.scanStamps` : un répertoire d'entrées absent vaut VIDE, sémantique Gradle ; un fichier là où un dossier est attendu reste une erreur) — le cas exact de MyApp est prouvé bout en bout (`declaredButUncreatedSourceRootIsEmptyNotAnError`) |
-| IX/3 | le démon SURVIT à ses pannes : chaque requête vit dans SA garde (un cadre illisible se RÉPOND, le canal reste debout), `build` rattrape `Throwable` (un Error coûte le build, pas le service), `accepter` rattrape par connexion et ENREGISTRE la cause — le chien de garde la publie dans `demon-build.err` avant l'arrêt ; l'injection de panne garde sa mort (`PaniqueFatale` traverse les gardes, `DaemonDeathResumeTest` intact) |
-| IX/4 | la CI du lot VIII avait construit les DEUX APK puis échoué au STOCKAGE du cache de configuration : `verifierOmbreApk` capturait `layout` dans son `doLast` (« cannot serialize Gradle script object references ») — le bac à sable local tourne `configuration-cache=false`, la faute n'y paraissait jamais ; le chemin de l'APK se résout désormais à la CONFIGURATION (File sérialisable), la commande CI exacte (assembleDebug + assembleRelease, cache actif) passe et STOCKE son entrée |
+| IX/1 | le REBOUCLAGE IPv4 EXPLICITE : `InetAddress.getLoopbackAddress()` rend **::1** sur Android (libcore) — le démon écoutait sur `[::1]:port` pendant que le client composait `127.0.0.1:port` : connexion refusée à CHAQUE build, démon vivant ; la JVM de bureau rend 127.0.0.1, les tests passaient, l'appareil échouait. Bind explicite `127.0.0.1` (`getByAddress`, test `leServeurEcouteEnIpv4Explicite`), la VIE suit le port à chaque republication (le faux « JAMAIS démarré » du build #2 venait d'un service VIVANT qui ne repassait pas par onCreate), et le message du client n'accuse plus le démon de « mourir » sans preuve |
+| IX/2 | les RACINES DÉCLARÉES existent dès la création (`Generation.dossiers` → `EcrireProjet` crée `core/src/main/kotlin` vide : le modèle le déclare, aucun fichier n'y vit) ET le moteur TOLÈRE l'absent (`BuildEngine.scanStamps` : un répertoire d'entrées absent vaut VIDE, sémantique Gradle ; un fichier là où un dossier est attendu reste une erreur) — le cas exact de MyApp est prouvé bout en bout (`declaredButUncreatedSourceRootIsEmptyNotAnError`) |
+| IX/3 | le démon SURVIT à ses pannes : chaque requête vit dans SA garde (un cadre illisible se RÉPOND, le canal reste debout), `build` rattrape `Throwable` (un Error coûte le build, pas le service), `accepter` rattrape par connexion et ENREGISTRE la cause — le chien de garde la publie dans `demon-build.err` avant l'arrêt ; l'injection de panne garde sa mort (`PaniqueFatale` traverse les gardes, `DaemonDeathResumeTest` intact) |
+| IX/4 | la CI du lot VIII avait construit les DEUX APK puis échoué au STOCKAGE du cache de configuration : `verifierOmbreApk` capturait `layout` dans son `doLast` (« cannot serialize Gradle script object references ») — le bac à sable local tourne `configuration-cache=false`, la faute n'y paraissait jamais ; le chemin de l'APK se résout désormais à la CONFIGURATION (File sérialisable), la commande CI exacte (assembleDebug + assembleRelease, cache actif) passe et STOCKE son entrée |
 
 ---
 
-# CHANGES — Lot VIII : le pack qui charge, le service qui parle, l'APK à 11,2 Mo (2026-11-17)
+# CHANGES — Lot VIII : le pack qui charge, le service qui parle, l'APK à 11,2 Mo (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « D'accord
-pour l'option A (R8 minification) » — et le rapport de terrain :
+**Le mandat du propriétaire** (message du 2026-11-17) : « D'accord
+pour l'option A (R8 minification) » — et le rapport de terrain :
 premier build sur appareil, « service de build injoignable (port non
 publié en 30 s) — relancez le build », repli en processus, puis
 « embedded build tool unavailable: jo.joide.build.android.tools.InProcessDexer
 — jars des outils absents et pack différé r8 9.5.32
 (r8-9.5.32.dex.zip) indisponible (java.lang.reflect.InvocationTargetException) »
 — « vérifie comment CodeAssist a fait ». Le lot VIII (ADR-070)
-répond point par point : l'ombre qui empoisonnait le pack part, les
+répond point par point : l'ombre qui empoisonnait le pack part, les
 causes voyagent jusqu'à la console, le service distingue ses
 silences, et la passe de rétrécissement du backlog P8 livre un APK
 de **11,2 Mo**.
 
 | Étape | Contenu |
 |---|---|
-| VIII/1 | L'OMBRE des adaptateurs packés part de l'APK : leur copie embarquée (lot VI : « le signal de repli ») tuait la route du pack — la délégation parent-d'abord du DexClassLoader servait la copie de l'APK (sans ses classes d'outil) et JAMAIS celle du pack ; `toolsApi` passe en `compileOnly` (la manière CodeAssist : aucune classe d'outil dans l'app), un jar DÉDIÉ `signatureApi` garde `ApksigSigner` seul embarqué (apksig trop léger pour un pack, décision lot VI) ; la tâche `verifierOmbreApk` (finalisée par `assembleDebug`) échoue si l'ombre revient ou si un élément vital disparaît (l'enregistrement du pont se vérifie par CONTENU — R8 renomme légitimement les fichiers de services internes) |
-| VIII/2 | les CAUSES voyagent : `BuildRunner.outil()` compose son message avec l'embarquée APLATIE (un `InvocationTargetException` montre sa cible : `NoClassDefFoundError: com/android/tools/r8/Version` dit tout) ET la cause du pack ; `outilDuPack` LÈVE au lieu d'avaler vers stderr (logcat sur l'appareil, jamais la console) |
-| VIII/3 | le SERVICE distingue ses silences : `demon-build.vie` (pid, instant) posé à la première ligne d'`onCreate` — le client nomme « le processus :build n'a JAMAIS démarré (restriction ROM ou batterie ?) », « démarré, démon pas prêt » ou « port publié mais connexion refusée N fois » ; le bind 127.0.0.1 est vérifié sain (`getLoopbackAddress()`) |
-| VIII/4 | R8 MINIFICATION (backlog P8, option A) : debug NON débogable (AGP désactive R8 sur les builds débogables ; `-Pdebuggable=true` localement), `-dontoptimize` documenté (le noyau a tué le démon R8 à 2,2-2,4 Go sur la machine 4 Go — rétrécissement + obfuscation portent l'essentiel), mémoire directe plafonnée, `lintVital` à la demande ; règles de conservation dédiées : paquets `dex`/`bundle`/`sign` (mur de chargeurs), `ApksigSigner` PAR NOM, pont `ChargeurDexAndroid`, `lsp4j` (réflexion Gson), `kotlinx.serialization`, métadonnées Kotlin, `layoutlib` ; chaque `-dontwarn` nomme sa raison (javac/StAX absents d'ART, pilote bureau du compilateur, « actual » fleet manquant) |
-| VIII/5 | le RÉSULTAT : APK 35 012 865 → **11 782 666 o** (33,4 → 11,2 Mo, −66 % ; −92 % depuis ~150 Mo à 4 ABI), UN seul `classes.dex`, `mapping.txt` livré (retrace), signature v2 vérifiée, composants du manifeste présents, garde verte ; les packs INCHANGÉS (`dexPacksOutils` re-vérifie les empreintes épinglées — r8, bundletool, kotlin régénérés à l'identique) ; suites build-daemon/build-android/build-jvm au vert |
+| VIII/1 | L'OMBRE des adaptateurs packés part de l'APK : leur copie embarquée (lot VI : « le signal de repli ») tuait la route du pack — la délégation parent-d'abord du DexClassLoader servait la copie de l'APK (sans ses classes d'outil) et JAMAIS celle du pack ; `toolsApi` passe en `compileOnly` (la manière CodeAssist : aucune classe d'outil dans l'app), un jar DÉDIÉ `signatureApi` garde `ApksigSigner` seul embarqué (apksig trop léger pour un pack, décision lot VI) ; la tâche `verifierOmbreApk` (finalisée par `assembleDebug`) échoue si l'ombre revient ou si un élément vital disparaît (l'enregistrement du pont se vérifie par CONTENU — R8 renomme légitimement les fichiers de services internes) |
+| VIII/2 | les CAUSES voyagent : `BuildRunner.outil()` compose son message avec l'embarquée APLATIE (un `InvocationTargetException` montre sa cible : `NoClassDefFoundError: com/android/tools/r8/Version` dit tout) ET la cause du pack ; `outilDuPack` LÈVE au lieu d'avaler vers stderr (logcat sur l'appareil, jamais la console) |
+| VIII/3 | le SERVICE distingue ses silences : `demon-build.vie` (pid, instant) posé à la première ligne d'`onCreate` — le client nomme « le processus :build n'a JAMAIS démarré (restriction ROM ou batterie ?) », « démarré, démon pas prêt » ou « port publié mais connexion refusée N fois » ; le bind 127.0.0.1 est vérifié sain (`getLoopbackAddress()`) |
+| VIII/4 | R8 MINIFICATION (backlog P8, option A) : debug NON débogable (AGP désactive R8 sur les builds débogables ; `-Pdebuggable=true` localement), `-dontoptimize` documenté (le noyau a tué le démon R8 à 2,2-2,4 Go sur la machine 4 Go — rétrécissement + obfuscation portent l'essentiel), mémoire directe plafonnée, `lintVital` à la demande ; règles de conservation dédiées : paquets `dex`/`bundle`/`sign` (mur de chargeurs), `ApksigSigner` PAR NOM, pont `ChargeurDexAndroid`, `lsp4j` (réflexion Gson), `kotlinx.serialization`, métadonnées Kotlin, `layoutlib` ; chaque `-dontwarn` nomme sa raison (javac/StAX absents d'ART, pilote bureau du compilateur, « actual » fleet manquant) |
+| VIII/5 | le RÉSULTAT : APK 35 012 865 → **11 782 666 o** (33,4 → 11,2 Mo, −66 % ; −92 % depuis ~150 Mo à 4 ABI), UN seul `classes.dex`, `mapping.txt` livré (retrace), signature v2 vérifiée, composants du manifeste présents, garde verte ; les packs INCHANGÉS (`dexPacksOutils` re-vérifie les empreintes épinglées — r8, bundletool, kotlin régénérés à l'identique) ; suites build-daemon/build-android/build-jvm au vert |
 
 ---
 
-# CHANGES — Lot VII : le compilateur Kotlin en VM forkée, l'APK à 33,4 Mo (2026-11-17)
+# CHANGES — Lot VII : le compilateur Kotlin en VM forkée, l'APK à 33,4 Mo (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « Continue
+**Le mandat du propriétaire** (message du 2026-11-17) : « Continue
 avec le prochain poste d'amaigrissement » — le poste désigné par
-l'ADR-067 : le compilateur Kotlin (43,6 Mo de dex). Le lot VII
-(ADR-069) prend la voie recommandée, la VM FORKÉE à la CodeAssist :
+l'ADR-067 : le compilateur Kotlin (43,6 Mo de dex). Le lot VII
+(ADR-069) prend la voie recommandée, la VM FORKÉE à la CodeAssist :
 le compilateur quitte l'APK, une VM ouvrière non-zygote le charge
 depuis un pack différé, et un build propre révèle la vraie taille
 de l'APK — **33,4 Mo**, contre 134,3 au lot V.
 
 | Étape | Contenu |
 |---|---|
-| VII/1 | l'OUVRIÈRE `KotlinWorkerMain` (source set `workerKotlin` de build-jvm, auto-contenu — aucune classe jo.joide.*) : boucle protocole ligne sur stdin/stdout (arguments en entrée, statut + diagnostics localisés en sortie, échappement des tabulations et sauts de ligne), VM RÉUTILISÉE entre les lots ; les arguments viennent de `KotlinArgs` et l'inventaire des classes écrites de `CompileInventory` — extraits du pilote embarqué, partagés, sans un seul type Kotlin |
-| VII/2 | le PILOTE `KotlinForkedDriver` (build-android) : `dalvikvm64 -Xmx1g -cp <pack> KotlinWorkerMain`, aucune classe du compilateur ne touche l'app, la morte d'ouvrière se détecte (EOF) et se re-fork ; `BuildRunner` résout par SONDE `Class.forName(K2JVMCompiler)` — embarqué au bureau, forké sur l'appareil (la sonde ne regarde PAS la stdlib : elle reste embarquée, le constructeur du pilote embarqué ne lèverait pas) ; les fabriques reçoivent le pilote par `withKotlinDriver(…)` |
-| VII/3 | le PACK `kotlin-compiler-2.3.0.dex.zip` (19 065 892 o, `ccc17bcd…767b28`, épinglé dans `PacksOutils.KOTLIN`) : l'ouvrière + le compilateur + sa FERMETURE TRANSITIVE du POM (stdlib, script-runtime, reflect — l'essai bout-en-bout a prouvé qu'il manque sinon —, daemon-embeddable, coroutines) + les RESSOURCES non-class (`.kotlin_module`) ; dexage PAR LOTS (6000 classes triées, renumérotation `classes.dex`, `classes2.dex`…) car D8 seul dépasse la mémoire d'une machine modeste ; déterministe — la tâche `dexPacksOutils` vérifie les empreintes, une divergence échoue |
-| VII/4 | l'APK : exclusion `kotlin-compiler-embeddable` (seule route : ide-integration) — stdlib et kotlin-metadata-jvm restent (l'ABI `KotlinFacts` les lit) ; l'ouvrier voyage par un RELAIS `kotlinWorkerApi` (build-android → build-jvm, ADR-011) ; **la découverte** : l'empaquetage incrémental d'AGP laissait 58,3 Mo d'entrées ORPHELINES dans l'APK du lot VI (les octets du contenu retiré, morts entre les entrées vivantes) — un build propre fait la vérité : l'APK lot VII **33,4 Mo** (35 012 865 o), signature v2 vérifiée |
+| VII/1 | l'OUVRIÈRE `KotlinWorkerMain` (source set `workerKotlin` de build-jvm, auto-contenu — aucune classe jo.joide.*) : boucle protocole ligne sur stdin/stdout (arguments en entrée, statut + diagnostics localisés en sortie, échappement des tabulations et sauts de ligne), VM RÉUTILISÉE entre les lots ; les arguments viennent de `KotlinArgs` et l'inventaire des classes écrites de `CompileInventory` — extraits du pilote embarqué, partagés, sans un seul type Kotlin |
+| VII/2 | le PILOTE `KotlinForkedDriver` (build-android) : `dalvikvm64 -Xmx1g -cp <pack> KotlinWorkerMain`, aucune classe du compilateur ne touche l'app, la morte d'ouvrière se détecte (EOF) et se re-fork ; `BuildRunner` résout par SONDE `Class.forName(K2JVMCompiler)` — embarqué au bureau, forké sur l'appareil (la sonde ne regarde PAS la stdlib : elle reste embarquée, le constructeur du pilote embarqué ne lèverait pas) ; les fabriques reçoivent le pilote par `withKotlinDriver(…)` |
+| VII/3 | le PACK `kotlin-compiler-2.3.0.dex.zip` (19 065 892 o, `ccc17bcd…767b28`, épinglé dans `PacksOutils.KOTLIN`) : l'ouvrière + le compilateur + sa FERMETURE TRANSITIVE du POM (stdlib, script-runtime, reflect — l'essai bout-en-bout a prouvé qu'il manque sinon —, daemon-embeddable, coroutines) + les RESSOURCES non-class (`.kotlin_module`) ; dexage PAR LOTS (6000 classes triées, renumérotation `classes.dex`, `classes2.dex`…) car D8 seul dépasse la mémoire d'une machine modeste ; déterministe — la tâche `dexPacksOutils` vérifie les empreintes, une divergence échoue |
+| VII/4 | l'APK : exclusion `kotlin-compiler-embeddable` (seule route : ide-integration) — stdlib et kotlin-metadata-jvm restent (l'ABI `KotlinFacts` les lit) ; l'ouvrier voyage par un RELAIS `kotlinWorkerApi` (build-android → build-jvm, ADR-011) ; **la découverte** : l'empaquetage incrémental d'AGP laissait 58,3 Mo d'entrées ORPHELINES dans l'APK du lot VI (les octets du contenu retiré, morts entre les entrées vivantes) — un build propre fait la vérité : l'APK lot VII **33,4 Mo** (35 012 865 o), signature v2 vérifiée |
 
 ---
 
-# CHANGES — Lot VI : la chaîne différée activée, le store qui se soigne, le service qui parle (2026-11-17)
+# CHANGES — Lot VI : la chaîne différée activée, le store qui se soigne, le service qui parle (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « Je
+**Le mandat du propriétaire** (message du 2026-11-17) : « Je
 t'autorise à faire tout les travaux nécessaire, retirer les trois
 implementation de jars d'outils, etc... Essayé aussi de corriger en
 parallèle, cette erreur quand j'appuie sur build: service de build
 injoignable (port non publié en 30 s) — relancez le build / cannot
 create store schema ». Le lot VI (ADR-068) répond point par point —
 les packs différés de la release `toolchain-v1` remplacent les jars
-embarqués (APK : 134,3 → 96,7 Mo), le store survit à une base
+embarqués (APK : 134,3 → 96,7 Mo), le store survit à une base
 corrompue et montre ses causes, et aucune faute de démarrage du
 service `:build` ne reste muette.
 
 | Étape | Contenu |
 |---|---|
-| VI/1 | la chaîne différée ACTIVÉE : `implementation(libs.r8)`, `libs.bundletool`, `libs.guava` partent du `build.gradle.kts` d'app-android (apksig reste, `toolsApi` garde les adaptateurs — leur échec de linkage EST le signal de repli pack de `BuildRunner.outil()`) ; l'APK perd 33,7 Mo de dex d'outils + 4 Mo de trous de packaging incrémental — 96,7 Mo |
-| VI/2 | `StoreAndroid.open()` se soigne : le PRAGMA WAL devient non fatal (journal par défaut au pire), une base EXISTANTE qui rate son schéma part de côté une fois (`build.db.cassé-<ts>` + `-wal`/`-shm`) et une base neuve prend le relais — le store est un CACHE, sa perte coûte un build à froid, jamais « cannot create store schema » à chaque build ; les messages portent le fichier et la cause SQLite brute |
-| VI/3 | `BuildService.onCreate()`/`onStartCommand()` gardés (`catch (Throwable)`) : notification refusée, politique de premier plan, canal absent — TOUT échec de démarrage écrit sa cause dans `demon-build.err` et s'arrête propre ; le client montre la cause pendant son attente, plus jamais trente secondes de « port non publié » muet |
+| VI/1 | la chaîne différée ACTIVÉE : `implementation(libs.r8)`, `libs.bundletool`, `libs.guava` partent du `build.gradle.kts` d'app-android (apksig reste, `toolsApi` garde les adaptateurs — leur échec de linkage EST le signal de repli pack de `BuildRunner.outil()`) ; l'APK perd 33,7 Mo de dex d'outils + 4 Mo de trous de packaging incrémental — 96,7 Mo |
+| VI/2 | `StoreAndroid.open()` se soigne : le PRAGMA WAL devient non fatal (journal par défaut au pire), une base EXISTANTE qui rate son schéma part de côté une fois (`build.db.cassé-<ts>` + `-wal`/`-shm`) et une base neuve prend le relais — le store est un CACHE, sa perte coûte un build à froid, jamais « cannot create store schema » à chaque build ; les messages portent le fichier et la cause SQLite brute |
+| VI/3 | `BuildService.onCreate()`/`onStartCommand()` gardés (`catch (Throwable)`) : notification refusée, politique de premier plan, canal absent — TOUT échec de démarrage écrit sa cause dans `demon-build.err` et s'arrête propre ; le client montre la cause pendant son attente, plus jamais trente secondes de « port non publié » muet |
 
 ---
 
-# CHANGES — Lot V : le build qui part, le fournisseur qui persiste, l'APK qui maigrit (2026-11-17)
+# CHANGES — Lot V : le build qui part, le fournisseur qui persiste, l'APK qui maigrit (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « le build
+**Le mandat du propriétaire** (message du 2026-11-17) : « le build
 ne fonctionne pas, j'ai des erreurs, peut-être que je n'utilise pas
 la bonne approche et qu'il manque d'autres outils. Il y a aussi un
 problème avec les fonctionnalités d'ia, j'ai choisi openrouter,
@@ -1635,18 +1701,18 @@ téléchargeables une fois, la manière CodeAssist) est prête.
 
 | Étape | Contenu |
 |---|---|
-| V/1 | `BuildService.onCreate()` pose `joide.toolchain.dir` et `joide.native.dir` DANS le processus `:build` — les propriétés système ne traversent pas les processus, le démon (moteur PAR DÉFAUT) cherchait `user.home` (absent sur ART) et ne voyait pas l'aapt2 embarqué : tout build Android via le service échouait |
-| V/2 | `jniLibs.useLegacyPackaging = true` : `libaapt2.so` s'EXTRAIT vers `nativeLibraryDir` (seul répertoire où ART exécute — sans extraction le binaire n'existe jamais sur le disque) ; `abiFilters` = arm64-v8a seul, `fetchAapt2` purge les ABI retirées (~16 Mo gagnés sur l'APK 4-ABI) |
-| V/3 | la variante debug SIGNE : `genererKeystoreDebug` (keytool, jamais commis) embarque l'asset `toolchain/debug.keystore`, `PreparationChaine` le copie vers `filesDir/toolchain`, `SpecsBuild.android()` le porte dans la variante — l'APK utilisateur s'installe directement (avant : `unsigned.apk`, ininstallable) |
+| V/1 | `BuildService.onCreate()` pose `joide.toolchain.dir` et `joide.native.dir` DANS le processus `:build` — les propriétés système ne traversent pas les processus, le démon (moteur PAR DÉFAUT) cherchait `user.home` (absent sur ART) et ne voyait pas l'aapt2 embarqué : tout build Android via le service échouait |
+| V/2 | `jniLibs.useLegacyPackaging = true` : `libaapt2.so` s'EXTRAIT vers `nativeLibraryDir` (seul répertoire où ART exécute — sans extraction le binaire n'existe jamais sur le disque) ; `abiFilters` = arm64-v8a seul, `fetchAapt2` purge les ABI retirées (~16 Mo gagnés sur l'APK 4-ABI) |
+| V/3 | la variante debug SIGNE : `genererKeystoreDebug` (keytool, jamais commis) embarque l'asset `toolchain/debug.keystore`, `PreparationChaine` le copie vers `filesDir/toolchain`, `SpecsBuild.android()` le porte dans la variante — l'APK utilisateur s'installe directement (avant : `unsigned.apk`, ininstallable) |
 | V/4 | Google Maven rejoint Maven Central dans le résolveur de l'app (`dl.google.com/android/maven2`) — AndroidX et `com.android.*` se résolvent, plus d'écart « non résolu, absent du classpath » |
-| V/5 | le fournisseur IA PERSISTE au tap de puce (`choisirFournisseur` : modèle posé pour lui, partagé si le garde l'accepte, sinon première suggestion — jamais « claude-sonnet-4-5 » chez OpenRouter) ; l'état de clé se voit sous la rangée (tap → réglages) ; titre Gemini du dialogue de saisie ; URL libre dans la signature de la bascule ; le message parti pendant le bind asynchrone se retient et part à la liaison |
-| V/6 | la chaîne DIFFÉRÉE : `PacksOutils` (packs de dex épinglés taille+SHA-256, téléchargés UNE fois), pont `ChargeurClassesOutil` (`DexClassLoader` dans app-android, ServiceLoader), repli de `BuildRunner.outil()` embarqué d'abord pack ensuite ; `:app-android:dexPacksOutils` génère les packs DÉTERMINISTES (r8 4,8 Mo, bundletool+guava 5,0 Mo) et échoue sur divergence des constantes — la publication dans la release `toolchain-v1` + le retrait des trois `implementation` de jars allègent l'APK de ~25 Mo (les étapes dans le commentaire du build.gradle.kts) |
+| V/5 | le fournisseur IA PERSISTE au tap de puce (`choisirFournisseur` : modèle posé pour lui, partagé si le garde l'accepte, sinon première suggestion — jamais « claude-sonnet-4-5 » chez OpenRouter) ; l'état de clé se voit sous la rangée (tap → réglages) ; titre Gemini du dialogue de saisie ; URL libre dans la signature de la bascule ; le message parti pendant le bind asynchrone se retient et part à la liaison |
+| V/6 | la chaîne DIFFÉRÉE : `PacksOutils` (packs de dex épinglés taille+SHA-256, téléchargés UNE fois), pont `ChargeurClassesOutil` (`DexClassLoader` dans app-android, ServiceLoader), repli de `BuildRunner.outil()` embarqué d'abord pack ensuite ; `:app-android:dexPacksOutils` génère les packs DÉTERMINISTES (r8 4,8 Mo, bundletool+guava 5,0 Mo) et échoue sur divergence des constantes — la publication dans la release `toolchain-v1` + le retrait des trois `implementation` de jars allègent l'APK de ~25 Mo (les étapes dans le commentaire du build.gradle.kts) |
 
 ---
 
-# CHANGES — Lot U : le parcours complet (2026-11-17)
+# CHANGES — Lot U : le parcours complet (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « Oui pour
+**Le mandat du propriétaire** (message du 2026-11-17) : « Oui pour
 le flux OAuth d'interface pour compléter le parcours MCP. Ajoute
 aussi openrouter dans le providers. Le emptyview quand aucun
 onglets n'est ouvert, le tiroir pour l'arborescence des fichiers
@@ -1655,21 +1721,21 @@ pas embarque ». Le lot U (ADR-066, note clean-room n° 6) répond
 point par point — OpenRouter dans les fournisseurs, le tiroir de
 l'arborescence avec son point d'entrée visible, l'état vide à une
 source de vérité, la signature OAuth du parcours MCP, et la
-chaîne Android EMBARQUÉE : d8, apksig, bundletool dans l'APK,
+chaîne Android EMBARQUÉE : d8, apksig, bundletool dans l'APK,
 aapt2 en jniLibs — l'APK Android se construit sur l'appareil.
 
 | Étape | Contenu | Commit |
 |---|---|---|
-| U/1 | OpenRouter rejoint les fournisseurs : l'enum s'allonge EN FIN (l'ordinal est le numéraire des favoris et récents), l'URL de base propre dans la fabrique du service, la rangée de clés dans Paramètres, la puce dans le sélecteur — les puces DÉFILENT horizontalement | `a47a139` |
-| U/2 | le tiroir de l'arborescence a son point d'entrée VISIBLE sur téléphone (le dossier de la barre supérieure pousse l'arbre, le retour le referme) ; l'état vide du puits EST l'état sans onglet actif — `majPuits()` une seule source de vérité | `4815167` |
-| U/3 | le flux OAuth d'interface : `FluxOAuthMcp` (une tentative par serveur, état anti-CSRF), « Se connecter par le navigateur » dans l'écran Connexions, l'écran de rappel exporté `joide://mcp/oauth`, le code échangé contre des jetons posés sous l'identité du serveur, la connexion repart en fond | `5160608` |
-| U/4 | d8 et aapt2 EMBARQUÉS : la route `SpecsBuild.constituer()` ouvre le pipeline ANDROID sur appareil (manifeste, android-res, actifs, AAR extraits, variante debug) ; aapt2 en jniLibs par ABI (ReVanced, 16 Ko, ELF vérifié), toolsApi + r8 + apksig + bundletool dans l'APK, déxeur en processus (ServiceLoader puis réflexion), fork réservé aux JVM filles, android.jar et r8 téléchargés épinglés | `c8afaf9` |
+| U/1 | OpenRouter rejoint les fournisseurs : l'enum s'allonge EN FIN (l'ordinal est le numéraire des favoris et récents), l'URL de base propre dans la fabrique du service, la rangée de clés dans Paramètres, la puce dans le sélecteur — les puces DÉFILENT horizontalement | `a47a139` |
+| U/2 | le tiroir de l'arborescence a son point d'entrée VISIBLE sur téléphone (le dossier de la barre supérieure pousse l'arbre, le retour le referme) ; l'état vide du puits EST l'état sans onglet actif — `majPuits()` une seule source de vérité | `4815167` |
+| U/3 | le flux OAuth d'interface : `FluxOAuthMcp` (une tentative par serveur, état anti-CSRF), « Se connecter par le navigateur » dans l'écran Connexions, l'écran de rappel exporté `joide://mcp/oauth`, le code échangé contre des jetons posés sous l'identité du serveur, la connexion repart en fond | `5160608` |
+| U/4 | d8 et aapt2 EMBARQUÉS : la route `SpecsBuild.constituer()` ouvre le pipeline ANDROID sur appareil (manifeste, android-res, actifs, AAR extraits, variante debug) ; aapt2 en jniLibs par ABI (ReVanced, 16 Ko, ELF vérifié), toolsApi + r8 + apksig + bundletool dans l'APK, déxeur en processus (ServiceLoader puis réflexion), fork réservé aux JVM filles, android.jar et r8 téléchargés épinglés | `c8afaf9` |
 
 ---
 
-# CHANGES — Lot T : les popups ancrés et la finition CodeAssist (2026-11-17)
+# CHANGES — Lot T : les popups ancrés et la finition CodeAssist (2026-11-17)
 
-**Le mandat du propriétaire** (message du 2026-11-17) : « L'écran
+**Le mandat du propriétaire** (message du 2026-11-17) : « L'écran
 usages doit similaire a celui de CodeAssist, de même pour la
 section thinking et aussi choix de modèles, utiliser des écrans
 popups ancre. Tu as mon approbation pour le MPC ». Le lot T
@@ -1680,20 +1746,20 @@ modèles d'un tap, l'approbation MCP qui se souvient par projet.
 
 | Étape | Contenu | Commit |
 |---|---|---|
-| T/1+2 | `PopupAncre` (la mécanique d'ancrage seule : tombée,
+| T/1+2 | `PopupAncre` (la mécanique d'ancrage seule : tombée,
 montée, hauteur bornée, tap extérieur), le menu ⋯ et le menu +
 ancrés, l'historique et les connexions en popups ancrées, la
 réflexion vivante (ouverte tant que le tour vit, pliée à la fin,
 chevron), la ligne d'activité au-dessus du composeur (réflexion /
 outil / rédaction + l'écart au pas d'une seconde), le pied d'usage
 en jetons compacts | `ff5d5c1` |
-| T/3 | l'écran Usages de la manière CodeAssist : le régulateur
+| T/3 | l'écran Usages de la manière CodeAssist : le régulateur
 SORT (`FournisseurBascule.occupationModele` → binder — l'écart de
 l'ADR-064 se ferme), un COMPTEUR par fenêtre (requêtes / min,
 jetons / min) avec pourcentage et bande colorée
 (accent→alerte→erreur), les trois pieds compacts, le banc par
 raison, Actualiser sans rouvrir | `81a7f66` |
-| T/4 | le sélecteur de modèles en popup ancrée : fournisseurs
+| T/4 | le sélecteur de modèles en popup ancrée : fournisseurs
 pointés, recherche, sections Favoris / Récents / Suggestions, la
 coche du courant, l'étoile (glyphe ETOILE) qui bascule sans
 fermer, favoris et récents persistés par fournisseur, le modèle
@@ -1705,7 +1771,7 @@ serveurs, un fichier changé redemande le geste explicite | `e8a6084` |
 backlog (BANDES et approbation MCP fermés), la maquette aux vues
 du lot T | ce commit |
 
-Tests : `:app-android:testDebugUnitTest` et `:agent:test` verts
+Tests : `:app-android:testDebugUnitTest` et `:agent:test` verts
 (MaquetteAgentTest éprouve les vues du lot T).
 
 ---

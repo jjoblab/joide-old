@@ -178,6 +178,46 @@ public final class RegulateurDebit {
     }
 
     /**
+     * Lot C4 (l'écran Usages « N de M » de CodeAssist) : les requêtes
+     * comptées dans la fenêtre et le plafond en vigueur.
+     *
+     * @return {requêtes envoyées dans la fenêtre, plafond rpm ou -1}
+     */
+    public synchronized long[] compteurRpm() {
+        Integer rpm = rpm();
+        elaguer(horloge.wallTimeMillis());
+        return new long[]{fenetre.size(),
+                rpm == null ? -1 : rpm};
+    }
+
+    /**
+     * Lot C4 : les jetons comptés dans la fenêtre et le plafond en
+     * vigueur.
+     *
+     * @return {jetons dans la fenêtre, plafond tpm ou -1}
+     */
+    public synchronized long[] compteurTpm() {
+        Long tpm = tpm();
+        elaguer(horloge.wallTimeMillis());
+        return new long[]{jetonsDansLaFenetre(),
+                tpm == null ? -1 : tpm};
+    }
+
+    /**
+     * Lot C4 (le « réinitialisé dans X » de CodeAssist) : l'instant
+     * où la PLUS ANCIENNE requête sort de la fenêtre glissante — la
+     * fenêtre se vide au fil de l'eau, c'est la prochaine RELANCE
+     * honnête d'un compte qui décroît.
+     *
+     * @return l'instant epoch ms de la première sortie, -1 si vide
+     */
+    public synchronized long premiereSortieMs() {
+        elaguer(horloge.wallTimeMillis());
+        return fenetre.isEmpty() ? -1
+                : fenetre.get(0).instant + FENETRE_MS;
+    }
+
+    /**
      * @return l'occupation de la fenêtre jetons (0..1 ; 0 sans
      *         plafond connu)
      */

@@ -3,7 +3,9 @@ package jo.joide.app.android;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -321,6 +323,63 @@ public final class AgentService extends Service {
                 return new double[]{0, 0};
             }
             return bascule.occupationModele(modeleCourant);
+        }
+
+        /**
+         * Lot C4 (le « N de M utilisé » de l’écran Usages) : les
+         * compteurs du modèle courant — {requêtes, plafond rpm ou -1,
+         * jetons, plafond tpm ou -1}, la clé la plus chargée parle.
+         *
+         * @return les compteurs de la fenêtre la plus chargée
+         */
+        public long[] compteursModele() {
+            FournisseurBascule bascule;
+            String modeleCourant;
+            synchronized (AgentService.this) {
+                bascule = fournisseurBascule;
+                modeleCourant = modele;
+            }
+            if (bascule == null) {
+                return new long[]{-1, -1, -1, -1};
+            }
+            return bascule.compteursModele(modeleCourant);
+        }
+
+        /**
+         * Lot C4 (le « réinitialisé dans X » de l’écran Usages) : les
+         * instants de relance des fenêtres — sortie de la plus
+         * ancienne requête de chaque fenêtre glissante.
+         *
+         * @return {relance rpm epoch ms ou -1, relance tpm epoch ms ou
+         *         -1}
+         */
+        public long[] relancesModele() {
+            FournisseurBascule bascule;
+            String modeleCourant;
+            synchronized (AgentService.this) {
+                bascule = fournisseurBascule;
+                modeleCourant = modele;
+            }
+            if (bascule == null) {
+                return new long[]{-1, -1};
+            }
+            return bascule.relancesModele(modeleCourant);
+        }
+
+        /**
+         * Lot C4 (le sélecteur de modèles « charge la liste ») : les
+         * modèles VIVANTS du fournisseur — la liste /models de sa
+         * passerelle, ou le catalogue honnête si l’appel échoue. Se
+         * consomme sur un fil DE FOND (l’appel réseau bloque le fil
+         * de l’appelant).
+         *
+         * @param fournisseur le fournisseur pointé (nom de stockage)
+         * @return les modèles vivants (vide si aucun appel ne répond)
+         */
+        public java.util.List<ModeleVivant> listeModeles(
+                jo.joide.app.android.parametres.Reglages
+                .FournisseurIa fournisseur) {
+            return AgentService.this.listeModelesVivantes(fournisseur);
         }
 
         // ---- les connexions MCP (lot S, ADR-064 câblant l'ADR-063) ----
@@ -1007,6 +1066,243 @@ public final class AgentService extends Service {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Lot C4 (2026-11-20) — la liste VIVANTE des modèles d'un
+    // fournisseur : le GET /models de sa passerelle, la manière
+    // CodeAssist (« charge la liste des modèles »). Le transport est
+    // celui de l'agent (D-5, un seul client HTTP) ; l'appel vit sur
+    // le fil DE FOND de l'atelier (jamais sur le fil de l'UI).
+    // ------------------------------------------------------------------
+
+    /** La version de l'API Anthropic (l'en-tête des deux appels). */
+    private static final String VERSION_ANTHROPIC = "2023-06-01";
+
+    /**
+     * Un modèle VIVANT (lot C4) : l'identifiant (la clé du sélecteur,
+     * celle qu'on envoie) et le nom d'affichage (la ligne du dessus —
+     * « GPT-5.1 » au-dessus de « gpt-5.1 », la manière CodeAssist).
+     */
+    public record ModeleVivant(String id, String nom) {
+    }
+
+    /**
+     * Les modèles VIVANTS d'un fournisseur : le /models de sa
+     * passerelle pointée (l'URL libre d'OpenAI, celle d'OpenRouter,
+     * les points d'entrée officiels sinon). OpenRouter répond SANS
+     * clé (endpoint public) ; Gemini authentifie par en-tête ;
+     * Anthropic et OpenAI-compatible par les leurs. Un échec rend
+     * une liste VIDE — le contrôleur garde le catalogue honnête,
+     * JAMAIS une liste inventée.
+     *
+     * @param fournisseur le fournisseur pointé (nom de stockage)
+     * @return les modèles vivants (vide si aucun ne répond)
+     */
+    private java.util.List<ModeleVivant> listeModelesVivantes(
+            jo.joide.app.android.parametres.Reglages.FournisseurIa
+                    fournisseur) {
+        String nom = nomStockageFournisseur(fournisseur);
+        String cle = lireCle(nom);
+        String url = jo.joide.app.android.parametres.Reglages
+                .lireUrlPour(
+                        jo.joide.app.android.parametres
+                                .PreferencesAndroid.source(this),
+                        fournisseur);
+        try {
+            jo.joide.agent.TransportHttp transport =
+                    new jo.joide.agent.TransportOkHttp();
+            jo.joide.agent.TransportHttp.Reponse reponse;
+            switch (fournisseur) {
+                case GEMINI -> {
+                    // la liste de Gemini : x-goog-api-key par en-tête,
+                    // jamais dans l'URL
+                    Map<String, String> entetes = new LinkedHashMap<>();
+                    if (cle != null && !cle.isEmpty()) {
+                        entetes.put("x-goog-api-key", cle);
+                    }
+                    reponse = transport.get(
+                            "https://generativelanguage"
+                                    + ".googleapis.com"
+                                    + "/v1beta/models?pageSize=1000",
+                            entetes,
+                            jo.joide.platform.CancelToken.NEVER);
+                    return modelesGemini(reponse.corps());
+                }
+                case ANTHROPIC -> {
+                    String base = url == null || url.isEmpty()
+                            ? jo.joide.agent.FournisseurAnthropic
+                            .URL_DEFAUT
+                            : url;
+                    Map<String, String> entetes =
+                            new LinkedHashMap<>();
+                    if (cle != null && !cle.isEmpty()) {
+                        entetes.put("x-api-key", cle);
+                    }
+                    entetes.put("anthropic-version",
+                            VERSION_ANTHROPIC);
+                    reponse = transport.get(
+                            base + "/v1/models?limit=1000",
+                            entetes,
+                            jo.joide.platform.CancelToken.NEVER);
+                    return modelesAnthropic(reponse.corps());
+                }
+                default -> {
+                    // OpenAI, OpenRouter et l'API personnalisée : le
+                    // dialecte OpenAI-compatible — Bearer si clé
+                    String base;
+                    if (fournisseur == jo.joide.app.android.parametres
+                            .Reglages.FournisseurIa.OPENROUTER) {
+                        base = url == null || url.isEmpty()
+                                ? URL_OPENROUTER : url;
+                    } else {
+                        base = url == null || url.isEmpty()
+                                ? jo.joide.agent
+                                .FournisseurOpenAiCompatible.URL_DEFAUT
+                                : url;
+                    }
+                    Map<String, String> entetes =
+                            new LinkedHashMap<>();
+                    if (cle != null && !cle.isEmpty()) {
+                        entetes.put("authorization", "Bearer " + cle);
+                    }
+                    reponse = transport.get(base + "/models",
+                            entetes,
+                            jo.joide.platform.CancelToken.NEVER);
+                    return modelesOpenAi(reponse.corps());
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            // réseau coupé, passerelle muette, JSON imprévu : la
+            // liste vivante est INDISPONIBLE — le catalogue honnête
+            // prend le relais dans le sélecteur
+            return java.util.List.of();
+        }
+    }
+    private static String nomStockageFournisseur(
+            jo.joide.app.android.parametres.Reglages.FournisseurIa
+                    fournisseur) {
+        return switch (fournisseur) {
+            case ANTHROPIC -> "anthropic";
+            case GEMINI -> "gemini";
+            case OPENROUTER -> "openrouter";
+            default -> "openai";
+        };
+    }
+
+    /**
+     * Les modèles de la réponse OpenAI-compatible
+     * ({"data":[{"id":…, "name":…}]}) — OpenRouter porte le nom
+     * d'affichage dans {@code name} (les passerelles sans nom rendent
+     * l'identifiant, la ligne du dessous disparaît d'elle-même).
+     *
+     * @param corps le JSON brut
+     * @return les modèles (vide si imprévu)
+     */
+    private static java.util.List<ModeleVivant> modelesOpenAi(
+            String corps) {
+        java.util.List<ModeleVivant> modeles =
+                new java.util.ArrayList<>();
+        try {
+            org.json.JSONObject racine = new org.json.JSONObject(corps);
+            org.json.JSONArray donnees = racine.optJSONArray("data");
+            if (donnees == null) {
+                return modeles;
+            }
+            for (int i = 0; i < donnees.length(); i++) {
+                org.json.JSONObject modele = donnees.optJSONObject(i);
+                if (modele == null) {
+                    continue;
+                }
+                String id = modele.optString("id", "");
+                if (id.isEmpty()) {
+                    continue;
+                }
+                String nom = modele.optString("name", "");
+                modeles.add(new ModeleVivant(id,
+                        nom.isEmpty() ? id : nom));
+            }
+        } catch (org.json.JSONException e) {
+            // JSON imprévu : liste vide (le catalogue prend le relais)
+        }
+        return modeles;
+    }
+
+    /**
+     * Les modèles de la réponse Anthropic ({"data":
+     * [{"id":…, "display_name":…}]}).
+     *
+     * @param corps le JSON brut
+     * @return les modèles (vide si imprévu)
+     */
+    private static java.util.List<ModeleVivant> modelesAnthropic(
+            String corps) {
+        java.util.List<ModeleVivant> modeles =
+                new java.util.ArrayList<>();
+        try {
+            org.json.JSONObject racine = new org.json.JSONObject(corps);
+            org.json.JSONArray donnees = racine.optJSONArray("data");
+            if (donnees == null) {
+                return modeles;
+            }
+            for (int i = 0; i < donnees.length(); i++) {
+                org.json.JSONObject modele = donnees.optJSONObject(i);
+                if (modele == null) {
+                    continue;
+                }
+                String id = modele.optString("id", "");
+                if (id.isEmpty()) {
+                    continue;
+                }
+                String nom = modele.optString("display_name", "");
+                modeles.add(new ModeleVivant(id,
+                        nom.isEmpty() ? id : nom));
+            }
+        } catch (org.json.JSONException e) {
+            // JSON imprévu : liste vide (le catalogue prend le relais)
+        }
+        return modeles;
+    }
+
+    /**
+     * Les modèles de la réponse Gemini ({"models": [{"name":
+     * "models/…", "displayName":…}]} — le préfixe models/ se retire,
+     * la clé du sélecteur reste l'identifiant nu).
+     *
+     * @param corps le JSON brut
+     * @return les modèles nus (vide si imprévu)
+     */
+    private static java.util.List<ModeleVivant> modelesGemini(
+            String corps) {
+        java.util.List<ModeleVivant> modeles =
+                new java.util.ArrayList<>();
+        try {
+            org.json.JSONObject racine = new org.json.JSONObject(corps);
+            org.json.JSONArray modelesJson = racine.optJSONArray(
+                    "models");
+            if (modelesJson == null) {
+                return modeles;
+            }
+            for (int i = 0; i < modelesJson.length(); i++) {
+                org.json.JSONObject modele = modelesJson.optJSONObject(i);
+                if (modele == null) {
+                    continue;
+                }
+                String nom = modele.optString("name", "");
+                if (nom.startsWith("models/")) {
+                    nom = nom.substring("models/".length());
+                }
+                if (nom.isEmpty()) {
+                    continue;
+                }
+                String affiche = modele.optString("displayName", "");
+                modeles.add(new ModeleVivant(nom,
+                        affiche.isEmpty() ? nom : affiche));
+            }
+        } catch (org.json.JSONException e) {
+            // JSON imprévu : liste vide (le catalogue prend le relais)
+        }
+        return modeles;
     }
 
     // ------------------------------------------------------------------

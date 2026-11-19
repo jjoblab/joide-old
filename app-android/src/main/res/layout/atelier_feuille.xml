@@ -18,11 +18,20 @@
   layouts de section) ni de contenu POSÉ puis DÉPLACÉ de parent en
   parent (« already has a parent », lot C2) : le conteneur ne bouge
   pas, la transaction montre/cache.
+
+  Lot C4 (2026-11-20) — la racine passe à MATCH_PARENT : la vue
+  EXTERNE (FeuilleBasse) porte la hauteur ANIMÉE des détentes, la
+  racine interne fixée à 72 dp ne grandissait JAMAIS avec elle — le
+  corps (0dp + poids sous poignée 20 + en-tête 52) recevait ZÉRO
+  pixel à toutes les détentes : le tap du rail ouvrait la feuille,
+  la zone vivante changeait, la SECTION demeurait invisible (rapport
+  du terrain). MATCH_PARENT : la racine suit la hauteur animée, le
+  corps touche enfin sa part.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/feuille_basse"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/feuille_fond"
     android:elevation="10dp">

@@ -15,6 +15,8 @@ import java.util.List;
 import jo.joide.app.android.AgentService;
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.agent.EtatAgentChat;
+import jo.joide.app.android.atelier.agent.ModelesAgent;
+import jo.joide.app.android.atelier.agent.ModelesAgent.Tri;
 import jo.joide.app.android.databinding.ChampSaisieParamBinding;
 import jo.joide.app.android.databinding.ItemEnteteSectionBinding;
 import jo.joide.app.android.databinding.ItemModeleBinding;
@@ -35,6 +37,19 @@ import jo.joide.app.android.ui.Puce;
  * dans {@link Reglages} et le service ; aucune vue du cadre
  * n'est instanciée ici — les corps vivent dans {@code popup_*.xml}
  * gonflés par binding.
+ *
+ * <p>Lot C4 (2026-11-20, demande du terrain : « l'écran choisir
+ * modèle (le popup) doit comprendre les options de filtrage, charger
+ * la liste des modèles, etc. » — consultation clean-room n° 4, mandat
+ * du propriétaire) : la LISTE VIVANTE du fournisseur (le /models de sa
+ * passerelle, fil de fond puis fil d'UI) fusionne au catalogue honnête
+ * — l'indice de recherche porte le compte ; la RANGÉE DE FILTRES
+ * (le fournisseur d'identifiant en menu déroulant avec compte, le tri
+ * nom/fournisseur, les gratuits seulement) suit le modèle pur
+ * {@link ModelesAgent} ; la ligne de modèle porte le NOM NU,
+ * la PUCE « Gratuit », l'IDENTIFIANT dessous quand il diffère, la
+ * coche et l'étoile ; les sections (favoris, récents, le reste)
+ * cachent leur en-tête quand tout tient en une seule.</p>
  */
 final class ControleurModelesAgent {
 
@@ -44,6 +59,10 @@ final class ControleurModelesAgent {
     /** La clé du brouillon de l'URL personnalisée. */
     private static final String BROUILLON_URL = "agent.url";
 
+    /** Le seuil au-delà duquel la recherche prend le focus (CodeAssist :
+     *  « Searching is the point of a long list »). */
+    private static final int LISTE_LONGUE = 20;
+
     private final HoteAtelier hote;
 
     ControleurModelesAgent(HoteAtelier hote) {
@@ -51,12 +70,14 @@ final class ControleurModelesAgent {
     }
 
     /**
-     * Le sélecteur de modèle de la manière CodeAssist (lot T,
-     * ADR-065) : une popup ANCRÉE à la puce du tiroir — la rangée de
-     * fournisseurs, la recherche qui filtre, les favoris (étoile) et
-     * les récents devant les suggestions, la coche sur le modèle
-     * courant. Un modèle se choisit D'UN TAP : le couple part au
-     * service, la puce se rafraîchit, la conversation continue.
+     * Le sélecteur de modèle de la manière CodeAssist (lot T, ADR-065,
+     * puis lot C4) : une popup ANCRÉE à la puce du tiroir — la rangée de
+     * fournisseurs, l'état de clé, la recherche (l'indice porte le
+     * compte), la rangée de FILTRES (fournisseur d'identifiant, tri,
+     * gratuits), la liste vivante fusionnée au catalogue (favoris,
+     * récents, le reste), la coche sur le modèle courant. Un modèle se
+     * choisit D'UN TAP : le couple part au service, la puce se
+     * rafraîchit, la conversation continue.
      */
     void ouvrir() {
         if (hote.vueAgent() == null) {
@@ -71,16 +92,27 @@ final class ControleurModelesAgent {
         };
         Runnable[] rafraichir = new Runnable[1];
         int[] fournisseurIndex = {reglages.fournisseurIa.ordinal()};
+        // le filtre (lot C4) : la recherche vit dans le champ, le
+        // fournisseur/les gratuits/le tri dans ces cases (captures)
+        final String[] fournisseurFiltre = {null};
+        final boolean[] gratuitsSeuls = {false};
+        final Tri[] tri = {Tri.NOM};
+        // la liste fusionnée (catalogue d'abord, la vivante rejoint) —
+        // une référence atomique : une case TYPEE (le tableau générique
+        // exigerait un transtypage non vérifié)
+        final java.util.concurrent.atomic.AtomicReference<
+                List<AgentService.ModeleVivant>> modeles =
+                new java.util.concurrent.atomic.AtomicReference<>(
+                        catalogue(fournisseurIndex[0]));
 
         // ---- la coque du XML : titre, fermer, la rangée des
-        // fournisseurs, l'état de clé, la recherche, la liste — les
-        // PUCES (état pointé) restent posées par code, la vérité
-        // reste dans les réglages
+        // fournisseurs, l'état de clé, la recherche, les filtres, la
+        // liste — les PUCES (état pointé) restent posées par code, la
+        // vérité reste dans les réglages
         PopupModelesBinding coque = PopupModelesBinding.inflate(
                 LayoutInflater.from(hote.contexte()));
         // la coque du XML est un ScrollView BORNÉ (la liste défile
         // dedans quand la place manque — PopupAncre borne la fenêtre)
-        android.widget.ScrollView colonne = coque.getRoot();
         Icone fermerIcone = coque.btnFermerModeles;
         fermerIcone.setOnClickListener(vue -> fermer.run());
 
@@ -144,7 +176,14 @@ final class ControleurModelesAgent {
                 // fix 2026-11-17 : le fournisseur se PERSISTE au tap —
                 // puce seule ne suffisait pas (voir choisirFournisseur)
                 choisirFournisseur(fournisseurs[index]);
+                // lot C4 : le filtre du fournisseur d'identifiant se
+                // réinitialise (il appartenait à l'AUTRE liste), la
+                // vivante se charge pour LE fournisseur pointé
+                fournisseurFiltre[0] = null;
+                modeles.set(catalogue(index));
                 majEtatCles[0].run();
+                chargerVivants(fenetre, modeles, fournisseurIndex,
+                        coque, rafraichir);
                 rafraichir[0].run();
             });
             puces[i] = puce;
@@ -168,11 +207,58 @@ final class ControleurModelesAgent {
         recherche.setHintTextColor(hote.palette().texteEstompe);
         recherche.setTypeface(jo.joide.app.android.ui.GraphiteVue
                 .police(hote.contexte(), 400, false));
+        // lot C4 : l'indice porte le COMPTE des modèles (la manière
+        // « Search among 300 models… » de CodeAssist)
+        poserIndice(recherche, modeles.get().size());
 
-        LinearLayout liste = coque.listeModeles;
-        rafraichir[0] = () -> remplirListe(coque, fournisseurIndex[0],
-                recherche.getText().toString(), fermer,
-                rafraichir[0]);
+        // ---- la rangée de FILTRES (lot C4, la manière CodeAssist) :
+        // le fournisseur d'identifiant (menu déroulant avec compte),
+        // le tri nom/fournisseur, les gratuits seulement — la rangée
+        // n'apparaît que si elle peut rétrécir la liste
+        rafraichir[0] = () -> remplirListe(coque, fenetre, modeles.get(),
+                fournisseurIndex[0],
+                recherche.getText().toString(), fournisseurFiltre[0],
+                gratuitsSeuls[0], tri[0], fermer, rafraichir[0],
+                () -> {
+                    // le fournisseur d'identifiant se choisit dans le
+                    // menu (le compte accompagne chaque entrée)
+                    List<jo.joide.app.android.ui.PortePopups.EntreeMenu>
+                            entrees = new ArrayList<>();
+                    entrees.add(new jo.joide.app.android.ui
+                            .PortePopups.EntreeMenu(
+                            hote.texte(R.string
+                                    .agent_modeles_tous_fournisseurs),
+                            () -> {
+                                fournisseurFiltre[0] = null;
+                                rafraichir[0].run();
+                            }));
+                    for (String fournisseur : ModelesAgent.fournisseurs(
+                            ids(modeles.get()))) {
+                        String compte = fournisseur + "  ("
+                                + ModelesAgent.nombreDuFournisseur(
+                                ids(modeles.get()), fournisseur) + ")";
+                        entrees.add(new jo.joide.app.android.ui
+                                .PortePopups.EntreeMenu(compte, () -> {
+                            fournisseurFiltre[0] = fournisseur;
+                            rafraichir[0].run();
+                        }));
+                    }
+                    hote.popups().menu(coque.filtreFournisseurModeles,
+                            hote.texte(R.string
+                                    .agent_modeles_tous_fournisseurs),
+                            220, entrees);
+                },
+                () -> {
+                    // le tri bascule nom ↔ fournisseur
+                    tri[0] = tri[0] == Tri.NOM
+                            ? Tri.FOURNISSEUR : Tri.NOM;
+                    rafraichir[0].run();
+                },
+                () -> {
+                    // les gratuits seulement
+                    gratuitsSeuls[0] = !gratuitsSeuls[0];
+                    rafraichir[0].run();
+                });
         recherche.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s,
@@ -197,97 +283,257 @@ final class ControleurModelesAgent {
             fermer.run();
             ouvrirPersonnalise(fournisseurIndex[0]);
         });
+
+        // la liste VIVANTE du fournisseur pointé (lot C4, la manière
+        // CodeAssist « charge la liste des modèles ») : fil de fond,
+        // puis fusion au fil d'UI — la liste honnête vit déjà, la
+        // vivante la remplace dès qu'elle répond
+        chargerVivants(fenetre, modeles, fournisseurIndex, coque,
+                rafraichir);
+
         fenetre[0] = hote.popups().ancrer(
-                hote.vueAgent().ancreModele(), colonne, 320);
+                hote.vueAgent().ancreModele(), coque.getRoot(), 320);
     }
 
-    /** Les sections du sélecteur : favoris, récents, suggestions —
-     *  l'état vide (sections vides SANS filtre) se dit par le footer
-     *  fixe de la coque ; une recherche sans résultat se voit au
-     *  filtre posé. */
+    /**
+     * Charge la liste VIVANTE du fournisseur pointé (lot C4) : l'appel
+     * vit sur le fil de fond de l'atelier (l'appel réseau bloque), la
+     * fusion et l'indice reviennent au fil d'UI — la popup peut être
+     * fermée entre-temps (la fusion se garde, la vue se vérifie).
+     */
+    private void chargerVivants(
+            PopupWindow[] fenetre,
+            java.util.concurrent.atomic.AtomicReference<
+                    List<AgentService.ModeleVivant>> modeles,
+            int[] fournisseurIndex, PopupModelesBinding coque,
+            Runnable[] rafraichir) {
+        if (hote.agent() == null) {
+            return;
+        }
+        final int index = fournisseurIndex[0];
+        Reglages.FournisseurIa fournisseur =
+                Reglages.FournisseurIa.values()[index];
+        hote.fond().execute(() -> {
+            List<AgentService.ModeleVivant> vivants =
+                    hote.agent().listeModeles(fournisseur);
+            hote.executerSurFilUi(() -> {
+                if (fenetre[0] != null && !fenetre[0].isShowing()) {
+                    // la popup a fermé : la fusion ne s'affiche pas
+                    // (elle resterait honnête pour la prochaine ouverture)
+                    return;
+                }
+                if (!vivants.isEmpty() && index == fournisseurIndex[0]) {
+                    modeles.set(fusion(modeles.get(), vivants));
+                    EditText recherche = coque.rechercheModeles;
+                    poserIndice(recherche, modeles.get().size());
+                    if (modeles.get().size() > LISTE_LONGUE
+                            && fenetre[0].isShowing()
+                            && !recherche.hasFocus()) {
+                        // la recherche est le but d'une longue liste
+                        // (CodeAssist : « Searching is the point »)
+                        recherche.requestFocus();
+                    }
+                    rafraichir[0].run();
+                }
+            });
+        });
+    }
+
+    /**
+     * L'indice de recherche porte le compte des modèles proposés.
+     */
+    private void poserIndice(EditText recherche, int compte) {
+        recherche.setHint(hote.texte(
+                R.string.agent_modeles_recherche_compte, compte));
+    }
+
+    /**
+     * La fusion : la liste VIVANTE devant, le catalogue honnête suit
+     * (un favori du catalogue reste visible même absent de la réponse ;
+     * les doublons se gardent une fois).
+     */
+    private static List<AgentService.ModeleVivant> fusion(
+            List<AgentService.ModeleVivant> catalogue,
+            List<AgentService.ModeleVivant> vivants) {
+        List<AgentService.ModeleVivant> fusionnes =
+                new ArrayList<>(vivants);
+        for (AgentService.ModeleVivant modele : catalogue) {
+            boolean connu = false;
+            for (AgentService.ModeleVivant vivant : fusionnes) {
+                if (vivant.id().equals(modele.id())) {
+                    connu = true;
+                    break;
+                }
+            }
+            if (!connu) {
+                fusionnes.add(modele);
+            }
+        }
+        return fusionnes;
+    }
+
+    /** Les identifiants d'une liste de modèles vivants. */
+    private static List<String> ids(
+            List<AgentService.ModeleVivant> modeles) {
+        List<String> identifiants = new ArrayList<>();
+        for (AgentService.ModeleVivant modele : modeles) {
+            identifiants.add(modele.id());
+        }
+        return identifiants;
+    }
+
+    /**
+     * Les sections du sélecteur (lot C4 — favoris, récents, le reste ;
+     * l'en-tête se cache quand tout tient en une seule section, la
+     * manière CodeAssist) ; l'état vide se dit par le footer fixe.
+     */
     private void remplirListe(PopupModelesBinding coque,
-                              int fournisseurIndex,
-                              String requete, Runnable fermer,
-                              Runnable rafraichir) {
+                              PopupWindow[] fenetre,
+                              List<AgentService.ModeleVivant> modeles,
+                              int fournisseurIndex, String requete,
+                              String fournisseurFiltre,
+                              boolean gratuitsSeuls, Tri tri,
+                              Runnable fermer, Runnable rafraichir,
+                              Runnable menuFournisseur,
+                              Runnable basculerTri,
+                              Runnable basculerGratuits) {
         LinearLayout liste = coque.listeModeles;
         liste.removeAllViews();
         Reglages reglages = Reglages.lire(hote.sourceReglages());
-        String[] catalogue = catalogueModele(fournisseurIndex);
         List<String> favoris = lireListeModeles(
                 cleFavorisModeles(fournisseurIndex));
         List<String> recents = lireListeModeles(
                 cleRecentsModeles(fournisseurIndex));
-        String filtre = requete == null ? ""
-                : requete.trim().toLowerCase(java.util.Locale.ROOT);
+        ModelesAgent.Filtre filtre = new ModelesAgent.Filtre(
+                requete, fournisseurFiltre, gratuitsSeuls, tri);
+        ModelesAgent.Sections sections = ModelesAgent.sections(
+                ids(modeles), filtre, favoris, recents);
         LayoutInflater gonfleur = LayoutInflater.from(hote.contexte());
-        List<String> sectionFavoris = new ArrayList<>();
-        List<String> sectionRecents = new ArrayList<>();
-        List<String> sectionSuggestions = new ArrayList<>();
-        for (String modele : catalogue) {
-            if (!filtre.isEmpty() && !modele.toLowerCase(
-                    java.util.Locale.ROOT).contains(filtre)) {
-                continue;
-            }
-            if (favoris.contains(modele)) {
-                sectionFavoris.add(modele);
-            } else if (recents.contains(modele)) {
-                sectionRecents.add(modele);
+
+        // ---- la rangée des filtres (lot C4) : elle ne se montre que
+        // si elle peut rétrécir la liste (plusieurs fournisseurs
+        // d'identifiant, ou au moins un gratuit — la manière CodeAssist)
+        List<String> fournisseursIds = ModelesAgent.fournisseurs(
+                ids(modeles));
+        boolean unGratuit = ModelesAgent.unGratuit(ids(modeles));
+        boolean filtresUtiles = fournisseursIds.size() > 1 || unGratuit;
+        coque.filtresModeles.setVisibility(
+                filtresUtiles ? View.VISIBLE : View.GONE);
+        if (filtresUtiles) {
+            Puce puceFournisseur = coque.filtreFournisseurModeles;
+            if (fournisseursIds.size() > 1) {
+                puceFournisseur.setVisibility(View.VISIBLE);
+                puceFournisseur.setText(fournisseurFiltre == null
+                        ? hote.texte(R.string
+                        .agent_modeles_tous_fournisseurs)
+                        : fournisseurFiltre);
+                puceFournisseur.setPointee(fournisseurFiltre != null);
+                puceFournisseur.setOnClickListener(
+                        vue -> menuFournisseur.run());
             } else {
-                sectionSuggestions.add(modele);
+                puceFournisseur.setVisibility(View.GONE);
+            }
+            Puce puceTri = coque.filtreTriModeles;
+            puceTri.setText(hote.texte(tri == Tri.FOURNISSEUR
+                    ? R.string.agent_modeles_tri_fournisseur
+                    : R.string.agent_modeles_tri_nom));
+            puceTri.setPointee(tri == Tri.FOURNISSEUR);
+            puceTri.setOnClickListener(vue -> basculerTri.run());
+            Puce puceGratuits = coque.filtreGratuitsModeles;
+            if (unGratuit) {
+                puceGratuits.setVisibility(View.VISIBLE);
+                puceGratuits.setText(hote.texte(
+                        R.string.agent_modeles_gratuits));
+                puceGratuits.setPointee(gratuitsSeuls);
+                puceGratuits.setOnClickListener(
+                        vue -> basculerGratuits.run());
+            } else {
+                puceGratuits.setVisibility(View.GONE);
             }
         }
-        boolean vide = sectionFavoris.isEmpty() && sectionRecents.isEmpty()
-                && sectionSuggestions.isEmpty();
-        if (!sectionFavoris.isEmpty()) {
-            ajouterEntete(liste, gonfleur,
+
+        // ---- les sections : l'en-tête ne se montre QUE si plus d'une
+        // section vit (une liste entière sous un en-tête est du bruit)
+        boolean entetes = sections.favoris.size()
+                + sections.recents.size() + sections.reste.size()
+                != Math.max(sections.favoris.size(),
+                Math.max(sections.recents.size(),
+                        sections.reste.size()));
+        if (!sections.favoris.isEmpty()) {
+            ajouterEntete(liste, gonfleur, entetes,
                     hote.texte(R.string.agent_modeles_favoris));
         }
-        for (String modele : sectionFavoris) {
-            ajouterModele(liste, gonfleur, modele,
+        for (String modele : sections.favoris) {
+            ajouterModele(liste, gonfleur, modele, nomDe(modeles, modele),
                     modele.equals(reglages.modeleIa), true,
-                    fournisseurIndex, fermer, rafraichir);
+                    fournisseurIndex, fenetre, fermer, rafraichir);
         }
-        if (!sectionRecents.isEmpty()) {
-            ajouterEntete(liste, gonfleur,
+        if (!sections.recents.isEmpty()) {
+            ajouterEntete(liste, gonfleur, entetes,
                     hote.texte(R.string.agent_modeles_recents));
         }
-        for (String modele : sectionRecents) {
-            ajouterModele(liste, gonfleur, modele,
+        for (String modele : sections.recents) {
+            ajouterModele(liste, gonfleur, modele, nomDe(modeles, modele),
                     modele.equals(reglages.modeleIa), false,
-                    fournisseurIndex, fermer, rafraichir);
+                    fournisseurIndex, fenetre, fermer, rafraichir);
         }
-        if (!sectionSuggestions.isEmpty()) {
-            ajouterEntete(liste, gonfleur,
-                    hote.texte(R.string.agent_modeles_suggestions));
+        if (!sections.reste.isEmpty()) {
+            ajouterEntete(liste, gonfleur, entetes,
+                    hote.texte(R.string.agent_modeles_tous));
         }
-        for (String modele : sectionSuggestions) {
-            ajouterModele(liste, gonfleur, modele,
+        for (String modele : sections.reste) {
+            ajouterModele(liste, gonfleur, modele, nomDe(modeles, modele),
                     modele.equals(reglages.modeleIa), false,
-                    fournisseurIndex, fermer, rafraichir);
+                    fournisseurIndex, fenetre, fermer, rafraichir);
         }
+        boolean filtreActif = (requete != null && !requete.isBlank())
+                || fournisseurFiltre != null || gratuitsSeuls;
+        coque.videModeles.setText(hote.texte(
+                R.string.agent_modeles_aucun));
         coque.videModeles.setVisibility(
-                vide && filtre.isEmpty() ? View.VISIBLE : View.GONE);
+                sections.vide() && (filtreActif || modeles.isEmpty())
+                        ? View.VISIBLE : View.GONE);
     }
 
-    /** L'en-tête discret d'une section du sélecteur. */
+    /** L'en-tête d'une section (caché quand tout tient en une seule). */
     private void ajouterEntete(LinearLayout liste,
-                               LayoutInflater gonfleur,
+                               LayoutInflater gonfleur, boolean montrer,
                                CharSequence titre) {
+        if (!montrer) {
+            return;
+        }
         ItemEnteteSectionBinding entete =
                 ItemEnteteSectionBinding.inflate(gonfleur, liste,
                         true);
         entete.titreSection.setText(titre);
     }
 
-    /** Une ligne de modèle : la coche du courant, l'étoile du favori. */
+    /**
+     * Une ligne de modèle (lot C4 — la ligne complète de CodeAssist) :
+     * le NOM NU (le préfixe « Fournisseur : » ôté), la PUCE « Gratuit »
+     * des identifiants :free, la COCHE du courant, l'ÉTOILE du favori,
+     * et l'IDENTIFIANT NU dessous quand il diffère du nom montré. Le
+     * tap choisit ; l'étoile bascule.
+     */
     private void ajouterModele(LinearLayout liste,
                                LayoutInflater gonfleur, String modele,
-                               boolean courant, boolean favori,
-                               int fournisseurIndex, Runnable fermer,
+                               String nomAffiche, boolean courant,
+                               boolean favori, int fournisseurIndex,
+                               PopupWindow[] fenetre, Runnable fermer,
                                Runnable rafraichir) {
         ItemModeleBinding ligne = ItemModeleBinding.inflate(gonfleur,
                 liste, true);
-        ligne.nomModele.setText(modele);
+        String nomNu = ModelesAgent.nomNu(modele, nomAffiche);
+        ligne.nomModele.setText(nomNu);
+        if (ModelesAgent.estGratuit(modele)) {
+            ligne.gratuitModele.setVisibility(View.VISIBLE);
+            ligne.gratuitModele.setText(
+                    hote.texte(R.string.agent_modeles_gratuit));
+        }
+        if (!nomNu.equals(modele)) {
+            ligne.idModele.setVisibility(View.VISIBLE);
+            ligne.idModele.setText(modele);
+        }
         if (courant) {
             ligne.cocheModele.setVisibility(View.VISIBLE);
         }
@@ -304,11 +550,31 @@ final class ControleurModelesAgent {
         });
     }
 
-    /**
-     * Le catalogue suggéré d'un fournisseur (l'honnêteté : des
-     * suggestions nommées, jamais une liste prétendue vivante).
-     */
-    private static String[] catalogueModele(int fournisseurIndex) {
+    /** Le nom d'affichage d'un identifiant de la liste fusionnée. */
+    private static String nomDe(
+            List<AgentService.ModeleVivant> modeles, String id) {
+        for (AgentService.ModeleVivant modele : modeles) {
+            if (modele.id().equals(id)) {
+                return modele.nom();
+            }
+        }
+        return id;
+    }
+
+    /** Le catalogue suggéré d'un fournisseur (l'honnêteté : des
+     *  suggestions nommées, la vivante les remplace dès qu'elle
+     *  répond). */
+    private static List<AgentService.ModeleVivant> catalogue(
+            int fournisseurIndex) {
+        List<AgentService.ModeleVivant> modeles = new ArrayList<>();
+        for (String id : catalogueIds(fournisseurIndex)) {
+            modeles.add(new AgentService.ModeleVivant(id, id));
+        }
+        return modeles;
+    }
+
+    /** Les identifiants du catalogue d'un fournisseur. */
+    private static String[] catalogueIds(int fournisseurIndex) {
         return switch (Reglages.FournisseurIa
                 .values()[fournisseurIndex]) {
             case ANTHROPIC -> new String[]{
@@ -373,7 +639,7 @@ final class ControleurModelesAgent {
             }
         }
         if (!Reglages.modeleAppartient(modele, choisi)) {
-            String[] catalogue = catalogueModele(choisi.ordinal());
+            String[] catalogue = catalogueIds(choisi.ordinal());
             modele = catalogue.length > 0 ? catalogue[0] : "";
         }
         if (modele.isEmpty()) {

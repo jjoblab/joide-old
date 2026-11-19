@@ -170,6 +170,65 @@ public final class FournisseurBascule implements FournisseurLlm {
     }
 
     /**
+     * Lot C4 (l'écran Usages « N de M utilisé » de CodeAssist) : les
+     * compteurs du modèle courant — la clé la plus chargée parle pour
+     * toutes (celle qui porte la fenêtre la plus pleine).
+     *
+     * @param modele le modèle courant (le filtre des régulateurs)
+     * @return {requêtes, plafond rpm ou -1, jetons, plafond tpm ou -1}
+     */
+    public synchronized long[] compteursModele(String modele) {
+        long[] meilleurs = {-1, -1, -1, -1};
+        double meilleure = -1;
+        String suffixe = modele == null ? "" : "|" + modele;
+        for (Map.Entry<String, RegulateurDebit> entree
+                : regulateurs.entrySet()) {
+            if (!suffixe.isEmpty()
+                    && !entree.getKey().endsWith(suffixe)) {
+                continue;
+            }
+            RegulateurDebit regulateur = entree.getValue();
+            double occupation = Math.max(regulateur.occupationRpm(),
+                    regulateur.occupationTpm(0));
+            if (occupation > meilleure) {
+                meilleure = occupation;
+                long[] rpm = regulateur.compteurRpm();
+                long[] tpm = regulateur.compteurTpm();
+                meilleurs = new long[]{rpm[0], rpm[1], tpm[0],
+                        tpm[1]};
+            }
+        }
+        return meilleurs;
+    }
+
+    /**
+     * Lot C4 (le « réinitialisé dans X » de CodeAssist) : les
+     * instants où les fenêtres du modèle courant se relancent (la
+     * sortie de la plus ancienne requête).
+     *
+     * @param modele le modèle courant (le filtre des régulateurs)
+     * @return {relance rpm epoch ms ou -1, relance tpm epoch ms ou -1}
+     */
+    public synchronized long[] relancesModele(String modele) {
+        long relanceRpm = -1;
+        long relanceTpm = -1;
+        String suffixe = modele == null ? "" : "|" + modele;
+        for (Map.Entry<String, RegulateurDebit> entree
+                : regulateurs.entrySet()) {
+            if (!suffixe.isEmpty()
+                    && !entree.getKey().endsWith(suffixe)) {
+                continue;
+            }
+            RegulateurDebit regulateur = entree.getValue();
+            relanceRpm = Math.max(relanceRpm,
+                    regulateur.premiereSortieMs());
+            relanceTpm = Math.max(relanceTpm,
+                    regulateur.premiereSortieMs());
+        }
+        return new long[]{relanceRpm, relanceTpm};
+    }
+
+    /**
      * L'échec quand toutes les clés sont au banc : attendable si la
      * première clé qui revient n'attend qu'une minute de débit
      * courte, agrégé et conseillé sinon.

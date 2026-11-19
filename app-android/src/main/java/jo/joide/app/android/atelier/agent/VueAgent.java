@@ -28,6 +28,7 @@ import jo.joide.app.android.databinding.ItemOutilBinding;
 import jo.joide.app.android.databinding.ItemQuestionBinding;
 import jo.joide.app.android.databinding.ItemQuestionLigneBinding;
 import jo.joide.app.android.databinding.ItemRaisonnementBinding;
+import jo.joide.app.android.databinding.ItemTravailAgentBinding;
 import jo.joide.app.android.databinding.ItemUsageAgentBinding;
 import jo.joide.app.android.databinding.ItemVideAgentBinding;
 import jo.joide.app.android.databinding.TiroirAgentBinding;
@@ -40,6 +41,7 @@ import jo.joide.app.android.atelier.agent.EtatAgentChat.Carte;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.EtatOutil;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.Genre;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.TourEtat;
+import jo.joide.app.android.atelier.agent.EtatAgentChat.Tranche;
 
 /**
  * Le tiroir de l'agent (lot P, ADR-É11) : en-tête à puces (modèle,
@@ -48,6 +50,18 @@ import jo.joide.app.android.atelier.agent.EtatAgentChat.TourEtat;
  * composeur (envoyer / arrêter). La vue ne décide RIEN : l'état pur
  * {@link EtatAgentChat} arrive posé, elle le traduit ; les actions
  * repartent par l'{@link Auditeur} — jamais de logique ici.
+ *
+ * <p>Lot C4 (2026-11-20, demande du terrain : « la section thinking
+ * identique à CodeAssist de tyron12233, toutes fonctionnalités
+ * incluses » — consultation clean-room n° 4, mandat du propriétaire) :
+ * le travail d'un tour (outils + raisonnements intermédiaires)
+ * se replie en UN BLOC à en-tête pliable (point d'état, « N outils ·
+ * M fichiers », dernier appel, rail vertical déplié — le WorkBlock
+ * de CodeAssist) ; la carte de réflexion vit à l'identique du
+ * ThinkingStep (ouverte tant que le tour la remplit, repliée en une
+ * ligne « Pensée » rouvrable au tap, point accent PULSANT) ; la bande
+ * d'avertissement d'usage (≥ 80 % de la fenêtre qui porte le modèle)
+ * s'affiche au-dessus du composeur et ouvre l'écran Usages.</p>
  */
 public final class VueAgent extends LinearLayout {
 
@@ -101,6 +115,13 @@ public final class VueAgent extends LinearLayout {
         void ouvrirAjouts();
 
         /**
+         * La bande d'avertissement d'usage est TAPPÉE (lot C4, la
+         * manière CodeAssist du bandeau de limite) : l'écran Usages
+         * s'ouvre — la vue ne décide RIEN.
+         */
+        void ouvrirUsages();
+
+        /**
          * @param index la pièce retirée du composeur
          */
         void retirerPiece(int index);
@@ -124,8 +145,17 @@ public final class VueAgent extends LinearLayout {
     private final LinearLayout ligneActivite;
     private final TextView texteActivite;
     private final TextView tempsActivite;
+    private final LinearLayout bandeAvertissement;
+    private final TextView libelleAvertissement;
+    private final TextView relanceAvertissement;
+    private final View remplissageAvertissement;
+    private final View resteAvertissement;
     private final android.os.Handler horloge = new android.os.Handler(
             android.os.Looper.getMainLooper());
+    /** La pulsation du point vivant (lot C4 — l'étoile qui clignote du
+     *  ThinkingStep de CodeAssist) : UN animateur, la vue du point
+     *  change à chaque rafraîchissement, l'animateur se réinstalle. */
+    private android.animation.ObjectAnimator pulsation;
     private Long debutEnCours;
     private Auditeur auditeur;
     private EtatAgentChat etat = new EtatAgentChat();
@@ -160,6 +190,16 @@ public final class VueAgent extends LinearLayout {
         ligneActivite = coque.ligneActiviteAgent;
         texteActivite = coque.libelleActiviteAgent;
         tempsActivite = coque.ecouleActiviteAgent;
+        bandeAvertissement = coque.avertissementUsageAgent;
+        libelleAvertissement = coque.libelleAvertissementAgent;
+        relanceAvertissement = coque.relanceAvertissementAgent;
+        remplissageAvertissement = coque.remplissageAvertissementAgent;
+        resteAvertissement = coque.resteAvertissementAgent;
+        bandeAvertissement.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.ouvrirUsages();
+            }
+        });
 
         // lot A9 : les couleurs de la saisie et du bouton vivent en XML
         // (?attr/jo_texte, ?attr/jo_texte3, Widget.Jo.Button.Tonal) ; la
@@ -255,29 +295,34 @@ public final class VueAgent extends LinearLayout {
         }
     }
 
-    /** Redessine depuis l'état courant. */
+    /** Redessine depuis l'état courant. Lot C4 : les TRANCHES DE
+     *  TRAVAIL d'abord (tout ce qui précède la dernière carte d'outil
+     *  d'un tour se replie en un bloc — la décision vit dans
+     *  {@link EtatAgentChat#tranches()}, la vue applique), puis les
+     *  cartes restantes au premier plan. */
     public void rafraichir() {
         Context contexte = getContext();
+        arreterPulsation();
         colonneCartes.removeAllViews();
-        for (Carte carte : etat.cartes()) {
-            View vue = switch (carte.genre) {
-                case MESSAGE_UTILISATEUR -> carteMessage(carte);
-                case REPONSE -> carteReponse(carte);
-                case RAISONNEMENT -> carteRaisonnement(carte);
-                case OUTIL -> carteOutil(carte);
-                case FICHIERS -> ligneTonale(carte.detail);
-                case ATTENTE -> ligneTonale(contexte.getString(
-                        R.string.agent_attente, carte.secondes));
-                case COMPACTION -> ligneTonale(contexte.getString(
-                        R.string.agent_compaction, carte.avant,
-                        carte.apres));
-                case USAGE -> carteUsage(carte);
-                case ERREUR -> carteErreur(carte);
-                case QUESTIONS -> carteQuestions(carte);
-            };
-            colonneCartes.addView(vue);
+        List<Carte> cartes = etat.cartes();
+        List<Tranche> tranches = etat.tranches();
+        int prochaine = 0;
+        int i = 0;
+        while (i < cartes.size()) {
+            if (prochaine < tranches.size()
+                    && tranches.get(prochaine).debut() == i) {
+                // la tranche couvre [debut..fin] : UN bloc de travail
+                Tranche tranche = tranches.get(prochaine);
+                colonneCartes.addView(
+                        carteTravail(cartes, tranche));
+                i = tranche.fin() + 1;
+                prochaine++;
+                continue;
+            }
+            colonneCartes.addView(vueCarte(cartes.get(i)));
+            i++;
         }
-        if (etat.cartes().isEmpty()) {
+        if (cartes.isEmpty()) {
             // l'état vide du transcript (lot A7 : gonflé de
             // item_vide_agent par binding — plus aucune vue du cadre
             // instanciée ici)
@@ -308,6 +353,27 @@ public final class VueAgent extends LinearLayout {
         puceMode.setText(texteMode(etat.mode()));
         defilement.post(() -> defilement.fullScroll(
                 View.FOCUS_DOWN));
+    }
+
+    /** La vue d'une carte AU PREMIER PLAN (hors tranche de travail) :
+     *  le même barème d'hier, extrait du rafraîchissement (lot C4). */
+    private View vueCarte(Carte carte) {
+        Context contexte = getContext();
+        return switch (carte.genre) {
+            case MESSAGE_UTILISATEUR -> carteMessage(carte);
+            case REPONSE -> carteReponse(carte);
+            case RAISONNEMENT -> carteRaisonnement(carte);
+            case OUTIL -> carteOutil(carte);
+            case FICHIERS -> ligneTonale(carte.detail);
+            case ATTENTE -> ligneTonale(contexte.getString(
+                    R.string.agent_attente, carte.secondes));
+            case COMPACTION -> ligneTonale(contexte.getString(
+                    R.string.agent_compaction, carte.avant,
+                    carte.apres));
+            case USAGE -> carteUsage(carte);
+            case ERREUR -> carteErreur(carte);
+            case QUESTIONS -> carteQuestions(carte);
+        };
     }
 
     // ------------------------------------------------------------------
@@ -342,14 +408,18 @@ public final class VueAgent extends LinearLayout {
         return item.getRoot();
     }
 
+    /** La carte de réflexion (lot C4 — l'IDENTIQUE du ThinkingStep de
+     *  CodeAssist) : l'en-tête [point accent PULSANT (tant que le tour
+     *  la remplit) · « Réflexion… » | « Pensée » · chevron], OUVERTE
+     *  tant que le tour vit (il se passe quelque chose à regarder),
+     *  repliée à UNE LIGNE quand il est fini — le tap rouvre ; plus de
+     *  compte de lignes dans l'en-tête (CodeAssist n'en montre pas).
+     */
     private View carteRaisonnement(Carte carte) {
         Context contexte = getContext();
         ItemRaisonnementBinding item = ItemRaisonnementBinding.inflate(
                 LayoutInflater.from(contexte), colonneCartes, false);
         LinearLayout bloc = item.getRoot();
-        // la manière CodeAssist (lot T) : la réflexion OUVERTE tant
-        // que le tour vit (il se passe quelque chose à regarder),
-        // repliée à une ligne quand il est fini — le tap rouvre.
         boolean vivant = etat.etat() == TourEtat.EN_COURS
                 && estDernierRaisonnement(carte);
         boolean ouverte = carte.deplie || vivant;
@@ -358,16 +428,20 @@ public final class VueAgent extends LinearLayout {
             int fin = GraphiteVue.dp(contexte, 2);
             bloc.setPadding(fin, fin, fin, fin);
         }
+        // le point vivant PULSE (la marque qui respire de CodeAssist)
         item.pointRaisonnement.setVisibility(
                 vivant ? View.VISIBLE : View.GONE);
+        if (vivant) {
+            item.pointRaisonnement.setBackground(
+                    cercle(contexte, palette.accent));
+            demarrerPulsation(item.pointRaisonnement);
+        }
         TextView plis = item.plisRaisonnement;
         GraphiteVue.typographie(plis, Graphite.LEGENDE);
-        plis.setTextColor(vivant ? palette.accent
-                : palette.texteEstompe);
-        plis.setText(getContext().getString(vivant
+        plis.setTextColor(palette.texteSecondaire);
+        plis.setText(vivant
                 ? R.string.agent_raisonnement_vivant
-                : R.string.agent_raisonnement,
-                carte.lignesRaisonnement));
+                : R.string.agent_raisonnement_plie);
         plis.setSingleLine(true);
         plis.setEllipsize(android.text.TextUtils.TruncateAt.END);
         // le chevron suit l'état (la rotation du précédent CodeAssist)
@@ -389,6 +463,106 @@ public final class VueAgent extends LinearLayout {
             GraphiteVue.typographie(texte, Graphite.LEGENDE);
             texte.setText(carte.raisonnement.toString());
             texte.setVisibility(View.VISIBLE);
+        }
+        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
+                GraphiteVue.dp(contexte, 3));
+        bloc.setLayoutParams(params);
+        return bloc;
+    }
+
+    /**
+     * LE BLOC DE TRAVAIL d'un tour (lot C4 — l'IDENTIQUE du WorkBlock
+     * de CodeAssist) : tout ce qui précède la dernière carte d'outil
+     * se replie en UNE rangée [point d'état agrégé · « N outils · M
+     * fichiers » · le dernier appel · chevron] ; déplié, le RAIL
+     * VERTICAL porte les étapes dans l'ordre (la réflexion ouverte
+     * tant qu'elle vit, chaque appel d'outil pliable, les lignes
+     * tonales). Le pli vit dans l'état pur (clé = id d'appel du
+     * dernier outil — survit aux évictions) ; l'état agrégé suit
+     * en cours > refus > fini.
+     */
+    private View carteTravail(List<Carte> cartes, Tranche tranche) {
+        Context contexte = getContext();
+        ItemTravailAgentBinding item = ItemTravailAgentBinding.inflate(
+                LayoutInflater.from(contexte), colonneCartes, false);
+        LinearLayout bloc = item.getRoot();
+
+        // l'état agrégé (en cours > refus > fini) et le dernier appel
+        EtatOutil agregat = EtatOutil.FINI;
+        int outils = 0;
+        Carte dernierOutil = null;
+        for (int i = tranche.debut(); i <= tranche.fin(); i++) {
+            Carte carte = cartes.get(i);
+            if (carte.genre == Genre.OUTIL) {
+                outils++;
+                dernierOutil = carte;
+                if (carte.etatOutil == EtatOutil.EN_COURS) {
+                    agregat = EtatOutil.EN_COURS;
+                } else if (carte.etatOutil == EtatOutil.REFUSE
+                        && agregat != EtatOutil.EN_COURS) {
+                    agregat = EtatOutil.REFUSE;
+                }
+            }
+        }
+        int couleur = agregat == EtatOutil.EN_COURS ? palette.accent
+                : agregat == EtatOutil.REFUSE ? palette.erreur
+                : palette.reussite;
+        item.pointTravail.setBackground(cercle(contexte, couleur));
+        if (agregat == EtatOutil.EN_COURS) {
+            // la marque respire tant qu'un appel tourne (CodeAssist)
+            demarrerPulsation(item.pointTravail);
+        }
+
+        // le résumé « N outils · M fichiers » (M omis sans fichiers)
+        int fichiers = EtatAgentChat.fichiersTouches(cartes, tranche);
+        StringBuilder resume = new StringBuilder(
+                contexte.getString(R.string.agent_travail_outils, outils));
+        if (fichiers > 0) {
+            resume.append(" · ").append(contexte.getString(
+                    R.string.agent_travail_fichiers, fichiers));
+        }
+        item.resumeTravail.setText(resume);
+
+        // replié, l'en-tête dit le DERNIER appel (CodeAssist : folded,
+        // the header still says what the run did last)
+        String cle = EtatAgentChat.cleDeTranche(cartes, tranche);
+        boolean deplie = etat.travailDeplie(cle);
+        String titreDernier = dernierOutil == null ? ""
+                : dernierOutil.outil
+                + (dernierOutil.cible == null
+                        || dernierOutil.cible.isEmpty() ? ""
+                        : " " + dernierOutil.cible);
+        item.dernierTravail.setText(deplie ? "" : titreDernier);
+        item.chevronTravail.setRotation(deplie ? 180f : 0f);
+        item.enteteTravail.setOnClickListener(vue -> {
+            etat.poserTravailDeplie(cle, !deplie);
+            rafraichir();
+        });
+
+        if (deplie) {
+            // le rail vertical porte les étapes DANS L'ORDRE (le
+            // drawBehind du rail de CodeAssist, ici une vue 1 dp)
+            item.etapesTravail.setVisibility(View.VISIBLE);
+            LinearLayout colonne = item.colonneEtapesTravail;
+            for (int i = tranche.debut(); i <= tranche.fin(); i++) {
+                Carte carte = cartes.get(i);
+                View vue = switch (carte.genre) {
+                    case RAISONNEMENT -> carteRaisonnement(carte);
+                    case OUTIL -> carteOutil(carte);
+                    case FICHIERS -> ligneTonale(carte.detail);
+                    case ATTENTE -> ligneTonale(contexte.getString(
+                            R.string.agent_attente, carte.secondes));
+                    case COMPACTION -> ligneTonale(contexte.getString(
+                            R.string.agent_compaction, carte.avant,
+                            carte.apres));
+                    default -> null;
+                };
+                if (vue != null) {
+                    colonne.addView(vue);
+                }
+            }
         }
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT);
@@ -680,6 +854,95 @@ public final class VueAgent extends LinearLayout {
         rond.setColor(couleur);
         return rond;
     }
+
+    /**
+     * La marque vivante RESPIRE (lot C4, la pulsation de la marque de
+     * CodeAssist) : UN animateur pour UN point vivant à la fois (le
+     * point de réflexion vivant OU le point du bloc dont un outil
+     * tourne) — le rafraîchissement l'arrête avant d'en poser un
+     * neuf, jamais d'accumulateur.
+     *
+     * @param point la vue du point vivant
+     */
+    private void demarrerPulsation(View point) {
+        pulsation = android.animation.ObjectAnimator.ofFloat(point,
+                "alpha", 1f, 0.25f);
+        pulsation.setDuration(700);
+        pulsation.setRepeatCount(
+                android.animation.ValueAnimator.INFINITE);
+        pulsation.setRepeatMode(
+                android.animation.ValueAnimator.REVERSE);
+        pulsation.start();
+    }
+
+    /** Arrête la pulsation courante (un rafraîchissement arrive). */
+    private void arreterPulsation() {
+        if (pulsation != null) {
+            pulsation.cancel();
+            pulsation = null;
+        }
+    }
+
+    /**
+     * La bande d'avertissement d'usage au-dessus du composeur (lot C4,
+     * l'IDENTIQUE du bandeau de limite de CodeAssist) : visible
+     * seulement quand la fenêtre qui porte le modèle courant est
+     * chargée (≥ 80 %), la mini-bande suit la fraction, la teinte dit
+     * la bande (alerte au seuil, erreur au plafond) — le tap ouvre
+     * l'écran Usages. Les données viennent du service (le contrôleur
+     * pose) : la vue ne lit RIEN.
+     *
+     * @param fraction    l'occupation de la fenêtre qui porte (0..1)
+     * @param requetes    vrai si la fenêtre porteuse compte des
+     *                    requêtes (le libellé suit le genre)
+     * @param restant     ce qui reste dans la fenêtre
+     * @param relanceTexte le texte de relance (« 12 s »), null sans
+     */
+    public void poserAvertissementUsage(double fraction, boolean requetes,
+                                         long restant, String relanceTexte) {
+        if (fraction < SEUIL_AVERTISSEMENT) {
+            bandeAvertissement.setVisibility(GONE);
+            return;
+        }
+        boolean epuise = restant <= 0;
+        Context contexte = getContext();
+        libelleAvertissement.setText(epuise
+                ? contexte.getString(R.string.agent_avertissement_epuise)
+                : contexte.getString(requetes
+                        ? R.string.agent_avertissement_requetes
+                        : R.string.agent_avertissement_jetons,
+                        (int) Math.max(0, restant)));
+        relanceAvertissement.setText(relanceTexte == null ? ""
+                : contexte.getString(
+                        R.string.agent_avertissement_relance,
+                        relanceTexte));
+        // la teinte du bandeau : alerte au seuil, erreur au plafond
+        int teinte = epuise || fraction >= 1 ? palette.erreur
+                : palette.alerte;
+        android.graphics.drawable.GradientDrawable fond =
+                new android.graphics.drawable.GradientDrawable();
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 10));
+        fond.setColor(Graphite.melange(teinte, 0.12f, palette.fond));
+        bandeAvertissement.setBackground(fond);
+        // la mini-bande suit la fraction (le poids du remplissage)
+        float rempli = (float) Math.max(0.02, Math.min(1, fraction));
+        android.widget.LinearLayout.LayoutParams paramsRemplissage =
+                (android.widget.LinearLayout.LayoutParams)
+                        remplissageAvertissement.getLayoutParams();
+        paramsRemplissage.weight = rempli;
+        remplissageAvertissement.setLayoutParams(paramsRemplissage);
+        android.widget.LinearLayout.LayoutParams paramsReste =
+                (android.widget.LinearLayout.LayoutParams)
+                        resteAvertissement.getLayoutParams();
+        paramsReste.weight = 1f - rempli;
+        resteAvertissement.setLayoutParams(paramsReste);
+        remplissageAvertissement.getBackground().mutate().setTint(teinte);
+        bandeAvertissement.setVisibility(VISIBLE);
+    }
+
+    /** Le seuil d'avertissement (CodeAssist : 0,8 — la bande ne
+     *  supplie JAMAIS en dessous). */
+    private static final double SEUIL_AVERTISSEMENT = 0.8;
 
     /** Vrai si cette carte est le dernier raisonnement du transcript. */
     private boolean estDernierRaisonnement(Carte carte) {

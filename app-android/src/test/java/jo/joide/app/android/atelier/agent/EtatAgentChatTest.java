@@ -1,6 +1,7 @@
 package jo.joide.app.android.atelier.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -265,5 +266,120 @@ class EtatAgentChatTest {
         assertEquals(Genre.MESSAGE_UTILISATEUR, cartes.get(2).genre);
         assertEquals(Genre.REPONSE, cartes.get(3).genre);
         assertEquals(TourEtat.TERMINE, etat.etat());
+    }
+
+    // ------------------------------------------------------------------
+    // Lot C4 (2026-11-20) — les TRANCHES DE TRAVAIL (le WorkBlock de
+    // CodeAssist) : tout ce qui précède la DERNIÈRE carte d'outil d'un
+    // tour se replie en un bloc ; ce qui suit reste au premier plan.
+    // ------------------------------------------------------------------
+
+    @Test
+    void laTrancheCouvreJusquauDernierOutilDuTour() {
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("corrige le build");
+        etat.surEvenement(EvenementAgent.raisonnement(
+                "je regarde le build"));
+        etat.surEvenement(EvenementAgent.outilDebut("a1", "read_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a1", "read_file",
+                "build.gradle.kts"));
+        etat.surEvenement(EvenementAgent.raisonnement(
+                "la dépendance manque"));
+        etat.surEvenement(EvenementAgent.outilDebut("a2", "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a2", "edit_file",
+                "ok"));
+        etat.surEvenement(EvenementAgent.raisonnement(
+                "voila le fix"));
+        etat.surEvenement(EvenementAgent.texte("C'est corrigé."));
+        etat.surEvenement(EvenementAgent.fin(
+                jo.joide.agent.EvenementAgent.RaisonFin.TERMINE));
+
+        // le transcript réel : 0 msg · 1 rai (les deltas
+        // s'accumulent en UNE carte par tour) · 2 out1 · 3 out2 ·
+        // 4 rep · 5 usage — la tranche couvre [1..3] : TOUT le
+        // raisonnement du tour et JUSQU'AU dernier outil inclus, la
+        // réponse reste au premier plan
+        List<EtatAgentChat.Tranche> tranches = etat.tranches();
+        assertEquals(1, tranches.size());
+        assertEquals(new EtatAgentChat.Tranche(1, 3), tranches.get(0));
+    }
+
+    @Test
+    void sansOutilAucuneTranche() {
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("bonjour");
+        etat.surEvenement(EvenementAgent.raisonnement("salut"));
+        etat.surEvenement(EvenementAgent.texte("Salut !"));
+        etat.surEvenement(EvenementAgent.fin(
+                jo.joide.agent.EvenementAgent.RaisonFin.TERMINE));
+        assertTrue(etat.tranches().isEmpty());
+    }
+
+    @Test
+    void uneQuestionCoupeLaTrancheElleResteAuPremierPlan() {
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("migre le projet");
+        etat.surEvenement(EvenementAgent.outilDebut("a1", "read_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a1", "read_file",
+                "lu"));
+        etat.poserQuestions(List.of(new QuestionUtilisateur(
+                "Quelle cible ?", List.of("jvm", "android"))));
+        etat.surEvenement(EvenementAgent.outilDebut("a2", "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a2", "edit_file",
+                "ok"));
+
+        // cartes : 0 msg · 1 out1 · 2 questions · 3 out2 — la question
+        // ne se replie JAMAIS dans un bloc : DEUX tranches de part et
+        // d'autre d'elle
+        List<EtatAgentChat.Tranche> tranches = etat.tranches();
+        assertEquals(2, tranches.size());
+        assertEquals(new EtatAgentChat.Tranche(1, 1), tranches.get(0));
+        assertEquals(new EtatAgentChat.Tranche(3, 3), tranches.get(1));
+    }
+
+    @Test
+    void lesFichiersTouchesComptentLesCiblesDistinctes() {
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("corrige");
+        etat.surEvenement(EvenementAgent.outilDebut("a1", "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a1", "edit_file",
+                "ok"));
+        etat.cartes().get(1).cible = "build.gradle.kts";
+        etat.surEvenement(EvenementAgent.outilDebut("a2", "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a2", "edit_file",
+                "ok"));
+        etat.cartes().get(2).cible = "build.gradle.kts";
+        etat.surEvenement(EvenementAgent.outilDebut("a3", "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("a3", "edit_file",
+                "ok"));
+        etat.cartes().get(3).cible = "settings.gradle.kts";
+
+        List<Carte> cartes = etat.cartes();
+        assertEquals(2, EtatAgentChat.fichiersTouches(cartes,
+                new EtatAgentChat.Tranche(1, 3)));
+    }
+
+    @Test
+    void lePliDeTravailVitParCleEtSurvitAuxIndices() {
+        EtatAgentChat etat = new EtatAgentChat();
+        etat.envoyer("corrige");
+        etat.surEvenement(EvenementAgent.outilDebut("cle-42",
+                "edit_file"));
+        etat.surEvenement(EvenementAgent.outilFin("cle-42",
+                "edit_file", "ok"));
+        List<Carte> cartes = etat.cartes();
+        String cle = EtatAgentChat.cleDeTranche(cartes,
+                etat.tranches().get(0));
+
+        assertEquals("cle-42", cle);
+        assertFalse(etat.travailDeplie(cle));
+        etat.poserTravailDeplie(cle, true);
+        assertTrue(etat.travailDeplie(cle));
+        etat.poserTravailDeplie(cle, false);
+        assertFalse(etat.travailDeplie(cle));
+        // clé vide : aucun pli (un appel sans identifiant ne plie pas)
+        assertFalse(etat.travailDeplie(""));
+        etat.poserTravailDeplie("", true);
+        assertFalse(etat.travailDeplie(""));
     }
 }

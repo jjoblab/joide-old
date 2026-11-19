@@ -488,6 +488,139 @@ public final class EtatAgentChat {
         return evictions;
     }
 
+    // ------------------------------------------------------------------
+    // Lot C4 (2026-11-20, demande du terrain : « la section thinking
+    // identique à CodeAssist ») — les TRANCHES DE TRAVAIL : tout ce
+    // qui précède la DERNIÈRE carte d'outil d'un tour se replie en UN
+    // bloc (le WorkBlock de CodeAssist) ; ce qui suit reste au premier
+    // plan. Décision PURE ici (testée JVM), la vue ne déduit rien.
+    // ------------------------------------------------------------------
+
+    /** Une tranche de travail : les cartes [debut, fin] qui se
+     *  replient en un bloc (fin = la DERNIÈRE carte d'OUTIL). */
+    public record Tranche(int debut, int fin) {
+    }
+
+    /** Les genres qui vivent DANS un bloc de travail. */
+    private static boolean genreDeTravail(Genre genre) {
+        return genre == Genre.RAISONNEMENT || genre == Genre.OUTIL
+                || genre == Genre.FICHIERS || genre == Genre.ATTENTE
+                || genre == Genre.COMPACTION;
+    }
+
+    /**
+     * Les tranches de travail du transcript (lot C4) : un tour se
+     * découpe en [outils + raisonnements + lignes tonales] jusqu'à
+     * SA dernière carte d'outil incluse — le reste (réponse, dernier
+     * raisonnement, usage, questions, erreur) reste au premier plan.
+     * Un message utilisateur, une question ou une erreur FERMENT la
+     * tranche courante (ils ne se replient jamais dans un bloc) ; une
+     * suite de cartes sans AUCUN outil ne forme pas de tranche (le
+     * raisonnement seul reste déployé au premier plan, la manière
+     * CodeAssist du ThinkingStep vivant).
+     *
+     * @return les tranches (indices dans la liste des cartes)
+     */
+    public List<Tranche> tranches() {
+        List<Tranche> tranches = new ArrayList<>();
+        int debut = -1;
+        int dernierOutil = -1;
+        for (int i = 0; i < cartes.size(); i++) {
+            Genre genre = cartes.get(i).genre;
+            if (genreDeTravail(genre)) {
+                if (debut < 0) {
+                    debut = i;
+                }
+                if (genre == Genre.OUTIL) {
+                    dernierOutil = i;
+                }
+            } else {
+                if (debut >= 0 && dernierOutil >= debut) {
+                    tranches.add(new Tranche(debut, dernierOutil));
+                }
+                debut = -1;
+                dernierOutil = -1;
+            }
+        }
+        if (debut >= 0 && dernierOutil >= debut) {
+            tranches.add(new Tranche(debut, dernierOutil));
+        }
+        return tranches;
+    }
+
+    /** La clé stable d'une tranche : l'identifiant d'appel de sa
+     *  dernière carte d'outil (survit aux évictions du plafond de
+     *  cartes — jamais un indice brut). */
+    private static String cleTranche(List<Carte> cartes, Tranche tranche) {
+        Carte dernier = cartes.get(tranche.fin());
+        return dernier.idAppel == null ? "" : dernier.idAppel;
+    }
+
+    /** @param cle la clé d'une tranche @return son état déplié */
+    public boolean travailDeplie(String cle) {
+        return cle != null && !cle.isEmpty()
+                && travauxDeplies.contains(cle);
+    }
+
+    /**
+     * Le pli d'un bloc de travail (le tap de l'en-tête, lot C4 — le
+     * bloc se replie par défaut, même en cours de tour : la manière
+     * CodeAssist du WorkBlock).
+     *
+     * @param cle     la clé de la tranche
+     * @param deplie  l'état posé
+     */
+    public void poserTravailDeplie(String cle, boolean deplie) {
+        if (cle == null || cle.isEmpty()) {
+            return;
+        }
+        if (deplie) {
+            travauxDeplies.add(cle);
+        } else {
+            travauxDeplies.remove(cle);
+        }
+    }
+
+    /** L'état déplié des tranches (clé = id d'appel du dernier outil). */
+    private final java.util.HashSet<String> travauxDeplies =
+            new java.util.HashSet<>();
+
+    /**
+     * Le nombre de fichiers TOUCHANT une tranche : les cibles
+     * distinctes des cartes d'outil (le « N fichiers » de l'en-tête du
+     * bloc, lot C4 — CodeAssist y compte les changes de chaque
+     * appel ; les cibles des outils sont l'équivalent honnête ici).
+     *
+     * @param cartes   la liste des cartes
+     * @param tranche  la tranche
+     * @return le nombre de cibles distinctes non vides
+     */
+    public static int fichiersTouches(List<Carte> cartes,
+                                       Tranche tranche) {
+        java.util.HashSet<String> cibles = new java.util.HashSet<>();
+        for (int i = tranche.debut(); i <= tranche.fin(); i++) {
+            Carte carte = cartes.get(i);
+            if (carte.genre == Genre.OUTIL && carte.cible != null
+                    && !carte.cible.isBlank()) {
+                cibles.add(carte.cible);
+            }
+        }
+        return cibles.size();
+    }
+
+    /**
+     * L'identifiant d'appel de la dernière carte d'outil d'une
+     * tranche (la clé de pli — posée par la vue, jamais déduite).
+     *
+     * @param cartes  la liste des cartes
+     * @param tranche la tranche
+     * @return l'id d'appel ("" si absent)
+     */
+    public static String cleDeTranche(List<Carte> cartes,
+                                       Tranche tranche) {
+        return cleTranche(cartes, tranche);
+    }
+
     /** @return vrai si le plafond de cartes a été annoncé */
     public boolean plafondAnnonce() {
         return plafondAnnonce;

@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Lot A7 (ADR-085 décision 12) — UN COMPTEUR D'OCCUPATION des usages :
-  le nom au corps, le pourcentage en légende estompée, la bande sous
-  le seuil : piste surface haute (piste_bande_usage), remplissage dont
-  le POIDS et la TEINTE se posent au bind (la fraction de la fenêtre,
-  la bande qui décide la couleur — accent, alerte, erreur ; une
-  couleur calculée par ligne, décision 8 de l'ADR).
+  le nom au corps, la puce « En cours » sur la fenêtre qui porte le
+  modèle (lot C4, la manière CodeAssist du chip In use), le
+  pourcentage en légende estompée, la bande sous le seuil : piste
+  surface haute (piste_bande_usage), remplissage dont le POIDS et la
+  TEINTE se posent au bind (la fraction de la fenêtre, la bande qui
+  décide la couleur — accent, alerte, erreur ; une couleur calculée
+  par ligne, décision 8 de l'ADR). Lot C4 : la ligne du pied porte
+  « N sur M utilisés » (gauche) et « réinitialisé dans X » (droite,
+  la sortie de la plus ancienne requête de la fenêtre glissante).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -26,6 +31,14 @@
             android:layout_weight="1"
             android:textAppearance="@style/TextAppearance.Jo.Corps"
             android:textColor="?attr/jo_texte" />
+
+        <jo.joide.app.android.ui.Puce
+            android:id="@+id/active_compteur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/jo_ecart_entete"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/pourcentage_compteur"
@@ -54,5 +67,28 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_pad_progression"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/utilise_compteur"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte2" />
+
+        <TextView
+            android:id="@+id/relance_compteur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textColor="?attr/jo_texte2" />
     </LinearLayout>
 </LinearLayout>

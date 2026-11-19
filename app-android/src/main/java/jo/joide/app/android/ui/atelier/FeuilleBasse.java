@@ -104,6 +104,11 @@ public final class FeuilleBasse extends LinearLayout {
 
     public FeuilleBasse(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
+        // lot C4 : la colonne se déclare VERTICALE (la valeur par
+        // défaut d'un LinearLayout est HORIZONTALE — la racine
+        // interne match_parent s'y raccroche, mais la vérité
+        // structurelle se pose ici, pas par accident)
+        setOrientation(VERTICAL);
         binding = AtelierFeuilleBinding.inflate(
                 LayoutInflater.from(contexte), this, true);
         entete = binding.entete;
@@ -453,17 +458,36 @@ public final class FeuilleBasse extends LinearLayout {
     // ---- rendu -------------------------------------------------------
 
     /** Applique la détente : la hauteur animée (260 ms), la
-     *  visibilité du corps, le rail et la zone vivante. */
+     *  visibilité du corps, le rail et la zone vivante.
+     *
+     *  <p>Lot C4 (2026-11-20) : l'animation vit en PIXELS des deux
+     *  côtés — le départ était lu en px ({@code getHeight()}) et la
+     *  cible passée en DP BRUT à {@code ValueAnimator.ofInt} : la
+     *  valeur animée s'écrivait TELLE QUELLE dans
+     *  {@code params.height} (px), atterrissant sur une densité de
+     *  2,75 à ~36 % de la hauteur voulue. Et une hauteur utile
+     *  encore nulle (le parent pas mesuré) repliait MI et PLEINE à
+     *  zéro pixel : la feuille se fermait sur elle-même. La cible se
+     *  convertit ({@link GraphiteVue#dp}), et une détente ouverte ne
+     *  descend JAMAIS sous la hauteur repliée — la barre reste
+     *  lisible, le corps garde toujours sa place.</p> */
     private void appliquerDetente(boolean anime) {
         int cible = etatFeuille.hauteurDp(hauteurUtileDp);
+        if (etatFeuille.detente() != EtatFeuille.Detente.REPLIE
+                && cible < EtatFeuille.HAUTEUR_REPLIE_DP) {
+            // hauteur utile inconnue : la détente ouverte se borne à
+            // la barre — jamais une feuille avalée par un 0 dp
+            cible = EtatFeuille.HAUTEUR_REPLIE_DP;
+        }
         ViewGroup.LayoutParams params = getLayoutParams();
         if (params == null) {
             return;
         }
+        int ciblePx = GraphiteVue.dp(getContext(), cible);
         if (anime) {
             int depart = getHeight();
             ValueAnimator animateur =
-                    ValueAnimator.ofInt(depart, cible);
+                    ValueAnimator.ofInt(depart, ciblePx);
             animateur.setDuration(260);
             animateur.setInterpolator(
                     new PathInterpolator(.2f, .8f, .2f, 1f));
@@ -473,7 +497,7 @@ public final class FeuilleBasse extends LinearLayout {
             });
             animateur.start();
         } else {
-            params.height = GraphiteVue.dp(getContext(), cible);
+            params.height = ciblePx;
             setLayoutParams(params);
         }
         binding.corpsFeuille.setVisibility(

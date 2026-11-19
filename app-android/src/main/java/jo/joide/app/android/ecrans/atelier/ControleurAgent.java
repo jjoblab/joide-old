@@ -74,6 +74,45 @@ final class ControleurAgent {
         }
     }
 
+    /** L'écran Usages (la bande d'avertissement tapée — lot C4). */
+    void ouvrirUsages() {
+        usages.ouvrir();
+    }
+
+    /**
+     * Lot C4 : la bande d'avertissement d'usage du tiroir suit le tour
+     * — la fenêtre qui PORTE le modèle courant (la plus chargée des
+     * deux) à ≥ 80 % se dit au-dessus du composeur, la manière
+     * CodeAssist du bandeau de limite (le tap ouvre l'écran Usages).
+     */
+    private void majAvertissementUsage() {
+        if (hote.agent() == null || hote.vueAgent() == null) {
+            return;
+        }
+        long[] compteurs = hote.agent().compteursModele();
+        if (compteurs[1] <= 0 && compteurs[3] <= 0) {
+            // sans plafond appris, la bande ne supplie JAMAIS
+            hote.vueAgent().poserAvertissementUsage(0, true, 0, null);
+            return;
+        }
+        double[] occupations = hote.agent().occupationsModele();
+        boolean requetes = compteurs[1] > 0
+                && occupations[0] >= occupations[1];
+        double fraction = Math.max(occupations[0], occupations[1]);
+        long restant = requetes
+                ? Math.max(0, compteurs[1] - compteurs[0])
+                : Math.max(0, compteurs[3] - compteurs[2]);
+        long[] relances = hote.agent().relancesModele();
+        long relance = requetes ? relances[0] : relances[1];
+        String texte = null;
+        if (relance > 0) {
+            texte = ControleurUsagesAgent.texteRelance(
+                    hote, relance - System.currentTimeMillis());
+        }
+        hote.vueAgent().poserAvertissementUsage(
+                fraction, requetes, restant, texte);
+    }
+
     /** Le mode de permission posé par la puce d'en-tête. */
     void poserMode(Permissions.Mode mode) {
         hote.etatAgent().poserMode(mode);
@@ -224,6 +263,7 @@ final class ControleurAgent {
         }
         historique.majQuestions();
         hote.vueAgent().poserEtat(hote.etatAgent());
+        majAvertissementUsage();
         // la fin d'un tour libère le message retenu pendant le bind
         // (session revenue sur un tour vivant)
         if (hote.messageEnAttenteAgent() != null

@@ -90,6 +90,52 @@
             android:paddingBottom="8dp"
             android:importantForAutofill="no" />
 
+        <!-- lot C4 (la manière CodeAssist) : la rangée des FILTRES —
+             le fournisseur d'identifiant (menu déroulant avec compte),
+             le tri (nom / fournisseur), les gratuits seulement (que
+             si la liste en montre). Les puces se posent au bind (le
+             pointé dit l'état), la rangée entière disparaît quand
+             rien ne peut rétrécir la liste -->
+        <HorizontalScrollView
+            android:id="@+id/filtres_modeles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:clipToPadding="false"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/rangee_filtres_modeles"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <jo.joide.app.android.ui.Puce
+                    android:id="@+id/filtre_fournisseur_modeles"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/jo_ecart_entete"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <jo.joide.app.android.ui.Puce
+                    android:id="@+id/filtre_tri_modeles"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/jo_ecart_entete"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <jo.joide.app.android.ui.Puce
+                    android:id="@+id/filtre_gratuits_modeles"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
         <LinearLayout
             android:id="@+id/liste_modeles"
             android:layout_width="match_parent"
