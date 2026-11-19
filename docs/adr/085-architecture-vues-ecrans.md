@@ -146,9 +146,12 @@ socle de build :
    `EtatAtelier.SEUIL_GRAND_ECRAN_DP` (720) ; **pas `sw720dp`**.
 10. **Politique de cycle de vie de l'atelier** : déclarer
     `android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`
-    sur `EcranAtelier` ; `onConfigurationChanged` ré-inflamme **seulement la
-    racine** (le `puits` portant la scène éditeur est rattaché au nouveau
-    layout, la session d'IDE n'est pas fermée), **ferme les popups
+    sur `EcranAtelier` (**posé au lot A8** — la géométrie SEULE : thème,
+    langue, densité et taille de police restent des recréations) ;
+    `onConfigurationChanged` ré-inflamme **seulement la
+    racine** (le `puits` portant la scène éditeur est détaché AVANT et
+    rattaché APRÈS, jamais reconstruit, la session d'IDE n'est pas fermée),
+    **ferme les popups
     ouverts**, et l'état d'UI minimal vit dans `onSaveInstanceState` pour
     les recréations restantes (thème, langue, taille de police). L'ordre du
     retour système actuel (popup → feuille → tiroirs → sortie) est
@@ -218,13 +221,14 @@ et fuites gérés à la main — décision 12). P3 `BottomSheetDialog` : écart�
 **Configuration de l'atelier** — α « laisser recréer » : écartée (détruit
 scène, aperçu, moteurs LSP et état à chaque rotation). **β
 « `configChanges` de géométrie + ré-inflation de la racine + état minimal +
-popups fermés »** : retenue (décision 10). γ « conteneur de session statique
+popups fermés »** : retenue (décision 10, **POSÉE au lot A8**). γ « conteneur de session statique
 indexé par racine » : à évaluer en suite (robuste aux recréations, état
 global à gérer). δ `onRetainNonConfigurationInstance` : écartée (dépréciée
-depuis l'API 28). ε `ViewModel` : **autorisée, à évaluer en A8** — complète
-β pour les recréations restantes ; jamais de vue ni de `Context` d'activité
-retenus ; si la session d'IDE y déménage, changement de propriété consigné
-ici.
+depuis l'API 28). ε `ViewModel` : **autorisée, évaluée en A8 — ÉCARTÉE**
+(la décision motivée vit à « Évaluations du lot A8 » : β couvre la
+géométrie, l'état minimal couvre les recréations restantes ; la session
+d'IDE y déménagerait avec un `Context` d'activité — interdit — aucun
+changement de propriété n'a donc lieu à consigner).
 
 ## Équivalents proposés pour le kit `ui/`
 
@@ -325,6 +329,58 @@ racine. Le lot tranche et consigne :
   statique peut rester dans le layout », le plafond des menus et des
   conversations est déjà borné par construction).
 
+### Évaluations du lot A8 (cycle de vie et configuration — décision 10)
+
+La décision 10 est posée ; les choix qu'elle laissait ouverts sont tranchés
+et consignés ici :
+
+- **`configChanges` de GÉOMÉTRIE seul, sur `EcranAtelier` seul**
+  (`orientation|screenSize|smallestScreenSize|screenLayout`) — le filet
+  `ArchitectureVuesTest` verrouille la liste EXACTE du manifest et qu'aucune
+  autre activité ne déclare de changements. Thème, langue, densité et
+  police restent des recréations : l'état d'UI minimal les couvre par
+  `onSaveInstanceState`.
+- **La décision est une classe PUR JVM** (`DecisionConfiguration`) : donnée
+  la classe de géométrie avant/après, elle répond ré-infler/fermer les
+  popups/ne JAMAIS fermer l'IDE — le critère §6.10 (un changement de
+  géométrie n'appelle pas `fermerIde()`) y est testé dans toute la grille.
+- **Même classe de géométrie → PAS de ré-inflation** (économie documentée)
+  : un layout neuf de la même classe ne dit rien de plus, le re-câblage
+  entier ne servirait à rien — mais les popups se ferment quand même
+  (décision 12 : TOUT changement de configuration les ferme).
+- **La ré-inflation de la racine** détache le `puits` AVANT (la scène
+  celeris et sa couche de popups, jamais reconstruites) et le rattache
+  APRÈS ; les zones montées (arborescence, console, aperçu, tiroir agent)
+  suivent — instances conservées, ré-amarrées ; les vues neuves se
+  re-câblent et se re-posent depuis les états purs (`SessionAtelier`
+  n'est pas touché : moteurs LSP, sync, aperçu et écritures survivent).
+- **L'état d'UI minimal vit dans `onSaveInstanceState`** : l'export de
+  l'`EtatAtelier` (onglets ouverts, actif, points de modification,
+  surcouches, section de feuille — aller-retour export/import testé JVM)
+  et les BROUILLONS de `EtatPopups` (le même passage : la saisie vit dans
+  l'état, le popup n'est jamais restauré). Le build ne s'exporte pas : la
+  pilule suit les événements du service (résiduel documenté au rapport).
+- **ε (ViewModel) ÉCARTÉE, évaluation motivée** : β couvre la géométrie et
+  l'état minimal couvre les recréations restantes — un `ViewModel`
+  n'apporterait rien que le Bundle ne donne déjà ; y DÉMÉNAGER la session
+  d'IDE (scène, moteurs) est exclu : `SceneEditeur`/`ApercuLayouts` sont
+  construits sur le `Context` de l'activité (thème, ressources, fenêtre) —
+  les y retenir violerait « jamais de `Context` d'activité retenu » et
+  exigerait un protocole de re-attach au moins aussi lourd que la
+  ré-inflation de β. La clause « À revisiter » (γ/ε si le coût de
+  rechargement mesuré reste pénalisant) demeure.
+- **`saveEnabled=false` reste sur les saisies de l'assistant (A4)** : la
+  sauvegarde de l'état passe par l'export/import PUR de l'`EtatCreation`
+  (A4 : « A8 fera la sauvegarde ») — la vérité reste unique, la
+  restauration du framework écrirait un deuxième avis (et marquerait le
+  paquet « touché » sans motif) ; les commutateurs des paramètres (A3)
+  restent neutralisés pour la même raison d'unicité, leurs ids étant
+  dupliqués PAR CONSTRUCTION entre `<include>` (la vérité = `Reglages`,
+  re-posée au montage). Le DÉFILEMENT, lui, se restaure par le cadre : les
+  racines d'étape de l'assistant deviennent des `NestedScrollView` (le
+  `ScrollView` du cadre ne sauve pas sa position ; l'id est porté par
+  l'`<include>` du `ViewFlipper`).
+
 ## Gabarit cible
 
 ```
@@ -403,7 +459,7 @@ popup.showAtLocation(racine, Gravity.CENTER, 0, 0);
   **A2** pilote (CallbackMcp, Accueil) ; **A3** Paramètres ; **A4**
   Création ; **A5** vues d'atelier restantes + `RecyclerView` ; **A6**
   racine de l'atelier (`HoteAtelier`, < 500 lignes) ; **A7** popups (fin
-  des dialogues, D3) ; **A8** cycle de vie et configuration ; **A9**
+  des dialogues, D3) ; **A8** cycle de vie et configuration (FAIT) ; **A9**
   consolidation (une seule voie de thémage, `<merge>`, ADR-085 → Accepted,
   exceptions vides).
 - Chaque lot : un commit, `./gradlew check` vert, liste d'exceptions

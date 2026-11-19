@@ -9,10 +9,18 @@
   28/30), note « targetSdk reste 28 (D4) », bannière d'information du
   stockage privé (item_banniere). Les blocs modules/paquet/minSdk se
   MONTRENT selon le modèle ; les erreurs en ligne vivent sous leur
-  champ. saveEnabled=false : l'état vit dans EtatCreation (A8 fera la
-  sauvegarde, aujourd'hui la rotation réinitialise l'assistant).
+  champ.
+
+  Lot A8 (décision 10) : saveEnabled=false RESTE — l'état de VÉRITÉ vit
+  dans EtatCreation, exporté/importé par la coque aux recréations (les
+  saisies se re-posent depuis l'état par poserIdentite, une seule
+  vérité ; la restauration du framework écrirait un deuxième avis — et
+  marquerait le paquet « touché » sans motif). La racine est un
+  NestedScrollView : le cadre restaure le DÉFILEMENT (id porté par
+  l'<include> du ViewFlipper — un ScrollView du cadre ne sauve pas sa
+  position).
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -206,4 +214,4 @@
             android:id="@+id/banniere_stockage"
             layout="@layout/item_banniere" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

@@ -10,11 +10,15 @@
   les membres (décision 11 : pas de flux, un RecyclerView sous
   ScrollView serait un anti-patron ; le comportement d'hier —
   re-gonfler la zone — est conservé, la vue reste mince).
-  saveEnabled=false partout : l'état de VÉRITÉ vit dans EtatCreation,
-  la rotation réinitialise l'assistant comme aujourd'hui (A8 apportera
-  la sauvegarde).
+
+  Lot A8 (décision 10) : saveEnabled=false RESTE — l'état de VÉRITÉ vit
+  dans EtatCreation, exporté/importé par la coque aux recréations (les
+  saisies se re-posent depuis l'état, une seule vérité) ; la racine est
+  un NestedScrollView : le cadre restaure le DÉFILEMENT (id porté par
+  l'<include> du ViewFlipper — un ScrollView du cadre ne sauve pas sa
+  position).
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -105,4 +109,4 @@
             android:textColor="?attr/jo_texte2"
             android:visibility="gone" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

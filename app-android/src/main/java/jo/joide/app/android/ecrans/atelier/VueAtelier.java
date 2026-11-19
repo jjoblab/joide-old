@@ -2,6 +2,8 @@ package jo.joide.app.android.ecrans.atelier;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,8 +14,10 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,6 +26,7 @@ import jo.joide.app.android.AgentService;
 import jo.joide.app.android.FichiersProjet;
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.Arborescence;
+import jo.joide.app.android.atelier.DecisionConfiguration;
 import jo.joide.app.android.atelier.EcrituresFusionnees;
 import jo.joide.app.android.atelier.EtatApercu;
 import jo.joide.app.android.atelier.EtatAtelier;
@@ -83,6 +88,20 @@ import jo.joide.ide.editeur.SceneEditeur;
  * HISTORIQUE et CONNEXIONS sont montés ici et passés au contrôleur
  * de l'agent.</p>
  *
+ * <p>Lot A8 (ADR-085 décision 10 — cycle de vie et configuration) :
+ * la géométrie ne détruit plus l'atelier. Le manifest porte les
+ * changements de GÉOMÉTRIE seuls ; {@link #surChangementConfiguration}
+ * ferme les popups, ré-inflamme LA RACINE SEULE si la classe de
+ * disposition change (compact ↔ {@code layout-w720dp} — la décision
+ * pure {@link DecisionConfiguration} décide, testée JVM) et
+ * RÉATTACHE le puits (la scène celeris survit, jamais reconstruite,
+ * {@link SessionAtelier} n'est pas touché). L'état d'UI minimal se
+ * sauve/restaure par {@link #sauverEtat(Bundle)} /
+ * {@link #restaurer(Bundle)} (export de l'{@link EtatAtelier} et des
+ * brouillons) pour les recréations RESTANTES (thème, langue,
+ * police). La garde de cycle de vie des callbacks asynchrones se
+ * pose UNE fois dans {@link #executerSurFilUi(Runnable)} (I8).</p>
+ *
  * <p>Cette classe n'est PAS une vue Android : c'est la collaboratrice
  * de la coque, construite avec le binding monté. La doctrine P8 reste
  * : l'UI est mince, la logique vit dans les états purs
@@ -91,8 +110,26 @@ import jo.joide.ide.editeur.SceneEditeur;
  */
 final class VueAtelier implements HoteAtelier {
 
+    /** Les clés Bundle de l'état d'UI minimal (lot A8 — la coque
+     *  traduit, l'état pur ne touche jamais Bundle). */
+    private static final String CLE_ONGLETS = "joide.atelier.onglets";
+    private static final String CLE_MODIFIES = "joide.atelier.modifies";
+    private static final String CLE_ACTIF = "joide.atelier.actif";
+    private static final String CLE_TIROIR = "joide.atelier.tiroir";
+    private static final String CLE_CONSOLE = "joide.atelier.console";
+    private static final String CLE_APERCU_PLEIN = "joide.atelier.apercu";
+    private static final String CLE_VOLET = "joide.atelier.volet";
+    private static final String CLE_PROJET = "joide.atelier.projet";
+    private static final String CLE_SECTION = "joide.atelier.section";
+    private static final String CLE_BROUILLONS_CLES =
+            "joide.atelier.brouillons.cles";
+    private static final String CLE_BROUILLONS_VALEURS =
+            "joide.atelier.brouillons.valeurs";
+
     private final EcranAtelier ecran;
-    private final ActivityAtelierBinding binding;
+    /** Le binding racine — RÉ-INFLABLE (lot A8) : la géométrie change,
+     *  le layout la suit, la vue garde le même champ. */
+    private ActivityAtelierBinding binding;
 
     private final Graphite.Palette palette;
     private final Reglages.Source sourceReglages;
@@ -150,6 +187,16 @@ final class VueAtelier implements HoteAtelier {
     private TiroirPousse tiroirAgent;
     private VueAgent vueAgent;
     private VueArbre vueArbre;
+
+    // ---- l'UI volatile, re-posée à toute ré-inflation de racine
+    // ---- (lot A8) : la vérité vit dans les états et la session ; ces
+    // ---- champs portent ce qu'aucun état ne porte
+    /** Le texte de la bannière de compatibilité (null : jamais posée). */
+    private String texteBanniereCompat;
+    /** Le dernier titre de l'état vide du puits (id de ressource). */
+    private int titreEtatVide = R.string.ide_chargement;
+    /** La dernière aide de l'état vide du puits (texte posé). */
+    private CharSequence aideEtatVide = "";
 
     VueAtelier(EcranAtelier ecran, ActivityAtelierBinding binding,
                Graphite.Palette palette) {
@@ -629,6 +676,7 @@ final class VueAtelier implements HoteAtelier {
 
     /** La bannière de compatibilité Gradle (mode P7/P8). */
     void poserBanniere(String texte) {
+        texteBanniereCompat = texte;
         binding.banniereCompat.setText(texte);
         binding.banniereCompat.setVisibility(View.VISIBLE);
     }
@@ -991,11 +1039,284 @@ final class VueAtelier implements HoteAtelier {
                 tiroirAgentOuvert(), etat);
     }
 
-    /** Ferme tout popup ouvert (onPause/onDestroy de l'écran —
-     *  idempotent, jamais restauré : l'état de saisie vit dans
-     *  EtatPopups). */
+    /** Ferme tout popup ouvert (onPause/onDestroy/onConfigurationChanged
+     *  de l'écran — idempotent, jamais restauré : l'état de saisie vit
+     *  dans EtatPopups). */
     void fermerPopups() {
         popups.fermer();
+    }
+
+    // ------------------------------------------------------------------
+    // Changement de configuration de GÉOMÉTRIE (lot A8, ADR-085
+    // décision 10 — la session d'IDE n'est JAMAIS fermée)
+    // ------------------------------------------------------------------
+
+    /**
+     * Le changement de configuration (la géométrie seule aujourd'hui :
+     * le manifest de l'atelier ne déclare QU'elle — thème, langue et
+     * police recréent toujours). La décision PURE (testée JVM,
+     * {@link DecisionConfiguration}) : les popups se ferment
+     * TOUJOURS (décision 12), la racine se ré-influe SEULEMENT si la
+     * classe de géométrie change (économie documentée : même classe,
+     * même layout), l'IDE ne se ferme JAMAIS — la session (scène,
+     * LSP, aperçu, écritures) survit, {@link SessionAtelier} n'est pas
+     * touché.
+     *
+     * @param nouvelle la configuration nouvelle (livrée par le cadre)
+     */
+    void surChangementConfiguration(Configuration nouvelle) {
+        // la fermeture AVANT tout : jamais une carte vivante sur une
+        // géométrie dépassée (décision 12 — un popup n'est pas
+        // restauré, son état de saisie vit dans EtatPopups)
+        popups.fermer();
+        int largeurDp = nouvelle == null ? 0 : nouvelle.screenWidthDp;
+        if (largeurDp <= 0) {
+            // configuration muette (cas défensif) : les ressources de
+            // l'écran sont déjà à jour au moment de l'appel
+            largeurDp = ecran.getResources().getConfiguration()
+                    .screenWidthDp;
+        }
+        boolean grandEcranApres = EtatAtelier.estGrandEcran(largeurDp);
+        DecisionConfiguration.Reaction reaction =
+                DecisionConfiguration.surGeometrie(etat.grandEcran(),
+                        grandEcranApres);
+        if (!reaction.reinflerRacine()) {
+            // économie : même classe de géométrie, même layout — la
+            // racine reste (les popups sont fermés, la seule décision
+            // restante est une non-décision)
+            return;
+        }
+        reinflerRacine(grandEcranApres);
+    }
+
+    /**
+     * Ré-inflamme LA RACINE SEULE (décision 10) : le nouveau layout
+     * (compact ↔ {@code layout-w720dp}) suit la configuration courante.
+     * Le PUITS (la scène éditeur celeris et sa couche de popups) se
+     * DÉTACHE avant et se RÉATTACHE après — jamais reconstruit ; les
+     * zones montées (arborescence, console, aperçu, tiroir agent)
+     * suivent : instances conservées, ré-amarrées aux conteneurs du
+     * nouveau layout ; les vues neuves (barres, onglets, feuille)
+     * se re-câblent et se re-posent depuis les états — un montage de
+     * session SANS le rechargement.
+     *
+     * @param grandEcranApres la classe de disposition nouvelle
+     */
+    private void reinflerRacine(boolean grandEcranApres) {
+        // 1) saisir ce qui survit : la scène du puits (vue + couche de
+        //    popups — jamais reconstruite), la section de feuille
+        List<View> scene = new ArrayList<>(
+                binding.vueEditeur.getChildCount());
+        for (int i = 0; i < binding.vueEditeur.getChildCount(); i++) {
+            scene.add(binding.vueEditeur.getChildAt(i));
+        }
+        EtatFeuille.Section section = binding.feuille.section();
+
+        // 2) détacher les zones montées de l'ANCIENNE racine (elles se
+        //    ré-amorrent à la neuve dans la passe qui suit)
+        binding.vueEditeur.removeAllViews();
+        detacher(vueArbre);
+        detacher(vueConsole);
+        detacher(vueApercu);
+        detacher(tiroirAgent);
+
+        // 3) gonfler la racine NEUVE (le layout suit la configuration
+        //    déjà commutée) et la poser en place de l'ancienne
+        ActivityAtelierBinding neuve = ActivityAtelierBinding.inflate(
+                ecran.getLayoutInflater());
+        ecran.setContentView(neuve.getRoot());
+        binding = neuve;
+
+        // 4) ré-amarrer : le voile du porte-popups (celui du NOUVEAU
+        //    layout), la scène au puits neuf, l'arbre à son conteneur
+        //    (colonne amarrée en grand écran, cadre du tiroir en
+        //    compact), la console dans la feuille neuve, le tiroir
+        //    agent MONTÉ à la place du stub neuf (même rang, même
+        //    z-plan)
+        popups.poserVoile(binding.voilePopup);
+        for (View enfant : scene) {
+            binding.vueEditeur.addView(enfant,
+                    new FrameLayout.LayoutParams(
+                            FrameLayout.LayoutParams.MATCH_PARENT,
+                            FrameLayout.LayoutParams.MATCH_PARENT));
+        }
+        if (vueArbre != null) {
+            ViewGroup conteneur = grandEcranApres
+                    && binding.colonneArbre != null
+                    ? binding.colonneArbre
+                    : binding.tiroirFichiers.cadreArbre();
+            conteneur.addView(vueArbre,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+        }
+        if (vueConsole != null) {
+            binding.feuille.poserContenu(EtatFeuille.Section.CONSOLE,
+                    vueConsole);
+        }
+        if (tiroirAgent != null && binding.stubTiroirAgent != null) {
+            ViewGroup racine = (ViewGroup) binding.getRoot();
+            int rang = racine.indexOfChild(binding.stubTiroirAgent);
+            racine.removeView(binding.stubTiroirAgent);
+            racine.addView(tiroirAgent, rang);
+        }
+
+        // 5) re-câbler les vues neuves (auditeurs, insets, bannière
+        //    calculée — décision 8) et re-pose de l'état
+        binding.banniereCompat.setBackgroundColor(Graphite.melange(
+                palette.alerte, 0.12f, palette.fond));
+        cabler();
+        etat.poserGrandEcran(grandEcranApres);
+        binding.feuille.poserSection(section);
+        if (texteBanniereCompat != null) {
+            binding.banniereCompat.setText(texteBanniereCompat);
+            binding.banniereCompat.setVisibility(View.VISIBLE);
+        }
+        reposerEtatSurNouvelleRacine();
+    }
+
+    /**
+     * Re-pose l'état d'UI sur la racine ré-inflée : les vues sont
+     * neuves, la vérité (états purs, session, contrôleurs) est intacte
+     * — elle se re-déroule ici, exactement comme un montage de session
+     * sans le rechargement.
+     */
+    private void reposerEtatSurNouvelleRacine() {
+        // la barre haute : nom du projet, puce modules (le point
+        // d'activité de l'agent seul ne se re-pose pas — il suivra le
+        // prochain événement du service, résiduel documenté)
+        if (session.racineProjet != null) {
+            binding.barreHaut.poserNomProjet(String.valueOf(
+                    session.racineProjet.getFileName()));
+            int modules = session.modele == null ? 0
+                    : session.modele.allModules().size();
+            binding.barreHaut.binding.puceModules.setText(
+                    ecran.getString(modules == 1
+                            ? R.string.meta_module_1
+                            : R.string.meta_modules, modules));
+        }
+        binding.etatVidePuits.setTitre(titreEtatVide);
+        binding.etatVidePuits.setAide(aideEtatVide);
+        // le tiroir fichiers (compact) : ouvert si l'état le dit
+        if (binding.tiroir != null && etat.tiroirOuvert()) {
+            binding.tiroir.ouvrir();
+        }
+        // la couleur du bouton rail arbre (grand écran) se recale sur
+        // la visibilité de la colonne amarrée
+        if (binding.boutonRailArbre != null) {
+            binding.boutonRailArbre.setCouleur(
+                    binding.colonneArbre.getVisibility() == View.VISIBLE
+                            ? palette.accent : palette.texteSecondaire);
+        }
+        // les onglets et le fil d'Ariane, la pilule d'index, l'arbre,
+        // les volets et le FAB, la console et la feuille (sections et
+        // verdicts) — tout se re-déroule des états
+        controleurEdition.majOnglets();
+        controleurFichiers.majPiluleIndex();
+        controleurFichiers.majArbre();
+        majVolets();
+        majFab();
+        majConsole();
+        controleurEdition.reposerFeuille();
+    }
+
+    // ------------------------------------------------------------------
+    // État d'UI minimal : sauvegarde / restauration (lot A8, ADR-085
+    // décision 10 — les recréations RESTANTES : thème, langue, taille
+    // de police ; la géométrie, elle, ne recrée plus l'atelier)
+    // ------------------------------------------------------------------
+
+    /**
+     * Sauvegarde l'état d'UI minimal dans le Bundle (la coque
+     * appelle en {@code onSaveInstanceState}) : l'export de
+     * l'{@link EtatAtelier} — onglets ouverts, actif, points de
+     * modification, surcouches, section de feuille — et les
+     * BROUILLONS de saisie des popups ({@link EtatPopups} — ils
+     * survivent au même passage : la saisie vit dans l'état, jamais
+     * dans le popup). Le build ne s'exporte pas (la pilule suit les
+     * événements du service, documenté au rapport).
+     *
+     * @param sortie le Bundle de sauvegarde
+     */
+    void sauverEtat(Bundle sortie) {
+        EtatAtelier.Export export = etat.exporter(
+                binding.feuille.section());
+        sortie.putStringArrayList(CLE_ONGLETS,
+                new ArrayList<>(export.onglets()));
+        sortie.putStringArrayList(CLE_MODIFIES,
+                new ArrayList<>(export.modifies()));
+        if (export.actif() != null) {
+            sortie.putString(CLE_ACTIF, export.actif());
+        }
+        sortie.putBoolean(CLE_TIROIR, export.tiroirOuvert());
+        sortie.putBoolean(CLE_CONSOLE, export.consoleDepliee());
+        sortie.putBoolean(CLE_APERCU_PLEIN, export.apercuPleinEcran());
+        sortie.putBoolean(CLE_VOLET, export.voletApercu());
+        sortie.putBoolean(CLE_PROJET, export.projetMonte());
+        sortie.putInt(CLE_SECTION, export.sectionFeuille().ordinal());
+        Map<String, String> brouillons = etatPopups.exporterBrouillons();
+        sortie.putStringArrayList(CLE_BROUILLONS_CLES,
+                new ArrayList<>(brouillons.keySet()));
+        sortie.putStringArrayList(CLE_BROUILLONS_VALEURS,
+                new ArrayList<>(brouillons.values()));
+    }
+
+    /**
+     * Restaure l'état d'UI minimal d'un Bundle (la coque appelle au
+     * {@code onCreate}, AVANT le démarrage de session).
+     *
+     * @param sauvegarde le Bundle restauré (jamais nul)
+     * @return l'onglet ACTIF restauré (il devient le fichier initial
+     *         de la session : il se re-montre à la fin du chargement
+     *         — le coût est le rebranchement, pas une reconstruction,
+     *         ADR-É5), ou null si aucun
+     */
+    String restaurer(Bundle sauvegarde) {
+        if (!sauvegarde.containsKey(CLE_ONGLETS)) {
+            // première ouverture (ou Bundle d'un autre âge) : rien à
+            // restaurer, l'état neuf reste
+            return null;
+        }
+        // garde d'audit A8 : un ordinal hors bornes (Bundle écrit par
+        // une AUTRE version, section réordonnée) se normalise en
+        // CONSOLE — l'état dégradé vaut mieux que l'écran mort
+        EtatFeuille.Section[] sections = EtatFeuille.Section.values();
+        int ordinal = sauvegarde.getInt(CLE_SECTION);
+        EtatFeuille.Section section = ordinal >= 0
+                && ordinal < sections.length
+                ? sections[ordinal] : EtatFeuille.Section.CONSOLE;
+        EtatAtelier.Export export = new EtatAtelier.Export(
+                sauvegarde.getStringArrayList(CLE_ONGLETS),
+                sauvegarde.getString(CLE_ACTIF),
+                sauvegarde.getStringArrayList(CLE_MODIFIES),
+                sauvegarde.getBoolean(CLE_TIROIR),
+                sauvegarde.getBoolean(CLE_CONSOLE),
+                sauvegarde.getBoolean(CLE_APERCU_PLEIN),
+                sauvegarde.getBoolean(CLE_VOLET),
+                sauvegarde.getBoolean(CLE_PROJET), section);
+        etat.importer(export);
+        binding.feuille.poserSection(section);
+        // garde d'audit A8 : poserSection DÉPLIE à mi-hauteur une
+        // feuille repliée (le patron « le choix déplie », A6) — la
+        // détente exportée se re-pose aussitôt : la feuille restaurée
+        // est EXACTEMENT celle quittée (repliée reste repliée)
+        binding.feuille.poserDeplie(export.consoleDepliee());
+        // les brouillons des popups (deux listes parallèles)
+        List<String> cles = sauvegarde
+                .getStringArrayList(CLE_BROUILLONS_CLES);
+        List<String> valeurs = sauvegarde
+                .getStringArrayList(CLE_BROUILLONS_VALEURS);
+        Map<String, String> brouillons = new LinkedHashMap<>();
+        if (cles != null && valeurs != null) {
+            for (int i = 0; i < cles.size() && i < valeurs.size(); i++) {
+                brouillons.put(cles.get(i), valeurs.get(i));
+            }
+        }
+        etatPopups.importerBrouillons(brouillons);
+        // le tiroir fichiers (compact) se rouvre si l'état le dit
+        if (binding.tiroir != null && etat.tiroirOuvert()) {
+            binding.tiroir.ouvrir();
+        }
+        return export.actif();
     }
 
     /** Le contrôleur agent (le retour système et le menu y passent). */
@@ -1030,7 +1351,21 @@ final class VueAtelier implements HoteAtelier {
 
     @Override
     public void executerSurFilUi(Runnable action) {
-        ecran.runOnUiThread(action);
+        // lot A8 (I8, revue exigée) : TOUS les callbacks asynchrones de
+        // l'atelier — exécuteur de fond, relais logcat, démon de build,
+        // service de l'agent, session — passent par CETTE voie : la
+        // garde de cycle de vie se pose UNE fois ici, avant le post
+        // ET au moment d'exécuter (l'écran détruit n'exécute plus rien
+        // : jamais une vue morte touchée, jamais un popup montré sur
+        // une fenêtre disparue)
+        if (ecran.isFinishing() || ecran.isDestroyed()) {
+            return;
+        }
+        ecran.runOnUiThread(() -> {
+            if (!ecran.isFinishing() && !ecran.isDestroyed()) {
+                action.run();
+            }
+        });
     }
 
     @Override
@@ -1409,6 +1744,8 @@ final class VueAtelier implements HoteAtelier {
 
     @Override
     public void montrerErreur(String message) {
+        titreEtatVide = R.string.projet_illisible_sans_detail;
+        aideEtatVide = message;
         binding.etatVidePuits.setTitre(
                 R.string.projet_illisible_sans_detail);
         binding.etatVidePuits.setAide(message);
@@ -1416,6 +1753,8 @@ final class VueAtelier implements HoteAtelier {
 
     @Override
     public void poserEtatVide(int titre, int aide) {
+        titreEtatVide = titre;
+        aideEtatVide = ecran.getString(aide);
         binding.etatVidePuits.setTitre(titre);
         binding.etatVidePuits.setAide(aide);
     }

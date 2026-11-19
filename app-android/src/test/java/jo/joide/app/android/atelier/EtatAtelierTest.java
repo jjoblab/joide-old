@@ -229,4 +229,78 @@ class EtatAtelierTest {
         assertFalse(etat.build().enCours(),
                 "un événement tardif ne ranime pas le build");
     }
+
+    // ------------------------------------------------------------------
+    // Lot A8 (décision 10) : export/import de l'état d'UI minimal —
+    // l'aller-retour des recréations restantes (thème, langue, police)
+    // ------------------------------------------------------------------
+
+    @Test
+    void lallerRetourExportImportExportRendUnEtatEgal() {
+        EtatAtelier etat = new EtatAtelier(false);
+        etat.ouvrir("app/src/main/java/A.java");
+        etat.ouvrir("joide.toml");
+        etat.marquerModifie("joide.toml");
+        etat.deplierConsole();
+        etat.ouvrirTiroir();
+        etat.basculerApercuPleinEcran();
+        etat.surActifEstMiseEnPage(true);
+        etat.setProjetMonte(true);
+
+        EtatAtelier.Export export = etat.exporter(
+                EtatFeuille.Section.JOURNAL);
+        EtatAtelier revenue = new EtatAtelier(false);
+        revenue.importer(export);
+        assertEquals(export, revenue.exporter(
+                        EtatFeuille.Section.JOURNAL),
+                "export → import → export : l'état survit à la "
+                        + "recréation (les onglets et l'ordre, l'actif, "
+                        + "les points de modification, les surcouches)");
+        assertEquals(List.of("app/src/main/java/A.java", "joide.toml"),
+                revenue.onglets());
+        assertEquals("joide.toml", revenue.actif(),
+                "l'ACTIF survit : le dernier onglet ouvert reste actif");
+        assertTrue(revenue.estModifie("joide.toml"));
+        assertTrue(revenue.consoleDepliee());
+        assertTrue(revenue.tiroirOuvert());
+        assertTrue(revenue.apercuPleinEcran());
+        assertTrue(revenue.voletApercu());
+        assertTrue(revenue.projetMonte());
+        assertEquals(1, revenue.nombreModifies());
+    }
+
+    @Test
+    void lImportCopeAvecUnBundleAmaigri() {
+        EtatAtelier revenue = new EtatAtelier(false);
+        // un export construit à la main (listes absentes du Bundle) ne
+        // casse jamais l'import : tout se lit vide, l'actif reste nul
+        revenue.importer(new EtatAtelier.Export(
+                null, null, null, false, false, false, false, false,
+                EtatFeuille.Section.CONSOLE));
+        assertTrue(revenue.onglets().isEmpty());
+        assertNull(revenue.actif());
+        assertEquals(0, revenue.nombreModifies());
+        assertFalse(revenue.projetMonte());
+    }
+
+    @Test
+    void laGeometrieSeRePoseElleNeSImportePas() {
+        EtatAtelier etat = new EtatAtelier(false);
+        etat.ouvrir("a.txt");
+        EtatAtelier.Export export = etat.exporter(
+                EtatFeuille.Section.CONSOLE);
+        // la recréation relit la géométrie de la CONFIGURATION (pas de
+        // l'export) : un grand écran restauré reste grand écran
+        EtatAtelier grand = new EtatAtelier(true);
+        grand.importer(export);
+        assertTrue(grand.grandEcran(),
+                "la géométrie ne s'importe pas — elle se relit de la "
+                        + "configuration à la recréation");
+        // la ré-inflation (changement de classe) re-pose la géométrie
+        // de l'état COURANT, l'état d'UI reste
+        grand.poserGrandEcran(false);
+        assertFalse(grand.grandEcran());
+        assertEquals(List.of("a.txt"), grand.onglets(),
+                "re-poser la géométrie ne touche PAS l'état d'UI");
+    }
 }

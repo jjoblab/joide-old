@@ -94,6 +94,12 @@ public final class EcranCallbackMcp extends ActiviteJoide {
                 return;
             }
             runOnUiThread(() -> {
+                // I8/lot A8 : garde de cycle de vie — l'écran peut
+                // fermer ENTRE le contrôle ci-dessus (fil du service)
+                // et l'exécution ici
+                if (isDestroyed() || ecran == null) {
+                    return;
+                }
                 if (message.startsWith(PREFIXE_SUCCES)) {
                     raconter(getString(R.string.mcp_rappel_signe,
                             message.substring(PREFIXE_SUCCES.length())));

@@ -1,5 +1,6 @@
 package jo.joide.app.android;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,6 +95,14 @@ class ArchitectureVuesTest {
     /** Un texte littéral (android:text sans référence @string/@null). */
     private static final Pattern TEXTE_LITTERAL = Pattern.compile(
             "android:text=\"[^@]");
+
+    /** La liste EXACTE des changements de configuration que l'atelier
+     *  déclare (décision 10 : la GÉOMÉTRIE seule — orientation, taille
+     *  d'écran, pliage, multi-fenêtre ; thème, langue, densité et
+     *  police restent des recréations, l'état minimal les couvre par
+     *  onSaveInstanceState). */
+    private static final String CHANGEMENTS_GEOMETRIE =
+            "orientation|screenSize|smallestScreenSize|screenLayout";
 
     /**
      * Liste d'exceptions DÉCROISSANTE — écrans qui instancient encore des
@@ -455,6 +464,42 @@ class ArchitectureVuesTest {
                 () -> "textes littéraux dans les layouts (parité values/ ↔ "
                         + "values-fr/ : tout texte vit en @string) : "
                         + fautes);
+    }
+
+    /**
+     * Lot A8 (décision 10) : l'atelier — et LUI SEUL — déclare les
+     * changements de configuration de GÉOMÉTRIE. La liste EXACTE du
+     * manifest est verrouillée ici (ajouter un changement hors
+     * géométrie, densité ou police par exemple, reviendrait à recréer
+     * sans l'état : une dérive silencieuse) ; une autre activité qui
+     * déclarerait ses changements échoue aussi.
+     */
+    @Test
+    void leManifestePorteLesChangementsDeGeometrieSurLAtelierSeul()
+            throws IOException {
+        Path manifeste = Path.of("src", "main", "AndroidManifest.xml");
+        assertTrue(Files.isRegularFile(manifeste),
+                "manifeste introuvable : " + manifeste);
+        String texte = Files.readString(manifeste);
+        // l'atelier porte l'attribut, avec la liste EXACTE
+        int atelier = texte.indexOf(".ecrans.atelier.EcranAtelier");
+        assertTrue(atelier >= 0,
+                "EcranAtelier est déclarée dans le manifeste");
+        int fin = texte.indexOf("</activity>", atelier);
+        assertTrue(fin > atelier, "l'activité est fermée");
+        assertTrue(texte.substring(atelier, fin).contains(
+                "android:configChanges=\"" + CHANGEMENTS_GEOMETRIE
+                        + "\""),
+                "EcranAtelier déclare les changements de GÉOMÉTRIE seuls "
+                        + "(décision 10) : " + CHANGEMENTS_GEOMETRIE);
+        // RIEN d'autre ne les déclare — et le compte se garde (un
+        // commentaire du manifest ne doit pas porter la literal)
+        int total = compter(Pattern.compile("android:configChanges="),
+                texte);
+        assertEquals(1, total,
+                "seul l'atelier déclare ses changements de configuration "
+                        + "(les autres écrans recréent, l'état d'UI "
+                        + "minimal les couvre)");
     }
 
     /** Le nombre d'occurrences du motif dans le texte. */

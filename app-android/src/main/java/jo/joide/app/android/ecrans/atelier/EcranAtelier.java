@@ -34,6 +34,16 @@ import jo.joide.app.android.ui.GraphiteVue;
  * l'état pur, testé JVM) ; les popups ouverts se ferment explicitement
  * en {@code onPause}/{@code onDestroy}/{@code onConfigurationChanged}.</p>
  *
+ * <p>Lot A8 (ADR-085 décision 10) : le manifest porte les changements
+ * de GÉOMÉTRIE seuls (orientation, screenSize, smallestScreenSize,
+ * screenLayout) — thème, langue et police recréent toujours (l'état
+ * d'UI minimal survit alors par {@code onSaveInstanceState}) ; le
+ * changement de géométrie ferme les popups, ré-inflamme la racine
+ * SEULE (compact ↔ {@code layout-w720dp}, la décision pure
+ * {@code DecisionConfiguration} décide, testée JVM) et ne ferme
+ * JAMAIS l'IDE — la session (scène celeris, moteurs LSP, aperçu)
+ * survit, le puits se détache et se rattache.</p>
+ *
  * <p>L'atelier remplace l'empilement programmatique de P8 — barre
  * supérieure exacte (nom du projet, puce modules, pilule d'état de
  * l'index, ⋮), onglets multi-fichiers à état faible (ADR-051),
@@ -117,8 +127,14 @@ public final class EcranAtelier extends ActiviteJoide {
         }
         vue.poserEtatVide(R.string.ide_chargement,
                 R.string.atelier_etat_vide_aide);
+        // lot A8 (décision 10) : l'état d'UI minimal restauré AVANT le
+        // démarrage — l'ACTIF restauré devient le fichier initial de
+        // la session (les onglets reviennent, l'actif se re-montre à la
+        // fin du chargement : rebranchement, pas reconstruction)
+        String actif = state == null ? null : vue.restaurer(state);
         vue.demarrerSession(Paths.get(racine),
-                getIntent().getStringExtra(Ecrans.EXTRA_FICHIER));
+                actif != null ? actif
+                        : getIntent().getStringExtra(Ecrans.EXTRA_FICHIER));
     }
 
     // ------------------------------------------------------------------
@@ -172,18 +188,38 @@ public final class EcranAtelier extends ActiviteJoide {
     }
 
     /**
-     * Un changement de configuration FERME les popups ouverts
-     * (décision 12 — jamais restaurés). Frontière du lot : le manifest
-     * ne porte pas encore {@code configChanges} (lot A8) — un
-     * changement de géométrie recrée aujourd'hui l'activité et
-     * {@code onDestroy} ferme déjà tout ; l'override armé ici devient
-     * porteur le jour où A8 déclare les changements retenus.
+     * Un changement de configuration (décision 10, lot A8) : le
+     * manifest ne déclare QUE les changements de GÉOMÉTRIE
+     * ({@code orientation|screenSize|smallestScreenSize|screenLayout})
+     * — thème, langue et police recréent toujours (l'état minimal
+     * survit par {@code onSaveInstanceState}). Ici : les popups
+     * ouverts se ferment (décision 12), la racine se ré-influe seule
+     * si la CLASSE de géométrie change (économie documentée — même
+     * classe, même layout), et l'IDE n'est JAMAIS fermé : la session
+     * (scène, LSP, aperçu, écritures) survit, le puits se détache
+     * avant la ré-inflation et se rattache après.
      */
     @Override
     public void onConfigurationChanged(android.content.res.Configuration
                                               nouvelle) {
-        vue.fermerPopups();
         super.onConfigurationChanged(nouvelle);
+        vue.surChangementConfiguration(nouvelle);
+    }
+
+    /**
+     * L'état d'UI minimal (décision 10, lot A8) : export de
+     * l'{@code EtatAtelier} (onglets ouverts, actif, points de
+     * modification, surcouches, section de feuille) et brouillons de
+     * saisie des popups — il survit aux recréations RESTANTES (thème,
+     * langue, taille de police : le manifest ne déclare pas leurs
+     * changements) comme à la mort du processus en arrière-plan.
+     */
+    @Override
+    protected void onSaveInstanceState(Bundle sortie) {
+        super.onSaveInstanceState(sortie);
+        if (vue != null) {
+            vue.sauverEtat(sortie);
+        }
     }
 
     @Override

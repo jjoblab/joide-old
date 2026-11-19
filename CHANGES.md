@@ -1,3 +1,60 @@
+# CHANGES — la géométrie ne détruit plus l'atelier : configChanges, ré-inflation sans fermerIde(), état minimal sauvegardé, gardes de cycle de vie (2026-11-19)
+
+**Lot A8 de l'ADR-085 (décision 10)** : le manifest déclare
+`android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"`
+sur `EcranAtelier` **seul** — la GÉOMÉTRIE seule (thème, langue,
+densité, police restent des recréations) ; le filet
+`ArchitectureVuesTest` verrouille la liste EXACTE et le compte 1.
+`onConfigurationChanged` déroule la décision **PURE JVM**
+(`DecisionConfiguration`, 4 tests — le critère §6.10 « un changement
+de géométrie n'appelle pas `fermerIde()` » y est asserté dans toute
+la grille) : les popups se ferment TOUJOURS (avant tout, décision 12),
+la racine se ré-influe SEULEMENT si la CLASSE de géométrie change
+(économie documentée : même classe, même layout), l'IDE **jamais**
+fermé. La **ré-inflation de la racine** (`VueAtelier.reinflerRacine`)
+détache le PUITS avant (la scène celeris et sa couche de popups,
+jamais reconstruites — `SessionAtelier` n'est pas touché : moteurs
+LSP, sync, aperçu et écritures survivent), gonfle la racine neuve
+(compact ↔ `layout-w720dp`), rattache la scène, ré-amarre les zones
+montées (arbre, console, tiroir agent au rang du stub), re-pose le
+voile du porte-popups (`PortePopups.poserVoile`), re-câble et
+re-pose l'état (`reposerEtatSurNouvelleRacine` + le nouveau
+`ControleurEdition.reposerFeuille`). L'**état d'UI minimal** survit
+aux recréations restantes (et à la mort du processus) par
+`onSaveInstanceState` : export pur de l'`EtatAtelier` (onglets,
+actif, points de modification, surcouches, section de feuille —
+aller-retour export→import→export ÉGAL testé), brouillons de
+`EtatPopups` (le même passage), assistant `EtatCreation` (A4 : « A8
+fera la sauvegarde » — étape, recherche, catégorie, modèle,
+identité, minSdk, modules) ; l'ACTIF restauré devient le fichier
+initial de la session (rebranchement, pas reconstruction, ADR-É5) ;
+les racines d'étape deviennent des `NestedScrollView` (le cadre
+restaure le DÉFILEMENT, id portés par les `<include>` ;
+`saveEnabled=false` RESTE — la vérité unique vit dans les états,
+consigné à l'ADR). **Option ε (`ViewModel`) ÉVALUÉE et ÉCARTÉE**,
+motivée à l'ADR-085 (β couvre la géométrie, le Bundle couvre le
+reste ; y déménager la session violerait « jamais de `Context`
+d'activité retenu » — aucun changement de propriété à consigner ;
+aucune dépendance nouvelle). **Revue I8 exigée** : les 14 sites
+`runOnUiThread` du module sont TOUS gardés `isDestroyed()` (7
+nouveaux : accueil ×5, rappel MCP, relance de mesure) ; l'atelier
+concentre ses callbacks dans `HoteAtelier.executerSurFilUi`, garde
+posée une fois avant le post ET à l'exécution. Circonstance :
+travail A8 non commetté d'un agent interrompu, **audité face au
+brief** (ré-inflation vérifiée membre à membre face aux deux
+layouts, états et tests lus ligne à ligne, 14 sites revus un par
+un), 3 corrections de robustesse portées (bornage des ordinaux
+d'étape/section lus du Bundle, garde `Categorie.valueOf`, re-pose de
+la détente de feuille restaurée — repliée reste repliée), validation
+**re-exécutée** (`--rerun` : **383 tests verts**, 0 échec ;
+`verifierOmbreApk` vert ; lint : les 11 erreurs préexistantes
+exactement, aucune nouvelle). Module : vues instanciées **22**
+inchangées (kit seul), `palette.*` 205 → 209, `dp(` 152 inchangé,
+87 layouts inchangés, APK 15 844 349 → **15 853 241 o** (+8 892 o,
+aucune dépendance nouvelle). Sans appareil : rotation, pliage,
+multi-fenêtre et recréations restantes à vérifier par le
+propriétaire (rapport A8 §6).
+
 # CHANGES — plus aucun dialogue : popups XML à deux gabarits, découpage du contrôleur agent, contrats typés (2026-11-19)
 
 **Lot A7 de l'ADR-085 (D3, décision 12)** : `ui/Dialogue.java` (9

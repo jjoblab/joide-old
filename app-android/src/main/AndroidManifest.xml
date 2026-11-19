@@ -47,9 +47,19 @@
              exacte, onglets multi-fichiers, tiroir arborescence, dock
              de console (lot K), FAB Construire, seuil 720 dp, aperçu
              (lot L). Ouvert sur un projet déjà importé (racine,
-             bannière Gradle, fichier d'entrée par extras). -->
+             bannière Gradle, fichier d'entrée par extras).
+
+             Lot A8 (ADR-085 décision 10) : l'atelier déclare les
+             changements de GÉOMÉTRIE seuls — orientation, taille
+             d'écran, pliage, multi-fenêtre : la racine se ré-influe
+             (compact ↔ layout-w720dp), le puits se rattache, la
+             session d'IDE (scène, LSP, aperçu) N'EST PAS fermée et
+             les popups ouverts se ferment. Tout le reste (thème,
+             langue, densité, taille de police) recrée l'activité :
+             l'état d'UI minimal survit par onSaveInstanceState. -->
         <activity
             android:name=".ecrans.atelier.EcranAtelier"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
             android:exported="false" />
 
         <!-- Lot U (ADR-066) : le rappel OAuth du parcours MCP —

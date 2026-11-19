@@ -28,6 +28,16 @@ import java.util.Set;
  * amarré en grand écran, ce n'est pas une surcouche), aperçu plein
  * écran, confirmation de fermeture du projet, accueil — le dernier
  * état ne saute jamais d'étape.</p>
+ *
+ * <p>Lot A8 (ADR-085 décision 10) : l'état d'UI minimal est
+ * EXPORTABLE ({@link Export} — onglets, actif, points de
+ * modification, surcouches, section de feuille) : la coque le
+ * traduit en Bundle dans {@code onSaveInstanceState} et le
+ * re-pose aux recréations RESTANTES (thème, langue, taille de
+ * police — la géométrie, elle, ne recrée plus l'atelier). La
+ * géométrie de l'état se RE-POSE après une ré-inflation de racine
+ * ({@link #poserGrandEcran(boolean)}) : c'est une donnée de
+ * configuration, jamais une donnée sauvée.</p>
  */
 public final class EtatAtelier {
 
@@ -77,6 +87,26 @@ public final class EtatAtelier {
         }
     }
 
+    /**
+     * L'état d'UI minimal EXPORTABLE (lot A8, ADR-085 décision 10) :
+     * ce qui survit aux recréations RESTANTES (thème, langue, taille
+     * de police). Pur et Bundle-compatible par traduction de la
+     * coque : onglets ouverts dans l'ordre, actif, points de
+     * modification (noms seuls — le texte vit sur le disque,
+     * ADR-É5), surcouches (feuille, tiroir, aperçus) et la section
+     * de feuille. La GÉOMÉTRIE n'y figure pas : elle se relit de la
+     * configuration à la recréation. Le build non plus : la pilule
+     * suit les événements du service, pas un état d'UI (documenté au
+     * rapport A8).
+     */
+    public record Export(List<String> onglets, String actif,
+                         List<String> modifies, boolean tiroirOuvert,
+                         boolean consoleDepliee,
+                         boolean apercuPleinEcran, boolean voletApercu,
+                         boolean projetMonte,
+                         EtatFeuille.Section sectionFeuille) {
+    }
+
     /** Pourquoi un onglet ne peut pas s'ouvrir (traduit par la vue). */
     public enum RaisonRefus {
         /** Tous les onglets sont modifiés : aucun candidat à l'éviction. */
@@ -88,7 +118,7 @@ public final class EtatAtelier {
                         boolean reussi, boolean interrompu) {
     }
 
-    private final boolean grandEcran;
+    private boolean grandEcran;
     private final List<String> onglets = new ArrayList<>();
     private final Set<String> modifies = new LinkedHashSet<>();
     private String actif;
@@ -114,6 +144,68 @@ public final class EtatAtelier {
     /** L'atelier est-il en disposition grand écran ? */
     public boolean grandEcran() {
         return grandEcran;
+    }
+
+    /**
+     * Re-pose la classe de disposition (lot A8, décision 10) : après
+     * une ré-inflation de racine (compact ↔ {@code layout-w720dp}),
+     * l'état suit la configuration — les surcouches en dépendent (le
+     * tiroir n'est une surcouche qu'en compact, le volet d'aperçu
+     * n'existe qu'en grand écran).
+     *
+     * @param grandEcran la classe nouvelle (lue de la configuration)
+     */
+    public void poserGrandEcran(boolean grandEcran) {
+        this.grandEcran = grandEcran;
+    }
+
+    // ------------------------------------------------------------------
+    // Export/import (lot A8 — recréations restantes)
+    // ------------------------------------------------------------------
+
+    /**
+     * Exporte l'état d'UI minimal — l'aller-retour
+     * ({@code exporter} → {@code importer} → {@code exporter}) rend
+     * un état ÉGAL, testé JVM.
+     *
+     * @param sectionFeuille la section de feuille courante (elle vit
+     *                       dans l'état de la feuille, l'export la
+     *                       porte — « onglets ouverts, section,
+     *                       feuille » de la décision 10)
+     * @return l'état exportable
+     */
+    public Export exporter(EtatFeuille.Section sectionFeuille) {
+        return new Export(onglets(), actif, List.copyOf(modifies),
+                tiroirOuvert, consoleDepliee, apercuPleinEcran,
+                voletApercu, projetMonte,
+                sectionFeuille == null ? EtatFeuille.Section.CONSOLE
+                        : sectionFeuille);
+    }
+
+    /**
+     * Importe un état exporté (une recréation restante : thème,
+     * langue, taille de police). Les listes absentes se lisent vides
+     * (un Bundle absent ne casse jamais l'import) ; l'actif absent
+     * (plus d'onglet) reste nul. La géométrie ne s'importe pas : elle
+     * se relit de la configuration.
+     *
+     * @param etat l'état exporté (jamais nul)
+     */
+    public void importer(Export etat) {
+        onglets.clear();
+        if (etat.onglets() != null) {
+            onglets.addAll(etat.onglets());
+        }
+        modifies.clear();
+        if (etat.modifies() != null) {
+            modifies.addAll(etat.modifies());
+        }
+        actif = etat.actif();
+        tiroirOuvert = etat.tiroirOuvert();
+        consoleDepliee = etat.consoleDepliee();
+        apercuPleinEcran = etat.apercuPleinEcran();
+        voletApercu = etat.voletApercu();
+        projetMonte = etat.projetMonte();
     }
 
     // ------------------------------------------------------------------

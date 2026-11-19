@@ -16,8 +16,10 @@ import java.util.Map;
  * <li><b>les brouillons de saisie</b> : le texte frappé dans un popup
  * de saisie (nouveau fichier, renommage, modèle personnalisé) vit
  * ici, pas dans la vue — la vue est jetable, l'état reste (un
- * brouillon se relit à la réouverture du popup ; A8 l'exportera aux
- * recréations qui restent).</li>
+ * brouillon se relit à la réouverture du popup ; le lot A8
+ * l'EXPORTE aux recréations restantes — {@link #exporterBrouillons()}
+ * / {@link #importerBrouillons(Map)} — le même passage que
+ * l'{@code EtatAtelier}).</li>
  * </ul>
  *
  * <p>La MÉCANIQUE des popups (fenêtres, voile, clavier) vit dans
@@ -79,5 +81,43 @@ public final class EtatPopups {
     /** Oublie un brouillon (la saisie validée vit dans le store). */
     public void oublierBrouillon(String cle) {
         brouillons.remove(cle);
+    }
+
+    // ------------------------------------------------------------------
+    // Export/import (lot A8 — recréations restantes, le même passage
+    // que l'export d'EtatAtelier)
+    // ------------------------------------------------------------------
+
+    /**
+     * Exporte les brouillons, dans l'ordre de frappe (la coque les
+     * traduit en Bundle : deux listes parallèles clés/valeurs).
+     *
+     * @return une copie (jamais nulle, jamais modifiée par l'état)
+     */
+    public Map<String, String> exporterBrouillons() {
+        return new LinkedHashMap<>(brouillons);
+    }
+
+    /**
+     * Importe des brouillons exportés (une recréation restante : le
+     * texte frappé dans un popup de saisie survit — le popup, lui,
+     * n'est jamais restauré). Les clés nulles se sautent, les valeurs
+     * nulles se normalisent en vide (jamais de null volant).
+     *
+     * @param brouillons les brouillons exportés (nul : tout s'oublie)
+     */
+    public void importerBrouillons(
+            Map<String, String> brouillons) {
+        this.brouillons.clear();
+        if (brouillons == null) {
+            return;
+        }
+        for (Map.Entry<String, String> brouillon
+                : brouillons.entrySet()) {
+            if (brouillon.getKey() != null) {
+                poserBrouillon(brouillon.getKey(),
+                        brouillon.getValue());
+            }
+        }
     }
 }

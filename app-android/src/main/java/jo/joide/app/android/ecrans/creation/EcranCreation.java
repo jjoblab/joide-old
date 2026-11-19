@@ -76,6 +76,16 @@ import jo.joide.platform.Clock;
  * Canvas (sans équivalent). La génération court sur l'exécuteur de
  * l'écran avec garde de cycle de vie (I8) : {@code isDestroyed()} et
  * binding MUET après {@code onDestroy()}.</p>
+ *
+ * <p>Lot A8 (ADR-085 décision 10) : l'état d'UI de l'assistant survit
+ * aux recréations (rotation, thème, langue) — l'export de
+ * l'{@link EtatCreation} se sauve en {@code onSaveInstanceState} et
+ * s'importe au {@code onCreate} AVANT le rendu (A4 : « A8 fera la
+ * sauvegarde ») ; les saisies se re-posent depuis l'état (une seule
+ * vérité : {@code saveEnabled=false} reste — la restauration du
+ * framework écrirait un deuxième avis), le DÉFILEMENT se restaure
+ * par le cadre (les racines d'étape sont des {@code NestedScrollView},
+ * id portés par les {@code <include>}).</p>
  */
 public final class EcranCreation extends ActiviteJoide {
 
@@ -118,6 +128,20 @@ public final class EcranCreation extends ActiviteJoide {
     private Graphite.Palette palette;
     private EtatCreation etat;
 
+    /** Les clés Bundle de l'état d'UI de l'assistant (lot A8,
+     *  décision 10 — la coque traduit, l'état pur ne touche pas
+     *  Bundle). */
+    private static final String CLE_ETAPE = "joide.creation.etape";
+    private static final String CLE_FILTRE = "joide.creation.filtre";
+    private static final String CLE_CATEGORIE = "joide.creation.categorie";
+    private static final String CLE_MODELE = "joide.creation.modele";
+    private static final String CLE_NOM = "joide.creation.nom";
+    private static final String CLE_PAQUET = "joide.creation.paquet";
+    private static final String CLE_PAQUET_TOUCHE =
+            "joide.creation.paquetTouche";
+    private static final String CLE_MINSDK = "joide.creation.minSdk";
+    private static final String CLE_MODULES = "joide.creation.modules";
+
     /**
      * Vrai pendant les re-poses programmatiques : les écouteurs de
      * saisie et de segment se taisent (seul l'utilisateur les déclenche).
@@ -131,13 +155,85 @@ public final class EcranCreation extends ActiviteJoide {
         GraphiteVue.fondEcran(this, palette);
         etat = new EtatCreation(chargerModeles(),
                 ProjetsRecents.lire(fichier()).entrees());
+        // lot A8 (décision 10) : l'état d'assistant restauré AVANT le
+        // montage et le rendu — l'assistant reprend EXACTEMENT où il
+        // était (étape, recherche, catégorie, modèle, identité,
+        // modules) ; les saisies se re-posent depuis l'état
+        if (state != null && state.containsKey(CLE_ETAPE)) {
+            etat.importer(depuis(state));
+        }
         ecran = monter(ActivityCreationBinding::inflate);
         etapeModele = ecran.etapeModele;
         etapeIdentite = ecran.etapeIdentite;
         etapeRecap = ecran.etapeRecapitulatif;
         brancher();
+        if (state != null && state.containsKey(CLE_ETAPE)) {
+            // la recherche restaurée se re-pose en silence (le texte
+            // frappé vit dans l'état — le rendu s'en sert, jamais le
+            // framework)
+            poseEnCours = true;
+            etapeModele.editionRecherche.setText(etat.filtre());
+            poseEnCours = false;
+        }
         rendre();
         getOnBackPressedDispatcher().addCallback(this, retourSysteme);
+    }
+
+    /**
+     * L'état d'UI de l'assistant (décision 10, lot A8 — A4 : « A8 fera
+     * la sauvegarde ») : export de l'{@link EtatCreation}, traduit en
+     * Bundle par la coque. Les recréations (rotation, thème, langue)
+     * ne réinitialisent plus l'assistant.
+     */
+    @Override
+    protected void onSaveInstanceState(Bundle sortie) {
+        super.onSaveInstanceState(sortie);
+        if (etat == null) {
+            return;
+        }
+        EtatCreation.Export export = etat.exporter();
+        sortie.putInt(CLE_ETAPE, export.etape().ordinal());
+        sortie.putString(CLE_FILTRE, export.filtre());
+        sortie.putString(CLE_CATEGORIE, export.categorie() == null ? ""
+                : export.categorie().name());
+        sortie.putString(CLE_MODELE, export.modeleChoisi());
+        sortie.putString(CLE_NOM, export.nom());
+        sortie.putString(CLE_PAQUET, export.paquet());
+        sortie.putBoolean(CLE_PAQUET_TOUCHE, export.paquetTouche());
+        sortie.putInt(CLE_MINSDK, export.minSdk());
+        sortie.putStringArrayList(CLE_MODULES,
+                new ArrayList<>(export.modules()));
+    }
+
+    /** Traduit un Bundle sauvegardé en export d'état pur : les
+     *  ordinaux hors bornes et les noms inconnus se normalisent
+     *  (garde d'audit A8 — un Bundle écrit par une AUTRE version de
+     *  l'application, réordonnée ou renommée, ne fait jamais planter
+     *  le réveil : l'état dégradé vaut mieux que l'écran mort). */
+    private static EtatCreation.Export depuis(Bundle state) {
+        EtatCreation.Etape[] etapes = EtatCreation.Etape.values();
+        int ordinal = state.getInt(CLE_ETAPE);
+        EtatCreation.Etape etape = ordinal >= 0 && ordinal < etapes.length
+                ? etapes[ordinal] : EtatCreation.Etape.MODELE;
+        String categorie = state.getString(CLE_CATEGORIE, "");
+        ModeleProjet.Categorie categorieLue = null;
+        if (!categorie.isEmpty()) {
+            try {
+                categorieLue = ModeleProjet.Categorie.valueOf(categorie);
+            } catch (IllegalArgumentException e) {
+                // catégorie inconnue de CETTE version : toutes (null)
+            }
+        }
+        return new EtatCreation.Export(
+                etape,
+                state.getString(CLE_FILTRE, ""),
+                categorieLue,
+                state.getString(CLE_MODELE),
+                state.getString(CLE_NOM, ""),
+                state.getString(CLE_PAQUET, ""),
+                state.getBoolean(CLE_PAQUET_TOUCHE),
+                state.getInt(CLE_MINSDK),
+                state.getStringArrayList(CLE_MODULES));
     }
 
     @Override

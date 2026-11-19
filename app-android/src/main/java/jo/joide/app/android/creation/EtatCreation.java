@@ -63,6 +63,23 @@ public final class EtatCreation {
         LONG
     }
 
+    /**
+     * L'état d'UI EXPORTABLE (lot A8, ADR-085 décision 10) : ce qui
+     * survit aux recréations restantes de l'assistant (rotation,
+     * thème, langue — A4 : « A8 fera la sauvegarde »). Pur, aller-retour
+     * testé JVM, traduit en Bundle par la coque : étape courante,
+     * recherche et catégorie, modèle choisi, identité (nom, paquet
+     * touché ou dérivé, paquet), minSdk, modules. Les modèles
+     * eux-mêmes ne s'exportent pas : ils se relisent des assets à la
+     * recréation.
+     */
+    public record Export(Etape etape, String filtre,
+                         ModeleProjet.Categorie categorie,
+                         String modeleChoisi, String nom, String paquet,
+                         boolean paquetTouche, int minSdk,
+                         List<String> modules) {
+    }
+
     private final List<ModeleProjet.Modele> modeles;
     private final List<ProjetsRecents.Entree> existants;
 
@@ -88,6 +105,49 @@ public final class EtatCreation {
                 "modeles"));
         this.existants = List.copyOf(Objects.requireNonNull(existants,
                 "existants"));
+    }
+
+    // ------------------------------------------------------------------
+    // Export/import (lot A8 — recréations restantes)
+    // ------------------------------------------------------------------
+
+    /**
+     * Exporte l'état d'assistant (l'aller-retour
+     * {@code exporter} → {@code importer} → {@code exporter} rend un
+     * état ÉGAL, testé JVM).
+     *
+     * @return l'état exportable
+     */
+    public Export exporter() {
+        return new Export(etape, filtre, categorie, modeleChoisi, nom,
+                paquet, paquetTouche, minSdk, List.copyOf(modules));
+    }
+
+    /**
+     * Importe un état exporté (une recréation restante : l'assistant
+     * reprend EXACTEMENT où il était — étape, recherche, catégorie,
+     * modèle, identité, modules). L'état importé a été atteint
+     * légalement (il sort d'un {@code exporter} du même état) ; les
+     * valeurs absentes se normalisent (étape 1, texte vide, aucun
+     * module) et le minSdk hors bornes s'ignore (borne du
+     * {@code GenerateurProjet}).
+     *
+     * @param export l'état exporté (jamais nul)
+     */
+    public void importer(Export export) {
+        etape = export.etape() == null ? Etape.MODELE : export.etape();
+        filtre = export.filtre() == null ? "" : export.filtre();
+        categorie = export.categorie();
+        modeleChoisi = export.modeleChoisi();
+        nom = export.nom() == null ? "" : export.nom();
+        paquet = export.paquet() == null ? "" : export.paquet();
+        paquetTouche = export.paquetTouche();
+        if (GenerateurProjet.MIN_SDK.contains(export.minSdk())) {
+            minSdk = export.minSdk();
+        }
+        modules = export.modules() == null ? List.of()
+                : List.copyOf(export.modules());
+        dernierModuleRequis = null;
     }
 
     // ---- Étape 1 : la galerie ----

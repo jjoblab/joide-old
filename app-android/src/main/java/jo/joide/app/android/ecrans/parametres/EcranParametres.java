@@ -1087,7 +1087,7 @@ public final class EcranParametres extends ActiviteJoide {
                     } catch (IOException e) {
                         runOnUiThread(() -> {
                             if (isDestroyed()) {
-                                return;
+                                return; // I8/lot A8 : garde de cycle de vie
                             }
                             popups.information(
                                     getString(R.string.import_echoue_titre),
@@ -1096,7 +1096,15 @@ public final class EcranParametres extends ActiviteJoide {
                                     getString(R.string.action_ok));
                         });
                     }
-                    runOnUiThread(this::mesurerStockage);
+                    // la mesure relance sur le fil UI — la relance est
+                    // sûre (aucune vue touchée, le retour intérieur est
+                    // gardé) mais la garde l'uniformise (I8/lot A8)
+                    runOnUiThread(() -> {
+                        if (isDestroyed()) {
+                            return;
+                        }
+                        mesurerStockage();
+                    });
                 }));
     }
 }

@@ -3,6 +3,8 @@ package jo.joide.app.android.atelier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import jo.joide.app.android.atelier.EtatAtelier.ActionRetour;
@@ -120,5 +122,42 @@ class EtatPopupsTest {
         assertEquals("", popups.brouillon("agent.modele"),
                 "le null se normalise en vide — jamais de null volant "
                         + "vers un appelant qui préremplirait");
+    }
+
+    // ------------------------------------------------------------------
+    // Lot A8 (décision 10) : export/import des brouillons — le même
+    // passage que l'export d'EtatAtelier (la saisie vit dans l'état,
+    // le popup n'est jamais restauré)
+    // ------------------------------------------------------------------
+
+    @Test
+    void lallerRetourDesBrouillonsSurvitALaRecreation() {
+        popups.poserBrouillon("fichiers.nouveau", "Config");
+        popups.poserBrouillon("agent.modele", "gpt-5.1");
+        popups.poserBrouillon("agent.url", "");
+        EtatPopups revenue = new EtatPopups();
+        revenue.importerBrouillons(popups.exporterBrouillons());
+        assertEquals("Config", revenue.brouillon("fichiers.nouveau"));
+        assertEquals("gpt-5.1", revenue.brouillon("agent.modele"));
+        assertEquals("", revenue.brouillon("agent.url"),
+                "un brouillon vide reste un brouillon FRAPPÉ");
+        // l'aller-retour rend une copie ÉGALE (l'ordre de frappe compris)
+        assertEquals(popups.exporterBrouillons(),
+                revenue.exporterBrouillons());
+    }
+
+    @Test
+    void lImportDeBrouillonsAmaigrisOuNulsNeCasseRien() {
+        popups.poserBrouillon("fichiers.nouveau", "Config");
+        popups.importerBrouillons(null);
+        assertNull(popups.brouillon("fichiers.nouveau"),
+                "un import nul efface tout (aucune recréation n'a "
+                        + "encore frappé)");
+        Map<String, String> amaigri = new java.util.LinkedHashMap<>();
+        amaigri.put("agent.modele", null);
+        amaigri.put(null, "cle nulle saute");
+        popups.importerBrouillons(amaigri);
+        assertEquals("", popups.brouillon("agent.modele"),
+                "la valeur nulle se normalise en vide");
     }
 }

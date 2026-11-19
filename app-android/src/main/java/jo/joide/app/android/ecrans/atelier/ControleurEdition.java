@@ -326,6 +326,41 @@ final class ControleurEdition {
         hote.executerSurFilUi(this::lireFluxRelais);
     }
 
+    /**
+     * Lot A8 (ré-inflation de racine, décision 10) : re-pose les
+     * sections de la feuille NEUVE depuis les états purs — aucun
+     * événement ne re-arrive pour le faire (les diagnostics, le
+     * journal et le logcat vivent dans l'état, les listes dans la
+     * feuille remplacée). S'appelle après {@code majConsole()} (le
+     * verdict de console vit dans la vue d'écran).
+     */
+    void reposerFeuille() {
+        if (hote.feuille() == null) {
+            return;
+        }
+        if (hote.feuille().listeProblemes() != null) {
+            hote.feuille().listeProblemes().maj(hote.etatProblemes());
+        }
+        hote.feuille().poserBadgeProblemes(hote.etatProblemes().erreurs());
+        majVerdictProblemes();
+        if (hote.feuille().listeJournal() != null) {
+            hote.feuille().listeJournal().maj(hote.etatJournal());
+        }
+        EtatJournal.Evenement dernier = hote.etatJournal().dernier();
+        if (dernier != null) {
+            // le patron du verdict d'hier (journaliser), déroulé depuis
+            // l'état : source accent, dernier événement, compte
+            hote.feuille().poserVerdictJournal("● " + dernier.source()
+                    + " · " + dernier.message().toLowerCase(
+                    java.util.Locale.FRENCH), dernier.heure() + " · "
+                    + hote.etatJournal().taille() + " événements");
+        }
+        if (hote.feuille().listeLogcat() != null) {
+            hote.feuille().listeLogcat().maj(hote.etatLogcat());
+        }
+        majVerdictLogcat();
+    }
+
     /** La zone vivante du logcat (§3.6) : flux vivant ou état vide
      *  honnête, dernière ligne colorée par niveau, histogramme. */
     private void majVerdictLogcat() {

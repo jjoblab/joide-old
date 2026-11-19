@@ -319,10 +319,18 @@ public final class MainActivity extends ActiviteJoide {
             try {
                 supprimerRecursif(cible);
             } catch (IOException e) {
-                runOnUiThread(() -> popups.information(
-                        getString(R.string.accueil_suppression_echouee_titre),
-                        getString(R.string.accueil_suppression_echouee),
-                        getString(R.string.action_ok)));
+                runOnUiThread(() -> {
+                    // I8/lot A8 : la garde de cycle de vie — l'écran
+                    // fermé ne montre plus rien (le projet est effacé,
+                    // l'accueil le relira)
+                    if (isDestroyed()) {
+                        return;
+                    }
+                    popups.information(
+                            getString(R.string.accueil_suppression_echouee_titre),
+                            getString(R.string.accueil_suppression_echouee),
+                            getString(R.string.action_ok));
+                });
             }
         });
     }
@@ -376,8 +384,13 @@ public final class MainActivity extends ActiviteJoide {
             ImporteurProjet.importer(this, arbre, cible, fichier -> {
                 long total = compteImport.incrementAndGet();
                 if (total % 25 == 0) {
-                    runOnUiThread(() -> montrerProgression(
-                            getString(R.string.import_n_fichiers, total)));
+                    runOnUiThread(() -> {
+                        if (isDestroyed()) {
+                            return; // I8/lot A8 : garde de cycle de vie
+                        }
+                        montrerProgression(
+                                getString(R.string.import_n_fichiers, total));
+                    });
                 }
             });
             Workspace espace = WorkspaceLoader.load(cible)
@@ -409,8 +422,13 @@ public final class MainActivity extends ActiviteJoide {
             ImporteurProjet.importer(this, arbre, cible, fichier -> {
                 long total = compteImport.incrementAndGet();
                 if (total % 25 == 0) {
-                    runOnUiThread(() -> montrerProgression(
-                            getString(R.string.import_n_fichiers, total)));
+                    runOnUiThread(() -> {
+                        if (isDestroyed()) {
+                            return; // I8/lot A8 : garde de cycle de vie
+                        }
+                        montrerProgression(
+                                getString(R.string.import_n_fichiers, total));
+                    });
                 }
             });
             enregistrerOuvert(id, nomBrut, TypeProjet.GRADLE, 0);
@@ -432,6 +450,11 @@ public final class MainActivity extends ActiviteJoide {
 
     private void ouvrirIdeImporte(Path cible, boolean gradle) {
         runOnUiThread(() -> {
+            if (isDestroyed()) {
+                // I8/lot A8 : l'écran fermé ne rouvre plus l'atelier —
+                // l'accueil le proposera à la prochaine visite
+                return;
+            }
             importEnCours = false;
             ecran.ligneProgression.setVisibility(View.GONE);
             rendre();
@@ -444,6 +467,12 @@ public final class MainActivity extends ActiviteJoide {
 
     private void finirImportErreur(String message) {
         runOnUiThread(() -> {
+            if (isDestroyed()) {
+                // I8/lot A8 : garde de cycle de vie — l'écran fermé ne
+                // montre plus rien (l'import a échoué, l'accueil le
+                // dira si l'utilisateur revient)
+                return;
+            }
             importEnCours = false;
             ecran.ligneProgression.setVisibility(View.GONE);
             popups.information(getString(R.string.import_echoue_titre),

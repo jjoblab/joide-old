@@ -47,8 +47,9 @@ public final class PortePopups {
     public record EntreeMenu(CharSequence libelle, Runnable action) {
     }
 
-    /** La vue-voile du layout racine de l'écran (popups centrés). */
-    private final View voile;
+    /** La vue-voile du layout racine de l'écran (popups centrés) —
+     *  ré-liable (lot A8 : la racine se ré-influe). */
+    private View voile;
 
     /** Les fenêtres ouvertes (au plus une centrée, un menu ancré). */
     private final List<PopupWindow> ouvertes = new ArrayList<>(2);
@@ -58,6 +59,18 @@ public final class PortePopups {
      *              {@code gone} au repos — PopupCentre la montre)
      */
     public PortePopups(View voile) {
+        this.voile = voile;
+    }
+
+    /**
+     * Re-pose la vue-voile (lot A8, ADR-085 décision 10) : après une
+     * ré-inflation de la racine, le NOUVEAU layout porte son propre
+     * voile ({@code gone} au repos) — le registre, lui, survit (il
+     * est vide : les popups se ferment avant toute ré-inflation).
+     *
+     * @param voile la vue-voile du nouveau layout racine
+     */
+    public void poserVoile(View voile) {
         this.voile = voile;
     }
 

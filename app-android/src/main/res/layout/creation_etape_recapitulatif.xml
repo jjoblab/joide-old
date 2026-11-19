@@ -7,8 +7,11 @@
   générée en code compact (carte puits, item_ligne_arbo), et la
   bannière d'alerte qui RÉPÈTE la franchise du modèle (item_banniere —
   la carte l'a dite, le récapitulatif le répète, ADR-É4).
+  Lot A8 : la racine devient NestedScrollView — le cadre restaure le
+  DÉFILEMENT aux recréations (id porté par l'<include> ; un ScrollView
+  du cadre ne sauve pas sa position).
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -66,4 +69,4 @@
             android:id="@+id/banniere_franchise"
             layout="@layout/item_banniere" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

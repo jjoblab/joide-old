@@ -206,4 +206,58 @@ class EtatCreationTest {
         etat.changerMinSdk(30);
         assertEquals(30, etat.minSdk());
     }
+
+    // ------------------------------------------------------------------
+    // Lot A8 (décision 10) : export/import de l'état d'assistant — la
+    // recréation ne réinitialise plus (A4 : « A8 fera la sauvegarde »)
+    // ------------------------------------------------------------------
+
+    @Test
+    void lallerRetourExportImportExportRendUnAssistantEgal()
+            throws IOException {
+        EtatCreation etat = new EtatCreation(modeles(), List.of());
+        assertTrue(etat.selectionnerModele("application-android"));
+        etat.suivante();
+        etat.changerNom("Mon application");
+        etat.changerPaquet("com.exemple.application");
+        etat.filtrer("cons");
+        etat.changerCategorie(ModeleProjet.Categorie.APPLICATIONS);
+        EtatCreation.Export export = etat.exporter();
+        // la recréation relit les MODELES des assets, l'état s'importe
+        EtatCreation revenue = new EtatCreation(modeles(), List.of());
+        revenue.importer(export);
+        assertEquals(export, revenue.exporter(),
+                "export → import → export : l'assistant reprend "
+                        + "EXACTEMENT où il était (étape, recherche, "
+                        + "catégorie, modèle, identité, minSdk)");
+        assertEquals(EtatCreation.Etape.IDENTITE, revenue.etape());
+        assertEquals("application-android", revenue.modeleChoisi());
+        assertEquals("cons", revenue.filtre());
+        assertEquals(ModeleProjet.Categorie.APPLICATIONS,
+                revenue.categorie());
+        assertEquals("Mon application", revenue.nom());
+        assertEquals("com.exemple.application", revenue.paquet());
+        assertFalse(revenue.suitPaquet(),
+                "le paquet restauré a été TOUCHÉ : il ne suit plus le nom");
+        assertNotNull(revenue.modele());
+        assertTrue(revenue.continuerPossible(),
+                "l'identité restaurée est valide : le bouton reste actif");
+    }
+
+    @Test
+    void lImportAmaigriSeNormaliseSansCasserLaMachine() throws IOException {
+        EtatCreation revenue = new EtatCreation(modeles(), List.of());
+        // un export construit à la main (valeurs nulles, minSdk hors
+        // bornes) ne casse jamais la machine : tout se normalise
+        revenue.importer(new EtatCreation.Export(
+                null, null, null, "application-android", null, null,
+                true, 24, null));
+        assertEquals(EtatCreation.Etape.MODELE, revenue.etape());
+        assertEquals("", revenue.filtre());
+        assertEquals("", revenue.nom());
+        assertEquals("", revenue.paquet());
+        assertEquals(28, revenue.minSdk(),
+                "le minSdk hors bornes reste celui du modèle (24 écarté)");
+        assertTrue(revenue.modulesChoisis().isEmpty());
+    }
 }
