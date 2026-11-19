@@ -1,5 +1,12 @@
 # ADR-083 — Atelier v2 : vrais layouts XML + ViewBinding, la seule dépendance AndroidX tolérée
 
+**Statut :** Partiellement remplacé par [ADR-085](085-architecture-vues-ecrans.md)
+(§2 : l'interdit AndroidX/Material est levé par les directives D1-D3 du
+propriétaire ; AppCompat, Material 3, RecyclerView, ConstraintLayout,
+CoordinatorLayout et DrawerLayout sont autorisés ; seul Compose reste
+exclu). Le reste de la décision (ViewBinding, `Graphite` source de vérité,
+`JetonsXmlTest`, clean-room) demeure.
+
 Date : 2026-11-18 — lot L1 du chantier « Refonte de l'atelier (v2) »
 (maquette contractuelle `docs/ecrans/design/atelier-v2.html`,
 prompt `prompt-agent-atelier-v2.md` — l'« ADR-067 » du prompt
