@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 1) — le panneau console de build (lot K,
+  ADR-É6) quitte le code : la racine est un <merge> dans VueConsole
+  (LinearLayout vertical, fond puits posé par la coque — la classe EST
+  le conteneur, un niveau de hiérarchie aplati, constat I3). En-tête
+  « Console de build » + projet + pilule d'état (rôle par l'état, lot
+  A5 : le point et le libellé se teintent au bind — décision 8) +
+  actions arrêter/vider (Icone du kit conservée — Canvas) ; bande de
+  PHASES recyclée (RecyclerView horizontal + AdaptateurPhases,
+  item_phase — décision 11) ; filtres « Tout / Erreurs (n) / Système »
+  en Chip (Widget.Jo.Puce, cochage posé par l'état) ; TRANSCRIPT
+  recyclé (RecyclerView + AdaptateurConsole, item_ligne_console —
+  plafond 400 conservé, plus de removeAllViews() à chaque maj, I4) ;
+  plafond annoncé ; carte du problème localisé (include unique, la
+  visibilité suit l'état).
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- en-tête : titre + projet à gauche, pilule d'état, arrêter, vider -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="@dimen/jo_pad_console"
+        android:paddingRight="@dimen/jo_pad_console"
+        android:paddingTop="@dimen/jo_ecart_console"
+        android:paddingBottom="@dimen/jo_ecart_console">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/titre_console"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/console_build"
+                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+                android:textColor="?attr/jo_texte" />
+
+            <TextView
+                android:id="@+id/projet_console"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Jo.Note"
+                android:textColor="?attr/jo_texte3" />
+        </LinearLayout>
+
+        <!-- la pilule d'état : point + libellé, teintes du rôle posées
+             au bind (l'état du build décide, décision 8) -->
+        <LinearLayout
+            android:id="@+id/pilule_etat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/pilule_etat_console"
+            android:paddingLeft="@dimen/jo_pad_pilule_cote"
+            android:paddingRight="@dimen/jo_pad_pilule_cote"
+            android:paddingTop="@dimen/jo_pad_pilule_etat"
+            android:paddingBottom="@dimen/jo_pad_pilule_etat">
+
+            <View
+                android:id="@+id/point_etat"
+                android:layout_width="@dimen/jo_cote_point_etat"
+                android:layout_height="@dimen/jo_cote_point_etat"
+                android:background="@drawable/rond_etat_console" />
+
+            <TextView
+                android:id="@+id/libelle_etat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/jo_cote_point_etat"
+                android:textAppearance="@style/TextAppearance.Jo.Legende"
+                android:textColor="?attr/jo_texte2"
+                android:singleLine="true" />
+        </LinearLayout>
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/arreter_console"
+            android:layout_width="@dimen/jo_cote_icone_console"
+            android:layout_height="@dimen/jo_cote_icone_console"
+            android:layout_marginStart="@dimen/jo_ecart_icone_console"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            android:contentDescription="@string/atelier_desc_arreter_build"
+            app:jo_icone_glyphe="croix"
+            app:jo_icone_couleur="?attr/jo_erreur" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/vider_console"
+            style="@style/Widget.Jo.Button.Texte"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/console_vider" />
+    </LinearLayout>
+
+    <!-- la bande de phases : une pilule par phase du pipeline (tap =
+         filtre) — recyclée, plus de ré-inflation à chaque maj -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/bande_phases"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/jo_pad_console"
+        android:paddingRight="@dimen/jo_pad_console"
+        android:paddingTop="@dimen/jo_ecart_console"
+        android:clipToPadding="false"
+        android:scrollbars="none" />
+
+    <!-- les filtres « Tout / Erreurs (n) / Système » : l'état pose le
+         cochage (la vue ne décide rien) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="@dimen/jo_pad_console"
+        android:paddingRight="@dimen/jo_pad_console"
+        android:paddingTop="@dimen/jo_ecart_console">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/filtre_tout"
+            style="@style/Widget.Jo.Puce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/filtre_erreurs"
+            style="@style/Widget.Jo.Puce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/filtre_systeme"
+            style="@style/Widget.Jo.Puce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checkable="true" />
+    </LinearLayout>
+
+    <!-- le transcript : grille deux colonnes colorée par nature, chaque
+         ligne reste du texte sélectionnable/copiable ; le flux suit le
+         bas (le transcript vit au bas) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/transcript"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingLeft="@dimen/jo_pad_console"
+        android:paddingRight="@dimen/jo_pad_console"
+        android:paddingTop="@dimen/jo_ecart_console"
+        android:paddingBottom="@dimen/jo_ecart_console"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+
+    <!-- le plafond annoncé : « affichage plafonné à 400 lignes » -->
+    <TextView
+        android:id="@+id/legend_plafond"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/jo_pad_console"
+        android:paddingRight="@dimen/jo_pad_console"
+        android:paddingBottom="@dimen/jo_ecart_console"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte3" />
+
+    <!-- la carte du premier problème localisé : une seule carte gonflée
+         une fois, la visibilité suit l'état (bouton « Ouvrir le
+         fichier à la ligne ») -->
+    <include
+        android:id="@+id/zone_probleme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        layout="@layout/carte_probleme_console" />
+</merge>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot A5 (ADR-085) — le fond d'une ligne de PROBLÈME localisé du
+     transcript : erreur à 10 % (l'alpha porte l'item, le puits de la
+     console transparaît derrière — le mélange du lot K en res/color,
+     jamais de couleur littérale), le rayon 8 du lot K. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/fond_ligne_probleme" />
+    <corners android:radius="@dimen/jo_rayon_ligne_probleme" />
+</shape>

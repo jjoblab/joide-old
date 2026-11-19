@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 11) — une ligne du TRANSCRIPT de la
+  console (ADR-É6) : la grille deux colonnes du lot K — la nature en
+  marge fixe (64 dp, « système/phase/tâche/erreur » colorée par nature
+  au bind), le texte au premier plan, mono compact 12,5/20 (code
+  compact Graphite), sélectionnable/copiable. Une ligne de PROBLÈME
+  localisé porte le fond erreur 10 % (res/color), rayon 8 — la ligne
+  entière ouvre le fichier à la ligne (l'auditeur se pose au bind).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/nature_ligne"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="@dimen/jo_largeur_nature_console"
+        android:layout_marginEnd="@dimen/jo_ecart_nature_console"
+        android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+        android:textColor="?attr/jo_accent"
+        android:singleLine="true" />
+
+    <TextView
+        android:id="@+id/texte_ligne"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAppearance="@style/TextAppearance.Jo.CodeCompact"
+        android:textColor="?attr/jo_texte"
+        android:textIsSelectable="true" />
+</LinearLayout>

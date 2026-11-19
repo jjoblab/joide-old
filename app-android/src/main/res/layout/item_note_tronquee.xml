@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 11) — la note de TRONCATURE de l'arbre
+  (PLAFOND_NOEUDS = 400 lignes visibles : « affichage limité à 400
+  entrées — refermez des dossiers ») : légende estompée, retrait 20 et
+  aération 8 du lot L4. La troncature se DIT, jamais un affichage rendu
+  muet — un arbre déplié de fond se coupe avec sa raison.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/note_tronquee"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="@dimen/jo_retrait_note_arbre"
+    android:paddingRight="@dimen/jo_retrait_note_arbre"
+    android:paddingTop="@dimen/jo_ecart_note_tronquee"
+    android:textAppearance="@style/TextAppearance.Jo.Legende"
+    android:textColor="?attr/jo_texte3" />

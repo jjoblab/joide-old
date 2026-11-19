@@ -7,12 +7,16 @@
   nom 14 ; ligne ACTIVE : fond accent 12 % + barre 3 dp accent
   (inset 9) ; puce « build #n… » sur les sorties tant qu'elles se
   construisent, jamais présentées comme sources.
+  Lot A5 (ADR-085, décision 11) : la rangée intérieure porte un id
+  (rangee_noeud) — le binding typé sert le retrait par profondeur à
+  l'AdaptateurArbre qui recycle ces lignes.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="38dp">
 
     <LinearLayout
+        android:id="@+id/rangee_noeud"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"

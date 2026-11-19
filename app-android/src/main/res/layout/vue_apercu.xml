@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 1) — le volet d'aperçu de mise en page
+  (lot L, ADR-É7) quitte le code : la racine est un <merge> dans
+  VueApercu (LinearLayout vertical, fond surface posé par la coque —
+  un niveau de hiérarchie aplati, constat I3). Barre de volet
+  (« Aperçu — fichier », rafraîchir sans délai, plein écran, fermer —
+  Icone du kit conservée : Canvas) ; contrôles RÉELS du
+  ConfigurationApercu : densité segmentée (MaterialButtonToggleGroup,
+  Widget.Jo.Bascule — le Segment remplacé, D2), mode nuit et dimensions
+  cibles (Chip, Widget.Jo.Puce — la Puce remplacée) ; surface de rendu
+  sur DAMIER (DamierApercu, dessiné au Canvas — le seul code qui
+  reste) et PERCHOIR unique gonflé une fois (le conteneurRendu() de la
+  feuille de route : le rendu LayoutLib s'y pose tel quel, jamais
+  retouché — et l'accumulation de perchoirs du code d'hier disparaît) ;
+  stats MESURÉES ; bannières de franchise (item_banniere_apercu, liste
+  très courte bornée : ≤ 1 erreur + 1 ressources + 1 MockView + n
+  avertissements + 1 frappe + 1 thème — gonflée par binding, motif A4).
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- la barre de volet -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="@dimen/jo_pad_volet_apercu"
+        android:paddingRight="@dimen/jo_pad_volet_apercu"
+        android:paddingTop="@dimen/jo_ecart_volet_apercu"
+        android:paddingBottom="@dimen/jo_ecart_volet_apercu">
+
+        <TextView
+            android:id="@+id/titre_apercu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/apercu_titre"
+            android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+            android:textColor="?attr/jo_texte" />
+
+        <TextView
+            android:id="@+id/fichier_apercu"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="middle"
+            android:textAppearance="@style/TextAppearance.Jo.Note"
+            android:textColor="?attr/jo_texte3" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/rafraichir_apercu"
+            android:layout_width="@dimen/jo_cote_icone_apercu"
+            android:layout_height="@dimen/jo_cote_icone_apercu"
+            android:layout_marginStart="@dimen/jo_ecart_icones_apercu"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/apercu_desc_rafraichir"
+            app:jo_icone_glyphe="rafraichir"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/plein_ecran_apercu"
+            android:layout_width="@dimen/jo_cote_icone_apercu"
+            android:layout_height="@dimen/jo_cote_icone_apercu"
+            android:layout_marginStart="@dimen/jo_ecart_icones_apercu"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/apercu_desc_plein_ecran"
+            app:jo_icone_glyphe="agrandir"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/fermer_apercu"
+            android:layout_width="@dimen/jo_cote_icone_apercu"
+            android:layout_height="@dimen/jo_cote_icone_apercu"
+            android:layout_marginStart="@dimen/jo_ecart_icones_apercu"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/apercu_desc_fermer"
+            app:jo_icone_glyphe="croix"
+            app:jo_icone_couleur="?attr/jo_texte2" />
+    </LinearLayout>
+
+    <!-- les contrôles réels du ConfigurationApercu (lot E) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="@dimen/jo_pad_volet_apercu"
+        android:paddingRight="@dimen/jo_pad_volet_apercu"
+        android:paddingBottom="@dimen/jo_ecart_volet_apercu">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/segment_densite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/fond_bascule"
+            android:padding="@dimen/jo_pad_bascule"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/densite_1"
+                style="@style/Widget.Jo.Bascule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="@dimen/jo_ecart_bascule"
+                android:text="@string/apercu_densite_1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/densite_2"
+                style="@style/Widget.Jo.Bascule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="@dimen/jo_ecart_bascule"
+                android:text="@string/apercu_densite_2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/densite_3"
+                style="@style/Widget.Jo.Bascule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/apercu_densite_3" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/puce_nuit"
+            style="@style/Widget.Jo.Puce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/jo_ecart_puce_apercu"
+            android:checkable="true"
+            android:text="@string/apercu_nuit" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/puce_dimensions"
+            style="@style/Widget.Jo.Puce"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/jo_ecart_puce_apercu"
+            android:checkable="false"
+            android:clickable="true" />
+    </LinearLayout>
+
+    <!-- la surface de rendu sur damier : le résultat LayoutLib tel quel,
+         jamais retouché — le perchoir est UNIQUE (l'écran y pose le
+         rendu, conteneurRendu()) -->
+    <jo.joide.app.android.atelier.DamierApercu
+        android:id="@+id/surface_apercu"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/colonne_rendu"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <!-- le perchoir (unique) : le rendu s'y clippe aux coins
+                 arrondis — clipToOutline se POSE EN CODE (l'attribut XML
+                 n'existe qu'à partir de l'API 31, le lot L appelait
+                 setClipToOutline dès l'API 21) -->
+            <FrameLayout
+                android:id="@+id/perchoir_apercu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="@dimen/jo_ecart_perchoir"
+                android:layout_marginBottom="@dimen/jo_ecart_perchoir"
+                android:background="@drawable/perchoir_apercu" />
+        </LinearLayout>
+    </jo.joide.app.android.atelier.DamierApercu>
+
+    <!-- les stats MESURÉES de l'écouteur (jamais inventées) -->
+    <TextView
+        android:id="@+id/stats_apercu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:paddingLeft="@dimen/jo_pad_volet_apercu"
+        android:paddingRight="@dimen/jo_pad_volet_apercu"
+        android:paddingTop="@dimen/jo_ecart_volet_apercu"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte3" />
+
+    <!-- les bannières de franchise (frappe, repli, MockView, échec) -->
+    <LinearLayout
+        android:id="@+id/bannieres_apercu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/jo_pad_volet_apercu"
+        android:paddingRight="@dimen/jo_pad_volet_apercu"
+        android:paddingTop="@dimen/jo_ecart_volet_apercu"
+        android:paddingBottom="@dimen/jo_ecart_volet_apercu" />
+</merge>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 11) — une pilule de la bande de PHASES de
+  la console (ADR-É6) : « Compilation · 4,1 s » (la durée se formule
+  au bind : terminée → la mesure, commencée → « en cours… », à venir →
+  « — ») ; tap = filtre le transcript sur la phase. Chip du motif A4
+  (Widget.Jo.Puce : pilule note 13/18, surface haute + liseré bord
+  fin) NON cochable — l'identité du lot K n'a pas d'état coché sur les
+  phases ; la marge droite de 8 dp suit (l'écart d'hier).
+-->
+<com.google.android.material.chip.Chip xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/phase_pilule"
+    style="@style/Widget.Jo.Puce"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="@dimen/jo_ecart_phase"
+    android:checkable="false" />

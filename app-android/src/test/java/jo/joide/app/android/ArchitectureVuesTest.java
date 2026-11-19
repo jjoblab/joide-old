@@ -26,6 +26,9 @@ import org.junit.jupiter.api.Test;
  * {@code ecrans/}) n'instancient aucune vue du cadre, d'AndroidX ou de
  * Material en code — les exceptions nommées sont les écrans encore
  * programmatiques ;</li>
+ * <li>depuis le lot A5, les VUES DE ZONE de l'atelier (vues et
+ * adaptateurs, hors kit {@code ui/} racine) n'instancient aucune vue
+ * non plus — exceptions nommées décroissantes ;</li>
  * <li>aucune classe de dialogue interdite (D3 : {@code AlertDialog},
  * {@code DialogFragment}, …) hors fichiers excusés — {@code ui/Dialogue.java}
  * est l'unique excusé tant qu'elle existe (supprimée en A7) ;</li>
@@ -133,6 +136,70 @@ class ArchitectureVuesTest {
      */
     private static final Set<String> LAYOUTS_EXCUSSES_COULEUR = Set.of(
             "feuille_entete.xml");
+
+    /**
+     * Liste d'exceptions DÉCROISSANTE — vues de zone et adaptateurs
+     * (hors écrans, hors kit {@code ui/} racine : le kit décroît par
+     * remplacement Material au fil des lots, A9) qui instancient encore
+     * des vues en code : le lot A5 a sorti {@code VueConsole},
+     * {@code VueApercu}, {@code VueArbre} et les trois listes de la
+     * feuille ; restent l'agent (A6/A7) et la feuille basse (A6).
+     */
+    private static final Set<String> ZONES_EXCUSSEES_VUES = Set.of(
+            "atelier/agent/VueAgent.java",
+            "ui/atelier/FeuilleBasse.java");
+
+    /**
+     * Lot A5 (ADR-085, critère du lot) : HORS écrans et hors kit, les
+     * vues de l'atelier n'instancient PLUS de vue du cadre, d'AndroidX
+     * ou de Material — la hiérarchie vit en XML ; seules les vues
+     * DESSINÉES au Canvas ({@code DamierApercu}) et leurs drawables
+     * restent du code. La liste d'exceptions ne peut que décroître.
+     */
+    @Test
+    void lesVuesDatelierNInstancientPasDeVuesSaufExceptionsDecroissantes()
+            throws IOException {
+        List<String> fautes = new ArrayList<>();
+        List<String> exceptionsObsoletes = new ArrayList<>();
+        Path ui = APP.resolve("ui");
+        try (Stream<Path> chemins = Files.walk(APP)) {
+            for (Path fichier : chemins.filter(p ->
+                    p.toString().endsWith(".java")).sorted().toList()) {
+                String nom = relatif(fichier);
+                if (nom.equals("MainActivity.java")
+                        || nom.startsWith("ecrans/")
+                        // le kit ui/ à sa racine : Bouton, Carte, Champ…
+                        // remplacés par Material au fil des lots (I9, A9)
+                        || (nom.startsWith("ui/")
+                        && !nom.startsWith("ui/atelier/")
+                        && !nom.startsWith("ui/choix/"))) {
+                    continue;
+                }
+                int faute = compter(VUES_INSTANCIEES,
+                        Files.readString(fichier));
+                boolean excuse = ZONES_EXCUSSEES_VUES.contains(nom);
+                if (faute > 0 && !excuse) {
+                    fautes.add(nom + " : " + faute
+                            + " vue(s) instanciée(s) en code");
+                }
+                if (faute == 0 && excuse) {
+                    exceptionsObsoletes.add(nom);
+                }
+            }
+        }
+        assertTrue(Files.isRegularFile(ui.resolve("Dialogue.java")),
+                "le kit ui/ racine reste la référence du filtre");
+        assertTrue(fautes.isEmpty(),
+                () -> "vues instanciées en code dans des vues de zone "
+                        + "HORS liste d'exceptions (ADR-085 lot A5 : la "
+                        + "hiérarchie des vues d'atelier vit en XML, seules "
+                        + "les vues dessinées au Canvas restent du code) : "
+                        + fautes);
+        assertTrue(exceptionsObsoletes.isEmpty(),
+                () -> "exceptions obsolètes — la vue n'instancie plus de "
+                        + "vues, RETIRE-la de ZONES_EXCUSSEES_VUES (la "
+                        + "liste doit décroître) : " + exceptionsObsoletes);
+    }
 
     /** Les préfixes d'imports AndroidX/Material autorisés (ADR-085 §4.2). */
     private static final List<String> IMPORTS_AUTORISES = List.of(

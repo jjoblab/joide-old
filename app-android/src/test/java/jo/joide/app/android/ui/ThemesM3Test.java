@@ -404,11 +404,119 @@ class ThemesM3Test {
     }
 
     @Test
+    void lesJetonsDuLotA5OntLeursDimensEtLeurSelecteur()
+            throws Exception {
+        // ADR-085 §2 : tout nouveau jeton reçoit sa parité — lot A5
+        // (vues d'atelier : console, aperçu, arbre, listes de la
+        // feuille) ; les valeurs du CODE d'hier (lots K/L/L3/L4) font
+        // l'identité, la maquette comble ses trous (le perchoir 24 px =
+        // 24 dp d'apercu.html)
+        Map<String, String> dimens = enfants(
+                document(RES.resolve("values").resolve("dimens.xml")
+                        .toFile()),
+                "dimen");
+
+        // Console (lot K) : retrait 14, aération 7 (= marge/2), point
+        // de la pilule 6 (taille ET écart), ligne de problème (rayon
+        // 8, padding 2) ; reprise d'audit — pilule d'état (retrait
+        // vertical 3), icône d'arrêt (34, écart 6), écart de phase 8,
+        // colonne nature (64, écart 10), bouton Ouvrir (écart 10)
+        assertEquals("14dp", dimens.get("jo_pad_console"),
+                "le retrait latéral du lot K");
+        assertEquals("7dp", dimens.get("jo_ecart_console"),
+                "l'aération du lot K (marge/2)");
+        assertEquals("6dp", dimens.get("jo_cote_point_etat"),
+                "le point de la pilule d'état (taille et écart)");
+        assertEquals("8dp", dimens.get("jo_rayon_ligne_probleme"),
+                "le rayon de la ligne de problème du lot K");
+        assertEquals("2dp", dimens.get("jo_pad_ligne_probleme"),
+                "le padding de la ligne de problème du lot K");
+        assertEquals("3dp", dimens.get("jo_pad_pilule_etat"),
+                "reprise d'audit : le retrait vertical de la pilule "
+                        + "d'état (littéral factorisé, §6)");
+        assertEquals("34dp", dimens.get("jo_cote_icone_console"),
+                "reprise d'audit : l'icône d'arrêt du lot K");
+        assertEquals("6dp", dimens.get("jo_ecart_icone_console"),
+                "reprise d'audit : l'écart avant l'icône d'arrêt");
+        assertEquals("8dp", dimens.get("jo_ecart_phase"),
+                "reprise d'audit : l'écart des pilules de phase");
+        assertEquals("64dp", dimens.get("jo_largeur_nature_console"),
+                "reprise d'audit : la colonne nature du transcript");
+        assertEquals("10dp", dimens.get("jo_ecart_nature_console"),
+                "reprise d'audit : l'écart après la nature");
+        assertEquals("10dp", dimens.get("jo_ecart_bouton_probleme"),
+                "reprise d'audit : l'écart au-dessus du bouton Ouvrir");
+
+        // Aperçu (lot L) : retrait 12, aération 6, icônes 32 écartées
+        // de 4, perchoir 24 (maquette .perchoir), bannière (padding
+        // 10, rayon 9), damier 8 ; reprise d'audit — écart des puces
+        // 8, marge du perchoir 10, écart des bannières 6
+        assertEquals("12dp", dimens.get("jo_pad_volet_apercu"));
+        assertEquals("6dp", dimens.get("jo_ecart_volet_apercu"));
+        assertEquals("32dp", dimens.get("jo_cote_icone_apercu"));
+        assertEquals("4dp", dimens.get("jo_ecart_icones_apercu"));
+        assertEquals("24dp", dimens.get("jo_rayon_perchoir"),
+                "le .perchoir de la maquette ADR-É7 : 24 px = 24 dp");
+        assertEquals("10dp", dimens.get("jo_pad_banniere_apercu"),
+                "le padding de la bannière du lot L");
+        assertEquals("9dp", dimens.get("jo_rayon_banniere"),
+                "le rayon de la bannière du lot L");
+        assertEquals("8dp", dimens.get("jo_cote_case_damier"),
+                "la case du damier (lot L : cases 8 dp, deux gris)");
+        assertEquals("8dp", dimens.get("jo_ecart_puce_apercu"),
+                "reprise d'audit : l'écart des puces nuit/dimensions");
+        assertEquals("10dp", dimens.get("jo_ecart_perchoir"),
+                "reprise d'audit : la marge du perchoir du lot L");
+        assertEquals("6dp", dimens.get("jo_ecart_banniere_apercu"),
+                "reprise d'audit : l'écart des bannières du lot L");
+
+        // Arbre (lot L4) : en-tête 16, notes 20, pastille 6, ligne
+        // active 10 ; reprise d'audit — dessous de la note de sorties
+        // 10, dessus de la note de troncature 8, écarts d'en-tête de
+        // groupe (au-dessus 8, dessous 2)
+        assertEquals("16dp", dimens.get("jo_pad_arbre"),
+                "le retrait d'en-tête du lot L4");
+        assertEquals("20dp", dimens.get("jo_retrait_note_arbre"),
+                "le retrait des notes du lot L4");
+        assertEquals("6dp", dimens.get("jo_rayon_pastille_noeud"),
+                "le rayon de la pastille de type (§3.8)");
+        assertEquals("10dp", dimens.get("jo_rayon_ligne_active"),
+                "le rayon de la ligne active (§3.8)");
+        assertEquals("10dp", dimens.get("jo_ecart_note_sorties"),
+                "reprise d'audit : le dessous de la note de sorties");
+        assertEquals("8dp", dimens.get("jo_ecart_note_tronquee"),
+                "reprise d'audit : le dessus de la note de troncature");
+        assertEquals("8dp", dimens.get("jo_ecart_entete_groupe"),
+                "reprise d'audit : l'écart au-dessus d'un en-tête de "
+                        + "groupe non premier (lot L3)");
+        assertEquals("2dp", dimens.get("jo_ecart_entete_groupe_bas"),
+                "reprise d'audit : le dessous de l'en-tête de groupe "
+                        + "(lot L3)");
+
+        // Le sélecteur de la ligne de problème du transcript : erreur
+        // à 10 % par ?attr (le mélange du lot K porté par l'alpha de
+        // l'item — le puits transparaît derrière)
+        assertTrue(Files.isRegularFile(RES.resolve("color")
+                        .resolve("fond_ligne_probleme.xml")),
+                "fond_ligne_probleme.xml doit exister (res/color)");
+        NodeList items = document(RES.resolve("color")
+                        .resolve("fond_ligne_probleme.xml").toFile())
+                .getElementsByTagName("item");
+        assertEquals(1, items.getLength());
+        assertEquals("?attr/jo_erreur",
+                ((Element) items.item(0)).getAttribute("android:color"));
+        assertEquals("0.10",
+                ((Element) items.item(0)).getAttribute("android:alpha"),
+                "le mélange erreur 10 % du lot K, l'alpha porte l'item");
+    }
+
+    @Test
     void lesSelecteursDeCouleurNePortentQueDesAttrsJo()
             throws Exception {
-        // lots A3/A4 : les teintes des bascules, du commutateur, des
-        // puces Chip et de la barre d'étapes vivent en res/color —
-        // chaque couleur est un ?attr/jo_* DECLARÉ comme couleur de
+        // lots A3/A4/A5 : les teintes des bascules, du commutateur, des
+        // puces Chip, de la barre d'étapes et de la ligne de problème du
+        // transcript vivent en res/color — chaque couleur est un
+        // ?attr/jo_* DECLARÉ comme couleur de
         // thème (JetonsXmlTest garantit que les thèmes posent chaque
         // attr) ; jamais une couleur littérale, l'alpha est porté
         // par l'item
@@ -421,11 +529,12 @@ class ThemesM3Test {
             List<Path> selecteurs = parcours.filter(
                             p -> p.toString().endsWith(".xml"))
                     .sorted().toList();
-            assertEquals(11, selecteurs.size(),
-                    "les onze sélecteurs des lots A3 et A4 (bascule "
+            assertEquals(12, selecteurs.size(),
+                    "les douze sélecteurs des lots A3, A4 et A5 (bascule "
                             + "texte/fond, interrupteur piste/liséré/pouce, "
                             + "puce fond/texte/bord, étape "
-                            + "numéro/libellé/jalon)");
+                            + "numéro/libellé/jalon, ligne de problème du "
+                            + "transcript console)");
             for (Path selecteur : selecteurs) {
                 NodeList items = document(selecteur.toFile())
                         .getElementsByTagName("item");

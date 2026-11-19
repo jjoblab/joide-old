@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot A5 (ADR-085) — la pilule d'état de l'en-tête console : surface
+     haute, rayon pilule Graphite. Le POINT et son libellé se teintent
+     au bind selon le rôle (accent/réussite/alerte/erreur/neutre) — la
+     couleur suit l'état du build (décision 8 : couleurs calculées). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface_haute" />
+    <corners android:radius="@dimen/jo_rayon_puce" />
+</shape>

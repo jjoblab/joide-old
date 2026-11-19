@@ -157,4 +157,64 @@
     <dimen name="jo_ecart_puce">6dp</dimen>
     <dimen name="jo_texte_num_etape">11sp</dimen>
     <dimen name="jo_texte_num_etape_interligne">16sp</dimen>
+
+    <!-- Console de build (lot A5, ADR-É6 — les valeurs du code d'hier
+         font l'identité) : le retrait latéral 14 (en-tête, phases,
+         filtres, transcript, plafond, carte), l'aération 7 (= marge/2
+         d'hier), le point de la pilule d'état 6 (taille ET écart du
+         libellé), le rayon 8 de la ligne de problème ouvrable ;
+         reprise d'audit : le retrait vertical de la pilule d'état (3),
+         l'icône d'arrêt (34, écartée de 6), l'écart des pilules de
+         phase (8) et la colonne NATURE du transcript (64, écartée de
+         10) — dimensions répétées ≥ 3 fois en @dimen/, conformité
+         §6 : plus aucune dimension réelle littérale dans les layouts
+         du lot. -->
+    <dimen name="jo_pad_console">14dp</dimen>
+    <dimen name="jo_ecart_console">7dp</dimen>
+    <dimen name="jo_cote_point_etat">6dp</dimen>
+    <dimen name="jo_rayon_ligne_probleme">8dp</dimen>
+    <dimen name="jo_pad_ligne_probleme">2dp</dimen>
+    <dimen name="jo_pad_pilule_etat">3dp</dimen>
+    <dimen name="jo_cote_icone_console">34dp</dimen>
+    <dimen name="jo_ecart_icone_console">6dp</dimen>
+    <dimen name="jo_ecart_phase">8dp</dimen>
+    <dimen name="jo_largeur_nature_console">64dp</dimen>
+    <dimen name="jo_ecart_nature_console">10dp</dimen>
+    <dimen name="jo_ecart_bouton_probleme">10dp</dimen>
+
+    <!-- Volet d'aperçu (lot A5, ADR-É7 — les valeurs du code d'hier) :
+         le retrait 12 et l'aération 6 de la barre/contrôles/stats/
+         bannières, les icônes 32 écartées de 4, le rayon 24 du
+         perchoir (maquette .perchoir), la bannière (padding 10,
+         rayon 9 du lot L), la case du damier 8 ; reprise d'audit :
+         l'écart des puces nuit/dimensions (8), la marge du perchoir
+         (10) et l'écart des bannières (6) — mêmes jetons, conformité
+         §6. -->
+    <dimen name="jo_pad_volet_apercu">12dp</dimen>
+    <dimen name="jo_ecart_volet_apercu">6dp</dimen>
+    <dimen name="jo_cote_icone_apercu">32dp</dimen>
+    <dimen name="jo_ecart_icones_apercu">4dp</dimen>
+    <dimen name="jo_rayon_perchoir">24dp</dimen>
+    <dimen name="jo_pad_banniere_apercu">10dp</dimen>
+    <dimen name="jo_rayon_banniere">9dp</dimen>
+    <dimen name="jo_cote_case_damier">8dp</dimen>
+    <dimen name="jo_ecart_puce_apercu">8dp</dimen>
+    <dimen name="jo_ecart_perchoir">10dp</dimen>
+    <dimen name="jo_ecart_banniere_apercu">6dp</dimen>
+
+    <!-- Tiroir arborescence (lot A5, ADR-É5 — les valeurs du lot L4) :
+         le retrait d'en-tête 16 (et le bas de l'arbre), le retrait des
+         notes 20, les rayons de la pastille de type (6) et de la ligne
+         active (10) posés au bind ; reprise d'audit : le dessous de la
+         note de sorties (10) et le dessus de la note de troncature (8),
+         l'écart au-dessus d'un en-tête de groupe non premier (8) et son
+         dessous (2) — mêmes jetons, conformité §6. -->
+    <dimen name="jo_pad_arbre">16dp</dimen>
+    <dimen name="jo_retrait_note_arbre">20dp</dimen>
+    <dimen name="jo_rayon_pastille_noeud">6dp</dimen>
+    <dimen name="jo_rayon_ligne_active">10dp</dimen>
+    <dimen name="jo_ecart_note_sorties">10dp</dimen>
+    <dimen name="jo_ecart_note_tronquee">8dp</dimen>
+    <dimen name="jo_ecart_entete_groupe">8dp</dimen>
+    <dimen name="jo_ecart_entete_groupe_bas">2dp</dimen>
 </resources>

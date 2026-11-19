@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 1) — le tiroir arborescence (lot J, ADR-É5)
+  quitte le code : la racine est un <merge> dans VueArbre (LinearLayout
+  vertical, fond surface posé par la coque — un niveau de hiérarchie
+  aplati, constat I3). L'en-tête porte le NOM DU PROJET (la racine de
+  l'arbre ne s'affiche pas — l'identité du lot L4) et le bouton
+  « Nouveau » (MaterialButton tonal — le Bouton du kit remplacé, D2) ;
+  l'ARBRE vit dans un RecyclerView + AdaptateurArbre (décision 11 :
+  item_noeud du lot L4 conservé, plus de removeAllViews() suivie d'une
+  ré-inflation complète à chaque dépliage — constat I4 ; plafond 400
+  noeuds conservé, la troncature se dit). La VueArbre reste MINCE : la
+  composition des éléments est pure (ElementArbre).
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- l'en-tête : nom du projet + « Nouveau » (fichier/dossier) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="@dimen/jo_pad_arbre">
+
+        <TextView
+            android:id="@+id/nom_arbre"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:singleLine="true"
+            android:ellipsize="middle"
+            android:textAppearance="@style/TextAppearance.Jo.SousTitre"
+            android:textColor="?attr/jo_texte" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/nouveau_arbre"
+            style="@style/Widget.Jo.Button.Tonal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/atelier_nouveau" />
+    </LinearLayout>
+
+    <!-- l'arbre : les lignes recyclées depuis le modèle pur -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/arbre"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingBottom="@dimen/jo_pad_arbre"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+</merge>

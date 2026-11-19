@@ -2,16 +2,12 @@ package jo.joide.app.android.ui.atelier;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
-import jo.joide.app.android.R;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import jo.joide.app.android.atelier.AdaptateurJournal;
 import jo.joide.app.android.atelier.EtatJournal;
-import jo.joide.app.android.databinding.ItemLigneJournalBinding;
-import jo.joide.app.android.ui.Graphite;
-import jo.joide.app.android.ui.GraphiteVue;
 
 /**
  * Atelier v2, lot L3 (ADR-083) — la liste de la section Journal
@@ -19,11 +15,19 @@ import jo.joide.app.android.ui.GraphiteVue;
  * HH:MM:SS + source (accent ; MCP en alerte, erreur en rouge — la
  * couleur se pose par code depuis les jetons) + message. La vue est
  * MINCE : elle lit l'état pur {@link EtatJournal}.
+ *
+ * <p>Lot A5 (ADR-085, décision 11) : la liste est RECYCLÉE —
+ * {@code RecyclerView + ListAdapter/DiffUtil} (l'adaptateur
+ * {@link AdaptateurJournal}), la mise à jour passe par
+ * {@code submitList} : plus de {@code removeAllViews()} suivi d'une
+ * ré-inflation de toutes les lignes à chaque événement de l'IDE
+ * (constat I4) ; le plafond 400 événements est conservé, seules les
+ * lignes NOUVELLES se gonflent.</p>
  */
-public final class ListeJournal extends ScrollView {
+public final class ListeJournal extends RecyclerView {
 
-    /** La colonne des lignes. */
-    private final LinearLayout rangee;
+    /** L'adaptateur recyclé des lignes. */
+    private final AdaptateurJournal adaptateur;
 
     public ListeJournal(Context contexte) {
         this(contexte, null);
@@ -31,35 +35,13 @@ public final class ListeJournal extends ScrollView {
 
     public ListeJournal(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
-        rangee = new LinearLayout(contexte);
-        rangee.setOrientation(LinearLayout.VERTICAL);
-        addView(rangee, new LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
+        adaptateur = new AdaptateurJournal();
+        setLayoutManager(new LinearLayoutManager(contexte));
+        setAdapter(adaptateur);
     }
 
     /** Redessine depuis l'état pur (filtre appliqué). */
     public void maj(EtatJournal etat) {
-        rangee.removeAllViews();
-        Graphite.Palette palette = GraphiteVue.palette(getContext());
-        LayoutInflater gonfleur = LayoutInflater.from(getContext());
-        for (EtatJournal.Evenement evenement : etat.visibles()) {
-            ItemLigneJournalBinding item =
-                    ItemLigneJournalBinding.inflate(gonfleur, rangee,
-                            false);
-            item.heureJournal.setText(evenement.heure());
-            item.sourceJournal.setText(
-                    String.valueOf(evenement.source()));
-            int couleurSource = switch (evenement.niveau()) {
-                case ERREUR -> palette.erreur;
-                case AVERTISSEMENT ->
-                        evenement.source() == EtatJournal.Source.MCP
-                                ? palette.alerte : palette.accent;
-                default -> palette.accent;
-            };
-            item.sourceJournal.setTextColor(couleurSource);
-            item.messageJournal.setText(evenement.message());
-            rangee.addView(item.getRoot());
-        }
+        adaptateur.submitList(etat.visibles());
     }
 }

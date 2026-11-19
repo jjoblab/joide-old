@@ -421,6 +421,50 @@ public final class EtatConsole {
     }
 
     /**
+     * Lot A5 (ADR-085 : vue mince) — la durée du dernier build POUR LA
+     * PILULE d'état (« réussi · 6,2 s »), extraite pure de la vue
+     * d'hier : la durée CHIFFRÉE du bilan (« build #n réussi — … ·
+     * 6,2 s »), la somme des durées de phases sinon — jamais une
+     * durée devinée.
+     *
+     * @return les millisecondes du dernier build, 0 si illisible
+     */
+    public long dureeDernierBuildMs() {
+        for (int i = lignes.size() - 1; i >= 0; i--) {
+            ConsoleBuild.Ligne ligne = lignes.get(i);
+            if (ligne.nature() == ConsoleBuild.Nature.SYSTEME
+                    && ligne.texte().contains(" · ")
+                    && ligne.texte().startsWith("build #")) {
+                return dureeDuResume(ligne.texte());
+            }
+        }
+        long somme = 0;
+        for (PhaseEtat phase : phases) {
+            somme += phase.dureeMs();
+        }
+        return somme;
+    }
+
+    /**
+     * « build #4 réussi — … · 6,2 s » : la durée est en queue — la
+     * queue du résumé chiffré du lot F, telle que la vue d'hier la
+     * lisait.
+     */
+    private static long dureeDuResume(String resume) {
+        int position = resume.lastIndexOf(" · ");
+        if (position < 0 || !resume.endsWith(" s")) {
+            return 0;
+        }
+        try {
+            return (long) (Double.parseDouble(resume
+                    .substring(position + 3, resume.length() - 2)
+                    .replace(',', '.')) * 1000);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    /**
      * Le premier problème LOCALISÉ du transcript (bouton « Ouvrir le
      * fichier à la ligne ») — null si aucun problème n'est localisé :
      * le bouton ne ment jamais.

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 11) — l'en-tête d'un GROUPE de la section
+  Problèmes (§3.6 : « Facture.java · 2 », 12 semi-gras texte2) : le
+  séparateur bordFin au-dessus (1 dp, AÉRÉ de 8 ; MASQUÉ pour le
+  premier groupe — la maquette ne trace rien au-dessus du premier,
+  une vue masquée n'emporte pas sa marge : l'identité du lot L3). Le
+  lot L3 posait ces en-têtes depuis le code à chaque maj — éléments
+  recyclés désormais (AdaptateurProblemes).
+  Reprise d'audit : la taille par TextAppearance (§6 — 12 semi-gras =
+  Note + sans-serif-medium, la graisse 600 de la maquette .grp et non
+  le gras du code d'hier ; concession A3/A4, décision 7), les écarts
+  en jetons.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <View
+        android:id="@+id/separateur_groupe"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/jo_ligne"
+        android:layout_marginBottom="@dimen/jo_ecart_entete_groupe"
+        android:background="?attr/jo_bord_fin"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/entete_groupe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/jo_ecart_entete_groupe_bas"
+        android:fontFamily="sans-serif-medium"
+        android:textAppearance="@style/TextAppearance.Jo.Note"
+        android:textColor="?attr/jo_texte2"
+        android:singleLine="true"
+        android:ellipsize="middle" />
+</LinearLayout>

@@ -300,6 +300,9 @@
     <!-- Lot L : aperçu de mise en page (ADR-É7, ADR-053) -->
     <string name="apercu_titre">Aperçu</string>
     <string name="apercu_nuit">Nuit</string>
+    <string name="apercu_densite_1">1×</string>
+    <string name="apercu_densite_2">2×</string>
+    <string name="apercu_densite_3">3×</string>
     <string name="apercu_stats">%1$d vues · %2$d ms · %3$d × %4$d · %5$d×</string>
     <string name="apercu_stats_attente">aucun rendu pour l\'instant</string>
     <string name="apercu_theme_hote">thème : repli hôte — le modèle n\'en nomme aucun</string>

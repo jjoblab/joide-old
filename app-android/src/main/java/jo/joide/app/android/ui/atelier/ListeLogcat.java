@@ -2,16 +2,14 @@ package jo.joide.app.android.ui.atelier;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
-import jo.joide.app.android.R;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
+
+import jo.joide.app.android.atelier.AdaptateurLogcat;
 import jo.joide.app.android.atelier.EtatLogcat;
-import jo.joide.app.android.databinding.ItemLigneLogcatBinding;
-import jo.joide.app.android.ui.Graphite;
-import jo.joide.app.android.ui.GraphiteVue;
 
 /**
  * Atelier v2, lot L3 (ADR-083) — la liste de la section Logcat
@@ -19,11 +17,19 @@ import jo.joide.app.android.ui.GraphiteVue;
  * « D/Tag  message » colorée par NIVEAU (D réussite, I défaut, W
  * alerte, E erreur). La vue est MINCE : elle lit l'état pur
  * {@link EtatLogcat}.
+ *
+ * <p>Lot A5 (ADR-085, décision 11) : la liste est RECYCLÉE —
+ * {@code RecyclerView + ListAdapter/DiffUtil} (l'adaptateur
+ * {@link AdaptateurLogcat}), la mise à jour passe par
+ * {@code submitList} : plus de {@code removeAllViews()} suivi d'une
+ * ré-inflation de toutes les lignes à chaque lot déposé par le relais
+ * (constat I4) ; le plafond 400 lignes est conservé, seules les
+ * lignes NOUVELLES se gonflent.</p>
  */
-public final class ListeLogcat extends ScrollView {
+public final class ListeLogcat extends RecyclerView {
 
-    /** La colonne des lignes. */
-    private final LinearLayout rangee;
+    /** L'adaptateur recyclé des lignes. */
+    private final AdaptateurLogcat adaptateur;
 
     public ListeLogcat(Context contexte) {
         this(contexte, null);
@@ -31,34 +37,23 @@ public final class ListeLogcat extends ScrollView {
 
     public ListeLogcat(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
-        rangee = new LinearLayout(contexte);
-        rangee.setOrientation(LinearLayout.VERTICAL);
-        addView(rangee, new LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
+        adaptateur = new AdaptateurLogcat();
+        setLayoutManager(new LinearLayoutManager(contexte));
+        setAdapter(adaptateur);
     }
 
     /** Redessine depuis l'état pur (filtre appliqué) ; scrolle en bas
      *  (le flux vit au bas). */
     public void maj(EtatLogcat etat) {
-        rangee.removeAllViews();
-        Graphite.Palette palette = GraphiteVue.palette(getContext());
-        LayoutInflater gonfleur = LayoutInflater.from(getContext());
-        for (EtatLogcat.Ligne ligne : etat.visibles()) {
-            ItemLigneLogcatBinding item =
-                    ItemLigneLogcatBinding.inflate(gonfleur, rangee,
-                            false);
-            int couleur = switch (ligne.niveau()) {
-                case D -> palette.reussite;
-                case W -> palette.alerte;
-                case E -> palette.erreur;
-                default -> palette.texte;
-            };
-            item.ligneLogcat.setText(ligne.niveau() + "/"
-                    + ligne.tag() + "  " + ligne.message());
-            item.ligneLogcat.setTextColor(couleur);
-            rangee.addView(item.getRoot());
-        }
-        post(() -> fullScroll(ScrollView.FOCUS_DOWN));
+        List<EtatLogcat.Ligne> visibles = etat.visibles();
+        // le RAPPEL DE COMMIT porte le scroll : le diff court en tâche
+        // de fond, un simple post() passerait AVANT le commit et
+        // raterait la dernière ligne (reprise d'audit)
+        adaptateur.submitList(visibles, () -> {
+            int nombre = adaptateur.getItemCount();
+            if (nombre > 0) {
+                scrollToPosition(nombre - 1);
+            }
+        });
     }
 }

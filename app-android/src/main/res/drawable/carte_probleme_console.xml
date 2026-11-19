@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot A5 (ADR-085) — la carte du problème localisé de la console :
+     surface + liseré erreur 1 dp + rayon composant 12 (le
+     GradientDrawable du lot K en drawable, les mêmes jetons). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_surface" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_erreur" />
+    <corners android:radius="@dimen/jo_rayon_composant" />
+</shape>

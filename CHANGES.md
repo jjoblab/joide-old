@@ -1,3 +1,53 @@
+# CHANGES — les vues d'atelier quittent le code : console, aperçu et arbre en layouts, listes recyclées, coût par mise à jour borné (2026-11-19)
+
+**Lot A5 de l'ADR-085** : `VueConsole` (513 → 247 l.), `VueApercu`
+(389 → 266) et `VueArbre` (318 → 137) quittent le code — chacune
+devient une coque mince sur son layout en `<merge>` (la classe EST le
+conteneur vertical, un niveau aplati, constat I3) : `vue_console.xml`
+(en-tête + pilule d'état, bande de phases, filtres Chip, transcript,
+plafond annoncé, carte du problème en include unique à visibilité
+pilotée), `vue_apercu.xml` (barre de volet, contrôles réels du
+`ConfigurationApercu` — densité `MaterialButtonToggleGroup`, nuit et
+dimensions `Chip` —, damier + PERCHOIR unique gonflé une fois
+(`conteneurRendu()` : hier un perchoir PAR rendu s'accumulait), stats
+mesurées, bannières), `vue_arbre.xml` (en-tête nom + « Nouveau » Tonal,
+arbre recyclé). Le cœur du lot (constat I4) : plus aucun
+`removeAllViews()` + ré-inflation de toutes les lignes à chaque maj —
+Logcat, Journal, Problèmes, Console (transcript ET phases) et Arbre
+passent en `RecyclerView + ListAdapter/DiffUtil`, mise à jour par
+`submitList`, plafonds 400 conservés et annoncés ; le
+`RecyclageListesAtelierTest` MESURE le coût par maj (une ligne de flux
+de plus = 1 insertion, 0 re-lier — le coût suit la DIFF, jamais la
+taille du plafond). La composition des éléments est pure
+(`ElementArbre`, `ElementProblemes`, `EtatConsole.dureeDernierBuildMs`
+— testés JVM) ; le recyclage est réparé au bind (alpha/fond de l'arbre
+RE-POSÉS — hier des vues neuves ne s'annulaient jamais). Les trois
+listes de la feuille deviennent des `RecyclerView` à API inchangée
+(`EcranAtelier` et les contrôleurs non touchés — frontière A6/A7
+respectée) ; les deux `Dialogue.menu` d'hier restent (A7, aucun
+nouveau dialogue). Identité visuelle conservée valeur par valeur
+(paddings/teintes des lots K/L/L3/L4 en `@dimen` — 30 jetons neufs,
+parité `ThemesM3Test`) ; `Icone` (Canvas) et `DamierApercu` (damier
+extrait, déclarable en XML) restent du code — voie des vues dessinées.
+Filet : `ArchitectureVuesTest` gagne la règle « vues de zone sans vue
+instanciée » (exceptions décroissantes : `VueAgent`, `FeuilleBasse` —
+A6/A7 ; `BarreOnglets` reste à A6, Annexe A). Reprise d'audit de la
+session : travail hérité non committé audité ligne à ligne, mesures
+re-faites, imports qualifiés nettoyés, course du scroll-vers-le-bas
+corrigée (le RAPPEL DE COMMIT du diff porte le scroll — un `post()`
+passait avant le commit et ratait la dernière ligne). Module :
+131 → 94 vues instanciées (−37), palette 307 → 290, `dp(` 297 → 261,
+50 → 60 layouts, `Dialogue.` 58 inchangés, 0 Compose. APK
+15 743 828 → 15 775 929 o (+0,03 Mio — aucune dépendance nouvelle),
+`verifierOmbreApk` vert ; 356 tests verts (344 + 12) ; lint : 10
+erreurs préexistantes + 2 `DiffUtilEquals` faux positifs (même famille
+qu'A2 — records derrière interfaces scellées). Écarts documentés au
+rapport : bannières de l'aperçu = liste courte bornée gonflée par
+binding (dérogation décision 11, motif A4) ; pilule d'état sans Chip
+(point 6 dp par rôle — consigné) ; couleurs par nature/gravité posées
+au bind (un ColorStateList ne porte pas de variante par ligne — motif
+A3) ; en-tête de groupe 12 → 13 sp (cadence Graphite).
+
 # CHANGES — l'assistant de création quitte le code : trois étapes en layouts, puces Chip, génération sous garde de cycle de vie (2026-11-19)
 
 **Lot A4 de l'ADR-085** : `EcranCreation` devient une coque mince sur

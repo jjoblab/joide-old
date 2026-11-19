@@ -1,38 +1,40 @@
 package jo.joide.app.android.atelier;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.drawable.GradientDrawable;
 import android.util.AttributeSet;
-import android.view.Gravity;
-import android.view.View;
+import android.view.LayoutInflater;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
 import java.util.List;
 
 import jo.joide.app.android.R;
 import jo.joide.app.android.atelier.EtatApercu.Banniere;
-import jo.joide.app.android.atelier.EtatApercu.Genre;
+import jo.joide.app.android.databinding.ItemBanniereApercuBinding;
+import jo.joide.app.android.databinding.VueApercuBinding;
 import jo.joide.app.android.ui.Dialogue;
 import jo.joide.app.android.ui.Graphite;
 import jo.joide.app.android.ui.GraphiteVue;
-import jo.joide.app.android.ui.Icone;
-import jo.joide.app.android.ui.Puce;
-import jo.joide.app.android.ui.Segment;
 
 /**
- * Le volet d'aperçu de mise en page (lot L, ADR-É7) : barre de volet
- * (« Aperçu — nom du fichier », rafraîchir sans délai, plein
- * écran/côte à côte, fermer), contrôles RÉELS du
- * {@code ConfigurationApercu} (densité segmentée, mode nuit,
+ * Le volet d'aperçu de mise en page (lot L, ADR-É7 ; lot A5, ADR-085 —
+ * la vue quitte le code) : barre de volet (« Aperçu — nom du fichier »,
+ * rafraîchir sans délai, plein écran/côte à côte, fermer), contrôles
+ * RÉELS du {@code ConfigurationApercu} (densité segmentée, mode nuit,
  * dimensions cibles), surface de rendu sur damier — le résultat
- * LayoutLib tel quel, jamais retouché —, stats MESURÉES de
- * l'écouteur et bannières de franchise. La vue ne décide rien :
+ * LayoutLib tel quel, jamais retouché —, stats MESURÉES de l'écouteur
+ * et bannières de franchise. La vue ne décide rien :
  * {@link EtatApercu} arrive posé.
+ *
+ * <p>La hiérarchie vit dans {@code vue_apercu.xml} (un
+ * {@code <merge>} : cette classe EST le conteneur vertical, un niveau
+ * aplati — constat I3) ; le PERCHOIR du rendu est unique et gonflé une
+ * fois ({@link #conteneurRendu()} le rend : le code d'hier en créait
+ * UN PAR RENDU — l'accumulation disparaît) ; les bannières (liste très
+ * courte et bornée, ≤ 6) se gonflent par binding à chaque maj, motif A4
+ * des contentions bornées. Les couleurs des bannières se calculent au
+ * bind (décision 8 : la gravité décide).</p>
  */
 public final class VueApercu extends LinearLayout {
 
@@ -57,16 +59,14 @@ public final class VueApercu extends LinearLayout {
         void surDimensions(int largeurDp, int hauteurDp);
     }
 
+    /** La coque gonflée du XML (vue_apercu.xml, un <merge>). */
+    private final VueApercuBinding binding;
+
     private final Graphite.Palette palette;
-    private final TextView fichierCourant;
-    private final Segment segmentDensite;
-    private final Puce puceNuit;
-    private final Puce puceDimensions;
-    private final TextView stats;
-    private final LinearLayout bannieres;
-    private final FrameLayout surface;
-    private final LinearLayout colonneRendu;
     private AuditeurApercu auditeur;
+
+    /** Vrai pendant la pose de l'état (les écouteurs se taisent). */
+    private boolean poseEnCours;
 
     public VueApercu(Context contexte) {
         this(contexte, null);
@@ -74,151 +74,58 @@ public final class VueApercu extends LinearLayout {
 
     public VueApercu(Context contexte, AttributeSet attributs) {
         super(contexte, attributs);
-        palette = GraphiteVue.palette(contexte);
         setOrientation(VERTICAL);
+        palette = GraphiteVue.palette(contexte);
         setBackgroundColor(palette.surface);
 
-        // --- barre de volet ---
-        LinearLayout barre = new LinearLayout(contexte);
-        barre.setOrientation(HORIZONTAL);
-        barre.setGravity(Gravity.CENTER_VERTICAL);
-        int marge = GraphiteVue.dp(contexte, 12);
-        barre.setPadding(marge, marge / 2, marge, marge / 2);
+        binding = VueApercuBinding.inflate(
+                LayoutInflater.from(contexte), this);
 
-        TextView titre = new TextView(contexte);
-        GraphiteVue.typographie(titre, Graphite.SOUS_TITRE);
-        titre.setTextColor(palette.texte);
-        titre.setText(R.string.apercu_titre);
-        barre.addView(titre, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
+        // le perchoir clippe le rendu aux coins arrondis du cadre :
+        // l'attribut XML clipToOutline n'existe qu'à partir de l'API 31
+        // (minSdk 28), l'appel en code (API 21) est la voie du lot L
+        binding.perchoirApercu.setClipToOutline(true);
 
-        fichierCourant = new TextView(contexte);
-        GraphiteVue.typographie(fichierCourant, Graphite.NOTE);
-        fichierCourant.setTextColor(palette.texteEstompe);
-        fichierCourant.setSingleLine(true);
-        barre.addView(fichierCourant, new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-
-        Icone rafraichir = icone(Icone.Glyphe.RAFRAICHIR,
-                palette.texteSecondaire);
-        rafraichir.setContentDescription(
-                getContext().getString(R.string.apercu_desc_rafraichir));
-        rafraichir.setOnClickListener(vue -> {
+        // la barre de volet : rafraîchir, plein écran, fermer
+        binding.rafraichirApercu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.surRafraichir();
             }
         });
-        barre.addView(rafraichir);
-        Icone pleinEcran = icone(Icone.Glyphe.AGRANDIR,
-                palette.texteSecondaire);
-        pleinEcran.setContentDescription(
-                getContext().getString(R.string.apercu_desc_plein_ecran));
-        pleinEcran.setOnClickListener(vue -> {
+        binding.pleinEcranApercu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.surPleinEcran();
             }
         });
-        barre.addView(pleinEcran);
-        Icone fermer = icone(Icone.Glyphe.CROIX,
-                palette.texteSecondaire);
-        fermer.setContentDescription(
-                getContext().getString(R.string.apercu_desc_fermer));
-        fermer.setOnClickListener(vue -> {
+        binding.fermerApercu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.surFermer();
             }
         });
-        barre.addView(fermer);
-        addView(barre, new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
 
-        // --- contrôles ---
-        LinearLayout controles = new LinearLayout(contexte);
-        controles.setOrientation(HORIZONTAL);
-        controles.setGravity(Gravity.CENTER_VERTICAL);
-        controles.setPadding(marge, 0, marge, marge / 2);
+        // la densité segmentée (1×, 2×, 3×) : l'état pose la sélection,
+        // le choix utilisateur prévient l'auditeur
+        binding.segmentDensite.addOnButtonCheckedListener(
+                (groupe, identifiant, coche) -> {
+                    if (poseEnCours || !coche || auditeur == null) {
+                        return;
+                    }
+                    if (identifiant == R.id.densite_1) {
+                        auditeur.surDensite(1);
+                    } else if (identifiant == R.id.densite_2) {
+                        auditeur.surDensite(2);
+                    } else if (identifiant == R.id.densite_3) {
+                        auditeur.surDensite(3);
+                    }
+                });
 
-        segmentDensite = new Segment(contexte);
-        segmentDensite.setOptions(java.util.List.of("1×", "2×", "3×"), 1);
-        segmentDensite.setAuditeur(new Segment.AuditeurSegment() {
-            @Override
-            public void surChoix(Segment segment, int index) {
-                if (auditeur != null) {
-                    auditeur.surDensite(index + 1);
-                }
+        // le mode nuit (puce à bascule) et les dimensions (menu)
+        binding.puceNuit.setOnCheckedChangeListener((bouton, coche) -> {
+            if (!poseEnCours && auditeur != null) {
+                auditeur.surNuit(coche);
             }
         });
-        controles.addView(segmentDensite, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        puceNuit = new Puce(contexte);
-        puceNuit.setCategorie(true);
-        puceNuit.setText(R.string.apercu_nuit);
-        puceNuit.setAuditeur(new Puce.AuditeurPuce() {
-            @Override
-            public void surBascule(Puce basculee, boolean pointee) {
-                if (auditeur != null) {
-                    auditeur.surNuit(pointee);
-                }
-            }
-        });
-        LinearLayout.LayoutParams nuitParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        nuitParams.leftMargin = GraphiteVue.dp(contexte, 8);
-        controles.addView(puceNuit, nuitParams);
-
-        puceDimensions = new Puce(contexte);
-        puceDimensions.setCategorie(true);
-        puceDimensions.setOnClickListener(vue -> choisirDimensions());
-        LinearLayout.LayoutParams dimsParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        dimsParams.leftMargin = GraphiteVue.dp(contexte, 8);
-        controles.addView(puceDimensions, dimsParams);
-        addView(controles, new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
-
-        // --- surface sur damier ---
-        surface = new Damier(contexte, palette);
-        colonneRendu = new LinearLayout(contexte);
-        colonneRendu.setOrientation(VERTICAL);
-        colonneRendu.setGravity(Gravity.CENTER);
-        surface.addView(colonneRendu, new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT));
-        addView(surface, new LayoutParams(LayoutParams.MATCH_PARENT, 0,
-                1f));
-
-        // --- stats + bannières ---
-        stats = new TextView(contexte);
-        GraphiteVue.typographie(stats, Graphite.LEGENDE);
-        stats.setTextColor(palette.texteEstompe);
-        stats.setGravity(Gravity.CENTER_HORIZONTAL);
-        stats.setPadding(marge, marge / 2, marge, 0);
-        addView(stats, new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
-
-        bannieres = new LinearLayout(contexte);
-        bannieres.setOrientation(VERTICAL);
-        bannieres.setPadding(marge, marge / 2, marge, marge / 2);
-        addView(bannieres, new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
-    }
-
-    private Icone icone(Icone.Glyphe glyphe, int couleur) {
-        Icone vue = new Icone(getContext());
-        vue.setGlyphe(glyphe);
-        vue.setCouleur(couleur);
-        vue.setClickable(true);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                GraphiteVue.dp(getContext(), 32),
-                GraphiteVue.dp(getContext(), 32));
-        params.leftMargin = GraphiteVue.dp(getContext(), 4);
-        vue.setLayoutParams(params);
-        return vue;
+        binding.puceDimensions.setOnClickListener(vue -> choisirDimensions());
     }
 
     /** L'auditeur des actions. */
@@ -233,39 +140,39 @@ public final class VueApercu extends LinearLayout {
      */
     public void maj(EtatApercu etat, String nomFichier) {
         Context contexte = getContext();
-        fichierCourant.setText(nomFichier == null ? "" : " · " + nomFichier);
-        segmentDensite.setSelection(etat.densite() - 1);
-        puceNuit.setPointee(etat.nuit());
-        puceDimensions.setText(etat.largeurDp() + " × "
-                + etat.hauteurDp());
+        binding.fichierApercu.setText(
+                nomFichier == null ? "" : " · " + nomFichier);
+
+        poseEnCours = true;
+        binding.segmentDensite.check(densiteId(etat.densite()));
+        binding.puceNuit.setChecked(etat.nuit());
+        poseEnCours = false;
+
+        binding.puceDimensions.setText(
+                etat.largeurDp() + " × " + etat.hauteurDp());
         if (etat.stats() == null) {
-            stats.setText(contexte.getString(
+            binding.statsApercu.setText(contexte.getString(
                     R.string.apercu_stats_attente));
         } else {
-            stats.setText(contexte.getString(R.string.apercu_stats,
+            binding.statsApercu.setText(contexte.getString(
+                    R.string.apercu_stats,
                     etat.stats().vues(), etat.stats().dureeMs(),
                     etat.stats().largeur(), etat.stats().hauteur(),
                     etat.densite()));
         }
-        if (etat.nomTheme() == null) {
-            // le thème n'est jamais deviné (lot E) : le repli se dit
-            banniereTheme = contexte.getString(
-                    R.string.apercu_theme_hote);
-        } else {
-            banniereTheme = null;
-        }
-        majBannieres(etat.bannieres());
+        majBannieres(contexte, etat.bannieres(),
+                etat.nomTheme() == null);
     }
 
-    private String banniereTheme;
-
-    private void majBannieres(List<Banniere> nouvelles) {
-        Context contexte = getContext();
-        bannieres.removeAllViews();
-        // le thème n'est jamais deviné (lot E) : le repli hôte se dit
-        if (banniereTheme != null) {
-            bannieres.addView(banniere(contexte, palette.accent,
-                    banniereTheme));
+    /** Les bannières de franchise : le thème de repli se DIT (lot E). */
+    private void majBannieres(Context contexte, List<Banniere> nouvelles,
+                              boolean themeRepli) {
+        binding.bannieresApercu.removeAllViews();
+        LayoutInflater gonfleur = LayoutInflater.from(contexte);
+        if (themeRepli) {
+            // le thème n'est jamais deviné (lot E) : le repli se dit
+            ajouterBanniere(gonfleur, palette.accent, contexte.getString(
+                    R.string.apercu_theme_hote));
         }
         for (Banniere banniere : nouvelles) {
             int couleur = switch (banniere.gravite()) {
@@ -273,34 +180,33 @@ public final class VueApercu extends LinearLayout {
                 case ALERTE -> palette.alerte;
                 case INFO -> palette.accent;
             };
-            bannieres.addView(banniere(contexte, couleur,
-                    texteBanniere(banniere)));
+            ajouterBanniere(gonfleur, couleur,
+                    texteBanniere(contexte, banniere));
         }
     }
 
-    private View banniere(Context contexte, int couleur, String texte) {
-        TextView vue = new TextView(contexte);
-        GraphiteVue.typographie(vue, Graphite.LEGENDE);
-        vue.setTextColor(couleur);
+    /** Gonfle une bannière (item_banniere_apercu) et la teinte. */
+    private void ajouterBanniere(LayoutInflater gonfleur, int couleur,
+                                 String texte) {
+        ItemBanniereApercuBinding banniere =
+                ItemBanniereApercuBinding.inflate(gonfleur,
+                        binding.bannieresApercu, false);
+        banniere.banniereApercu.setText(texte);
+        banniere.banniereApercu.setTextColor(couleur);
+        // le fond mélangé (10 %) au liseré 30 % suit la gravité —
+        // couleur CALCULÉE au bind (décision 8), jamais une littérale
         GradientDrawable fond = new GradientDrawable();
-        fond.setColor(Graphite.melange(couleur, 0.10f,
-                palette.surface));
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 9));
-        fond.setStroke(GraphiteVue.dp(contexte, 1),
+        fond.setColor(Graphite.melange(couleur, 0.10f, palette.surface));
+        fond.setCornerRadius(getResources().getDimensionPixelSize(
+                R.dimen.jo_rayon_banniere));
+        fond.setStroke(getResources().getDimensionPixelSize(
+                R.dimen.jo_ligne),
                 Graphite.melange(couleur, 0.30f, palette.surface));
-        vue.setBackground(fond);
-        int pad = GraphiteVue.dp(contexte, 10);
-        vue.setPadding(pad, pad, pad, pad);
-        vue.setText(texte);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.topMargin = GraphiteVue.dp(contexte, 6);
-        return vue;
+        banniere.banniereApercu.setBackground(fond);
+        binding.bannieresApercu.addView(banniere.getRoot());
     }
 
-    private String texteBanniere(Banniere banniere) {
-        Context contexte = getContext();
+    private String texteBanniere(Context contexte, Banniere banniere) {
         return switch (banniere.genre()) {
             case FRAPPE -> contexte.getString(
                     R.string.apercu_banniere_frappe,
@@ -318,6 +224,15 @@ public final class VueApercu extends LinearLayout {
             case CONFIG -> contexte.getString(
                     R.string.apercu_banniere_config,
                     banniere.detail());
+        };
+    }
+
+    /** L'identifiant du bouton de densité (1, 2 ou 3). */
+    private static int densiteId(int densite) {
+        return switch (densite) {
+            case 1 -> R.id.densite_1;
+            case 3 -> R.id.densite_3;
+            default -> R.id.densite_2;
         };
     }
 
@@ -342,48 +257,10 @@ public final class VueApercu extends LinearLayout {
 
     /**
      * Le conteneur du rendu : l'écran y pose la vue LayoutLib telle
-     * quelle — jamais retouchée, jamais embellie.
+     * quelle — jamais retouchée, jamais embellie. UNIQUE et gonflé une
+     * fois (le code d'hier en créait un par rendu).
      */
     public FrameLayout conteneurRendu() {
-        FrameLayout perchoir = new FrameLayout(getContext());
-        GradientDrawable cadre = new GradientDrawable();
-        cadre.setColor(palette.puits);
-        cadre.setCornerRadius(GraphiteVue.dp(getContext(), 24));
-        perchoir.setBackground(cadre);
-        perchoir.setClipToOutline(true);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
-        params.topMargin = params.bottomMargin =
-                GraphiteVue.dp(getContext(), 10);
-        colonneRendu.addView(perchoir, params);
-        return perchoir;
-    }
-
-    /** Le damier neutre derrière le rendu (cases 8 dp, deux gris). */
-    private static final class Damier extends FrameLayout {
-        private final Graphite.Palette palette;
-        private final Paint pinceau = new Paint();
-
-        Damier(Context contexte, Graphite.Palette palette) {
-            super(contexte);
-            this.palette = palette;
-            setBackgroundColor(palette.fond);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            float cote = GraphiteVue.dp(getContext(), 8);
-            pinceau.setColor(palette.bordFin);
-            for (float y = 0; y < getHeight(); y += cote) {
-                for (float x = 0; x < getWidth(); x += cote) {
-                    if (((x / cote) + (y / cote)) % 2 == 0) {
-                        canvas.drawRect(x, y, x + cote, y + cote,
-                                pinceau);
-                    }
-                }
-            }
-        }
+        return binding.perchoirApercu;
     }
 }

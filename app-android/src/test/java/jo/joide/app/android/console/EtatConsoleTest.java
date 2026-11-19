@@ -180,4 +180,34 @@ class EtatConsoleTest {
         assertTrue(etat.lignes().get(0).texte().contains("compileJava"),
                 "les plus anciennes lignes (le démarrage) sont rognées");
     }
+
+    @Test
+    void laDureeDuDernierBuildSeLitDansLeBilanSinonLaSommeDesPhases() {
+        // lot A5 : extraite pure de la vue d'hier — la pilule d'état
+        // (« réussi · 6,2 s ») lit la durée CHIFFRÉE du bilan (« build
+        // #n … · 6,2 s » : la durée est en queue), la somme des durées
+        // de phases sinon — jamais une durée devinée
+        EtatConsole etat = new EtatConsole();
+        assertEquals(0L, etat.dureeDernierBuildMs(),
+                "aucun build : aucune durée");
+        etat.surDemarrage(4, 0L);
+        etat.surTache("app:compileKotlin", "SUCCEEDED", 1_400L);
+        assertEquals(0L, etat.dureeDernierBuildMs(),
+                "en cours : les phases actives ne portent pas encore de "
+                        + "durée mesurée (l'identité de la vue d'hier)");
+        etat.surTermine(4, true, 12, 3, 2, 6_200L, List.of(), 7_200L);
+        assertEquals(6_200L, etat.dureeDernierBuildMs(),
+                "la durée chiffrée du bilan prime : « build #4 réussi — … "
+                        + "· 6,2 s », la queue du résumé");
+        // un bilan SANS durée chiffrée (en processus) : sa queue ne
+        // porte pas de secondes — la lecture rend 0, l'identité de la
+        // vue d'hier (la somme des phases ne se devine JAMAIS par-dessus
+        // un bilan présent)
+        EtatConsole autre = new EtatConsole();
+        autre.surDemarrage(5, 0L);
+        autre.surTache("app:compileKotlin", "SUCCEEDED", 800L);
+        autre.surBilanEnProcessus(5, true, 1, 0, 0, List.of(), 900L);
+        assertEquals(0L, autre.dureeDernierBuildMs(),
+                "le bilan présent mais non chiffré rend 0");
+    }
 }

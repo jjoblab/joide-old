@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085) — la carte du premier problème LOCALISÉ de la
+  console (ADR-É6 : « fichier:ligne — problème » + détail + bouton
+  « Ouvrir le fichier à la ligne ») : carte surface + liseré erreur +
+  rayon composant (le GradientDrawable d'hier en drawable), padding
+  14 (le pad d'hier, @dimen/jo_pad_console), titre note semi-gras (la
+  graisse 600 d'hier rapprochée par sans-serif-medium — concession
+  documentée A3/A4, décision 7 de l'ADR). Gonflée UNE fois (include de
+  vue_console) : la visibilité et les textes suivent l'état, plus de
+  removeAllViews() à chaque maj.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/carte_probleme_console"
+    android:padding="@dimen/jo_pad_console">
+
+    <TextView
+        android:id="@+id/titre_probleme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:textAppearance="@style/TextAppearance.Jo.Note"
+        android:textColor="?attr/jo_erreur"
+        android:singleLine="true"
+        android:ellipsize="middle" />
+
+    <TextView
+        android:id="@+id/detail_probleme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Jo.Legende"
+        android:textColor="?attr/jo_texte2" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/ouvrir_probleme"
+        style="@style/Widget.Jo.Button.Tonal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/jo_ecart_bouton_probleme"
+        android:text="@string/console_probleme_ouvrir" />
+</LinearLayout>

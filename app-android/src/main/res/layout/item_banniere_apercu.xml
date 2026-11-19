@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085) — une bannière de franchise de l'aperçu (ADR-É7 :
+  frappe, ressources manquantes, MockView, échec de rendu,
+  avertissements de constitution) : légende sur fond mélangé (10 %) au
+  liseré 30 % — le fond et la teinte se posent au bind (couleur
+  CALCULÉE par gravité, décision 8 : le drawable suit la gravité,
+  jamais une littérale) ; rayon 9 et padding 10 du lot L. Liste TRÈS
+  COURTE et BORNÉE (≤ 6 : 1 erreur + 1 ressources + 1 MockView + n
+  avertissements + 1 frappe + 1 thème) : gonflée par binding à chaque
+  maj, motif A4 des contentions bornées — dérogation documentée à la
+  décision 11.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/banniere_apercu"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/jo_ecart_banniere_apercu"
+    android:padding="@dimen/jo_pad_banniere_apercu"
+    android:textAppearance="@style/TextAppearance.Jo.Legende" />

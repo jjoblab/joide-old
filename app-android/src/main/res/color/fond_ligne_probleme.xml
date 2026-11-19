@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fond d'une ligne de problème du transcript console (lot A5, ADR-085) :
+  erreur à 10 % — le mélange du lot K (Graphite.melange) porté par
+  l'alpha de l'item : le puits de la console transparaît derrière,
+  exactement le rendu d'hier. ?attr/jo_* exclusivement (franchise §0.4).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.10" android:color="?attr/jo_erreur" />
+</selector>

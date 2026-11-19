@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot A5 (ADR-085) — le perchoir de l'aperçu : puits + rayon 24 dp
+     (la maquette ADR-É7 .perchoir : border-radius 24 px = 24 dp), le
+     rendu LayoutLib s'y pose TEL QUEL (clipToOutline). Unique et gonflé
+     une fois dans vue_apercu.xml — le conteneurRendu() d'hier créait un
+     perchoir par rendu. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_puits" />
+    <corners android:radius="@dimen/jo_rayon_perchoir" />
+</shape>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lot A5 (ADR-085, décision 11) — la note de franchise sous le nœud des
+  SORTIES de build de l'arbre (§3.8 : « Sorties de build — estompées
+  tant qu'elles se construisent ; jamais présentées comme sources ») :
+  légende estompée, retrait 20 (le retrait d'hier), l'atténuation (0,7
+  tant que le build tourne) se pose au bind. Le lot L4 posait cette
+  note depuis le code à chaque setArbre — elle est désormais un
+  élément recyclé.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/note_sorties"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="@dimen/jo_retrait_note_arbre"
+    android:paddingRight="@dimen/jo_retrait_note_arbre"
+    android:paddingBottom="@dimen/jo_ecart_note_sorties"
+    android:text="@string/atelier_sorties_note"
+    android:textAppearance="@style/TextAppearance.Jo.Legende"
+    android:textColor="?attr/jo_texte3" />
