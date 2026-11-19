@@ -1,3 +1,28 @@
+# CHANGES — l'architecture des vues passe à AndroidX + Material 3 habillé Graphite, plus aucun dialogue (2026-11-19)
+
+**Chantier ADR-085 (directives du propriétaire du 2026-11-18)** : les vues
+de l'application quittent l'interdit « zéro AndroidX » d'ADR-083 (§2
+amendé) — la coque devient `AppCompatActivity` (ActiviteJoide + monter()),
+le thème devient `Theme.Material3.*` avec les rôles branchés sur les jetons
+Graphite existants (aucune couleur inventée, `JetonsXmlTest` et le nouveau
+`ThemesM3Test` ancrent la parité), les jetons de dimension/typographie
+gagnent `dimens.xml`/`styles.xml`, `values-w720dp/bools.xml` porte le seuil
+du grand écran, la navigation devient typée (`Ecrans` : fabriques, extras,
+contrats `ActivityResult` — l'import SAF de l'accueil migre, les codes 41
+disparaît), le clavier se détecte par `WindowInsetsCompat` (fin de l'API 30
+directe sur minSdk 28 — lot A1/correctif C5). Dépendances épinglées au
+catalogue : appcompat 1.8.0, core 1.19.1, activity 1.13.0, material 1.14.0
+(+605 Ko d'APK debug, verifierOmbreApk vert). Compose reste exclu
+(application Java) ; aucun dialogue ne naît, les 58 usages existants de
+`Dialogue.` partent au lot A7 (popups). Filet posé en A0 :
+`ArchitectureVuesTest` (7 tests, listes d'exceptions décroissantes) et
+`scripts/mesures-architecture-vues.sh` (inventaire de l'annexe B : 203 vues
+instanciées, 374 palette.*, 414 dp, 685 couplages). Rapports :
+`PHASE-A0-RAPPORT.md`, `PHASE-A1-RAPPORT.md`. Constat signalé au
+propriétaire : `checkLanguagePolicy` échouait déjà au commit de base (1313
+problèmes typographiques préexistants) — inchangé par le chantier, dont les
+propres documents sont conformes.
+
 # CHANGES — la feuille à trois détentes, l'URL par fournisseur, les contrôleurs de l'écran (2026-11-18)
 
 **Corrections demandées** : (1) la feuille basse a ses TROIS détentes
