@@ -328,6 +328,7 @@
     <string name="parametres_section_editeur">Éditeur</string>
     <string name="parametres_section_build">Build</string>
     <string name="parametres_section_ia">Agent IA</string>
+    <string name="parametres_fournisseur_ia">Fournisseur IA</string>
     <string name="parametres_cle_anthropic">Clé API Anthropic</string>
     <string name="parametres_cle_openai">Clé API OpenAI-compatible</string>
     <string name="parametres_cle_gemini">Clé API Google Gemini</string>

@@ -6,8 +6,18 @@
   la vue se monte À LA DEMANDE (bascule plein écran ou volet droit du
   grand écran — zone rare : seuls les fichiers de mise en page en ont
   besoin). La classe VueApercu gonfle elle-même son <merge>
-  (vue_apercu.xml) : aucune dimension ni couleur ici.
+  (vue_apercu.xml).
+  Lot C2 (fix du garde-crash, 2026-11-19) : l'inflation par ViewStub
+  EXIGE layout_width/layout_height sur la racine — LayoutInflater
+  appelle parent.generateLayoutParams(attrs) (TypedArray
+  .getLayoutDimension jette sinon : « You must supply a
+  layout_width attribute », le même plantage que le tiroir agent,
+  nommé par le garde). Dimension PASSEPARTOUT : le ViewStub porte
+  match_parent — la géométrie reste celle du volet. Aucune couleur
+  ici : la zone reste maîtresse de son identité.
 -->
 <jo.joide.app.android.atelier.VueApercu
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/vue_apercu" />
+    android:id="@+id/vue_apercu"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

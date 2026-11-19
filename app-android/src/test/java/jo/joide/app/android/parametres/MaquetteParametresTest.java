@@ -171,9 +171,11 @@ class MaquetteParametresTest {
         assertFalse(cles.contains("syntaxe"));
         // 15 au lot M, +4 au lot P (la section IA : deux clés, le
         // modèle, l'URL — ADR-É11 point 9), +2 aux lots Q/U (Gemini,
-        // OpenRouter)
-        assertEquals(21, cles.size(),
-                "le lot U ajoute la rangée de clé OpenRouter");
+        // OpenRouter), +1 au lot C2 (le fournisseur IA : le tiroir
+        // agent tuait l'app à l'ouverture, le provider doit rester
+        // posable depuis les Paramètres — la remontée du terrain)
+        assertEquals(22, cles.size(),
+                "le lot C2 ajoute la rangée de fournisseur IA");
     }
 
     private static Rangee rangee(String cle) {

@@ -555,6 +555,15 @@ public final class FeuilleBasse extends LinearLayout {
         }
         receptacle.removeAllViews();
         if (contenu != null) {
+            // lot C2 (fix du garde-crash) : une zone montée par stub
+            // (la console, posée au z-bas de la racine par son stub
+            // — « remplacée puis déplacée ») arrive avec un parent :
+            // addView jette « already has a parent » sinon — la
+            // feuille détache ELLE-MÊME la vue de son ancien parent,
+            // n'importe quel montage à venir est couvert
+            if (contenu.getParent() instanceof ViewGroup ancien) {
+                ancien.removeView(contenu);
+            }
             receptacle.addView(contenu, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT));

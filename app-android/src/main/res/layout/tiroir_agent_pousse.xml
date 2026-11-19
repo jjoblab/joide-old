@@ -6,13 +6,25 @@
   d'agent ne démarre qu'avec lui). TiroirPousse adopte son enfant XML
   dans son panneau (onFinishInflate) : le TiroirPousse est le tiroir
   poussé droite 360 dp, VueAgent le contenu — le côté droit se pose
-  par code au montage (config, pas instanciation). Aucune couleur ni
-  dimension : les zones restent maîtresses de leur identité.
+  par code au montage (config, pas instanciation).
+  Lot C2 (fix du garde-crash, 2026-11-19) : l'inflation par ViewStub
+  EXIGE layout_width/layout_height sur la racine ET sur l'enfant —
+  LayoutInflater appelle parent.generateLayoutParams(attrs) pour
+  chacun (TypedArray.getLayoutDimension jette sinon : « You must
+  supply a layout_width attribute », le plantage nommé par le garde
+  à l'ouverture du tiroir). Ces dimensions sont des PASSEPARTOUTS :
+  le panneau adopte l'enfant au MATCH_PARENT et le ViewStub du
+  tiroir porte match_parent — la géométrie reste celle du tiroir.
+  Aucune couleur ici : la zone reste maîtresse de son identité.
 -->
 <jo.joide.app.android.ui.TiroirPousse
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/tiroir_agent_pousse">
+    android:id="@+id/tiroir_agent_pousse"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <jo.joide.app.android.atelier.agent.VueAgent
-        android:id="@+id/vue_agent" />
+        android:id="@+id/vue_agent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </jo.joide.app.android.ui.TiroirPousse>

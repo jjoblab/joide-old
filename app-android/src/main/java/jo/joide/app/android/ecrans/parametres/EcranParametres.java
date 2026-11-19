@@ -228,6 +228,7 @@ public final class EcranParametres extends ActiviteJoide {
         rangee(EtatParametres.R_RETOUR_LIGNE, ecran.rangRetourLigne);
         rangee(EtatParametres.R_MOTEUR, ecran.rangMoteur);
         rangee(EtatParametres.R_FILS, ecran.rangFils);
+        rangee(EtatParametres.R_FOURNISSEUR_IA, ecran.rangFournisseurIa);
         rangee(EtatParametres.R_CLE_ANTHROPIC, ecran.rangCleAnthropic);
         rangee(EtatParametres.R_CLE_OPENAI, ecran.rangCleOpenai);
         rangee(EtatParametres.R_CLE_GEMINI, ecran.rangCleGemini);
@@ -437,8 +438,17 @@ public final class EcranParametres extends ActiviteJoide {
         });
     }
 
-    /** L'agent IA : les clés des fournisseurs, le modèle, l'URL (actions à état). */
+    /** L'agent IA : le fournisseur, les clés des fournisseurs, le
+     *  modèle, l'URL (actions à état). */
     private void monterIa() {
+        // lot C2 : le fournisseur se choisit ICI aussi — la puce du
+        // tiroir agent portait le seul sélecteur et le tiroir tuait
+        // l'app à l'ouverture (« le provider n'est pas chargé », la
+        // remontée du terrain) : les Paramètres restent atteignables
+        monterAction(ecran.rangFournisseurIa,
+                R.string.parametres_fournisseur_ia);
+        ecran.rangFournisseurIa.actionParam.setOnClickListener(
+                vue -> gererFournisseurIa(vue));
         monterAction(ecran.rangCleAnthropic,
                 R.string.parametres_cle_anthropic);
         ecran.rangCleAnthropic.actionParam.setOnClickListener(
@@ -633,6 +643,8 @@ public final class EcranParametres extends ActiviteJoide {
         poserMesure(ecran.rangCidx, EtatParametres.R_CIDX, true);
         poserMesure(ecran.rangM2, EtatParametres.R_M2, true);
 
+        ecran.rangFournisseurIa.actionParam.setText(
+                texteAction(EtatParametres.R_FOURNISSEUR_IA));
         ecran.rangCleAnthropic.actionParam.setText(
                 texteAction(EtatParametres.R_CLE_ANTHROPIC));
         ecran.rangCleOpenai.actionParam.setText(
@@ -728,6 +740,8 @@ public final class EcranParametres extends ActiviteJoide {
                 return R.string.parametres_licences;
             case EtatParametres.R_JOURNAL:
                 return R.string.parametres_journal;
+            case EtatParametres.R_FOURNISSEUR_IA:
+                return R.string.parametres_fournisseur_ia;
             case EtatParametres.R_CLE_ANTHROPIC:
                 return R.string.parametres_cle_anthropic;
             case EtatParametres.R_CLE_OPENAI:
@@ -748,6 +762,9 @@ public final class EcranParametres extends ActiviteJoide {
     private CharSequence texteAction(String cle) {
         if (EtatParametres.R_DEPOT.equals(cle)) {
             return DEPOT.replace("https://", "");
+        }
+        if (EtatParametres.R_FOURNISSEUR_IA.equals(cle)) {
+            return nomFournisseurIa(reglages.fournisseurIa);
         }
         if (EtatParametres.R_CLE_ANTHROPIC.equals(cle)) {
             return getString(cles.estPosee(FOURNISSEUR_ANTHROPIC)
@@ -865,6 +882,98 @@ public final class EcranParametres extends ActiviteJoide {
                     }
                     rendre();
                 });
+    }
+
+    /**
+     * Le fournisseur IA (lot C2) : le MÊME réglage que la puce du
+     * tiroir agent, posable ICI — la remontée du terrain nommait
+     * « le provider n'est pas chargé » : le tiroir tuait l'app à
+     * l'ouverture, le seul sélecteur était mort-né. Le menu ANCRÉ à
+     * la rangée porte les quatre fournisseurs, le tap FERME le menu
+     * PUIS agit (le gabarit du menu de clé, lot A7).
+     */
+    private void gererFournisseurIa(View ancre) {
+        List<PortePopups.EntreeMenu> entrees = new ArrayList<>();
+        for (Reglages.FournisseurIa fournisseur
+                : Reglages.FournisseurIa.values()) {
+            entrees.add(new PortePopups.EntreeMenu(
+                    nomFournisseurIa(fournisseur),
+                    () -> choisirFournisseurIa(fournisseur)));
+        }
+        popups.menu(ancre, getString(R.string.parametres_fournisseur_ia),
+                240, entrees);
+    }
+
+    /**
+     * Le choix du fournisseur : PERSISTÉ, le modèle normalisé comme la
+     * puce du tiroir (fix du 2026-11-17) — un modèle hérité d'un autre
+     * fournisseur ne part JAMAIS chez le nouveau : le modèle posé
+     * pour lui, sinon le modèle partagé s'il lui appartient, sinon le
+     * premier de son catalogue.
+     */
+    private void choisirFournisseurIa(Reglages.FournisseurIa choisi) {
+        Reglages.ecrireFournisseurIa(source, choisi);
+        String modele = Reglages.lireModelePour(source, choisi);
+        if (modele.isEmpty()) {
+            String partage = reglages.modeleIa;
+            if (partage != null
+                    && Reglages.modeleAppartient(partage, choisi)) {
+                modele = partage;
+            }
+        }
+        if (!Reglages.modeleAppartient(modele, choisi)) {
+            String[] catalogue = catalogueModele(choisi);
+            modele = catalogue.length > 0 ? catalogue[0] : "";
+        }
+        try {
+            if (!modele.isEmpty()) {
+                Reglages.ecrireModeleIa(source, modele);
+                // lot U/7 : le modèle retient AUSSI le fournisseur
+                // courant — le modèle partagé ne traverse jamais les
+                // fournisseurs
+                Reglages.ecrireModelePour(source, choisi, modele);
+            }
+        } catch (IllegalArgumentException e) {
+            // modèle invivable : le fournisseur seul reste posé
+        }
+        reglages = Reglages.lire(source);
+        rendre();
+    }
+
+    /** Le nom lisible d'un fournisseur (le même que le tiroir agent). */
+    private CharSequence nomFournisseurIa(Reglages.FournisseurIa f) {
+        return getString(switch (f) {
+            case ANTHROPIC -> R.string.agent_fournisseur_anthropic;
+            case GEMINI -> R.string.agent_fournisseur_gemini;
+            case OPENROUTER -> R.string.agent_fournisseur_openrouter;
+            default -> R.string.agent_fournisseur_openai;
+        });
+    }
+
+    /**
+     * Le catalogue de repli d'un fournisseur — le MIROIR de
+     * {@code ControleurModelesAgent.catalogueModele} (les mêmes
+     * identifiants, les deux écrans doivent proposer les mêmes
+     * modèles).
+     */
+    private static String[] catalogueModele(Reglages.FournisseurIa f) {
+        return switch (f) {
+            case ANTHROPIC -> new String[]{
+                    "claude-opus-4-1", "claude-sonnet-4-5",
+                    "claude-haiku-4-5", "claude-3-7-sonnet",
+                    "claude-3-5-haiku"};
+            case GEMINI -> new String[]{
+                    "gemini-2.5-pro", "gemini-2.5-flash",
+                    "gemini-2.5-flash-lite", "gemini-2.0-flash"};
+            case OPENROUTER -> new String[]{
+                    "anthropic/claude-sonnet-4.5",
+                    "openai/gpt-5.1", "google/gemini-2.5-pro",
+                    "deepseek/deepseek-chat-v3.1",
+                    "z-ai/glm-4.6", "qwen/qwen3-max"};
+            default -> new String[]{
+                    "gpt-5.1", "gpt-5", "gpt-4.1",
+                    "gpt-4.1-mini", "gpt-4o", "o4-mini"};
+        };
     }
 
     /** Le titre de la rangée d'un fournisseur. */

@@ -6,8 +6,19 @@
   disposition courante (le cadre du tiroir fichiers en écran compact,
   la colonne amarrée en layout-w720dp — le même arbre, deux amarrages,
   jamais deux instances). VueArbre gonfle elle-même son <merge>
-  (vue_arbre.xml) : aucune dimension ni couleur ici.
+  (vue_arbre.xml).
+  Lot C2 (fix du garde-crash, 2026-11-19) : layout_width/layout_height
+  sur la racine quand même — l'inflation sans parent ne les exige pas
+  mais la pose (addView au MATCH_PARENT) les remplace et le piège est
+  armé pour TOUT ViewStub futur (LayoutInflater appelle
+  parent.generateLayoutParams(attrs) : « You must supply a
+  layout_width attribute », le plantage nommé par le garde sur les
+  trois zones sœurs). Dimension PASSEPARTOUT : l'atelier repose la
+  vue au MATCH_PARENT — la géométrie reste celle de l'amarrage.
+  Aucune couleur ici : la zone reste maîtresse de son identité.
 -->
 <jo.joide.app.android.atelier.VueArbre
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/vue_arbre" />
+    android:id="@+id/vue_arbre"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

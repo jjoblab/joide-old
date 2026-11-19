@@ -96,11 +96,14 @@ class EtatParametresTest {
     }
 
     @Test
-    void vingtUneRangeesEtDeuxActionsDestructricesExactement() {
+    void vingtDeuxRangeesEtDeuxActionsDestructricesExactement() {
         int rangees = EtatParametres.sections().stream()
                 .mapToInt(s -> s.rangees().size()).sum();
-        assertEquals(21, rangees,
-                "le lot U ajoute la rangée de clé OpenRouter");
+        assertEquals(22, rangees,
+                "le lot C2 ajoute la rangée de fournisseur IA — la "
+                        + "remontée du terrain : le tiroir agent tuait "
+                        + "l'app, le provider y devenait impossible "
+                        + "à choisir");
         assertEquals(List.of(EtatParametres.R_CIDX, EtatParametres.R_M2),
                 EtatParametres.actionsDestructrices(),
                 "seules les deux vidanges sont destructrices, "

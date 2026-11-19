@@ -1,3 +1,56 @@
+# CHANGES — les tiroirs qui tuaient l'app : dimensions des zones différées, la feuille détache, le fournisseur IA depuis les Paramètres (2026-11-19)
+
+**Lot C2 — le garde-crash a nommé, le lot C2 éteint.** La remontée du
+terrain du 2026-11-19 09:55:35 porte le premier rapport `joide.crash/1`
+NOMMÉ : `UnsupportedOperationException: Binary XML file line #14 …
+tiroir_agent_pousse: You must supply a layout_width attribute` (motorola
+moto g06, Android 15, build `0.1.0 (68f72b9)`), pile
+`ViewStub.inflate → generateLayoutParams → getLayoutDimension`, au tap
+d'ouverture du tiroir agent. « Plusieurs erreurs de ce genre » : **quatre
+layouts de zone portaient des racines SANS `layout_width`/
+`layout_height`** — `tiroir_agent_pousse.xml` (racine `TiroirPousse` ET
+enfant `VueAgent`), `vue_console_zone.xml`, `vue_apercu_zone.xml`
+(les trois ViewStub : tiroir agent, console, aperçu — chacun plantait
+à son premier montage) et `vue_arbre_zone.xml` (gonflé sans parent :
+non fatale, piège armé). L'inflation par ViewStub exige les dimensions
+(« line #14 » = le chevron de la balise racine). **Les dimensions
+PASSEPARTOUTS** : `match_parent` posé, qui ne décide rien — le ViewStub
+les remplace, le panneau adopte au MATCH_PARENT, la feuille repose son
+contenu : la géométrie reste celle du montage, l'identité celle de la
+zone (consigné dans chaque layout).
+**La chaîne des trois symptômes du terrain, éteinte à la racine** : le
+tiroir agent plantait au tap (le rapport nommé) ; la feuille ne
+s'ouvrait JAMAIS sans mourir — la CONSOLE est la section par défaut,
+tout dépliage passait par `majCorps → surOuverture →
+monterConsole() → stub_console.inflate()` → LE MÊME plantage (« le
+bottomsheet n'affiche rien, que ce soit pour build, journal ») ; le
+SEUL sélecteur de fournisseur vivait dans la puce du tiroir mort-né
+(« le provider n'est pas chargé ») — la SAISIE des clés était saine
+(audit C1), c'est le tiroir qui tuait l'app avant la première requête.
+**Le second piège, nommé par l'audit avant qu'il ne tue** : la console
+gonflée arrive ATTACHÉE à la racine (le ViewStub la pose à sa place,
+« z-plan bas ») — `FeuilleBasse.majCorps → receptacle.addView` jetterait
+`IllegalStateException: already has a parent` (AOSP `addViewInner`) ;
+le lot A8 a son `detacher()` à l'écran pour ce cas, la feuille ne
+l'avait pas : **`majCorps` détache maintenant ELLE-MÊME** le contenu
+de son ancien parent avant de le poser — tout montage à venir couvert.
+**Le fournisseur IA se choisit AUSSI depuis les Paramètres** (rangée
+« Fournisseur IA », première de la carte IA, menu ANCRÉ du porte-popups
+— le gabarit du menu de clé) : le choix persiste
+(`Reglages.ecrireFournisseurIa`) et normalise le modèle comme la puce
+du tiroir (modèle par fournisseur → modèle partagé s'il appartient →
+premier du catalogue, le MIROIR de
+`ControleurModelesAgent.catalogueModele`) ; plus jamais un sélecteur
+unique derrière un crash. Chaînes `parametres_fournisseur_ia`
+paritaires (FR/EN), les noms de fournisseurs repris du tiroir.
+Tests : **2 gardes mises à jour 21 → 22 rangées**
+(`vingtDeuxRangeesEtDeuxActionsDestructricesExactement`,
+`lesReglagesReelsSeulementAucuneRangeeOrpheline` : messages
+documentant le lot C2), 0 échec ;
+l'audit scripté : 39 signalements sans dimensions, 35 `<include>`
+légitimes, 4 défauts réels — les quatre corrigés. Construction et APK
+mesurés par la CI (ADR-048). Docs : `PHASE-C2-RAPPORT.md` à la racine.
+
 # CHANGES — le garde-crash : l'activité qui détecte TOUT type de plantage, la dette NewApi éteinte (2026-11-19)
 
 **Lot C1 (garde-crash) — la demande du terrain du 2026-11-19** : « créé

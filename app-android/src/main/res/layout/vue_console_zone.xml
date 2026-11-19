@@ -5,9 +5,19 @@
   l'atelier (stub_console) porte CE fichier, la vue se monte À LA
   DEMANDE (première mise à jour de console ou première ouverture de
   la feuille — jamais pendant le chargement de session). La classe
-  VueConsole gonfle elle-même son <merge> (vue_console.xml) : aucune
-  dimension ni couleur ici, la zone reste maîtresse de son identité.
+  VueConsole gonfle elle-même son <merge> (vue_console.xml).
+  Lot C2 (fix du garde-crash, 2026-11-19) : l'inflation par ViewStub
+  EXIGE layout_width/layout_height sur la racine — LayoutInflater
+  appelle parent.generateLayoutParams(attrs) (TypedArray
+  .getLayoutDimension jette sinon : « You must supply a
+  layout_width attribute », le plantage nommé par le garde à
+  l'ouverture de la feuille). Dimension PASSEPARTOUT : le ViewStub
+  porte wrap_content, la feuille repose le contenu au moment de le
+  montrer — la géométrie reste celle de la feuille. Aucune couleur
+  ici : la zone reste maîtresse de son identité.
 -->
 <jo.joide.app.android.console.VueConsole
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/vue_console" />
+    android:id="@+id/vue_console"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" />

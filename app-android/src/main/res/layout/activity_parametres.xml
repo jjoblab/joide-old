@@ -178,8 +178,11 @@
                         layout="@layout/item_param_stepper" />
                 </LinearLayout>
 
-                <!-- Agent IA : les clés des fournisseurs, le modèle par
-                     défaut, l'URL de base (actions) -->
+                <!-- Agent IA : le fournisseur (le même réglage que la
+                     puce du tiroir agent — nommé par la remontée du
+                     terrain : « le provider n'est pas chargé »), les
+                     clés des fournisseurs, le modèle par défaut,
+                     l'URL de base (actions) -->
                 <include
                     android:id="@+id/sect_ia"
                     layout="@layout/item_param_groupe" />
@@ -193,6 +196,10 @@
                     android:orientation="vertical"
                     android:paddingLeft="@dimen/jo_pad_groupe_cote"
                     android:paddingRight="@dimen/jo_pad_groupe_cote">
+
+                    <include
+                        android:id="@+id/rang_fournisseur_ia"
+                        layout="@layout/item_param_action" />
 
                     <include
                         android:id="@+id/rang_cle_anthropic"
