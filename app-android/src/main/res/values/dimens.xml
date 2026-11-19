@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jetons de DIMENSION Graphite (ADR-085, décision 7) : Graphite.java reste
+  la source de vérité ; ces ressources en sont la représentation XML pour
+  les layouts et les styles — ThemesM3Test vérifie l'égalité (rayons,
+  grille, marges, gouttière, tuile, échelle typographique complète).
+  Les tailles de texte vivent en sp : un textAppearance les consomme, le
+  Java reste à GraphiteVue.typographie pour la police PONDÉRÉE et l'échelle
+  de texte des réglages (adr : là où textAppearance ne sait pas tout).
+-->
+<resources>
+    <!-- Rayons (ADR-É2) -->
+    <dimen name="jo_rayon_carte">16dp</dimen>
+    <dimen name="jo_rayon_composant">12dp</dimen>
+    <dimen name="jo_rayon_puce">999dp</dimen>
+
+    <!-- Espace (ADR-É2) -->
+    <dimen name="jo_grille">4dp</dimen>
+    <dimen name="jo_marge">20dp</dimen>
+    <dimen name="jo_gouttiere">20dp</dimen>
+    <dimen name="jo_tuile">46dp</dimen>
+
+    <!-- Échelle typographique (taille/interligne, en sp) -->
+    <dimen name="jo_texte_legende">12sp</dimen>
+    <dimen name="jo_texte_legende_interligne">16sp</dimen>
+    <dimen name="jo_texte_note">13sp</dimen>
+    <dimen name="jo_texte_note_interligne">18sp</dimen>
+    <dimen name="jo_texte_corps">15sp</dimen>
+    <dimen name="jo_texte_corps_interligne">22sp</dimen>
+    <dimen name="jo_texte_sous_titre">16sp</dimen>
+    <dimen name="jo_texte_sous_titre_interligne">22sp</dimen>
+    <dimen name="jo_texte_titre">17sp</dimen>
+    <dimen name="jo_texte_titre_interligne">22sp</dimen>
+    <dimen name="jo_texte_titre_ecran">28sp</dimen>
+    <dimen name="jo_texte_titre_ecran_interligne">34sp</dimen>
+    <dimen name="jo_texte_code">13.5sp</dimen>
+    <dimen name="jo_texte_code_interligne">22sp</dimen>
+    <dimen name="jo_texte_code_compact">12.5sp</dimen>
+    <dimen name="jo_texte_code_compact_interligne">20sp</dimen>
+</resources>

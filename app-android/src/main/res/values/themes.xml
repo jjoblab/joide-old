@@ -1,13 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Thèmes JoIDE (ADR-083, lot L1 de l'atelier v2). Parent : le thème
-  du CADRE (android:Theme.Material.NoActionBar) — pas Material
-  Components (zéro AndroidX UI, ADR-É2 amendée par l'ADR-083).
-  L'application se fait par setTheme() AVANT l'inflation, selon
-  Reglages sombre/clair/système (ADR-048).
+  Thèmes JoIDE (ADR-083 lot L1, remplacé par ADR-085 décision 5 —
+  directive D2 du propriétaire). Parents : Theme.Material3.Dark/Light.
+  NoActionBar ; les RÔLES Material 3 pointent vers les jetons Graphite de
+  colors.xml (aucune couleur inventée — ThemesM3Test vérifie chaque rôle
+  et sa résolution), les formes et la typographie M3 portent les rayons et
+  l'échelle de Graphite (styles.xml + dimens.xml). Les attributs
+  ?attr/jo_* sans rôle M3 restent posés (JetonsXmlTest l'exige). Pas de
+  Dynamic Color. L'application se fait par setTheme() AVANT l'inflation,
+  selon Reglages sombre/clair/système (ADR-048) — invariant protégé par
+  ActiviteJoide.
 -->
 <resources>
-    <style name="Theme.JoIDE.Sombre" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.JoIDE.Sombre" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Rôles Material 3 ← jetons Graphite (sombre) -->
+        <item name="colorPrimary">@color/jo_accent</item>
+        <item name="colorOnPrimary">@color/jo_texte_sur_accent</item>
+        <item name="colorPrimaryContainer">@color/jo_accent_tonal</item>
+        <item name="colorOnPrimaryContainer">@color/jo_texte</item>
+        <item name="colorSecondary">@color/jo_violet</item>
+        <item name="colorOnSecondary">@color/jo_texte_sur_accent</item>
+        <item name="colorSecondaryContainer">@color/jo_violet_tonal</item>
+        <item name="colorOnSecondaryContainer">@color/jo_texte</item>
+        <item name="colorTertiary">@color/jo_reussite</item>
+        <item name="colorOnTertiary">@color/jo_texte_sur_reussite</item>
+        <item name="colorTertiaryContainer">@color/jo_reussite_tonal</item>
+        <item name="colorOnTertiaryContainer">@color/jo_texte</item>
+        <item name="colorSurface">@color/jo_surface</item>
+        <item name="colorOnSurface">@color/jo_texte</item>
+        <item name="colorSurfaceVariant">@color/jo_surface_haute</item>
+        <item name="colorOnSurfaceVariant">@color/jo_texte2</item>
+        <item name="colorSurfaceContainerLowest">@color/jo_puits</item>
+        <item name="colorSurfaceContainerLow">@color/jo_surface</item>
+        <item name="colorSurfaceContainer">@color/jo_surface_haute</item>
+        <item name="colorSurfaceContainerHigh">@color/jo_surface_haute</item>
+        <item name="colorSurfaceContainerHighest">@color/jo_bord_fin</item>
+        <item name="colorSurfaceDim">@color/jo_puits</item>
+        <item name="colorSurfaceBright">@color/jo_surface_haute</item>
+        <item name="colorOnBackground">@color/jo_texte</item>
+        <item name="colorOutline">@color/jo_bord</item>
+        <item name="colorOutlineVariant">@color/jo_bord_fin</item>
+        <item name="colorError">@color/jo_erreur</item>
+        <item name="colorOnError">@color/jo_fond</item>
+        <item name="colorErrorContainer">@color/jo_erreur_tonal</item>
+        <item name="colorOnErrorContainer">@color/jo_texte</item>
+        <item name="colorSurfaceInverse">@color/jo_surface</item>
+        <item name="colorOnSurfaceInverse">@color/jo_fond</item>
+        <item name="colorPrimaryInverse">@color/jo_accent</item>
+        <item name="android:colorBackground">@color/jo_fond</item>
+
+        <!-- Formes ← rayons Graphite -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Jo.Composant</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Jo.Carte</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Jo.Carte</item>
+
+        <!-- Typographie ← échelle Graphite -->
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Jo.Legende</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Jo.Corps</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Jo.SousTitre</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Jo.SousTitre</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Jo.Titre</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Jo.TitreEcran</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Jo.Legende</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Jo.Corps</item>
+
+        <!-- Jetons Graphite sans rôle M3 (ADR-083 §3 demeure) -->
         <item name="jo_fond">@color/jo_fond</item>
         <item name="jo_surface">@color/jo_surface</item>
         <item name="jo_surface_haute">@color/jo_surface_haute</item>
@@ -31,7 +88,7 @@
         <item name="jo_alerte_tonal">@color/jo_alerte_tonal</item>
         <item name="jo_erreur_tonal">@color/jo_erreur_tonal</item>
         <item name="jo_violet_tonal">@color/jo_violet_tonal</item>
-                <item name="jo_accent_ligne">@color/jo_accent_ligne</item>
+        <item name="jo_accent_ligne">@color/jo_accent_ligne</item>
 
         <item name="jo_pastille_ambre">@color/jo_pastille_ambre</item>
         <item name="jo_pastille_violet">@color/jo_pastille_violet</item>
@@ -51,7 +108,59 @@
         <item name="android:navigationBarColor">@color/jo_fond</item>
     </style>
 
-    <style name="Theme.JoIDE.Clair" parent="android:Theme.Material.NoActionBar">
+    <style name="Theme.JoIDE.Clair" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Rôles Material 3 ← jetons Graphite (clair) -->
+        <item name="colorPrimary">@color/jo_accent_clair</item>
+        <item name="colorOnPrimary">@color/jo_texte_sur_accent_clair</item>
+        <item name="colorPrimaryContainer">@color/jo_accent_tonal_clair</item>
+        <item name="colorOnPrimaryContainer">@color/jo_texte_clair</item>
+        <item name="colorSecondary">@color/jo_violet_clair</item>
+        <item name="colorOnSecondary">@color/jo_texte_sur_accent_clair</item>
+        <item name="colorSecondaryContainer">@color/jo_violet_tonal_clair</item>
+        <item name="colorOnSecondaryContainer">@color/jo_texte_clair</item>
+        <item name="colorTertiary">@color/jo_reussite_clair</item>
+        <item name="colorOnTertiary">@color/jo_texte_sur_reussite_clair</item>
+        <item name="colorTertiaryContainer">@color/jo_reussite_tonal_clair</item>
+        <item name="colorOnTertiaryContainer">@color/jo_texte_clair</item>
+        <item name="colorSurface">@color/jo_surface_clair</item>
+        <item name="colorOnSurface">@color/jo_texte_clair</item>
+        <item name="colorSurfaceVariant">@color/jo_surface_haute_clair</item>
+        <item name="colorOnSurfaceVariant">@color/jo_texte2_clair</item>
+        <item name="colorSurfaceContainerLowest">@color/jo_puits_clair</item>
+        <item name="colorSurfaceContainerLow">@color/jo_surface_clair</item>
+        <item name="colorSurfaceContainer">@color/jo_surface_haute_clair</item>
+        <item name="colorSurfaceContainerHigh">@color/jo_surface_haute_clair</item>
+        <item name="colorSurfaceContainerHighest">@color/jo_bord_fin_clair</item>
+        <item name="colorSurfaceDim">@color/jo_puits_clair</item>
+        <item name="colorSurfaceBright">@color/jo_surface_haute_clair</item>
+        <item name="colorOnBackground">@color/jo_texte_clair</item>
+        <item name="colorOutline">@color/jo_bord_clair</item>
+        <item name="colorOutlineVariant">@color/jo_bord_fin_clair</item>
+        <item name="colorError">@color/jo_erreur_clair</item>
+        <item name="colorOnError">@color/jo_fond_clair</item>
+        <item name="colorErrorContainer">@color/jo_erreur_tonal_clair</item>
+        <item name="colorOnErrorContainer">@color/jo_texte_clair</item>
+        <item name="colorSurfaceInverse">@color/jo_surface_clair</item>
+        <item name="colorOnSurfaceInverse">@color/jo_fond_clair</item>
+        <item name="colorPrimaryInverse">@color/jo_accent_clair</item>
+        <item name="android:colorBackground">@color/jo_fond_clair</item>
+
+        <!-- Formes ← rayons Graphite (identiques en clair) -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Jo.Composant</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Jo.Carte</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Jo.Carte</item>
+
+        <!-- Typographie ← échelle Graphite (identique en clair) -->
+        <item name="textAppearanceBodySmall">@style/TextAppearance.Jo.Legende</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Jo.Corps</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Jo.SousTitre</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.Jo.SousTitre</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Jo.Titre</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Jo.TitreEcran</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Jo.Legende</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Jo.Corps</item>
+
+        <!-- Jetons Graphite sans rôle M3 (palette claire) -->
         <item name="jo_fond">@color/jo_fond_clair</item>
         <item name="jo_surface">@color/jo_surface_clair</item>
         <item name="jo_surface_haute">@color/jo_surface_haute_clair</item>
@@ -75,7 +184,7 @@
         <item name="jo_alerte_tonal">@color/jo_alerte_tonal_clair</item>
         <item name="jo_erreur_tonal">@color/jo_erreur_tonal_clair</item>
         <item name="jo_violet_tonal">@color/jo_violet_tonal_clair</item>
-                <item name="jo_accent_ligne">@color/jo_accent_ligne_clair</item>
+        <item name="jo_accent_ligne">@color/jo_accent_ligne_clair</item>
 
         <item name="jo_pastille_ambre">@color/jo_pastille_ambre_clair</item>
         <item name="jo_pastille_violet">@color/jo_pastille_violet_clair</item>

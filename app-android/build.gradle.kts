@@ -386,6 +386,26 @@ dependencies {
         // la stdlib est déjà embarquée — ne rien tirer d'autre
         exclude(group = "org.jetbrains.kotlin", module = "kotlin-stdlib")
     }
+
+    // ADR-085 (D1/D2, directives du propriétaire du 2026-11-18) : le socle
+    // UI de l'application devient AndroidX + Material 3, habillé Graphite.
+    // Quatre artefacts seulement au lot A1 — EXACTEMENT ceux dont le code
+    // importe une classe (discipline de l'ADR : appcompat porte la coque
+    // AppCompatActivity d'ActiviteJoide, core porte WindowInsetsCompat
+    // (correctif C5 : l'API 30 directe d'hier) et ViewCompat, activity
+    // porte OnBackPressedDispatcher et les contrats ActivityResult d'Ecrans,
+    // material porte les thèmes Theme.Material3.* et les composants D2).
+    // Versions STABLES épinglées au catalogue (règle §10, jamais en dur
+    // ici) ; les suivants (recyclerview A2, constraintlayout/coordinatorlayout/
+    // drawerlayout A6) entrent aux lots qui les importent. Jetpack Compose
+    // reste EXCLU (application Java). Les règles R8 des bibliothèques se
+    // consomment seules (consumer rules) ; verifierOmbreApk et
+    // MurEtancheTest gardent le mur de chargeurs SANS interdit AndroidX
+    // (vérifié en A0) — aucun amendement nécessaire.
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core)
+    implementation(libs.androidx.activity)
+    implementation(libs.material)
 }
 
 // lot XX : le JAR ORIGINAL du plugin Compose en ASSET — résolu du

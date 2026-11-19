@@ -13,6 +13,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +34,7 @@ import jo.joide.app.android.accueil.EtatAccueil;
 import jo.joide.app.android.accueil.ProjetsRecents;
 import jo.joide.app.android.accueil.Salutation;
 import jo.joide.app.android.accueil.TypeProjet;
+import jo.joide.app.android.ecrans.Ecrans;
 import jo.joide.app.android.ecrans.creation.EcranCreation;
 import jo.joide.app.android.ecrans.atelier.EcranAtelier;
 import jo.joide.app.android.ui.Bouton;
@@ -65,7 +68,14 @@ import jo.joide.platform.Clock;
  */
 public final class MainActivity extends ActiviteJoide {
 
-    private static final int PICK_IMPORT = 41;
+    /**
+     * L'import SAF par CONTRAT typé (ADR-085, décision 13 — lot A1) :
+     * le code de requête PICK_IMPORT=41 disparaît, l'arbre choisi
+     * arrive directement au greffon — plus d'onActivityResult.
+     */
+    private final ActivityResultLauncher<Uri> importLauncher =
+            registerForActivityResult(Ecrans.IMPORTER_DOSSIER,
+                    this::arbreChoisi);
 
     private final ExecutorService fond = Executors.newSingleThreadExecutor(
             runnable -> {
@@ -580,18 +590,18 @@ public final class MainActivity extends ActiviteJoide {
         if (importEnCours) {
             return;
         }
-        Intent choisir = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
-        startActivityForResult(choisir, PICK_IMPORT);
+        importLauncher.launch(null);
     }
 
-    @Override
-    protected void onActivityResult(int code, int resultat,
-                                    Intent donnees) {
-        if (code != PICK_IMPORT || resultat != RESULT_OK
-                || donnees == null || donnees.getData() == null) {
+    /**
+     * L'arbre SAF choisi arrive TYPÉ — le contrat ne remonte qu'un
+     * choix réussi, le reste (annulation, code de requête, resultCode)
+     * ne regarde plus cet écran.
+     */
+    private void arbreChoisi(Uri arbre) {
+        if (arbre == null) {
             return;
         }
-        Uri arbre = donnees.getData();
         List<String> noms = RootNames.list(this, arbre);
         ProjectDetector.Detection detection = ProjectDetector.detect(noms);
         switch (detection.kind()) {

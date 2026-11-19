@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Variante grand écran (ADR-085, décision 9) : voir values/bools.xml —
+     la parité du qualificatif (720) avec EtatAtelier.SEUIL_GRAND_ECRAN_DP
+     est vérifiée par ThemesM3Test. -->
+<resources>
+    <bool name="est_grand_ecran">true</bool>
+</resources>

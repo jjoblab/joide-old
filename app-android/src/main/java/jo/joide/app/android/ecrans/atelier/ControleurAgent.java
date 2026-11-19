@@ -383,7 +383,15 @@ final class ControleurAgent {
                 atelier.palette, colonne, 240);
     }
 
-    /** Le choix d'une image : SAF, lecture bornée, réduction. */
+    /**
+     * Le choix d'une image : SAF, lecture bornée, réduction.
+     *
+     * <p>{@code startActivityForResult} (code 47101) est déprécié par
+     * ComponentActivity — A7 remplace l'appel par le contrat
+     * {@code Ecrans.CHOISIR_IMAGE} (ADR-085 décision 13) ; d'ici là le
+     * silence d'avertissement est consenti et documenté.</p>
+     */
+    @SuppressWarnings("deprecation")
     private void choisirImageAgent() {
         Intent intention = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intention.addCategory(Intent.CATEGORY_OPENABLE);
@@ -398,7 +406,14 @@ final class ControleurAgent {
         }
     }
 
-    /** La photo : cible du cache servie par le fournisseur local. */
+    /**
+     * La photo : cible du cache servie par le fournisseur local.
+     *
+     * <p>Code 47102 — même dérogation documentée que
+     * {@link #choisirImageAgent()} : le contrat {@code Ecrans.PRENDRE_PHOTO}
+     * prend le relais au lot A7.</p>
+     */
+    @SuppressWarnings("deprecation")
     private void prendrePhotoAgent() {
         try {
             android.net.Uri cible = FournisseurCameraAgent.preparer(atelier);

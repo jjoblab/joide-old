@@ -56,6 +56,14 @@ asm = "9.7.1"
 celeris = "2.1.0"
 layoutlib = "v3.7.1"
 codelsp = "v1.15.0"
+# ADR-085 (D1/D2, chantier des vues) : socle UI AndroidX + Material 3 de
+# l'application — versions STABLES épinglées (relevées sur Google Maven le
+# 2026-11-19, jamais d'alpha/beta/rc ; la liste blanche d'imports vit dans
+# l'ADR, seul Compose est exclu — application Java). compileSdk 37.2 suffit.
+androidxAppcompat = "1.8.0"
+androidxCore = "1.19.1"
+androidxActivity = "1.13.0"
+material = "1.14.0"
 
 [libraries]
 # Alias de classpath pour build-logic (application du plugin AGP par les
@@ -82,6 +90,16 @@ asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 r8 = { module = "com.android.tools:r8", version.ref = "r8" }
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
+# ADR-085 (D1/D2) : socle UI de l'application — uniquement les artefacts
+# dont le code d'app-android importe une classe (appcompat pour la coque,
+# core pour WindowInsetsCompat/ViewCompat, activity pour les résultats et le
+# retour système, material pour les thèmes Theme.Material3.* et les
+# composants). Les suivants (recyclerview, constraintlayout, coordinatorlayout,
+# drawerlayout) entrent aux lots qui les importent (A2, A6).
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppcompat" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidxCore" }
+androidx-activity = { module = "androidx.activity:activity", version.ref = "androidxActivity" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 # Éditeur (celeris) : le POM d'android-host tire android-view (et par lui

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Styles Graphite (ADR-085, décision 7) : TextAppearance.Jo.* héritent de
+  TextAppearance.Material3.* et portent l'échelle typographique de
+  Graphite par @dimen (jamais de littéral — ThemesM3Test vérifie l'égalité
+  avec Graphite.java) ; ShapeAppearance.Jo.* portent les rayons. Les
+  styles Widget.Jo.* (boutons, cartes, champs…) arrivent avec les
+  composants des lots A2+.
+
+  Nuance documentée : la graisse 600 de Graphite (SousTitre, Titre) se
+  rapproche par la famille « sans-serif-medium » (500) — la seule
+  pondérée du cadre ; GraphiteVue.typographie reste la voie exacte (600
+  par Typeface.Builder) pour les textes qui l'exigent.
+-->
+<resources>
+
+    <!-- Échelle typographique Graphite → slots M3 -->
+    <style name="TextAppearance.Jo.Legende" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/jo_texte_legende</item>
+        <item name="android:lineHeight">@dimen/jo_texte_legende_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.Note" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/jo_texte_note</item>
+        <item name="android:lineHeight">@dimen/jo_texte_note_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.Corps" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/jo_texte_corps</item>
+        <item name="android:lineHeight">@dimen/jo_texte_corps_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.SousTitre" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">@dimen/jo_texte_sous_titre</item>
+        <item name="android:lineHeight">@dimen/jo_texte_sous_titre_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.Titre" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">@dimen/jo_texte_titre</item>
+        <item name="android:lineHeight">@dimen/jo_texte_titre_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.TitreEcran" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">@dimen/jo_texte_titre_ecran</item>
+        <item name="android:lineHeight">@dimen/jo_texte_titre_ecran_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.Code" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">@dimen/jo_texte_code</item>
+        <item name="android:lineHeight">@dimen/jo_texte_code_interligne</item>
+    </style>
+
+    <style name="TextAppearance.Jo.CodeCompact" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">@dimen/jo_texte_code_compact</item>
+        <item name="android:lineHeight">@dimen/jo_texte_code_compact_interligne</item>
+    </style>
+
+    <!-- Rayons Graphite → slots de forme M3 -->
+    <style name="ShapeAppearance.Jo.Composant" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">@dimen/jo_rayon_composant</item>
+    </style>
+
+    <style name="ShapeAppearance.Jo.Carte" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerSize">@dimen/jo_rayon_carte</item>
+    </style>
+
+    <style name="ShapeAppearance.Jo.Pilule" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">@dimen/jo_rayon_puce</item>
+    </style>
+</resources>

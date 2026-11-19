@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Drapeaux de configuration d'écran (ADR-085, décision 9) : la largeur
+  DISPONIBLE (wXXXdp) suit rotation et multi-fenêtre — jamais swXXXdp.
+  est_grand_ecran fait foi pour choisir le layout d'atelier ; la parité
+  avec EtatAtelier.SEUIL_GRAND_ECRAN_DP (720) est vérifiée par
+  ThemesM3Test : le qualificatif du dossier valeurs DOIT égaler la
+  constante du domaine.
+-->
+<resources>
+    <bool name="est_grand_ecran">false</bool>
+</resources>
