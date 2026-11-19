@@ -777,7 +777,7 @@ final class VueAtelier implements HoteAtelier {
             @Override
             public void ouvrirUsages() {
                 // lot C4 : la bande d'avertissement tapée ouvre l'écran
-                // Usages (la manière CodeAssist du bandeau de limite)
+                // Usages (la manière éprouvée du bandeau de limite)
                 controleurAgent.ouvrirUsages();
             }
 

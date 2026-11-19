@@ -57,7 +57,7 @@ public final class KotlinArgs {
      * @param pluginJars les jars des plugins compilateur
      *        ({@code -Xplugin}, un par jar — lot XIX : Compose via la
      *        sonde de classpath de PluginsKotlin ; ZÉRO option -P,
-     *        la manière CodeAssist)
+     *        la manière éprouvée)
      * @return les arguments du compilateur, ordre stable
      * @throws IOException si une racine Java est illisible
      */
@@ -82,7 +82,7 @@ public final class KotlinArgs {
         // la bibliothèque standard vient du classpath fourni
         args.add("-no-stdlib");
         args.add("-no-reflect");
-        // la manière CodeAssist (ForkedKotlincArtSpike) : -no-jdk —
+        // la manière éprouvée (ForkedKotlincArtSpike) : -no-jdk —
         // le compilateur ne cherche JAMAIS de racines JDK sous
         // java.home (sur l'appareil ce chemin est
         // /apex/com.android.art : ART, aucun jar — « No class roots

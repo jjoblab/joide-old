@@ -54,7 +54,7 @@ public final class KotlinCompilerDriver implements CompilerDriver {
     /**
      * La bibliothèque standard Kotlin : une entrée OBLIGATOIRE du
      * classpath fourni (KotlinArgs pose {@code -no-stdlib} — la
-     * manière CodeAssist). Le pilote embarqué la sonde dans son
+     * manière éprouvée). Le pilote embarqué la sonde dans son
      * PROPRE classpath ({@code kotlin.Unit} vit dans kotlin-stdlib,
      * transitif de kotlin-compiler-embeddable) ; la fourche appareil,
      * elle, la prend du pack ({@code jarStdlib}). Le bureau ne

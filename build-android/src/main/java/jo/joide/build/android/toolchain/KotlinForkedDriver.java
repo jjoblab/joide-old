@@ -28,7 +28,7 @@ import jo.joide.platform.Problem;
 
 /**
  * Pilote du compilateur Kotlin par VM FORKÉE (lot VII, la manière
- * CodeAssist {@code ForkedKotlinCompiler}) : l'APK allégé ne porte
+ * l'IDE de référence {@code ForkedKotlinCompiler}) : l'APK allégé ne porte
  * plus les 43 Mo de dex du compilateur — une VM non-zygote
  * ({@code /apex/com.android.art/bin/dalvikvm64}) le charge depuis le
  * pack de dex différé, avec un tas qui dépasse le plafond
@@ -49,7 +49,7 @@ import jo.joide.platform.Problem;
  * terrain du 2026-11-17 : « l'ouvrière Kotlin est morte (sortie 134) »
  * sur le premier lot {@code :core:compileKotlin}, la cause réelle
  * restée dans logcar parce que le stderr était hérité). La manière
- * CodeAssist (son #1748, la même signature : l'ouvrière ART meurt
+ * l'IDE de référence (le bogue connu, la même signature : l'ouvrière ART meurt
  * d'un {@code SIGABRT}) :</p>
  *
  * <ul>
@@ -62,7 +62,7 @@ import jo.joide.platform.Problem;
  * <li><b>Le JIT d'ART est dompté</b> : sur Android 11 et plus ancien
  * (SDK ≤ 30), le JIT malcompile le code FIR du compilateur quand il
  * inline à travers un cache d'appel polymorphe — crashes dans
- * {@code HInliner::TryInlinePolymorphicCall} (CodeAssist #1748). La
+ * {@code HInliner::TryInlinePolymorphicCall} (bogue connu du terrain). La
  * VM ouvrière démarre donc avec {@code -Xcompiler-option
  * --inline-max-code-units=0} : un budget d'inlining nul éteint
  * l'inliner du JIT, les méthodes compilent quand même ;</li>
@@ -74,7 +74,7 @@ import jo.joide.platform.Problem;
  * défaut 1 Gio) puis 768/512/384 Mo ne garde que les rungs que la
  * moitié de la RAM peut soutenir, et une morte SANS réponse (un
  * abort de démarrage) re-fourque au rung INFÉRIEUR, comme la
- * {@code startWorker} de CodeAssist descend sa {@code LADDER} ;</li>
+ * {@code startWorker} de l'IDE de référence descend sa {@code LADDER} ;</li>
  * <li><b>Une morte APRÈS réponse MONTE d'un rung</b> (lot XII) :
  * la VM démarrait bien — le tas essayé était trop PETIT pour le lot
  * (l'OOM d'ART au milieu d'un compile aborte SANS message : sortie
@@ -129,13 +129,13 @@ public final class KotlinForkedDriver implements CompilerDriver {
 
     /** Les rungs de secours de l'échelle de tas, quand le rung
      *  demandé meurt sans avoir répondu (un abort de démarrage) —
-     *  la LADDER de CodeAssist. Ils ne servent JAMAIS au premier
+     *  la LADDER de l'IDE de référence. Ils ne servent JAMAIS au premier
      *  fork : seulement à la descente. */
     static final int[] ECHELLE_SECOURS_MO = {768, 512, 384};
 
     /** ART réserve DEUX fois {@code -Xmx} d'espace d'adresses pour
      *  l'espace de régions du GC copiant concurrent (ForkedToolVm de
-     *  CodeAssist) ; au-delà de la moitié de la RAM, la réservation
+     *  l'IDE de référence) ; au-delà de la moitié de la RAM, la réservation
      *  échoue et la VM aborte. */
     static final long FACTEUR_RESERVATION = 2L;
     static final double FRACTION_BUDGET_RAM = 0.5;
@@ -163,7 +163,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
     private static final int ECHECS_AVANT_ABANDON = 3;
 
     /** Le SDK Android sous lequel le JIT ART est connu pour
-     *  malcompiler le compilateur (CodeAssist #1748 : aucun rapport
+     *  malcompiler le compilateur (l'IDE de référence #1748 : aucun rapport
      *  sur API 31 ou plus récent). */
     private static final int SDK_JIT_CRASHES = 30;
 
@@ -246,7 +246,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
         // construction des arguments — le classpath de compilation
         // exige des jar RÉELS (le JAR FS du compilateur ne lit pas
         // les dex du pack) et {@code -no-stdlib} en fait une entrée
-        // obligatoire (la manière CodeAssist : le jar réel téléchargé
+        // obligatoire (la manière éprouvée : le jar réel téléchargé
         // ; ici le pack le porte, épinglé par son SHA)
         String classpath;
         Path stdlib;
@@ -490,7 +490,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
         // la VM en ligne de commande n'a pas le bac à sable de l'app :
         // tmpdir par défaut inexistant (le compilateur y crée ses
         // fichiers temporaires), couleurs jansi qui tueraient la VM
-        // sur un NoClassDefFoundError — la manière CodeAssist
+        // sur un NoClassDefFoundError — la manière éprouvée
         commande.add("-Djava.io.tmpdir=" + tmpdirOuvriere());
         commande.add("-Dkotlin.colors.enabled=false");
         // les RESSOURCES du pack (les descripteurs d'extensions du
@@ -503,7 +503,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
             commande.add("-Djoide.kotlinc.home=" + home);
         }
         if (inliningJitDesactive()) {
-            // CodeAssist #1748 : le JIT d'ART (Android ≤ 11) malcompile
+            // l'IDE de référence #1748 : le JIT d'ART (Android ≤ 11) malcompile
             // le code FIR du compilateur quand il inline à travers un
             // cache d'appel polymorphe ; un budget d'inlining nul
             // éteint l'inliner du JIT, les méthodes compilent quand même
@@ -613,7 +613,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
         if (jitSuspect) {
             motif += " — Android " + sdk + " : le JIT ART est connu "
                     + "pour malcompiler le compilateur Kotlin (même "
-                    + "signature que CodeAssist #1748) ; l'inlining "
+                    + "signature que l'IDE de référence #1748) ; l'inlining "
                     + "est déjà désactivé au lancement, réessayer le "
                     + "build, sinon signaler le crash";
         } else if (!codesDeSortie.isEmpty()) {
@@ -634,7 +634,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
         motif += queueTexte(queueDerniere);
         // un échec de plus pour la session — SAUF le crash du JIT :
         // abandonner ne le guérit pas, le prochain lot réessaie une
-        // ouvrière neuve (la manière CodeAssist)
+        // ouvrière neuve (la manière éprouvée)
         if (!jitSuspect) {
             echecSession(motif);
         }
@@ -923,7 +923,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
      *  classpath de compilation du compilateur exige des jar RÉELS —
      *  son JAR FS ne lit pas les dex du pack, et sur l'appareil il
      *  n'existe AUCUN {@code kotlin-stdlib.jar} sur disque (la
-     *  manière CodeAssist : le jar réel téléchargé ; ici le pack le
+     *  manière éprouvée : le jar réel téléchargé ; ici le pack le
      *  porte). {@code null} hors pack (les essais bureau portent la
      *  stdlib dans le classpath de la demande — {@code
      *  joide.kotlinWorkerCp} n'est pas un {@code .dex.zip}). */
@@ -971,7 +971,7 @@ public final class KotlinForkedDriver implements CompilerDriver {
 
     /** Le classpath de l'ouvrière : surcharge d'essai, sinon le pack
      *  différé épinglé (téléchargé une première fois si absent).
-     *  Lot XX (la manière CodeAssist, ForkedKotlinCompiler.kt:67-76) :
+     *  Lot XX (la manière l'IDE de référence (compilateur Kotlin dissocié, l. 67-76)) :
      *  l'APK de l'app est APPORTÉ au classpath quand la propriété
      *  {@code joide.app.apk} est posée — le registrar du plugin
      *  Compose y est dexé (sur ART, un jar ne définit pas de classes,

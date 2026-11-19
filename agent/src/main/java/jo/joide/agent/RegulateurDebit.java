@@ -178,7 +178,7 @@ public final class RegulateurDebit {
     }
 
     /**
-     * Lot C4 (l'écran Usages « N de M » de CodeAssist) : les requêtes
+     * Lot C4 (l'écran Usages « N de M » de l'IDE de référence) : les requêtes
      * comptées dans la fenêtre et le plafond en vigueur.
      *
      * @return {requêtes envoyées dans la fenêtre, plafond rpm ou -1}
@@ -204,7 +204,7 @@ public final class RegulateurDebit {
     }
 
     /**
-     * Lot C4 (le « réinitialisé dans X » de CodeAssist) : l'instant
+     * Lot C4 (le « réinitialisé dans X » de l'IDE de référence) : l'instant
      * où la PLUS ANCIENNE requête sort de la fenêtre glissante — la
      * fenêtre se vide au fil de l'eau, c'est la prochaine RELANCE
      * honnête d'un compte qui décroît.

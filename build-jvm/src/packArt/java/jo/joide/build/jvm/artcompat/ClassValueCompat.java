@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Le remplacement ART de {@code java.lang.ClassValue} (un type JDK-7
  * absent d'ART) : même contrat, mémoïsation par {@code
- * ConcurrentHashMap} — la manière CodeAssist ({@code
+ * ConcurrentHashMap} — la manière éprouvée ({@code
  * ClassValueArtPass}). Les classes réécrites par {@code
  * PasseClassValue} étendent CE type : leur {@code computeValue}
  * (jamais renommé) est appelé une fois par classe par {@link #get},

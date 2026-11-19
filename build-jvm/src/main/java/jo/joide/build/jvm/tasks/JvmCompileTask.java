@@ -45,7 +45,7 @@ public final class JvmCompileTask implements TaskDefinition {
      * @param javaStateFile état Java du même module (compilation jointe)
      * @param sourceLevel   niveau de source/cible
      * @param sansJdk       vrai : -no-jdk pour Kotlin (compilation
-     *                      Android — la manière CodeAssist, java.*
+     *                      Android — la manière éprouvée, java.*
      *                      se résout depuis android.jar du classpath ;
      *                      au bureau, le JDK réel fournit les racines)
      * @return la tâche construite

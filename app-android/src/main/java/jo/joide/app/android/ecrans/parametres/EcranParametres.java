@@ -1004,7 +1004,7 @@ public final class EcranParametres extends ActiviteJoide {
                         // lot U/7 : le modèle se retient aussi POUR
                         // le fournisseur courant — le modèle partagé
                         // ne traverse jamais les fournisseurs
-                        // (manière CodeAssist)
+                        // (manière éprouvée)
                         Reglages.ecrireModelePour(source,
                                 reglages.fournisseurIa, valeur);
                     } catch (IllegalArgumentException e) {

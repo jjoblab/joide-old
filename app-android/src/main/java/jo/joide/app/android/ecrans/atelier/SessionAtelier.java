@@ -116,7 +116,7 @@ final class SessionAtelier {
                 // fix du 2026-11-17 : Google Maven manquait — toute
                 // dépendance AndroidX (com.android.*, androidx.*)
                 // restait « non résolue, absente du classpath de
-                // build » et la compilation échouait ; CodeAssist
+                // build » et la compilation échouait ; l'IDE de référence
                 // sert central + google par défaut
                 .repository(new Repository.Remote("google",
                         "https://dl.google.com/android/maven2",

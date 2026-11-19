@@ -26,7 +26,7 @@ import jo.joide.tasks.InputDelta;
 import jo.joide.tasks.TaskContext;
 
 /**
- * Lot XX/h — la doctrine CodeAssist au niveau de la requête : le
+ * Lot XX/h — la doctrine éprouvée au niveau de la requête : le
  * R.jar est classpath de la compilation JAVA, entrée d'empreinte
  * partout, et JAMAIS dans le -classpath du compilateur KOTLIN —
  * kotlinc résout R depuis les sources R.java du gen, passées comme

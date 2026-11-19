@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * le rapport du 2026-11-17 — « build refused: memory budget 448 MiB
  * exceeds daemon heap 256 MiB » — fermait le build entier sur les
  * appareils dont le plafond de tas du manifeste est 256 Mio. La
- * manière CodeAssist : le matériel borne, l'outil s'adapte.
+ * manière éprouvée : le matériel borne, l'outil s'adapte.
  */
 class BuildRunnerBudgetTest {
 

@@ -36,6 +36,14 @@
     <attr name="jo_pastille_reussite" format="color" />
     <attr name="jo_pastille_accent" format="color" />
 
+    <!-- Les conteneurs tonaux de la famille IA (lot C5) : quatre
+         marches de surface et le conteneur secondaire des bulles et
+         des sélections — la grammaire du tiroir de l'agent. -->
+    <attr name="jo_contenant_haut" format="color" />
+    <attr name="jo_contenant_max" format="color" />
+    <attr name="jo_contenant_secondaire" format="color" />
+    <attr name="jo_sur_contenant_secondaire" format="color" />
+
     <attr name="jo_syntaxe_mot_cle" format="color" />
     <attr name="jo_syntaxe_type" format="color" />
     <attr name="jo_syntaxe_fonction" format="color" />
@@ -66,6 +74,13 @@
             <enum name="menu" value="14" />
             <enum name="journal" value="15" />
             <enum name="logcat" value="16" />
+            <enum name="etincelle" value="17" />
+            <enum name="fleche" value="18" />
+            <enum name="stop" value="19" />
+            <enum name="copier" value="20" />
+            <enum name="info" value="21" />
+            <enum name="suspension" value="22" />
+            <enum name="etoile_creuse" value="23" />
         </attr>
         <attr name="jo_icone_couleur" format="reference|color" />
     </declare-styleable>

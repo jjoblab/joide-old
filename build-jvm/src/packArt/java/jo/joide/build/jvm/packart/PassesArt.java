@@ -7,7 +7,7 @@ import org.objectweb.asm.ClassWriter;
 
 /**
  * Le registre ORDONNÉ des passes ART appliquées au pack du
- * compilateur Kotlin (lot XI — la manière CodeAssist, ses passes
+ * compilateur Kotlin (lot XI — la manière éprouvée, ses passes
  * {@code kotlinc-art}, portées sur les classes RELOCALISÉES de
  * {@code kotlin-compiler-embeddable 2.3.0}). Chaque passe ne naît que
  * pour un breakage ART confirmé — par le scan du jar épinglé

@@ -8,7 +8,7 @@ import jo.joide.agent.espace.ResultatExecution;
 /**
  * Les outils d'exécution v1 (lot O, ADR-059) : trois outils BORNÉS —
  * programme 120 s, tâche 300 s, tests 600 s (les bornes de
- * CodeAssist). La QUEUE de la sortie est conservée (les journaux
+ * l'IDE de référence). La QUEUE de la sortie est conservée (les journaux
  * intéressants sont à la fin), l'amputation s'annonce.
  */
 public final class OutilsBuild {

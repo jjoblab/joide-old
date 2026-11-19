@@ -270,7 +270,7 @@ class EtatAgentChatTest {
 
     // ------------------------------------------------------------------
     // Lot C4 (2026-11-20) — les TRANCHES DE TRAVAIL (le WorkBlock de
-    // CodeAssist) : tout ce qui précède la DERNIÈRE carte d'outil d'un
+    // l'IDE de référence) : tout ce qui précède la DERNIÈRE carte d'outil d'un
     // tour se replie en un bloc ; ce qui suit reste au premier plan.
     // ------------------------------------------------------------------
 

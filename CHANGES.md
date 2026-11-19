@@ -1,3 +1,74 @@
+# CHANGES — les écrans IA refaits au dessin de référence, sans trace du nom : la copie demandée (2026-11-20)
+
+**Lot C5 — le mandat du propriétaire, mot pour mot : « il faut
+copier son design… reproduire tout le des écrans ia ainsi que
+fonctionnalités. N'inclut pas de référence à l'IDE de référence
+dans les fichiers, si tu dois le faire, fait dans fichiers md. »**
+Le lot C4 avait interprété ; le C5 copie : le code de l'IDE de
+référence est consulté directement (mandat du propriétaire), et les
+trois écrans se refont sur SON dessin — mêmes proportions, mêmes
+états, mêmes gestes. Le kit gagne SEPT glyphes (étincelle, flèche,
+stop, copier, info, suspension, étoile creuse), QUATRE jetons
+tonaux (conteneurs haut/max/secondaire), `Puce.poserTeinte` (la puce
+se colore par rôle), et les grands dialogues à largeur libre
+(`PopupCentre`/`PortePopups.centrerLarge`).
+
+**L'écran de chat.** L'en-tête 52 dp sur chrome porte la MARQUE
+(étincelle 26 dp en pastille accent), le titre IA, le PICKER du
+modèle DESSOUS (12 sp + chevron), la puce de MODE teintée par
+permission, le menu ⋯. Le message UTILISATEUR vit en BULLE (≤ 320
+dp, conteneur secondaire, coins 20/20/6/20) avec son bouton
+COPIER (la coche revient 1,5 s) ; la réponse pleine largeur porte
+le CARET 7×14 dp qui pulse pendant l'écriture et le pied
+copier + jetons ; la carte de RÉFLEXION vit à l'identique du
+ThinkingStep (étincelle 12 dp qui pulse tant que le tour la
+remplit, « Réflexion » ouverte / « Pensée » repliée rouvrable,
+conteneur tonal haut au rayon 14 ouverte) ; le BLOC DE TRAVAIL
+porte l'icône d'état agrégé 14 dp (la progression indéterminée
+teintée accent tant qu'un appel tourne), « N outils · M fichiers »,
+le dernier appel replié, le rail 1 dp déplié à 19 dp ; la ligne
+d'appel met le VERBE en gras secondaire et DÉPLIE la section
+« Résultat » en bloc monospace borné 320 dp ; la ligne d'activité
+(étincelle qui pulse, label, écart à la seconde) et le composeur
+complètent le bas : champ au rayon 24 (liseré 1 dp → 2 dp accent
+au focus), BOUTON D'ENVOI ROND 48 dp dont la flèche devient le
+carré d'arrêt quand un tour vit — un seul bouton, jamais deux.
+
+**Le sélecteur de modèles.** La grande CARTE CENTRÉE 520 dp (rayon
+24, conteneur tonal haut, liseré bord-fin) : titre « Choisir un
+modèle », note de clé sous le titre (tap → réglages IA),
+RECHERCHE EN PILULE (loupe, indice au compte, croix qui vide,
+focus au-delà de 20), fournisseurs puis FILTRES (menu déroulant à
+compte, tri naturel, gratuits seulement), liste qui DÉFILE DEDANS
+au-delà de 460 dp ; la ligne porte le nom nu 15 sp demi-gras, la
+puce « Gratuit » (conteneur réussite), l'identifiant dessous, la
+coche, l'ÉTOILE pleine/creuse ; la sélection pose le conteneur
+secondaire au rayon 14.
+
+**L'écran des usages.** La grande carte 460 dp : « Limites
+d'usage », Actualisation et Fermeture 30 dp, sous-titre honnête,
+UN COMPTEUR par fenêtre plafonnée (nom 14 sp, puce « En cours »
+sur la fenêtre qui porte — elle passe en premier, pourcentage,
+bande 8 dp : accent / alerte à 80 % / erreur au plafond, rempli
+jamais sous 2 %, « N sur M utilisés », « réinitialisé dans X » qui
+décompte à la seconde), note des étapes, bouton Terminé plein
+cadre. Le banc et les assises quittent l'écran (le dessin de
+référence ne les porte pas).
+
+**Le décapage.** Les 67 fichiers de code porteurs du nom (Java,
+XML, kts, pro, toml) sont décapés — « la manière X » → « la
+manière éprouvée », le nom → « l'IDE de référence » / « le
+terrain » ; `grep -ri` sur le dépôt hors `.md` renvoie ZÉRO
+occurrence, la politique de langue reste VERTE, les `.md` gardent
+le droit de nommer (le mandat le permet). Vérifications :
+`:app-android:assembleDebug` VERT (`joide-ecrans-ia-C5.apk`,
+16 Mo, `verifierOmbreApk` : APK sans ombre), 35 tests JVM des
+modules IA VERTS, la feuille du lot C4 reste en place. Les limites
+honnêtes de la copie (bouton de repli du modèle, vignettes
+d'images des outils) vivent au rapport C5, §7.
+
+---
+
 # CHANGES — le corps affamé, le thinking à l'identique, la liste vivante : les écrans de l'agent parités (2026-11-20)
 
 **Lot C4 — le rapport du terrain nommé, la parité CodeAssist demandée

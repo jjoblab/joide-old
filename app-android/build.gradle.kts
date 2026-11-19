@@ -284,14 +284,14 @@ android {
         // les dex de l'app : stockés (l'APK du build embarque assez —
         // les propres dex de JoIDE restent compressés par défaut)
         // l'aapt2 embarqué ne passe JAMAIS au dépouilleur : le binaire
-        // préconstruit doit rester tel quel (CodeAssist a montré la
+        // préconstruit doit rester tel quel (l'IDE de référence a montré la
         // voie — un dépouillage n'améliore pas un ELF déjà lié)
         jniLibs.keepDebugSymbols += "**/libaapt2.so"
         // lot U/8 : l'aapt2 doit ÊTRE EXTRAIT vers nativeLibraryDir —
         // seul répertoire où ART permet exec. Sans extraction (défaut
         // AGP pour minSdk ≥ 23 : les .so restent mappés dans l'APK),
         // libaapt2.so n'EXISTE PAS sur le disque et le build sur
-        // appareil échouait silencieusement (CodeAssist force la
+        // appareil échouait silencieusement (l'IDE de référence force la
         // même extraction pour son aapt2)
         jniLibs.useLegacyPackaging = true
     }
@@ -357,7 +357,7 @@ dependencies {
     // servait l'adaptateur de l'APK (sans ses classes d'outil) et
     // JAMAIS celui du pack (« pack différé r8 indisponible
     // (InvocationTargetException) », rapport du 2026-11-17). La
-    // manière CodeAssist : AUCUNE classe d'outil dans l'app, tout
+    // manière éprouvée : AUCUNE classe d'outil dans l'app, tout
     // arrive déjà dexé. Seul ApksigSigner reste embarqué (apksig trop
     // léger pour un pack, décision du lot VI) par le jar dédié
     // signatureApi ; le bureau garde les adaptateurs sur son classpath
@@ -367,7 +367,7 @@ dependencies {
     implementation(project(mapOf("path" to ":build-android",
             "configuration" to "signatureApi")))
     implementation(libs.apksig)
-    // Lot XIX (la manière CodeAssist, android/art-compat :
+    // Lot XIX (la manière éprouvée, android/art-compat :
     // java-compiler.jar committé et dexé dans l'APK) : l'API
     // javax.lang.model + javax.annotation.processing + javax.tools
     // — ABSENTE des bibliothèques cœur d'ART, référencée par ecj au
@@ -376,7 +376,7 @@ dependencies {
     // app:generateRJar). 144 classes extraites du JDK 21 (scripts/
     // jar-javax-api.sh) ; ART accepte les classes javax.* de l'app.
     implementation(files("libs/java-compiler.jar"))
-    // Lot XX (la manière CodeAssist) : le plugin compilateur Compose
+    // Lot XX (la manière éprouvée) : le plugin compilateur Compose
     // vit dans l'APK — ses CLASSES sont dexées par AGP comme tout le
     // reste, le classpath du fork Kotlin porte l'APK lui-même (le
     // registrar se charge dans la VM ouvrière), et le JAR ORIGINAL
@@ -438,7 +438,7 @@ val stagerPluginCompose = tasks.register<Copy>("stagerPluginCompose") {
 
 // --- les packs d'outils DIFFÉRÉS (chaîne allégée, 2026-11-17) -------------------------
 // ART ne charge pas des jars .class : D8/R8 et bundletool partent en
-// packs de DEX pré-construits (la manière CodeAssist : r8.dex.zip),
+// packs de DEX pré-construits (la manière éprouvée : r8.dex.zip),
 // téléchargeables une fois à la première construction sur appareil.
 // La tâche dexée les jars du catalogue + les adaptateurs du source
 // set tools (seuls ceux du pack : le mur de chargeurs reste étanche),
@@ -480,8 +480,8 @@ dependencies {
     // empreinte mutée sans remplacement du fichier publié =
     // « pack size mismatch » sur l'appareil). Les CLASSES du plugin
     // sont dexées dans l'APK (implementation ci-dessous) et son jar
-    // ORIGINAL part en ASSET — la manière CodeAssist.
-    // Lot XV — la manière CodeAssist (« StAX on ART (which ships
+    // ORIGINAL part en ASSET — la manière éprouvée.
+    // Lot XV — la manière éprouvée (« StAX on ART (which ships
     // none) ») : l'API StAX (javax.xml.stream, le compilateur la
     // référence mais le shade de l'embeddable ne l'embarque PAS — le
     // bureau la reçoit du JDK, ART n'a rien), aalto comme
@@ -709,7 +709,7 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         val packKotlin = File(entreprise,
                 "kotlin-compiler-$versionKotlin.dex.zip")
         // chaque jar du pack passe d'abord par le PATCHEUR ART
-        // (lot XI, la manière CodeAssist, ses passes kotlinc-art) :
+        // (lot XI, la manière éprouvée, ses passes kotlinc-art) :
         // les classes hostiles à ART se réécrivent AVANT le dexage
         // (management absent, Unsafe tolérant, ClassValue, fastutil
         // dispatch, Introspector, EDT, PathUtil) ; les shims ART
@@ -784,7 +784,7 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         // 'kotlin.Any' ». homeOuvriere (KotlinForkedDriver) extrait
         // déjà les ressources non-dex du pack dans kotlin-home/ et le
         // pilote pose le jar en tête du classpath (-no-stdlib). La
-        // manière CodeAssist : LEUR outil télécharge le jar réel ;
+        // manière éprouvée : LEUR outil télécharge le jar réel ;
         // ici le pack le porte, épinglé par son SHA.
         val stdlibJar = jarsK.first {
             it.name.startsWith("kotlin-stdlib-")

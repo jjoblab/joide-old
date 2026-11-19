@@ -88,7 +88,7 @@ public final class EcjCompilerDriver implements CompilerDriver {
         // Plateforme Android (android.jar dans le classpath, posé par
         // le modèle) : ECJ reste NON-modulaire et lie java.lang.* aux
         // OCTETS du jar de plateforme — jamais à l'image jrt de la VM
-        // hôte (la manière CodeAssist, ImageFreeJavaCompiler : à
+        // hôte (la manière éprouvée, ImageFreeJavaCompiler : à
         // compliance ≥ 9 le front-end batch refuse -bootclasspath
         // android.jar, un jar non modulaire n'est pas un --system
         // valide, et ART n'a PAS de jimage — le sondage jrt sur

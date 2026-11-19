@@ -4,7 +4,7 @@ import org.objectweb.asm.ClassVisitor;
 
 /**
  * Une réécriture de compatibilité ART appliquée au bytecode du
- * compilateur Kotlin avant le dexage du pack (la manière CodeAssist,
+ * compilateur Kotlin avant le dexage du pack (la manière éprouvée,
  * ses passes {@code kotlinc-art}) : le compilateur est construit pour
  * un JVM de bureau et emploie quelques APIs absentes ou cassées sur
  * ART — {@code java.lang.management}, {@code java.lang.ClassValue},

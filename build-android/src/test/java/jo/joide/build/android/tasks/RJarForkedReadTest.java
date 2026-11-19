@@ -113,7 +113,7 @@ class RJarForkedReadTest {
         fabriquerRJar(rJava("greeting"), classes, rJar);
 
         // l'audit structurel : un JarFile l'ouvre et le manifeste vit
-        // (la manière CodeAssist — un jar porte META-INF/MANIFEST.MF)
+        // (la manière éprouvée — un jar porte META-INF/MANIFEST.MF)
         try (JarFile jarFile = new JarFile(rJar.toFile())) {
             assertNotNull(jarFile.getManifest(),
                     "le jar standard porte son manifeste");

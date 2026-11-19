@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — le bloc de RÉSULTAT d'un appel d'outil : conteneur tonal
+     haut au rayon 8, rembourrage 10/8 — le texte monospace défile
+     dedans (hauteur bornée par la vue). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_haut" />
+    <corners android:radius="8dp" />
+</shape>

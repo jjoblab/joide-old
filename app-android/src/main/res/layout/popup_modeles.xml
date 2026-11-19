@@ -1,172 +1,222 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L6 (la manière CodeAssist, §3.9), gabarit ANCRÉ du lot A7
-  (ADR-085 décision 12) : le SÉLECTEUR DE MODÈLE accroché à la puce
-  du tiroir — la carte vit dans CE layout (popup_*.xml : le fond
-  surface, liseré bord-fin, rayon carte de PopupAncre d'hier), titre +
-  fermer, la rangée des fournisseurs qui défile (les puces restent
-  posées par code : elles portent l'état pointé), l'état de clé du
-  fournisseur pointé, la recherche en pilule discrète, la liste
-  (favoris, récents, suggestions — remplie d'item_modele et
-  d'item_entete_section par code). Aucune décision ici : le contenu
-  vient de Reglages et du stockage chiffré.
+  Lot C5 — le SÉLECTEUR DE MODÈLES au dessin de référence : la GRANDE
+  CARTE CENTRÉE (rayon 24, conteneur tonal haut, liseré bord-fin) —
+  le titre « Choisir un modèle » et sa fermeture 30 dp ; la note de
+  clé du fournisseur pointé sous le titre (le tap ouvre les réglages
+  IA) ; la RECHERCHE en pilule (loupe 16 dp, l'indice porte le compte,
+  la croix qui vide) ; la rangée des FOURNISSEURS puis la rangée des
+  FILTRES (le fournisseur d'identifiant en menu déroulant, le tri
+  nom/fournisseur, les gratuits seulement) ; la liste (favoris,
+  récents, tous — remplie d'item_entete_section et d'item_modele par
+  code, la liste défile DEDANS au-delà de 460 dp) ; le modèle
+  personnalisé reste atteignable au pied. Aucune décision ici.
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:scrollbars="none"
-    android:overScrollMode="ifContentScrolls">
+    android:orientation="vertical"
+    android:background="@drawable/carte_dialogue_ia"
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/carte_popup"
-        android:padding="@dimen/jo_pad_popup">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/agent_modele_titre"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/btn_fermer_modeles"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            app:jo_icone_glyphe="croix"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/action_annuler" />
+    </LinearLayout>
+
+    <!-- la note de clé du fournisseur pointé : le tap ouvre les
+         réglages IA (la teinte se pose au bind) -->
+    <TextView
+        android:id="@+id/note_cles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textSize="12sp"
+        android:textColor="?attr/jo_texte2"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- la recherche en pilule : loupe, l'indice au compte, la croix
+         qui vide -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/pilule_recherche_ia"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp">
+
+        <jo.joide.app.android.ui.Icone
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="8dp"
+            app:jo_icone_glyphe="recherche"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:importantForAccessibility="no" />
+
+        <EditText
+            android:id="@+id/recherche_modeles"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@null"
+            android:hint="@string/agent_modeles_recherche"
+            android:textColor="?attr/jo_texte"
+            android:textColorHint="?attr/jo_texte2"
+            android:textSize="15sp"
+            android:inputType="text"
+            android:maxLines="1"
+            android:importantForAutofill="no"
+            android:importantForAccessibility="no" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/effacer_modeles"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            app:jo_icone_glyphe="croix"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:contentDescription="@string/action_annuler" />
+    </LinearLayout>
+
+    <!-- la rangée des fournisseurs (les puces se posent par code :
+         elles portent l'état pointé) -->
+    <HorizontalScrollView
+        android:id="@+id/defile_fournisseurs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:scrollbars="none"
+        android:clipToPadding="false">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:id="@+id/rangee_fournisseurs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- la rangée des filtres : le fournisseur d'identifiant (menu
+         déroulant avec compte), le tri, les gratuits seulement -->
+    <HorizontalScrollView
+        android:id="@+id/filtres_modeles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:scrollbars="none"
+        android:clipToPadding="false"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/rangee_filtres_modeles"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <TextView
-                android:layout_width="0dp"
+            <jo.joide.app.android.ui.Puce
+                android:id="@+id/filtre_fournisseur_modeles"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/agent_modele_titre"
-                android:textAppearance="@style/TextAppearance.Jo.SousTitre"
-                android:textColor="?attr/jo_texte" />
-
-            <jo.joide.app.android.ui.Icone
-                android:id="@+id/btn_fermer_modeles"
-                android:layout_width="@dimen/jo_hauteur_cible"
-                android:layout_height="@dimen/jo_hauteur_cible"
-                app:jo_icone_glyphe="croix"
-                app:jo_icone_couleur="?attr/jo_texte2"
+                android:layout_marginEnd="6dp"
                 android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="@string/action_annuler" />
+                android:focusable="true" />
+
+            <jo.joide.app.android.ui.Puce
+                android:id="@+id/filtre_tri_modeles"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <jo.joide.app.android.ui.Puce
+                android:id="@+id/filtre_gratuits_modeles"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true" />
         </LinearLayout>
+    </HorizontalScrollView>
 
-        <HorizontalScrollView
-            android:id="@+id/defile_fournisseurs"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:clipToPadding="false">
-
-            <LinearLayout
-                android:id="@+id/rangee_fournisseurs"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" />
-        </HorizontalScrollView>
-
-        <TextView
-            android:id="@+id/etat_cles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="@dimen/jo_pad_ligne_menu"
-            android:paddingEnd="@dimen/jo_pad_ligne_menu"
-            android:paddingTop="@dimen/jo_pad_ligne_tonale"
-            android:textAppearance="@style/TextAppearance.Jo.Legende"
-            android:textColor="?attr/jo_texte2" />
-
-        <EditText
-            android:id="@+id/recherche_modeles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/jo_ecart_popup_boutons"
-            android:background="@drawable/agent_composeur_fond"
-            android:hint="@string/agent_modeles_recherche"
-            android:textSize="14sp"
-            android:inputType="text"
-            android:maxLines="1"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:importantForAutofill="no" />
-
-        <!-- lot C4 (la manière CodeAssist) : la rangée des FILTRES —
-             le fournisseur d'identifiant (menu déroulant avec compte),
-             le tri (nom / fournisseur), les gratuits seulement (que
-             si la liste en montre). Les puces se posent au bind (le
-             pointé dit l'état), la rangée entière disparaît quand
-             rien ne peut rétrécir la liste -->
-        <HorizontalScrollView
-            android:id="@+id/filtres_modeles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:clipToPadding="false"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:id="@+id/rangee_filtres_modeles"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <jo.joide.app.android.ui.Puce
-                    android:id="@+id/filtre_fournisseur_modeles"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/jo_ecart_entete"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <jo.joide.app.android.ui.Puce
-                    android:id="@+id/filtre_tri_modeles"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/jo_ecart_entete"
-                    android:clickable="true"
-                    android:focusable="true" />
-
-                <jo.joide.app.android.ui.Puce
-                    android:id="@+id/filtre_gratuits_modeles"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:focusable="true" />
-            </LinearLayout>
-        </HorizontalScrollView>
+    <!-- la liste : elle défile DEDANS au-delà de 460 dp (la borne se
+         pose par code) -->
+    <ScrollView
+        android:id="@+id/defile_modeles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:scrollbars="none"
+        android:overScrollMode="ifContentScrolls">
 
         <LinearLayout
-            android:id="@+id/liste_modeles"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical">
 
-        <!-- l'état vide de la recherche (sections vides sans filtre) :
-             le libellé se pose au bind -->
-        <TextView
-            android:id="@+id/vide_modeles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingStart="@dimen/jo_pad_ligne_menu"
-            android:paddingEnd="@dimen/jo_pad_ligne_menu"
-            android:paddingTop="@dimen/jo_ecart_ligne_menu"
-            android:textAppearance="@style/TextAppearance.Jo.Legende"
-            android:textColor="?attr/jo_texte3"
-            android:visibility="gone" />
+            <LinearLayout
+                android:id="@+id/liste_modeles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
-        <!-- le modèle hors catalogue reste atteignable : le geste
-             personnalisé garde son popup (nom, URL de base) -->
-        <TextView
-            android:id="@+id/personnalise_modeles"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="@dimen/jo_hauteur_cible"
-            android:gravity="center_vertical"
-            android:paddingLeft="@dimen/jo_pad_ligne_menu"
-            android:paddingRight="@dimen/jo_pad_ligne_menu"
-            android:text="@string/agent_modeles_personnalise"
-            android:textAppearance="@style/TextAppearance.Jo.Corps"
-            android:textColor="?attr/jo_accent" />
-    </LinearLayout>
-</ScrollView>
+            <!-- l'état vide de la recherche -->
+            <TextView
+                android:id="@+id/vide_modeles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:textSize="13sp"
+                android:textColor="?attr/jo_texte2"
+                android:visibility="gone" />
+
+            <!-- le modèle hors catalogue reste atteignable : le geste
+                 personnalisé garde son popup (nom, URL de base) -->
+            <TextView
+                android:id="@+id/personnalise_modeles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:gravity="center_vertical"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp"
+                android:text="@string/agent_modeles_personnalise"
+                android:textSize="15sp"
+                android:textColor="?attr/jo_accent"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12) — la PISTE de la bande d'usage (usages
-  de l'agent) : surface haute au rayon 3 — le remplissage se teinte
-  au bind par la bande (accent, alerte, erreur ; BandesUsage,
-  ADR-062).
+  Lot A7 puis C5 — la PISTE de la bande d'usage : conteneur tonal max
+  au rayon pilule (la moitié de la hauteur) — le remplissage se teinte
+  au bind par le seuil (accent, alerte à 80 %, erreur au plafond).
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="?attr/jo_surface_haute" />
-    <corners android:radius="@dimen/jo_rayon_bande_usage" />
+    <solid android:color="?attr/jo_contenant_max" />
+    <corners android:radius="4dp" />
 </shape>

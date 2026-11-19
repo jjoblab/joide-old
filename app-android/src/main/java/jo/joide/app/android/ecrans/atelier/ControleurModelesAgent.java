@@ -30,7 +30,7 @@ import jo.joide.app.android.ui.Puce;
  * Lot A7 (ADR-085, découpage de {@code ControleurAgent}) — le
  * contrôleur des MODÈLES de l'agent : le sélecteur ancré à la puce du
  * tiroir (fournisseurs pointés, recherche, favoris à l'étoile,
- * récents, coche du courant — la manière CodeAssist, §3.9), le choix
+ * récents, coche du courant — la manière éprouvée, §3.9), le choix
  * et la persistance (fournisseur PUIS modèle, retenu PAR fournisseur),
  * le modèle PERSONNALISÉ (nom + URL OpenAI-compatible, popup centré à
  * saisie — le brouillon vit dans {@code EtatPopups}). La vérité reste
@@ -38,18 +38,20 @@ import jo.joide.app.android.ui.Puce;
  * n'est instanciée ici — les corps vivent dans {@code popup_*.xml}
  * gonflés par binding.
  *
- * <p>Lot C4 (2026-11-20, demande du terrain : « l'écran choisir
- * modèle (le popup) doit comprendre les options de filtrage, charger
- * la liste des modèles, etc. » — consultation clean-room n° 4, mandat
- * du propriétaire) : la LISTE VIVANTE du fournisseur (le /models de sa
- * passerelle, fil de fond puis fil d'UI) fusionne au catalogue honnête
- * — l'indice de recherche porte le compte ; la RANGÉE DE FILTRES
- * (le fournisseur d'identifiant en menu déroulant avec compte, le tri
- * nom/fournisseur, les gratuits seulement) suit le modèle pur
- * {@link ModelesAgent} ; la ligne de modèle porte le NOM NU,
- * la PUCE « Gratuit », l'IDENTIFIANT dessous quand il diffère, la
- * coche et l'étoile ; les sections (favoris, récents, le reste)
- * cachent leur en-tête quand tout tient en une seule.</p>
+ * <p>Lot C5 (2026-11-20, mandat du propriétaire : « l'écran
+ * choisir modèle (le popup) doit comprendre les options de
+ * filtrage, charger la liste des modèles… design identique ») : la
+ * grande CARTE CENTRÉE (rayon 24, conteneur tonal haut, liseré
+ * bord-fin, 520 dp) porte le titre, la note de clé sous le titre,
+ * la RECHERCHE en pilule (loupe, indice au compte, croix qui vide,
+ * focus quand la liste dépasse 20), la rangée des fournisseurs puis
+ * celle des FILTRES (fournisseur d'identifiant en menu déroulant
+ * avec compte, tri nom/fournisseur, gratuits seulement) ; la liste
+ * (favoris, récents, le reste) défile DEDANS au-delà de 460 dp ; la
+ * ligne porte le NOM NU, la PUCE « Gratuit », l'IDENTIFIANT dessous
+ * quand il diffère, la COCHE et l'ÉTOILE ; la sélection pose le
+ * conteneur secondaire ; les en-têtes se cachent quand tout tient
+ * en une seule section.</p>
  */
 final class ControleurModelesAgent {
 
@@ -59,9 +61,13 @@ final class ControleurModelesAgent {
     /** La clé du brouillon de l'URL personnalisée. */
     private static final String BROUILLON_URL = "agent.url";
 
-    /** Le seuil au-delà duquel la recherche prend le focus (CodeAssist :
-     *  « Searching is the point of a long list »). */
+    /** Le seuil au-delà duquel la recherche prend le focus (la
+     *  recherche est le but d'une longue liste). */
     private static final int LISTE_LONGUE = 20;
+
+    /** La hauteur au-delà de laquelle la liste défile DEDANS sa
+     *  carte (la carte reste à taille de main). */
+    private static final int HAUTEUR_LISTE = 460;
 
     private final HoteAtelier hote;
 
@@ -70,14 +76,13 @@ final class ControleurModelesAgent {
     }
 
     /**
-     * Le sélecteur de modèle de la manière CodeAssist (lot T, ADR-065,
-     * puis lot C4) : une popup ANCRÉE à la puce du tiroir — la rangée de
-     * fournisseurs, l'état de clé, la recherche (l'indice porte le
-     * compte), la rangée de FILTRES (fournisseur d'identifiant, tri,
-     * gratuits), la liste vivante fusionnée au catalogue (favoris,
-     * récents, le reste), la coche sur le modèle courant. Un modèle se
-     * choisit D'UN TAP : le couple part au service, la puce se
-     * rafraîchit, la conversation continue.
+     * Le sélecteur de modèle (lot T, ADR-065, puis lots C4–C5) : la
+     * GRANDE CARTE CENTRÉE — la note de clé, la recherche en pilule,
+     * la rangée de fournisseurs, la rangée de FILTRES (fournisseur
+     * d'identifiant, tri, gratuits), la liste vivante fusionnée au
+     * catalogue (favoris, récents, le reste), la coche sur le modèle
+     * courant. Un modèle se choisit D'UN TAP : le couple part au
+     * service, la puce se rafraîchit, la conversation continue.
      */
     void ouvrir() {
         if (hote.vueAgent() == null) {
@@ -105,16 +110,22 @@ final class ControleurModelesAgent {
                 new java.util.concurrent.atomic.AtomicReference<>(
                         catalogue(fournisseurIndex[0]));
 
-        // ---- la coque du XML : titre, fermer, la rangée des
-        // fournisseurs, l'état de clé, la recherche, les filtres, la
-        // liste — les PUCES (état pointé) restent posées par code, la
-        // vérité reste dans les réglages
+        // ---- la coque du XML : titre, fermer, la note de clé, la
+        // recherche en pilule (avec sa croix qui vide), la rangée des
+        // fournisseurs, la rangée des filtres, la liste qui défile
+        // dedans — les PUCES (état pointé) restent posées par code,
+        // la vérité reste dans les réglages
         PopupModelesBinding coque = PopupModelesBinding.inflate(
                 LayoutInflater.from(hote.contexte()));
-        // la coque du XML est un ScrollView BORNÉ (la liste défile
-        // dedans quand la place manque — PopupAncre borne la fenêtre)
         Icone fermerIcone = coque.btnFermerModeles;
         fermerIcone.setOnClickListener(vue -> fermer.run());
+
+        // la croix qui vide la recherche : elle ne vit que pendant
+        // la frappe
+        Icone effacerIcone = coque.effacerModeles;
+        effacerIcone.setOnClickListener(vue ->
+                coque.rechercheModeles.setText(""));
+        majEffacer(coque, coque.rechercheModeles.getText().length());
 
         // la rangée des fournisseurs : une puce pointée dit le choix —
         // le TAP PERSISTE le fournisseur (fix du 2026-11-17 : avant,
@@ -124,10 +135,9 @@ final class ControleurModelesAgent {
         Reglages.FournisseurIa[] fournisseurs =
                 Reglages.FournisseurIa.values();
         // l'état de clé du fournisseur pointé (un tap ouvre les
-        // réglages IA) : le TextView vient du XML (typographie
-        // Legende posée par le layout, couleur au bind)
-        TextView etatCles = coque.etatCles;
-        etatCles.setOnClickListener(vue -> {
+        // réglages IA) : la note sous le titre du dialogue
+        TextView noteCles = coque.noteCles;
+        noteCles.setOnClickListener(vue -> {
             try {
                 hote.ouvrirEcran(new android.content.Intent(
                         hote.contexte(),
@@ -150,10 +160,10 @@ final class ControleurModelesAgent {
                 // Keystore cassé : l'état reste « absente », jamais
                 // un crash du sélecteur
             }
-            etatCles.setTextColor(posee
+            noteCles.setTextColor(posee
                     ? hote.palette().texteSecondaire
                     : hote.palette().alerte);
-            etatCles.setText(hote.texte(
+            noteCles.setText(hote.texte(
                     posee ? R.string.agent_cle_etat_posee
                             : R.string.agent_cle_etat_absente,
                     nomFournisseur(courant)));
@@ -199,19 +209,18 @@ final class ControleurModelesAgent {
         }
         majEtatCles[0].run();
 
-        // la recherche : le filtre des listes longues (couleurs et
-        // police du composeur d'hier posées au bind — le champ vient
-        // du XML, l'état d'hier)
+        // la recherche : le filtre des listes longues (les couleurs et
+        // la police vivent au XML de la pilule — le champ vient du
+        // XML, l'état d'hier)
         EditText recherche = coque.rechercheModeles;
         recherche.setTextColor(hote.palette().texte);
-        recherche.setHintTextColor(hote.palette().texteEstompe);
+        recherche.setHintTextColor(hote.palette().texteSecondaire);
         recherche.setTypeface(jo.joide.app.android.ui.GraphiteVue
                 .police(hote.contexte(), 400, false));
-        // lot C4 : l'indice porte le COMPTE des modèles (la manière
-        // « Search among 300 models… » de CodeAssist)
+        // l'indice porte le COMPTE des modèles proposés
         poserIndice(recherche, modeles.get().size());
 
-        // ---- la rangée de FILTRES (lot C4, la manière CodeAssist) :
+        // ---- la rangée de FILTRES (lot C4, la manière éprouvée) :
         // le fournisseur d'identifiant (menu déroulant avec compte),
         // le tri nom/fournisseur, les gratuits seulement — la rangée
         // n'apparaît que si elle peut rétrécir la liste
@@ -272,6 +281,7 @@ final class ControleurModelesAgent {
 
             @Override
             public void afterTextChanged(Editable s) {
+                majEffacer(coque, s.length());
                 rafraichir[0].run();
             }
         });
@@ -284,15 +294,23 @@ final class ControleurModelesAgent {
             ouvrirPersonnalise(fournisseurIndex[0]);
         });
 
-        // la liste VIVANTE du fournisseur pointé (lot C4, la manière
-        // CodeAssist « charge la liste des modèles ») : fil de fond,
+        // la liste VIVANTE du fournisseur pointé : fil de fond,
         // puis fusion au fil d'UI — la liste honnête vit déjà, la
         // vivante la remplace dès qu'elle répond
         chargerVivants(fenetre, modeles, fournisseurIndex, coque,
                 rafraichir);
 
-        fenetre[0] = hote.popups().ancrer(
-                hote.vueAgent().ancreModele(), coque.getRoot(), 320);
+        // la grande carte centrée : 520 dp, le clavier suit la
+        // recherche (elle prend le focus sur une liste longue)
+        fenetre[0] = hote.popups().centrerLarge(coque.getRoot(),
+                hote.texte(R.string.agent_modele_titre), 520, true,
+                null);
+    }
+
+    /** La croix qui vide la recherche ne vit que pendant la frappe. */
+    private void majEffacer(PopupModelesBinding coque, int longueur) {
+        coque.effacerModeles.setVisibility(
+                longueur > 0 ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -330,7 +348,6 @@ final class ControleurModelesAgent {
                             && fenetre[0].isShowing()
                             && !recherche.hasFocus()) {
                         // la recherche est le but d'une longue liste
-                        // (CodeAssist : « Searching is the point »)
                         recherche.requestFocus();
                     }
                     rafraichir[0].run();
@@ -385,7 +402,7 @@ final class ControleurModelesAgent {
     /**
      * Les sections du sélecteur (lot C4 — favoris, récents, le reste ;
      * l'en-tête se cache quand tout tient en une seule section, la
-     * manière CodeAssist) ; l'état vide se dit par le footer fixe.
+     * manière éprouvée) ; l'état vide se dit par le footer fixe.
      */
     private void remplirListe(PopupModelesBinding coque,
                               PopupWindow[] fenetre,
@@ -410,9 +427,9 @@ final class ControleurModelesAgent {
                 ids(modeles), filtre, favoris, recents);
         LayoutInflater gonfleur = LayoutInflater.from(hote.contexte());
 
-        // ---- la rangée des filtres (lot C4) : elle ne se montre que
+        // ---- la rangée des filtres : elle ne se montre que
         // si elle peut rétrécir la liste (plusieurs fournisseurs
-        // d'identifiant, ou au moins un gratuit — la manière CodeAssist)
+        // d'identifiant, ou au moins un gratuit)
         List<String> fournisseursIds = ModelesAgent.fournisseurs(
                 ids(modeles));
         boolean unGratuit = ModelesAgent.unGratuit(ids(modeles));
@@ -493,6 +510,37 @@ final class ControleurModelesAgent {
         coque.videModeles.setVisibility(
                 sections.vide() && (filtreActif || modeles.isEmpty())
                         ? View.VISIBLE : View.GONE);
+        bornerListe(coque);
+    }
+
+    /**
+     * La liste défile DEDANS au-delà de 460 dp (la carte reste à
+     * taille de main) : la borne se pose APRÈS le passage — le
+     * contenu plus court rend sa hauteur au défilement.
+     */
+    private void bornerListe(PopupModelesBinding coque) {
+        android.widget.ScrollView defilement = coque.defileModeles;
+        android.widget.LinearLayout.LayoutParams params =
+                (android.widget.LinearLayout.LayoutParams)
+                        defilement.getLayoutParams();
+        params.height = android.widget.LinearLayout.LayoutParams
+                .WRAP_CONTENT;
+        defilement.setLayoutParams(params);
+        defilement.post(() -> {
+            android.view.View contenu = defilement.getChildAt(0);
+            if (contenu == null) {
+                return;
+            }
+            int borne = jo.joide.app.android.ui.GraphiteVue.dp(
+                    hote.contexte(), HAUTEUR_LISTE);
+            if (contenu.getHeight() > borne) {
+                android.widget.LinearLayout.LayoutParams borneParams =
+                        (android.widget.LinearLayout.LayoutParams)
+                                defilement.getLayoutParams();
+                borneParams.height = borne;
+                defilement.setLayoutParams(borneParams);
+            }
+        });
     }
 
     /** L'en-tête d'une section (caché quand tout tient en une seule). */
@@ -509,11 +557,14 @@ final class ControleurModelesAgent {
     }
 
     /**
-     * Une ligne de modèle (lot C4 — la ligne complète de CodeAssist) :
-     * le NOM NU (le préfixe « Fournisseur : » ôté), la PUCE « Gratuit »
-     * des identifiants :free, la COCHE du courant, l'ÉTOILE du favori,
-     * et l'IDENTIFIANT NU dessous quand il diffère du nom montré. Le
-     * tap choisit ; l'étoile bascule.
+     * Une ligne de modèle (lots C4–C5 — la ligne complète du dessin
+     * de référence) : le NOM NU (le préfixe « Fournisseur : » ôté)
+     * en 15 sp demi-gras, la PUCE « Gratuit » des identifiants
+     * :free, la COCHE du courant, l'ÉTOILE du favori (pleine accent
+     * posée, contour bord sinon), et l'IDENTIFIANT NU dessous quand
+     * il diffère du nom montré. La ligne sélectionnée prend le
+     * conteneur secondaire au rayon 14 ; le tap choisit ; l'étoile
+     * bascule.
      */
     private void ajouterModele(LinearLayout liste,
                                LayoutInflater gonfleur, String modele,
@@ -525,20 +576,42 @@ final class ControleurModelesAgent {
                 liste, true);
         String nomNu = ModelesAgent.nomNu(modele, nomAffiche);
         ligne.nomModele.setText(nomNu);
+        ligne.nomModele.setTypeface(
+                jo.joide.app.android.ui.GraphiteVue.police(
+                        hote.contexte(), 500, false));
+        // la ligne sélectionnée : le conteneur secondaire au rayon 14,
+        // la coche et le nom sur le conteneur
+        android.graphics.drawable.GradientDrawable fond = null;
+        if (courant) {
+            fond = new android.graphics.drawable.GradientDrawable();
+            fond.setColor(jo.joide.app.android.ui.Graphite.melange(
+                    hote.palette().accent, 0.16f,
+                    hote.palette().surface));
+            fond.setCornerRadius(jo.joide.app.android.ui.GraphiteVue
+                    .dp(hote.contexte(), 14));
+            ligne.getRoot().setBackground(fond);
+            ligne.nomModele.setTextColor(hote.palette().texte);
+            ligne.cocheModele.setCouleur(hote.palette().texte);
+            ligne.cocheModele.setVisibility(View.VISIBLE);
+        }
         if (ModelesAgent.estGratuit(modele)) {
             ligne.gratuitModele.setVisibility(View.VISIBLE);
             ligne.gratuitModele.setText(
                     hote.texte(R.string.agent_modeles_gratuit));
+            ligne.gratuitModele.poserTeinte(
+                    jo.joide.app.android.ui.Graphite.melange(
+                            hote.palette().reussite, 0.14f,
+                            hote.palette().surface),
+                    hote.palette().reussite);
         }
         if (!nomNu.equals(modele)) {
             ligne.idModele.setVisibility(View.VISIBLE);
             ligne.idModele.setText(modele);
         }
-        if (courant) {
-            ligne.cocheModele.setVisibility(View.VISIBLE);
-        }
+        ligne.etoileModele.setGlyphe(favori
+                ? Icone.Glyphe.ETOILE : Icone.Glyphe.ETOILE_CREUSE);
         ligne.etoileModele.setCouleur(favori
-                ? hote.palette().alerte : hote.palette().bord);
+                ? hote.palette().accent : hote.palette().bord);
         ligne.etoileModele.setTraitDp(1.8f);
         ligne.getRoot().setOnClickListener(vue -> {
             fermer.run();
@@ -603,7 +676,7 @@ final class ControleurModelesAgent {
         Reglages.ecrireModeleIa(hote.sourceReglages(), modele);
         // lot U/7 : le modèle se retient POUR CE fournisseur aussi —
         // le modèle partagé ne traverse jamais les fournisseurs
-        // (manière CodeAssist)
+        // (manière éprouvée)
         Reglages.ecrireModelePour(hote.sourceReglages(), choisi,
                 modele);
         if (hote.agent() != null) {

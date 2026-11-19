@@ -4,7 +4,7 @@ package jo.joide.build.jvm.artcompat;
  * Les deux statiques {@code java.beans.Introspector} que le
  * compilateur emploie, sans le paquet (absent d'ART — Android ne
  * livre que la tranche {@code PropertyChange*}) : la manière
- * CodeAssist ({@code IntrospectorArtPass} → son {@code
+ * l'IDE de référence ({@code IntrospectorArtPass} → son {@code
  * IntrospectorCompat}). La sémantique de {@code decapitalize} est
  * celle de {@code java.beans.Introspector.decapitalize}, que
  * {@code StringUtil.decapitalize} d'IntelliJ rejoue pour ses

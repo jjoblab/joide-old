@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.zip.ZipFile;
 
 /**
- * Les plugins du compilateur Kotlin (lot XIX, la manière CodeAssist,
+ * Les plugins du compilateur Kotlin (lot XIX, la manière éprouvée,
  * ComposeCompilerPlugin.kt) : ACTIVATION PAR SONDE DE CLASSPATH — la
  * présence de {@code androidx/compose/runtime/Composable.class} dans
  * un jar OU un répertoire du classpath de la demande déclenche le
  * plugin, AUCUN réglage utilisateur. Le plugin Compose reçoit ZÉRO
  * option {@code -P} (idem serialization et parcelize chez
- * CodeAssist) : le jar du plugin est le seul câblage.
+ * l'IDE de référence) : le jar du plugin est le seul câblage.
  *
  * <p>Le JAR du plugin doit être un FICHIER sur le disque — kotlinc y
  * lit le descripteur {@code META-INF/services} du registrar. Deux
@@ -31,7 +31,7 @@ public final class PluginsKotlin {
     public static final String ENTREE_COMPOSABLE
             = "androidx/compose/runtime/Composable.class";
 
-    /** L'ID du plugin Compose (le même que CodeAssist). */
+    /** L'ID du plugin Compose (le même que l'IDE de référence). */
     public static final String ID_PLUGIN_COMPOSE
             = "androidx.compose.compiler.plugins.kotlin";
 
@@ -120,7 +120,7 @@ public final class PluginsKotlin {
     /**
      * Le jar du plugin Compose : la propriété {@code
      * joide.compose.plugin.jar} d'abord (appareil : l'APK l'extrait
-     * de ses assets — lot XX, la manière CodeAssist), le pack ensuite
+     * de ses assets — lot XX, la manière éprouvée), le pack ensuite
      * (repli historique, le pack étant immuable il ne le porte plus),
      * la ressource du classpath enfin (bureau : extraite vers le
      * cache du tmpdir, réutilisée si présente).

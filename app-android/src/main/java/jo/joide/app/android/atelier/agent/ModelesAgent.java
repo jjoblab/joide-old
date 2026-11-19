@@ -11,7 +11,7 @@ import java.util.Set;
  * Lot C4 (2026-11-20, demande du terrain : « l'écran choisir modèle
  * (le popup) doit comprendre les options de filtrage, charger la
  * liste des modèles, etc. » — consultation clean-room n° 4, mandat du
- * propriétaire, la manière du ModelPickerSheet de CodeAssist) — LE
+ * propriétaire, la manière du sélecteur éprouvé) — LE
  * MODÈLE PUR DU SÉLECTEUR : le filtre (recherche multi-terme,
  * fournisseur, gratuits seulement, tri), les sections (favoris,
  * récents, le reste), le tri NATUREL (« Modèle 2 » avant « Modèle

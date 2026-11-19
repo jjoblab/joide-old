@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12, gabarit CENTRÉ AVEC VOILE) — LES USAGES
-  (§011 point 6, maquette agent.html) : l'en-tête porte son
-  Actualiser (le relit sans rouvrir) et sa Fermeture ; les deux
-  compteurs du régulateur portent leur bande colorée (accent sous
-  70 %, alerte 70-90 %, erreur au-delà — l'alerte précède le 429,
-  ADR-062), les trois pieds de la conversation en jetons compacts,
-  l'état du banc de clés, les assises par raison. La teinte du
-  remplissage se pose au bind (couleur calculée par bande, décision
-  8) ; sans plafond appris, l'écran le dit honnêtement.
+  Lot C5 — l'écran des USAGES au dessin de référence : la grande carte
+  centrée 460 dp (rayon 24, conteneur tonal haut, liseré bord-fin) —
+  le titre « Limites d'usage », l'Actualisation et la Fermeture 30 dp ;
+  le sous-titre honnête (ce que l'écran rapporte) ; UN COMPTEUR par
+  fenêtre plafonnée (le nom, la puce « En cours » sur la fenêtre qui
+  porte le modèle, le pourcentage, la bande 8 dp, « N sur M utilisés »
+  et « réinitialisé dans X » qui décompte) ; la note des étapes ; le
+  bouton Terminé plein cadre. La teinte du remplissage se pose au
+  bind (accent, alerte au seuil de 80 %, erreur au plafond).
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -17,111 +17,107 @@
     android:scrollbars="none"
     android:overScrollMode="ifContentScrolls">
 
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="?attr/jo_surface"
-        app:cardElevation="0dp"
-        app:cardUseCompatPadding="false"
-        app:strokeWidth="@dimen/jo_ligne"
-        app:strokeColor="?attr/jo_bord_fin"
-        app:shapeAppearance="@style/ShapeAppearance.Jo.Carte">
+        android:orientation="vertical"
+        android:background="@drawable/carte_dialogue_ia"
+        android:padding="18dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="@dimen/jo_pad_usages_popup">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/titre_usages"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_weight="1"
+                android:text="@string/agent_usages_titre"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="?attr/jo_texte" />
 
-                <TextView
-                    android:id="@+id/titre_usages"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:paddingStart="@dimen/jo_pad_ligne_tonale"
-                    android:paddingEnd="@dimen/jo_pad_ligne_tonale"
-                    android:textAppearance="@style/TextAppearance.Jo.SousTitre"
-                    android:textColor="?attr/jo_texte" />
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/rafraichir_usages"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                app:jo_icone_glyphe="rafraichir"
+                app:jo_icone_couleur="?attr/jo_texte2"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/agent_usages_rafraichir" />
 
-                <jo.joide.app.android.ui.Icone
-                    android:id="@+id/rafraichir_usages"
-                    android:layout_width="@dimen/jo_hauteur_cible"
-                    android:layout_height="@dimen/jo_hauteur_cible"
-                    app:jo_icone_glyphe="rafraichir"
-                    app:jo_icone_couleur="?attr/jo_texte2"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/agent_usages_rafraichir" />
-
-                <jo.joide.app.android.ui.Icone
-                    android:id="@+id/fermer_usages"
-                    android:layout_width="@dimen/jo_hauteur_cible"
-                    android:layout_height="@dimen/jo_hauteur_cible"
-                    app:jo_icone_glyphe="croix"
-                    app:jo_icone_couleur="?attr/jo_texte2"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:contentDescription="@string/action_annuler" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/corps_usages"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <include
-                    android:id="@+id/compteur_requetes_usages"
-                    layout="@layout/item_compteur_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <include
-                    android:id="@+id/compteur_jetons_usages"
-                    layout="@layout/item_compteur_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
-
-                <TextView
-                    android:id="@+id/sans_plafond_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="@dimen/jo_pad_ligne_tonale"
-                    android:paddingBottom="@dimen/jo_pad_ligne_tonale"
-                    android:textAppearance="@style/TextAppearance.Jo.Legende"
-                    android:textColor="?attr/jo_texte3"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/conversation_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/jo_pad_ligne_popup"
-                    android:layout_marginBottom="@dimen/jo_pad_ligne_tonale"
-                    android:textAppearance="@style/TextAppearance.Jo.Corps"
-                    android:textColor="?attr/jo_texte" />
-
-                <TextView
-                    android:id="@+id/banc_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
-                    android:layout_marginBottom="@dimen/jo_pad_ligne_tonale"
-                    android:textAppearance="@style/TextAppearance.Jo.Corps"
-                    android:textColor="?attr/jo_texte" />
-
-                <LinearLayout
-                    android:id="@+id/assises_usages"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
-            </LinearLayout>
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/fermer_usages"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="8dp"
+                app:jo_icone_glyphe="croix"
+                app:jo_icone_couleur="?attr/jo_texte2"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/action_annuler" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+
+        <!-- le sous-titre honnête : ce que l'écran rapporte -->
+        <TextView
+            android:id="@+id/sous_titre_usages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte2" />
+
+        <LinearLayout
+            android:id="@+id/corps_usages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <include
+                android:id="@+id/compteur_requetes_usages"
+                layout="@layout/item_compteur_usages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <include
+                android:id="@+id/compteur_jetons_usages"
+                layout="@layout/item_compteur_usages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/sans_plafond_usages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="13sp"
+                android:textColor="?attr/jo_texte2"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- la note des étapes : un message peut compter plusieurs
+             requêtes -->
+        <TextView
+            android:id="@+id/note_etapes_usages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/agent_usages_note_etapes"
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte2" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/terminer_usages"
+            style="@style/Widget.Jo.Button.Primaire"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/agent_usages_termine" />
+    </LinearLayout>
 </ScrollView>

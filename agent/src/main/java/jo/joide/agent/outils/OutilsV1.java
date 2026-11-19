@@ -11,7 +11,7 @@ import jo.joide.agent.espace.EspaceTravailAgent;
 
 /**
  * La surface d'outils v1 (lot O, ADR-059) : le sous-ensemble ASSUMÉ
- * des 42 outils de CodeAssist — lecture 6, écriture 6, sémantique 4,
+ * des 42 outils du terrain — lecture 6, écriture 6, sémantique 4,
  * build/tests 3, plan 1, mémoire 2, web 2, questions 1 : vingt-cinq
  * outils, chacun portant son marqueur {@code mutating} et ses bornes
  * de résultat CÔTÉ OUTIL. La surface entière part à chaque requête

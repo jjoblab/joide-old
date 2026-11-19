@@ -74,7 +74,7 @@ class PacksOutilsTest {
     /** Lot XIII — le fichier retourné par {@code fichierAssure} est
      *  TOUJOURS en LECTURE SEULE (la politique W^X d'ART : un dex/jar
      *  MODIFIABLE n'entre PAS dans un chargeur de classes — la
-     *  manière CodeAssist) : un pack posé modifiable sur le disque
+     *  manière éprouvée) : un pack posé modifiable sur le disque
      *  par une version antérieure (le terrain : « SecurityException:
      *  Writable dex file … is not allowed », abort 134 au démarrage
      *  de la VM ouvrière) se répare AU CHARGEMENT, sans

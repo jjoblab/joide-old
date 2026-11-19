@@ -27,7 +27,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * l'environnement du compilateur — aucun build Kotlin ne pouvait
  * démarrer.</p>
  *
- * <p>Correctifs, la manière CodeAssist (sa {@code
+ * <p>Correctifs, la manière éprouvée (sa {@code
  * UnsafeFindTolerantPass}) : le corps de {@code find} est enveloppé
  * d'un catch-tout qui rend {@code null} au lieu de jeter (les neuf
  * handles se résolvent normalement — le chemin rapide des
@@ -39,7 +39,7 @@ import org.objectweb.asm.tree.VarInsnNode;
  * {@code compareAndSwapInt}, les opérations ART laisse passer). Le
  * {@code copyMemory} du wrapper rendrait null puis NPE — rien du
  * chemin de compilation ne l'appelle (même constat qu'aa-runtime
- * chez CodeAssist : leur shim ne l'implémente pas du tout).</p>
+ * chez l'IDE de référence : leur shim ne l'implémente pas du tout).</p>
  */
 public final class PasseUnsafeFind implements Passe {
 

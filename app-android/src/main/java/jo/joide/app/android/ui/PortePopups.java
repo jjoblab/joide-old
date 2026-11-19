@@ -150,6 +150,34 @@ public final class PortePopups {
     }
 
     /**
+     * Le popup CENTRÉ À LARGEUR LIBRE (lot C5) : les dialogues larges
+     * de la famille IA (sélecteur de modèles, usages) — mêmes règles
+     * que la carte commune, la largeur se pose par site d'appel.
+     *
+     * @param carte         le corps du popup
+     * @param titrePane     le titre du pane (accessibilité)
+     * @param largeurDp     la largeur demandée en dp
+     * @param saisie        le popup porte-t-il une saisie (clavier
+     *                      requis, focus au premier champ)
+     * @param aLaFermeture  le rappel de fermeture (peut être nul)
+     * @return la fenêtre montrée
+     */
+    public PopupWindow centrerLarge(View carte, CharSequence titrePane,
+                                    int largeurDp, boolean saisie,
+                                    Runnable aLaFermeture) {
+        PopupWindow[] fenetre = new PopupWindow[1];
+        fenetre[0] = PopupCentre.montrer(voile, carte, titrePane,
+                saisie, largeurDp, () -> {
+                    retrait(fenetre[0]);
+                    if (aLaFermeture != null) {
+                        aLaFermeture.run();
+                    }
+                });
+        ouvertes.add(fenetre[0]);
+        return fenetre[0];
+    }
+
+    /**
      * Le popup CENTRÉ À SAISIE de corps libre : clavier requis,
      * fenêtre redimensionnée, focus au premier champ (décision 12).
      *

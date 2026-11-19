@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — le BOUTON D'ENVOI du composeur IA : rond 48 dp plein
+     accent, l'ondulation masquée au cercle (le bouton devient le
+     bouton d'arrêt quand un tour vit — le glyphe se pose par code). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/jo_contenant_secondaire">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="?attr/jo_accent" />
+        </shape>
+    </item>
+</ripple>

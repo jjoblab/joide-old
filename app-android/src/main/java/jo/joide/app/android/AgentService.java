@@ -1071,7 +1071,7 @@ public final class AgentService extends Service {
     // ------------------------------------------------------------------
     // Lot C4 (2026-11-20) — la liste VIVANTE des modèles d'un
     // fournisseur : le GET /models de sa passerelle, la manière
-    // CodeAssist (« charge la liste des modèles »). Le transport est
+    // l'IDE de référence (« charge la liste des modèles »). Le transport est
     // celui de l'agent (D-5, un seul client HTTP) ; l'appel vit sur
     // le fil DE FOND de l'atelier (jamais sur le fil de l'UI).
     // ------------------------------------------------------------------
@@ -1082,7 +1082,7 @@ public final class AgentService extends Service {
     /**
      * Un modèle VIVANT (lot C4) : l'identifiant (la clé du sélecteur,
      * celle qu'on envoie) et le nom d'affichage (la ligne du dessus —
-     * « GPT-5.1 » au-dessus de « gpt-5.1 », la manière CodeAssist).
+     * « GPT-5.1 » au-dessus de « gpt-5.1 », la manière éprouvée).
      */
     public record ModeleVivant(String id, String nom) {
     }
@@ -1404,7 +1404,7 @@ public final class AgentService extends Service {
     }
 
     /**
-     * Le modèle du tour, résolu à la manière CodeAssist (lot U/7) :
+     * Le modèle du tour, résolu à la manière éprouvée (lot U/7) :
      * le choix de session d'abord — s'il APPARTIENT au fournisseur ;
      * sinon le modèle persisté POUR CE fournisseur ; sinon le
      * modèle partagé hérité — s'il appartient ; sinon le choix de
@@ -1412,7 +1412,7 @@ public final class AgentService extends Service {
      * avec ce que l'utilisateur a posé, jamais un modèle vide).
      *
      * <p>Le garde d'appartenance ({@code modelBelongsTo} chez
-     * CodeAssist) est la moitié manquante du routage : un modèle
+     * l'IDE de référence) est la moitié manquante du routage : un modèle
      * partagé entre fournisseurs envoyait « claude-sonnet-4-5 » à
      * OpenRouter — la première requête échouait sur un modèle que
      * le fournisseur n'a pas (rapport du 2026-11-17).</p>

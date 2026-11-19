@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * L'émetteur bytecode du R.jar (la manière CodeAssist
+ * L'émetteur bytecode du R.jar (la manière éprouvée
  * RBytecodeGenerator) : un R.java d'aapt2 est parse-é et ses
  * constantes émises en class files FAITS MAIN — le test charge les
  * octets émis par un ClassLoader et vérifie les valeurs PAR

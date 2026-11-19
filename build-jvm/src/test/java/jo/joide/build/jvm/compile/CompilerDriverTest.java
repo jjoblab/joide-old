@@ -366,7 +366,7 @@ class CompilerDriverTest {
 
     @Test
     void ecjCompilesIndyAgainstPlatformStubs() throws Exception {
-        // La doctrine CodeAssist : android.jar OMET les fabriques
+        // La doctrine éprouvée : android.jar OMET les fabriques
         // java.lang.invoke ; à compliance ≥ 9, la concaténation et les
         // lambdas émettent un invokedynamic qui ne se résout que si le
         // jar system-modules du plateau (sibling d'android.jar, le

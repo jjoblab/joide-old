@@ -70,7 +70,7 @@ val toolsApi by configurations.creating {
 // DexClassLoader servait la copie de l'APK (sans ses classes
 // d'outil) et JAMAIS celle du pack : « pack différé r8 indisponible
 // (java.lang.reflect.InvocationTargetException) », rapport du
-// 2026-11-17. L'ombre part, le pack charge (la manière CodeAssist :
+// 2026-11-17. L'ombre part, le pack charge (la manière éprouvée :
 // aucune classe d'outil dans l'app, tout arrive déjà dexé).
 val signatureJar = tasks.register<Jar>("signatureJar") {
     archiveBaseName.set("build-android-signature")

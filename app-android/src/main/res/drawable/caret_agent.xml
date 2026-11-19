@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — le caret de frappe de la réponse : 7×14 dp au rayon 2,
+     la couleur se teinte par code (elle pulse pendant l'écriture). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_accent" />
+    <corners android:radius="2dp" />
+</shape>

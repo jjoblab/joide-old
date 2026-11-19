@@ -8,7 +8,7 @@ import java.lang.reflect.Method;
  * {@code getAndAddInt}, refusée sous targetSdk &gt; 30), recouverte
  * par celles qu'il laisse : la boucle CAS du JDK-8 ({@code
  * getIntVolatile} + {@code compareAndSwapInt}) — la manière
- * CodeAssist ({@code UnsafeFindTolerantPass} → son {@code
+ * l'IDE de référence ({@code UnsafeFindTolerantPass} → son {@code
  * VarHandleCompat.getAndAddInt}).
  *
  * <p>Tout passe par RÉFLEXION : aucune référence de compilation à

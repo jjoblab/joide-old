@@ -43,7 +43,7 @@ public final class JvmTaskFactory {
     // lot XVIII : le plateau compile-time de l'appareil (android.jar,
     // ancre $SDK + jar local), ou null (bureau) — présent, la tâche
     // Kotlin porte -no-jdk et le plateau entre dans le classpath des
-    // DEUX langages ; la manière CodeAssist (le terrain du
+    // DEUX langages ; la manière éprouvée (le terrain du
     // 2026-11-17 : « No class roots are found in the JDK path:
     // /apex/com.android.art » sur la route console)
     private RootedPath plateauAppareil;
@@ -285,7 +285,7 @@ public final class JvmTaskFactory {
                     ClasspathEntry.Kind.MODULE_KOTLIN,
                     spec.name + ":kotlin", classesKotlin,
                     abiKotlin.resolve("current"), abiKotlin));
-            // sur APPAREIL (plateau présent) : la manière CodeAssist —
+            // sur APPAREIL (plateau présent) : la manière éprouvée —
             // -no-jdk, java.* se lit DU CLASSPATH (le plateau posé
             // plus haut) ; au bureau le JDK réel fournit les racines
             graph.register(JvmCompileTask.create(spec.name, "kotlin",

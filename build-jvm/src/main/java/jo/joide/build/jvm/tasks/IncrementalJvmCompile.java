@@ -338,7 +338,7 @@ final class IncrementalJvmCompile {
             builder.source(file);
         }
         for (ClasspathEntry entry : classpath) {
-            // LOT XX/h — la manière CodeAssist (AndroidBuildSystem :
+            // LOT XX/h — la manière éprouvée (AndroidBuildSystem :
             // « Kotlin keeps resolving it from R.java source ») : le
             // R.jar n'entre JAMAIS dans le classpath du compilateur
             // KOTLIN — kotlinc résout R depuis les sources R.java

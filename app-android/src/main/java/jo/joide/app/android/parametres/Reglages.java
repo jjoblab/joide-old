@@ -320,7 +320,7 @@ public final class Reglages {
     }
 
     /** La clé du modèle par fournisseur (lot U/7 — la manière
-     *  CodeAssist : un modèle partagé entre fournisseurs envoyait
+     *  l'IDE de référence : un modèle partagé entre fournisseurs envoyait
      *  « claude-sonnet-4-5 » à OpenRouter qui n'a pas ce modèle). */
     public static String cleModelePour(FournisseurIa fournisseur) {
         return CLE_MODELE_IA_PREFIXE + fournisseur.name().toLowerCase(
@@ -363,7 +363,7 @@ public final class Reglages {
 
     /**
      * Le modèle APPARTIENT-IL à ce fournisseur ? (lot U/7 — le garde
-     * « modelBelongsTo » de CodeAssist) : un id de modèle a une
+     * « modelBelongsTo » de l'IDE de référence) : un id de modèle a une
      * famille reconnaissable ; un modèle hérité d'un autre
      * fournisseur ne doit jamais partir chez le nouveau, la première
      * requête échouait sur un modèle que le fournisseur n'a pas.

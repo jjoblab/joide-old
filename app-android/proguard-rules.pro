@@ -59,7 +59,7 @@
 # renomme les champs (compilation_request → « t ») et le chargeur
 # lève « ExceptionInInitializerError: Missing message: t in:
 # org.eclipse.jdt.internal.compiler.messages ». La même garde que
-# CodeAssist (proguard-rules.pro:61) : l'ecj compagnon ne s'obfusque
+# l'IDE de référence (proguard-rules.pro:61) : l'ecj compagnon ne s'obfusque
 # pas — mêmes classes, shims ART en plus.
 -keep class org.eclipse.jdt.** { *; }
 

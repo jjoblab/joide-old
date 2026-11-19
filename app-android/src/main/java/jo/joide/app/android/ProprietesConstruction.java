@@ -13,7 +13,7 @@ import java.nio.file.StandardCopyOption;
  * Les propriétés d'outillage (lot U) — UNE vérité pour les deux
  * processus qui construisent (le service, l'écran atelier) : le
  * cache, nativeLibraryDir, et depuis le lot XX (la manière
- * CodeAssist, ForkedKotlinCompiler.kt:67-76) l'APK de l'app lui-même
+ * l'IDE de référence (compilateur Kotlin dissocié, l. 67-76)) l'APK de l'app lui-même
  * et le jar du plugin Compose :
  *
  * <ul>
@@ -38,7 +38,7 @@ public final class ProprietesConstruction {
 
     /**
      * L'asset des stubs d'invokedynamic du compile-time (le rôle
-     * d'AGP core-lambda-stubs, la doctrine CodeAssist) : android.jar
+     * d'AGP core-lambda-stubs, la doctrine éprouvée) : android.jar
      * OMET les fabriques java.lang.invoke et, à compliance ≥ 9, la
      * moindre concaténation ou lambda du Java utilisateur émet un
      * invokedynamic dont la bootstrap doit se résoudre — jamais dexé,
@@ -91,7 +91,7 @@ public final class ProprietesConstruction {
 
     /** Le jar du plugin Compose : asset extrait une fois (la
      *  fraîcheur tenant à la taille), publié par renommage — la
-     *  manière CodeAssist (jar bundlé, extrait sur disque). */
+     *  manière éprouvée (jar bundlé, extrait sur disque). */
     private static void extrairePluginCompose(Context contexte) {
         try {
             Path cible = Paths.get(contexte.getFilesDir()

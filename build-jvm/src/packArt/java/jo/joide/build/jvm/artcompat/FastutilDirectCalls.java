@@ -12,8 +12,8 @@ import org.jetbrains.kotlin.it.unimi.dsi.fastutil.ints.IntSet;
  * {@code invokeinterface IntSet.contains(I)Z} vers {@code
  * AbstractIntCollection.removeAll(Collection)} et le marqueur part en
  * référence objet (SIGSEGV dans {@code artInstanceOfFromCode}, le
- * plus gros cluster natif du terrain CodeAssist). La manière
- * CodeAssist ({@code FastutilInterfaceDispatchArtPass} → son {@code
+ * plus gros cluster natif du terrain l'IDE de référence). La manière
+ * l'IDE de référence ({@code FastutilInterfaceDispatchArtPass} → son {@code
  * FastutilDirectCalls}).
  *
  * <p>Le récepteur arrive en premier argument ({@code

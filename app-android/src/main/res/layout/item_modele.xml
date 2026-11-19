@@ -1,83 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12) — UNE LIGNE DE MODÈLE du sélecteur.
-  Lot C4 (2026-11-20, la manière CodeAssist du ModelPickerSheet) : la
-  rangée porte le NOM NU (le préfixe « Fournisseur : » ôté au bind), la
-  PUCE « Gratuit » des identifiants :free (posée au bind, absente
-  sinon), la COCHE accent du modèle courant (visible au bind),
-  l'ÉTOILE du favori (teinte au bind). Sous la rangée,
-  l'IDENTIFIANT NU quand il diffère du nom (légende estompée — le
-  « gpt-5.1 » sous « GPT-5.1 » de CodeAssist). Le tap choisit ;
-  l'étoile bascule.
+  Lot C5 — la LIGNE D'UN MODÈLE au dessin de référence : le NOM NU
+  15 sp demi-gras, la PUCE « Gratuit » (conteneur réussite) quand
+  l'identifiant finit en :free, l'IDENTIFIANT NU dessous 12 sp quand
+  il diffère du nom montré, la COCHE du modèle courant, l'ÉTOILE du
+  favori (pleine accent / contour bord). La ligne prend le rayon 14
+  et le pressed du sélecteur ; la sélection pose le conteneur
+  secondaire par code. Le tap choisit ; l'étoile bascule.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ligne_modele"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/ligne_menu">
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="8dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
+    android:background="@drawable/ligne_modele">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingLeft="@dimen/jo_pad_ligne_menu"
-        android:paddingRight="@dimen/jo_pad_ligne_menu"
-        android:paddingTop="@dimen/jo_ecart_ligne_menu"
-        android:paddingBottom="@dimen/jo_ecart_ligne_menu">
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/nom_modele"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="15sp"
+                android:textColor="?attr/jo_texte"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:importantForAccessibility="no" />
+
+            <jo.joide.app.android.ui.Puce
+                android:id="@+id/gratuit_modele"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:visibility="gone"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/nom_modele"
-            android:layout_width="0dp"
+            android:id="@+id/id_modele"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textAppearance="@style/TextAppearance.Jo.Corps"
-            android:textColor="?attr/jo_texte"
+            android:textSize="12sp"
+            android:textColor="?attr/jo_texte2"
             android:singleLine="true"
-            android:ellipsize="end" />
-
-        <jo.joide.app.android.ui.Puce
-            android:id="@+id/gratuit_modele"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/jo_ecart_entete"
+            android:ellipsize="end"
             android:visibility="gone"
             android:importantForAccessibility="no" />
-
-        <jo.joide.app.android.ui.Icone
-            android:id="@+id/coche_modele"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_marginStart="@dimen/jo_ecart_popup_boutons"
-            app:jo_icone_glyphe="coche"
-            app:jo_icone_couleur="?attr/jo_accent"
-            android:importantForAccessibility="no"
-            android:visibility="gone" />
-
-        <jo.joide.app.android.ui.Icone
-            android:id="@+id/etoile_modele"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_marginStart="@dimen/jo_pad_ligne_tonale"
-            app:jo_icone_glyphe="etoile"
-            app:jo_icone_couleur="?attr/jo_bord"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/agent_modeles_favori" />
     </LinearLayout>
 
-    <!-- l'identifiant nu, quand il diffère du nom montré -->
-    <TextView
-        android:id="@+id/id_modele"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="@dimen/jo_pad_ligne_menu"
-        android:paddingRight="@dimen/jo_pad_ligne_menu"
-        android:paddingBottom="@dimen/jo_ecart_ligne_menu"
-        android:textAppearance="@style/TextAppearance.Jo.Legende"
-        android:textColor="?attr/jo_texte3"
-        android:singleLine="true"
-        android:ellipsize="end"
-        android:visibility="gone" />
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/coche_modele"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="8dp"
+        android:visibility="gone"
+        app:jo_icone_glyphe="coche"
+        app:jo_icone_couleur="?attr/jo_texte"
+        android:importantForAccessibility="no" />
+
+    <jo.joide.app.android.ui.Icone
+        android:id="@+id/etoile_modele"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="8dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:jo_icone_glyphe="etoile_creuse"
+        app:jo_icone_couleur="?attr/jo_bord"
+        android:contentDescription="@string/agent_modeles_favori" />
 </LinearLayout>

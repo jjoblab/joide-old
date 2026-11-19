@@ -29,7 +29,7 @@ import java.util.zip.ZipEntry;
  * « Unresolved reference 'R' » (le terrain du 2026-11-18, PREMIER
  * build appareil ayant atteint compileKotlin — l'ouvrière était
  * fraîche, le problème vivait dans les OCTETS du jar, pas dans un
- * cache). La manière CodeAssist : un jar ordinaire de
+ * cache). La manière éprouvée : un jar ordinaire de
  * {@code JarOutputStream}, qui porte META-INF/MANIFEST.MF MÊME sans
  * classes (un jar à zéro entrée reste lisible partout).</p>
  */

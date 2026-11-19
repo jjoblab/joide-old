@@ -41,7 +41,7 @@ dependencies {
     // l'APK ne le dexé PAS — app-android l'exclut et prend le jar
     // ecj-art de la brique code-lsp (le MÊME artefact, resources
     // comprises : bundles messages, tables .rsc du parseur), la
-    // doctrine CodeAssist anti-doublons (art-compat : « shipping both
+    // doctrine éprouvée anti-doublons (art-compat : « shipping both
     // a stock Eclipse jar and its ART copy is a duplicate-class
     // failure at dex time »).
     implementation(libs.ecj)
@@ -57,7 +57,7 @@ dependencies {
     "workerKotlinImplementation"(libs.kotlin.metadata.jvm)
     "workerKotlinImplementation"(libs.kotlin.stdlib)
 
-    // Lot XI (la manière CodeAssist, passes kotlinc-art) : le
+    // Lot XI (la manière éprouvée, passes kotlinc-art) : le
     // PATCHEUR ART du pack — réécrit les classes du compilateur
     // hostiles à ART avant le dexage (management absent, Unsafe,
     // ClassValue, fastutil dispatch, Introspector, EDT, PathUtil) et

@@ -18,7 +18,7 @@ import java.util.TreeMap;
  * <p>Ordre du tiroir : dossiers avant fichiers à niveau égal (ordre
  * alphabétique), puis {@code build-joide} en toute fin de racine — le
  * nœud des sorties est présent mais non dépliable : la franchise
- * CodeAssist leçon 5 appliquée à l'arbre, « jamais un nœud build-joide
+ * la leçon 5 du terrain appliquée à l'arbre, « jamais un nœud build-joide
  * présenté comme source ».</p>
  */
 public final class Arborescence {

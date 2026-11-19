@@ -145,7 +145,7 @@ class DaemonLifecycleTest {
             // compilation se plafonne au budget) ; refuser fermait le
             // build entier sur les appareils à 256 Mio (rapport du
             // 2026-11-17 : « build refused: memory budget 448 MiB
-            // exceeds daemon heap 256 MiB »). La manière CodeAssist :
+            // exceeds daemon heap 256 MiB »). La manière éprouvée :
             // le matériel borne, l'outil s'adapte.
             daemon.build(1, jvmSpec(project, out, m2, 4096));
             DaemonClient.Event finished =

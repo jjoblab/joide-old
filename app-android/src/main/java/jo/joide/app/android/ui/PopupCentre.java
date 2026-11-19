@@ -73,12 +73,35 @@ public final class PopupCentre {
                                       CharSequence titrePane,
                                       boolean saisie,
                                       Runnable aLaFermeture) {
+        return montrer(voile, carte, titrePane, saisie, LARGEUR,
+                aLaFermeture);
+    }
+
+    /**
+     * La variante À LARGEUR LIBRE (lot C5) : les grands dialogues de
+     * la famille IA se posent plus larges que la carte commune (le
+     * sélecteur de modèles, l'écran des usages) — la borne écran
+     * moins 32 dp s'applique toujours.
+     *
+     * @param voile        la vue-voile du layout racine de l'écran
+     * @param carte        le corps du popup
+     * @param titrePane    le titre du pane (accessibilité)
+     * @param saisie       le popup porte-t-il une saisie
+     * @param largeurDp    la largeur demandée en dp
+     * @param aLaFermeture le rappel de fermeture (peut être nul)
+     * @return la fenêtre montrée
+     */
+    @SuppressWarnings("deprecation")
+    public static PopupWindow montrer(View voile, View carte,
+                                      CharSequence titrePane,
+                                      boolean saisie, int largeurDp,
+                                      Runnable aLaFermeture) {
         android.content.Context contexte = voile.getContext();
         int ecran = contexte.getResources().getDisplayMetrics()
                 .widthPixels;
         int hauteurEcran = contexte.getResources().getDisplayMetrics()
                 .heightPixels;
-        int largeur = Math.min(GraphiteVue.dp(contexte, LARGEUR),
+        int largeur = Math.min(GraphiteVue.dp(contexte, largeurDp),
                 ecran - GraphiteVue.dp(contexte, 32));
 
         // focusable : le retour système ferme le popup en premier

@@ -11,12 +11,12 @@ sqliteJdbc = "3.49.1.0"
 # Kotlin embarqué et lecture des métadonnées Kotlin (Apache-2.0 — NOTICE).
 # L'APK ne dexé PAS cet artefact (exclusion chez app-android) : le runtime
 # embarque le compagnon ecj-art de la brique code-lsp (le MÊME artefact,
-# shims ART et resources compris) — la doctrine CodeAssist anti-doublons.
+# shims ART et resources compris) — la doctrine éprouvée anti-doublons.
 ecj = "3.40.0"
 kotlin = "2.3.0"
 # Lot XV — StAX sur ART (qui n'en livre pas) : l'API JSR-173 autonome,
 # aalto comme implémentation complète, stax2-api pour aalto. La manière
-# CodeAssist (« StAX on ART (which ships none): the standalone JSR-173
+# éprouvée (« StAX on ART (which ships none): the standalone JSR-173
 # API, and aalto as its implementation. Used by the on-device Kotlin
 # compiler (IntelliJ-core's descriptor parsing) ») — sans eux, le
 # chargeur de descripteurs du compilateur (PluginDescriptorLoader)

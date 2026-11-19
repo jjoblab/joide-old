@@ -1,55 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 — le tiroir agent migré du code vers le XML + ViewBinding.
-  Structure : en-tête (titre, puce modèle → sélecteur, puce de mode,
-  menu ⋯, ✕), transcript, ligne d'activité (au-dessus du composeur,
-  §3.9), composeur. Les états vivent dans EtatAgentChat — la vue ne
-  décide rien. Lot A9 : les glyphes et couleurs des icônes se posent
-  ici (app:jo_icone_*, une seule voie de thémage).
+  Lot C5 — le tiroir agent REFAIT À L'IDENTIQUE du dessin de
+  référence (mandat du propriétaire) : en-tête 52 dp sur chrome — la
+  MARQUE (étincelle 26 dp en pastille accent), le titre IA une ligne,
+  le PICKER de modèle dessous (libellé 12 sp + chevron qui suit
+  l'ouverture), la puce de MODE qui se teinte par permission, le menu
+  ⋯ et la fermeture ; le transcript respire au-dessus ; le bas du
+  tiroir (bande d'avertissement d'usage, ligne d'activité, composeur)
+  vit sur le même chrome. Les états vivent dans EtatAgentChat — la
+  vue ne décide rien.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="?attr/jo_surface">
 
+    <!-- l'en-tête sur chrome : 52 dp, marque, titre + picker, mode,
+         menu ⋯, fermer -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="52dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="2dp"
-        android:paddingTop="5dp"
-        android:paddingBottom="5dp">
+        android:paddingStart="12dp"
+        android:paddingEnd="4dp"
+        android:background="?attr/jo_surface_haute">
 
-        <TextView
+        <!-- la marque : l'étincelle 26 dp dans sa pastille accent,
+             rayon 10 (le quart de la taille) -->
+        <FrameLayout
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:background="@drawable/pastille_marque_agent"
+            android:importantForAccessibility="no">
+
+            <jo.joide.app.android.ui.Icone
+                android:layout_width="15dp"
+                android:layout_height="15dp"
+                android:layout_gravity="center"
+                app:jo_icone_glyphe="etincelle"
+                app:jo_icone_couleur="?attr/jo_accent"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+
+        <!-- le titre une ligne + le picker du modèle dessous (le
+             libellé suit l'ellipse, le chevron reste) -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/agent_titre"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="?attr/jo_texte" />
+            android:layout_marginStart="8dp"
+            android:orientation="vertical">
 
-        <jo.joide.app.android.ui.Puce
-            android:id="@+id/puce_modele_agent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/agent_titre"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="?attr/jo_texte"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:id="@+id/picker_modele_agent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/pastille_toucher_transparent"
+                android:contentDescription="@string/agent_modele_titre">
+
+                <TextView
+                    android:id="@+id/nom_picker_agent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxWidth="170dp"
+                    android:textSize="12sp"
+                    android:textColor="?attr/jo_texte2"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:importantForAccessibility="no" />
+
+                <jo.joide.app.android.ui.Icone
+                    android:id="@+id/chevron_picker_agent"
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:layout_marginStart="2dp"
+                    app:jo_icone_glyphe="chevron"
+                    app:jo_icone_couleur="?attr/jo_texte2"
+                    android:importantForAccessibility="no" />
+            </LinearLayout>
+        </LinearLayout>
 
         <jo.joide.app.android.ui.Puce
             android:id="@+id/puce_mode_agent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="6dp" />
+            android:layout_marginEnd="8dp"
+            android:importantForAccessibility="no" />
 
         <jo.joide.app.android.ui.Icone
             android:id="@+id/btn_menu_agent"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            app:jo_icone_glyphe="points"
-            app:jo_icone_couleur="?attr/jo_texte"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            app:jo_icone_glyphe="suspension"
+            app:jo_icone_couleur="?attr/jo_texte2"
             android:clickable="true"
             android:focusable="true"
             android:contentDescription="@string/agent_menu" />
@@ -70,7 +131,10 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="8dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="2dp"
         android:clipToPadding="false">
 
         <LinearLayout
@@ -80,77 +144,115 @@
             android:orientation="vertical" />
     </ScrollView>
 
+    <!-- le bas du tiroir sur chrome : bande d'avertissement, ligne
+         d'activité, composeur -->
     <LinearLayout
-        android:id="@+id/ligne_activite_agent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="6dp"
-        android:visibility="gone">
-
-        <View
-            android:layout_width="7dp"
-            android:layout_height="7dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/dot_agent" />
-
-        <TextView
-            android:id="@+id/libelle_activite_agent"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="12sp"
-            android:textColor="?attr/jo_texte"
-            android:singleLine="true"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/ecoule_activite_agent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="?attr/jo_texte3" />
-    </LinearLayout>
-
-    <!-- Lot C4 (2026-11-20, la manière CodeAssist du bandeau de
-         limite) : la bande d'avertissement d'usage au-dessus du
-         composeur — visible seulement quand la fenêtre qui porte le
-         modèle courant est chargée (≥ 80 %), le tap ouvre l'écran
-         Usages ; l'état et la teinte (alerte, erreur) se posent par
-         code depuis le service, la mini-bande suit la fraction -->
-    <LinearLayout
-        android:id="@+id/avertissement_usage_agent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingStart="@dimen/jo_pad_ligne_tonale"
-        android:paddingEnd="@dimen/jo_pad_ligne_tonale"
-        android:paddingTop="@dimen/jo_ecart_ligne_menu"
-        android:paddingBottom="@dimen/jo_ecart_ligne_menu"
-        android:visibility="gone"
-        android:clickable="true"
-        android:focusable="true">
+        android:background="?attr/jo_surface_haute">
 
+        <!-- la bande d'avertissement d'usage : ≥ 80 % de la fenêtre qui
+             porte le modèle courant — tap → l'écran Usages -->
         <LinearLayout
+            android:id="@+id/avertissement_usage_agent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="8dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <jo.joide.app.android.ui.Icone
+                    android:id="@+id/icone_avertissement_agent"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginEnd="8dp"
+                    app:jo_icone_glyphe="info"
+                    app:jo_icone_couleur="?attr/jo_texte"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/libelle_avertissement_agent"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/jo_texte"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/relance_avertissement_agent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="?attr/jo_texte2"
+                    android:importantForAccessibility="no" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:background="@drawable/piste_bande_usage">
+
+                <View
+                    android:id="@+id/remplissage_avertissement_agent"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/remplissage_bande_usage" />
+
+                <View
+                    android:id="@+id/reste_avertissement_agent"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- la ligne d'activité du tour : l'étincelle qui pulse, ce que
+             l'agent fait, depuis combien de temps -->
+        <LinearLayout
+            android:id="@+id/ligne_activite_agent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="2dp"
+            android:visibility="gone">
 
             <jo.joide.app.android.ui.Icone
-                android:id="@+id/icone_avertissement_agent"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
-                android:layout_marginEnd="@dimen/jo_ecart_entete"
-                app:jo_icone_glyphe="triangle"
-                app:jo_icone_couleur="?attr/jo_texte"
+                android:id="@+id/etincelle_activite_agent"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="8dp"
+                app:jo_icone_glyphe="etincelle"
+                app:jo_icone_couleur="?attr/jo_accent"
                 android:importantForAccessibility="no" />
 
             <TextView
-                android:id="@+id/libelle_avertissement_agent"
+                android:id="@+id/libelle_activite_agent"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -161,36 +263,15 @@
                 android:ellipsize="end" />
 
             <TextView
-                android:id="@+id/relance_avertissement_agent"
+                android:id="@+id/ecoule_activite_agent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
+                android:textSize="12sp"
                 android:textColor="?attr/jo_texte2" />
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="4dp"
-            android:layout_marginTop="@dimen/jo_pad_progression"
-            android:orientation="horizontal"
-            android:background="@drawable/piste_bande_usage">
-
-            <View
-                android:id="@+id/remplissage_avertissement_agent"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/remplissage_bande_usage" />
-
-            <View
-                android:id="@+id/reste_avertissement_agent"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1" />
-        </LinearLayout>
+        <include
+            android:id="@+id/composeur"
+            layout="@layout/composeur_agent" />
     </LinearLayout>
-
-    <include
-        android:id="@+id/composeur"
-        layout="@layout/composeur_agent" />
 </LinearLayout>

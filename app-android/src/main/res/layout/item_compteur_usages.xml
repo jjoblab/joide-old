@@ -1,22 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12) — UN COMPTEUR D'OCCUPATION des usages :
-  le nom au corps, la puce « En cours » sur la fenêtre qui porte le
-  modèle (lot C4, la manière CodeAssist du chip In use), le
-  pourcentage en légende estompée, la bande sous le seuil : piste
-  surface haute (piste_bande_usage), remplissage dont le POIDS et la
-  TEINTE se posent au bind (la fraction de la fenêtre, la bande qui
-  décide la couleur — accent, alerte, erreur ; une couleur calculée
-  par ligne, décision 8 de l'ADR). Lot C4 : la ligne du pied porte
-  « N sur M utilisés » (gauche) et « réinitialisé dans X » (droite,
-  la sortie de la plus ancienne requête de la fenêtre glissante).
+  Lot C5 — UN COMPTEUR D'USAGE au dessin de référence : le nom 14 sp
+  semi-gras, la puce « En cours » sur la fenêtre qui porte le modèle,
+  le pourcentage à droite ; la BANDE 8 dp sur conteneur tonal max
+  (piste pilule) dont le remplissage suit la fraction (teinte au
+  bind : accent, alerte au seuil de 80 %, erreur au plafond) ; le
+  pied « N sur M utilisés » (gauche) et « réinitialisé dans X »
+  (droite, il décompte tant que le popup vit).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingTop="@dimen/jo_pad_ligne_tonale">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -29,14 +25,15 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textSize="14sp"
+            android:textStyle="bold"
             android:textColor="?attr/jo_texte" />
 
         <jo.joide.app.android.ui.Puce
             android:id="@+id/active_compteur"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="@dimen/jo_ecart_entete"
+            android:layout_marginEnd="8dp"
             android:visibility="gone"
             android:importantForAccessibility="no" />
 
@@ -44,14 +41,14 @@
             android:id="@+id/pourcentage_compteur"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Jo.Legende"
-            android:textColor="?attr/jo_texte3" />
+            android:textSize="12sp"
+            android:textColor="?attr/jo_texte2" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/jo_hauteur_bande_usage"
-        android:layout_marginTop="@dimen/jo_pad_ligne_tonale"
+        android:layout_height="8dp"
+        android:layout_marginTop="6dp"
         android:orientation="horizontal"
         android:background="@drawable/piste_bande_usage">
 
@@ -72,7 +69,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/jo_pad_progression"
+        android:layout_marginTop="6dp"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
@@ -81,14 +78,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textSize="13sp"
             android:textColor="?attr/jo_texte2" />
 
         <TextView
             android:id="@+id/relance_compteur"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Jo.Legende"
+            android:textSize="13sp"
             android:textColor="?attr/jo_texte2" />
     </LinearLayout>
 </LinearLayout>

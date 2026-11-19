@@ -24,10 +24,10 @@ public final class Toolchain {
      * Chemin des stubs d'invokedynamic du compile-time
      * (core-lambda-stubs.jar : StringConcatFactory pour la
      * concaténation, LambdaMetafactory pour les lambdas — android.jar
-     * les OMET à compliance ≥ 9, la manière AGP/CodeAssist ; jamais
+     * les OMET à compliance ≥ 9, la manière AGP classique ; jamais
      * dexé, D8 désugare l'indy). Nul si la pièce est introuvable —
      * les appelants acceptent le nul (les plateformes plus anciennes
-     * peuvent manquer la pièce, comme le fait CodeAssist).
+     * peuvent manquer la pièce, comme le fait l'IDE de référence).
      */
     public final Path lambdaStubsJar;
 

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Le classpath de la VM ouvrière avec l'APK de l'app (lot XX, la
- * manière CodeAssist, ForkedKotlinCompiler.kt:67-76) : plusieurs
+ * manière l'IDE de référence (compilateur Kotlin dissocié, l. 67-76)) : plusieurs
  * entrées, le pack EN TÊTE, le registrar Compose dans l'APK — et
  * homeOuvriere qui extrait les ressources du pack, PREMIÈRE entrée
  * .dex.zip du classpath.

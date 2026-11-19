@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.config.Services;
 
 /**
  * Ouvrier du compilateur Kotlin en machine virtuelle FORKÉE (lot VII,
- * la manière CodeAssist {@code ForkedKotlinCompiler}) : l'APK allégé
+ * la manière éprouvée {@code ForkedKotlinCompiler}) : l'APK allégé
  * ne porte plus les 43 Mo de dex du compilateur — il vit dans un pack
  * de dex différé, chargé par une VM non-zygote dont le tas dépasse le
  * plafond {@code largeHeap} de l'application.

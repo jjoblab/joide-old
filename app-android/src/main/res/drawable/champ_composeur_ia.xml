@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — le CHAMP DU COMPOSEUR IA : le conteneur tonal max au
+     rayon 24 ; le liseré suit le focus — bord fin 1 dp au repos,
+     accent 2 dp saisi (le traitement du champ par le kit Material). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/jo_contenant_max" />
+            <stroke android:width="2dp" android:color="?attr/jo_accent" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/jo_contenant_max" />
+            <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+</selector>

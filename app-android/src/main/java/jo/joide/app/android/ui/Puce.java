@@ -77,6 +77,29 @@ public final class Puce extends AppCompatTextView {
         auditeur = ecouteur;
     }
 
+    /**
+     * Pose une teinte LIBRE (lot C5) : la puce des écrans IA se
+     * colore par le rôle qu'elle joue (mode d'agent, puce « En
+     * cours », badge « Gratuit ») — fond et texte explicites, bord
+     * du même fond. La sélection par catégories reste intacte.
+     *
+     * @param fond  la couleur de remplissage
+     * @param texte la couleur du libellé
+     */
+    public void poserTeinte(Integer fond, Integer texte) {
+        GradientDrawable libre = new GradientDrawable();
+        libre.setColor(fond == null ? palette.surfaceHaute : fond);
+        libre.setCornerRadius(GraphiteVue.dp(getContext(), 250));
+        if (fond != null) {
+            libre.setStroke(GraphiteVue.dp(getContext(), 1), fond);
+        }
+        setBackground(libre);
+        if (texte != null) {
+            setTextColor(texte);
+            setTypeface(GraphiteVue.police(getContext(), 500, false));
+        }
+    }
+
     @Override
     public void setEnabled(boolean actif) {
         super.setEnabled(actif);

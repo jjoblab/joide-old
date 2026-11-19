@@ -170,7 +170,7 @@ public final class FournisseurBascule implements FournisseurLlm {
     }
 
     /**
-     * Lot C4 (l'écran Usages « N de M utilisé » de CodeAssist) : les
+     * Lot C4 (l'écran Usages « N de M utilisé » de l'IDE de référence) : les
      * compteurs du modèle courant — la clé la plus chargée parle pour
      * toutes (celle qui porte la fenêtre la plus pleine).
      *
@@ -202,7 +202,7 @@ public final class FournisseurBascule implements FournisseurLlm {
     }
 
     /**
-     * Lot C4 (le « réinitialisé dans X » de CodeAssist) : les
+     * Lot C4 (le « réinitialisé dans X » de l'IDE de référence) : les
      * instants où les fenêtres du modèle courant se relancent (la
      * sortie de la plus ancienne requête).
      *

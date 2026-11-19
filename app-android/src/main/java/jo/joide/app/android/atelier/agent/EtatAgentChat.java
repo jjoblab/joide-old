@@ -490,9 +490,9 @@ public final class EtatAgentChat {
 
     // ------------------------------------------------------------------
     // Lot C4 (2026-11-20, demande du terrain : « la section thinking
-    // identique à CodeAssist ») — les TRANCHES DE TRAVAIL : tout ce
+    // identique à l'IDE de référence ») — les TRANCHES DE TRAVAIL : tout ce
     // qui précède la DERNIÈRE carte d'outil d'un tour se replie en UN
-    // bloc (le WorkBlock de CodeAssist) ; ce qui suit reste au premier
+    // bloc (le WorkBlock de l'IDE de référence) ; ce qui suit reste au premier
     // plan. Décision PURE ici (testée JVM), la vue ne déduit rien.
     // ------------------------------------------------------------------
 
@@ -517,7 +517,7 @@ public final class EtatAgentChat {
      * tranche courante (ils ne se replient jamais dans un bloc) ; une
      * suite de cartes sans AUCUN outil ne forme pas de tranche (le
      * raisonnement seul reste déployé au premier plan, la manière
-     * CodeAssist du ThinkingStep vivant).
+     * l'IDE de référence du ThinkingStep vivant).
      *
      * @return les tranches (indices dans la liste des cartes)
      */
@@ -565,7 +565,7 @@ public final class EtatAgentChat {
     /**
      * Le pli d'un bloc de travail (le tap de l'en-tête, lot C4 — le
      * bloc se replie par défaut, même en cours de tour : la manière
-     * CodeAssist du WorkBlock).
+     * l'IDE de référence du WorkBlock).
      *
      * @param cle     la clé de la tranche
      * @param deplie  l'état posé
@@ -588,7 +588,7 @@ public final class EtatAgentChat {
     /**
      * Le nombre de fichiers TOUCHANT une tranche : les cibles
      * distinctes des cartes d'outil (le « N fichiers » de l'en-tête du
-     * bloc, lot C4 — CodeAssist y compte les changes de chaque
+     * bloc, lot C4 — l'IDE de référence y compte les changes de chaque
      * appel ; les cibles des outils sont l'équivalent honnête ici).
      *
      * @param cartes   la liste des cartes
@@ -671,7 +671,7 @@ public final class EtatAgentChat {
 
     /**
      * Les jetons compacts du pied d'usage (lot T, la manière
-     * CodeAssist) : « 940 », « 8.4k », « 1.2M » — assez pour lire une
+     * l'IDE de référence) : « 940 », « 8.4k », « 1.2M » — assez pour lire une
      * tendance, court pour une légende d'une ligne.
      *
      * @param n le nombre de jetons
@@ -710,7 +710,7 @@ public final class EtatAgentChat {
 
     private void fermerCartesOuvertes() {
         // la réflexion SE REPLIE quand le tour passe à autre chose
-        // (lot T, la manière CodeAssist) — le tap la rouvre
+        // (lot T, la manière éprouvée) — le tap la rouvre
         if (raisonnementCourant != null) {
             raisonnementCourant.deplie = false;
         }

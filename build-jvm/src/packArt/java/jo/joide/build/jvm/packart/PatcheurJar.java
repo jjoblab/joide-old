@@ -14,7 +14,7 @@ import org.objectweb.asm.ClassWriter;
 
 /**
  * Le patcheur du pack : applique {@link PassesArt} à un jar du
- * compilateur Kotlin AVANT son dexage (la manière CodeAssist, sa
+ * compilateur Kotlin AVANT son dexage (la manière éprouvée, sa
  * tâche {@code ArtPatchJarTask} — les classes ne passent PAS par la
  * dexation de l'APK, donc pas d'instrumentation AGP). Toute classe
  * ciblée est réécrite, tout le reste est copié tel quel.

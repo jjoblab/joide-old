@@ -21,7 +21,7 @@ import org.objectweb.asm.tree.MethodNode;
  * retour est faux — retourner vrai fait passer les assertions et
  * écrit/relit les actions synchronement sur le fil appelant, le
  * postulat correct d'un run en ligne de commande (la même polarité
- * que le bureau chez CodeAssist, où l'hôte enregistre son fil comme
+ * que le bureau chez l'IDE de référence, où l'hôte enregistre son fil comme
  * EDT).</p>
  *
  * <p>Le corps ENTIER est remplacé (l'idiome canonique : écrire le

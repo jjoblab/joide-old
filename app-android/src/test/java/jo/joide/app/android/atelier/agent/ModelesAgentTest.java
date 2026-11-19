@@ -15,7 +15,7 @@ import jo.joide.app.android.atelier.agent.ModelesAgent.Tri;
 
 /**
  * Les tests JVM du lot C4 — le modèle pur du SÉLECTEUR de modèles
- * (la manière CodeAssist du ModelPickerSheet : recherche multi-terme,
+ * (la manière du sélecteur éprouvé : recherche multi-terme,
  * fournisseur d'identifiant, gratuits seulement, tri naturel,
  * sections une fois chaque modèle).
  */
@@ -171,7 +171,7 @@ class ModelesAgentTest {
                 new Filtre("", null, false, Tri.FOURNISSEUR),
                 List.of(), List.of());
         // l'identifiant SANS fournisseur porte en TÊTE (la chaîne
-        // vide d'abord — le compareBy vendor ?: "" de CodeAssist),
+        // vide d'abord — le compareBy vendor ?: "" de l'IDE de référence),
         // puis anthropic < openai < z-ai, le nom dans chacun (4.1
         // avant 5.1 — le nombre se lit)
         assertEquals(List.of("gpt-5.1-nu",

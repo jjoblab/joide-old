@@ -24,7 +24,7 @@ import jo.joide.tasks.TaskGraph;
  * « No class roots are found in the JDK path: /apex/com.android.art »
  * sur la route console JVM) : sur ART, kotlinc SANS -no-jdk sonde
  * java.home (ART, aucune racine JDK) et échoue ; la manière
- * CodeAssist — -no-jdk et android.jar DU CLASSPATH. La fabrique pose
+ * l'IDE de référence — -no-jdk et android.jar DU CLASSPATH. La fabrique pose
  * donc le plateau dans les DEUX classpaths (kotlinc ET ecj lisent
  * java.* du classpath) et ne met -no-jdk QUE sur la tâche Kotlin.
  */

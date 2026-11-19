@@ -94,7 +94,7 @@ class PassesArtTest {
     /** Toute INSTRUCTION management (appel ou champ typé) a disparu
      *  des méthodes du PerformanceManager — les descripteurs de
      *  champs DÉCLARÉS restent (ART ne les résout qu'à l'usage, le
-     *  constat CodeAssist). */
+     *  constat l'IDE de référence). */
     private static boolean citeManagement(ClassNode classe) {
         for (MethodNode méthode : classe.methods) {
             AbstractInsnNode insn = méthode.instructions.getFirst();

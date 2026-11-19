@@ -479,7 +479,7 @@ class KotlinForkedDriverTest {
      * déjà l'ouvrier (workerKotlin) et la fermeture runtime du
      * compilateur (les dépendances de son POM) — sur l'appareil, le
      * pack différé tient ce rôle (« l'APK de l'app lui sert de
-     * classpath », la manière CodeAssist).
+     * classpath », la manière éprouvée).
      */
     private static String classpathOuvrier() throws Exception {
         return System.getProperty("java.class.path")

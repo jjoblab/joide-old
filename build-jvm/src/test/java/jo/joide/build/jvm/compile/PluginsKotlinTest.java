@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * La sonde des plugins Kotlin (lot XIX, la manière CodeAssist) : la
+ * La sonde des plugins Kotlin (lot XIX, la manière éprouvée) : la
  * présence de {@code androidx/compose/runtime/Composable.class} dans
  * un jar OU un répertoire du classpath active le plugin Compose —
  * zéro réglage utilisateur, zéro option -P ; le jar du plugin sort du
@@ -109,7 +109,7 @@ class PluginsKotlinTest {
         assertEquals(plugin.toString(), args.get(position + 1),
                 "le jar du plugin suit l'option");
         assertFalse(args.contains("-P"),
-                "ZÉRO option -P pour Compose (la manière CodeAssist)");
+                "ZÉRO option -P pour Compose (la manière éprouvée)");
     }
 
     @Test
@@ -121,7 +121,7 @@ class PluginsKotlinTest {
         try {
             assertEquals(plugin, PluginsKotlin.jarCompose(null),
                     "la propriété de l'APK gagne (lot XX, la manière "
-                            + "CodeAssist — jar extrait des assets)");
+                            + "l'IDE de référence — jar extrait des assets)");
         } finally {
             System.clearProperty("joide.compose.plugin.jar");
         }

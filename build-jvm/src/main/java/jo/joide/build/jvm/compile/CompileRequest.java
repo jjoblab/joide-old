@@ -30,7 +30,7 @@ public final class CompileRequest {
     public final String sourceLevel;
     /** Encodage des sources. */
     public final String encoding;
-    /** Compilateur SANS JDK (lot XIV — la manière CodeAssist,
+    /** Compilateur SANS JDK (lot XIV — la manière éprouvée,
      *  {@code ForkedKotlincArtSpike} : « -no-jdk » avec
      *  {@code android.jar} au classpath fourni) : le compilateur ne
      *  cherche JAMAIS de racines JDK sous {@code java.home} — sur
@@ -123,7 +123,7 @@ public final class CompileRequest {
         }
 
         /** @param sansJdk vrai : -no-jdk (java.* du classpath —
-         *  la manière CodeAssist, compilation Android)
+         *  la manière éprouvée, compilation Android)
          *  @return ce bâtisseur */
         public Builder noJdk(boolean sansJdk) {
             this.noJdk = sansJdk;

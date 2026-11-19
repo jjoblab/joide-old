@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot A7 (ADR-085 décision 12) — L'EN-TÊTE D'UNE SECTION du sélecteur
-  de modèles (favoris, récents, suggestions) : la légende estompée
-  sur les retraits de la ligne de menu — l'enteteSection d'hier.
+  Lot C5 — L'EN-TÊTE D'UNE SECTION du sélecteur de modèles (favoris,
+  récents, tous) : la note 13 sp semi-grasse ACCENT, retraits 8/10/4 —
+  la voix qui ouvre la liste.
 -->
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/titre_section"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingLeft="@dimen/jo_pad_ligne_menu"
-    android:paddingRight="@dimen/jo_pad_ligne_menu"
-    android:paddingTop="@dimen/jo_ecart_ligne_menu"
-    android:paddingBottom="@dimen/jo_pad_ligne_tonale"
-    android:textAppearance="@style/TextAppearance.Jo.Legende"
-    android:textColor="?attr/jo_texte3" />
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="4dp"
+    android:textSize="13sp"
+    android:textStyle="bold"
+    android:textColor="?attr/jo_accent" />

@@ -2,31 +2,33 @@ package jo.joide.app.android.ecrans.atelier;
 
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
 
 import jo.joide.app.android.R;
-import jo.joide.app.android.atelier.agent.EtatAgentChat;
-import jo.joide.app.android.databinding.ItemAssiseUsagesBinding;
+import jo.joide.app.android.databinding.ItemCompteurUsagesBinding;
 import jo.joide.app.android.databinding.PopupUsagesBinding;
 
 /**
- * Lot A7 (ADR-085, découpage de {@code ControleurAgent}) — le
- * contrôleur des USAGES de l'agent : un COMPTEUR par fenêtre plafonnée
- * (requêtes, jetons), sa bande colorée et son pourcentage, puis les
- * trois pieds de la conversation et l'état du banc de clés (lot T,
- * ADR-065 — la manière CodeAssist). Le popup porte son bouton
- * d'actualisation — l'occupation se relit sans rouvrir. Corps dans
- * {@code popup_usages.xml} gonflé par binding : aucune vue du cadre
- * n'est instanciée ici.
- *
- * <p>Lot C4 (2026-11-20, demande du terrain : « l'écran usage, mêmes
- * fonctionnalités » — consultation clean-room n° 4, mandat du
- * propriétaire) : chaque compteur porte son « N sur M utilisés » et
- * son « réinitialisé dans X » (la sortie de la plus ancienne requête
- * de la fenêtre glissante — l'horloge d'écran le fait décompter à la
- * seconde) ; la puce « En cours » marque la fenêtre qui PORTE le
- * modèle (la plus chargée — le chip « In use » de CodeAssist).</p>
+ * Lot C5 (mandat du propriétaire : « l'écran usage, mêmes
+ * fonctionnalités, design identique ») — l'écran des USAGES au dessin
+ * de référence : la grande carte centrée (460 dp, rayon 24, conteneur
+ * tonal haut, liseré bord-fin) porte le titre « Limites d'usage »,
+ * l'Actualisation et la Fermeture 30 dp ; le sous-titre honnête dit
+ * ce que l'écran rapporte ; UN COMPTEUR par fenêtre plafonnée du
+ * régulateur (requêtes, jetons) : le nom 14 sp semi-gras, la puce « En
+ * cours » sur la fenêtre qui PORTE le modèle (la plus chargée), le
+ * pourcentage, la bande 8 dp (accent, alerte au seuil de 80 %,
+ * erreur au plafond — jamais en dessous), « N sur M utilisés » et
+ * « réinitialisé dans X » qui DÉCOMPTE à la seconde (la sortie de la
+ * plus ancienne requête de la fenêtre glissante) ; la note des étapes
+ * (« chaque étape de l'agent est une requête — un message peut en
+ * compter plusieurs ») ; le bouton Terminé plein cadre.
  */
 final class ControleurUsagesAgent {
+
+    /** Le seuil d'avertissement de la bande (0,8 — la couleur
+     *  change à 80 %, l'erreur au plafond). */
+    private static final double SEUIL_BANDE = 0.8;
 
     private final HoteAtelier hote;
 
@@ -38,8 +40,8 @@ final class ControleurUsagesAgent {
     }
 
     /**
-     * L'écran Usages (centré avec voile au lot A7, décision 12) :
-     * le popup se suffit (Actualiser, Fermeture), jamais un seul OK.
+     * L'écran Usages : la grande carte centrée — le popup se suffit
+     * (Actualisation, Fermeture, Terminé).
      */
     void ouvrir() {
         if (hote.agent() == null || hote.vueAgent() == null) {
@@ -48,18 +50,24 @@ final class ControleurUsagesAgent {
         arreterHorloge();
         PopupUsagesBinding corps = PopupUsagesBinding.inflate(
                 LayoutInflater.from(hote.contexte()));
-        corps.titreUsages.setText(R.string.agent_usages_titre);
+        corps.sousTitreUsages.setText(hote.texte(
+                R.string.agent_usages_sous_titre));
         corps.rafraichirUsages.setOnClickListener(vue -> construire(corps));
         corps.fermerUsages.setOnClickListener(vue -> {
             arreterHorloge();
             hote.popups().fermer();
         });
+        corps.terminerUsages.setOnClickListener(vue -> {
+            arreterHorloge();
+            hote.popups().fermer();
+        });
         construire(corps);
-        hote.popups().centrer(corps.getRoot(),
-                hote.texte(R.string.agent_usages_titre));
+        hote.popups().centrerLarge(corps.getRoot(),
+                hote.texte(R.string.agent_usages_titre), 460, false,
+                this::arreterHorloge);
     }
 
-    /** Le corps de l'écran Usages : compteurs, pieds, banc. */
+    /** Le corps de l'écran : compteurs et notes. */
     private void construire(PopupUsagesBinding corps) {
         // ---- les compteurs du régulateur (l'occupation des fenêtres
         // du modèle courant — la bande prévient AVANT le 429) ----
@@ -69,8 +77,7 @@ final class ControleurUsagesAgent {
         boolean plafondConnu = compteurs[1] > 0 || compteurs[3] > 0;
         // les compteurs se montrent PLEINS ou pas du tout : sans plafond
         // appris, deux lignes vides ne s'affichent jamais — l'écran le
-        // dit honnêtement à la place (reprise d'audit : le libellé et
-        // la visibilité avaient été perdus à la migration)
+        // dit honnêtement à la place
         corps.compteurRequetesUsages.getRoot().setVisibility(
                 plafondConnu ? View.VISIBLE : View.GONE);
         corps.compteurJetonsUsages.getRoot().setVisibility(
@@ -80,14 +87,28 @@ final class ControleurUsagesAgent {
         if (!plafondConnu) {
             corps.sansPlafondUsages.setText(hote.texte(
                     R.string.agent_usages_sans_plafond));
-        }
-        if (plafondConnu) {
+        } else {
             // la fenêtre qui PORTE le modèle (la plus chargée) reçoit
-            // la puce « En cours » — le chip In use de CodeAssist
+            // la puce « En cours » — elle passe AUSSI en premier
             boolean requetesPortent = compteurs[1] > 0
                     && occupations[0] >= occupations[1];
             boolean jetonsPortent = !requetesPortent && compteurs[3] > 0;
             long maintenant = System.currentTimeMillis();
+            if (!requetesPortent && !jetonsPortent) {
+                // aucune fenêtre ne porte : l'ordre du régulateur reste
+                requetesPortent = true;
+            }
+            ItemCompteurUsagesBinding premier = corps.compteurRequetesUsages;
+            ItemCompteurUsagesBinding second = corps.compteurJetonsUsages;
+            if (jetonsPortent) {
+                premier = corps.compteurJetonsUsages;
+                second = corps.compteurRequetesUsages;
+            }
+            LinearLayout conteneur = corps.corpsUsages;
+            conteneur.removeView(premier.getRoot());
+            conteneur.removeView(second.getRoot());
+            conteneur.addView(premier.getRoot(), 0);
+            conteneur.addView(second.getRoot(), 1);
             poserCompteur(corps.compteurRequetesUsages,
                     hote.texte(R.string.agent_usages_minute_requetes),
                     occupations[0], compteurs[0], compteurs[1],
@@ -100,46 +121,18 @@ final class ControleurUsagesAgent {
                     relances[1] > 0 ? relances[1] - maintenant : -1);
             relancerHorloge(corps);
         }
-
-        // ---- les trois pieds de la conversation (ce qui est facturé
-        // est facturé — la légende compacte du précédent CodeAssist) ----
-        jo.joide.agent.UsageLlm usage = hote.agent().usageConversation();
-        corps.conversationUsages.setText(hote.texte(
-                R.string.agent_usages_conversation_compacte,
-                EtatAgentChat.jetonsCompacts(usage.entrees),
-                EtatAgentChat.jetonsCompacts(usage.sorties),
-                EtatAgentChat.jetonsCompacts(usage.lecturesCache)));
-
-        // ---- l'état du banc de clés ----
-        int taille = hote.agent().tailleBanc();
-        corps.bancUsages.setText(taille == 0
-                ? hote.texte(R.string.agent_usages_banc_vide)
-                : hote.texte(R.string.agent_usages_banc, taille));
-
-        corps.assisesUsages.removeAllViews();
-        LayoutInflater gonfleur = LayoutInflater.from(hote.contexte());
-        for (var assise : hote.agent().bancParRaison().entrySet()) {
-            ItemAssiseUsagesBinding ligne = ItemAssiseUsagesBinding
-                    .inflate(gonfleur, corps.assisesUsages, true);
-            ligne.assiseUsages.setText(hote.texte(
-                    R.string.agent_usages_assis,
-                    assise.getValue(), libelleGenre(assise.getKey())));
-        }
     }
 
     /**
-     * Un compteur d'occupation (lot C4 — la LIGNE COMPLÈTE de
-     * CodeAssist) : le nom, la puce « En cours » sur la fenêtre qui
-     * porte, le pourcentage, la bande dont le REMPLISSAGE suit la
-     * fraction et la teinte (accent, alerte, erreur — BandesUsage,
-     * ADR-062 : l'alerte précède le 429 ; couleur calculée par ligne,
-     * décision 8), le pied « N sur M utilisés » et « réinitialisé
-     * dans X » (la sortie de la plus ancienne requête de la fenêtre
-     * glissante).
+     * Un compteur d'occupation : le nom, la puce « En cours » sur la
+     * fenêtre qui porte, le pourcentage, la bande dont le REMPLISSAGE
+     * suit la fraction et la TEINTE suit le seuil (accent sous 80 %,
+     * alerte au seuil, erreur au plafond), le pied « N sur M utilisés »
+     * et « réinitialisé dans X » (la sortie de la plus ancienne
+     * requête de la fenêtre glissante).
      */
     private void poserCompteur(
-            jo.joide.app.android.databinding.ItemCompteurUsagesBinding
-                    compteur, String nom, double fraction,
+            ItemCompteurUsagesBinding compteur, String nom, double fraction,
             long utilise, long plafond, boolean portant,
             long relanceMs) {
         compteur.nomCompteur.setText(nom);
@@ -148,32 +141,34 @@ final class ControleurUsagesAgent {
         if (portant) {
             compteur.activeCompteur.setText(
                     hote.texte(R.string.agent_usages_actif));
+            compteur.activeCompteur.poserTeinte(
+                    jo.joide.app.android.ui.Graphite.melange(
+                            hote.palette().accent, 0.16f,
+                            hote.palette().surface),
+                    hote.palette().accent);
         }
         compteur.pourcentageCompteur.setText(hote.texte(
                 R.string.agent_usages_occupation,
                 (int) Math.round(fraction * 100)));
         float rempli = (float) Math.max(0.02, Math.min(1, fraction));
-        android.widget.LinearLayout.LayoutParams paramsRemplissage =
-                (android.widget.LinearLayout.LayoutParams)
+        LinearLayout.LayoutParams paramsRemplissage =
+                (LinearLayout.LayoutParams)
                         compteur.remplissageCompteur.getLayoutParams();
         paramsRemplissage.weight = rempli;
         compteur.remplissageCompteur.setLayoutParams(paramsRemplissage);
-        android.widget.LinearLayout.LayoutParams paramsReste =
-                (android.widget.LinearLayout.LayoutParams)
+        LinearLayout.LayoutParams paramsReste =
+                (LinearLayout.LayoutParams)
                         compteur.resteCompteur.getLayoutParams();
         paramsReste.weight = 1f - rempli;
         compteur.resteCompteur.setLayoutParams(paramsReste);
-        // la teinte dit la bande (accent, alerte, erreur)
-        jo.joide.agent.BandesUsage.Bande bande =
-                jo.joide.agent.BandesUsage.bandeDe(fraction);
-        int couleur = switch (bande) {
-            case CRITIQUE -> hote.palette().erreur;
-            case ATTENTION -> hote.palette().alerte;
-            default -> hote.palette().accent;
-        };
+        // la teinte suit le seuil : accent sous 80 %, alerte au seuil,
+        // erreur au plafond
+        int couleur = fraction >= 1 ? hote.palette().erreur
+                : fraction >= SEUIL_BANDE ? hote.palette().alerte
+                : hote.palette().accent;
         compteur.remplissageCompteur.getBackground().mutate()
                 .setTint(couleur);
-        // le pied (lot C4) : « N sur M utilisés » + « réinitialisé dans X »
+        // le pied : « N sur M utilisés » + « réinitialisé dans X »
         compteur.utiliseCompteur.setText(plafond > 0
                 ? hote.texte(R.string.agent_usages_utilise,
                         utilise, plafond) : "");
@@ -182,15 +177,14 @@ final class ControleurUsagesAgent {
 
     /** Le « réinitialisé dans X » d'un compteur (−1 : rien). */
     private void majRelance(
-            jo.joide.app.android.databinding.ItemCompteurUsagesBinding
-                    compteur, long relanceMs) {
+            ItemCompteurUsagesBinding compteur, long relanceMs) {
         compteur.relanceCompteur.setText(relanceMs > 0
                 ? hote.texte(R.string.agent_usages_relance,
                         texteRelance(hote, relanceMs)) : "");
     }
 
     /**
-     * L'horloge du décompte (une seconde par pas, lot C4) : la fenêtre
+     * L'horloge du décompte (une seconde par pas) : la fenêtre
      * glissante se vide au fil de l'eau, le « réinitialisé dans X »
      * DÉCOMPTE à l'écran tant que le popup vit.
      */
@@ -224,9 +218,8 @@ final class ControleurUsagesAgent {
     }
 
     /**
-     * Le texte de relance lisible (CodeAssist : « 12 s », puis
-     * « 3 min 05 », puis « 2 h 14 », puis « 1 j 3 h » — la borne 48 h
-     * de CodeAssist).
+     * Le texte de relance lisible (« 12 s », puis « 3 min 05 », puis
+     * « 2 h 14 », puis « 1 j 3 h » — la borne 48 h).
      *
      * @param hote l'hôte (les chaînes localisées)
      * @param ms   l'écart en millisecondes
@@ -253,18 +246,5 @@ final class ControleurUsagesAgent {
         }
         return hote.texte(R.string.agent_usages_relance_jours,
                 (int) (minutes / 1440), (int) (minutes % 1440 / 60));
-    }
-
-    /** Le libellé localisé d'un genre d'assise du banc. */
-    private CharSequence libelleGenre(
-            jo.joide.agent.ErreursLlm.Genre genre) {
-        return hote.texte(switch (genre) {
-            case LIMITE_DEBIT -> R.string.agent_genre_limite_debit;
-            case LIMITE_JOUR -> R.string.agent_genre_limite_jour;
-            case QUOTA_EPUISE -> R.string.agent_genre_quota;
-            case CLE_INVALIDE -> R.string.agent_genre_cle_invalide;
-            case CLE_SANS_DROIT -> R.string.agent_genre_cle_sans_droit;
-            default -> R.string.agent_genre_autre;
-        });
     }
 }

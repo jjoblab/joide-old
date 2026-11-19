@@ -83,7 +83,7 @@ final class ControleurAgent {
      * Lot C4 : la bande d'avertissement d'usage du tiroir suit le tour
      * — la fenêtre qui PORTE le modèle courant (la plus chargée des
      * deux) à ≥ 80 % se dit au-dessus du composeur, la manière
-     * CodeAssist du bandeau de limite (le tap ouvre l'écran Usages).
+     * l'IDE de référence du bandeau de limite (le tap ouvre l'écran Usages).
      */
     private void majAvertissementUsage() {
         if (hote.agent() == null || hote.vueAgent() == null) {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — la bulle du message UTILISATEUR du transcript IA : le
+     conteneur secondaire, coins 20/20/6/20 (le petit coin côté queue,
+     en bas à droite) — la couleur du libellé se pose par le layout
+     (sur conteneur secondaire). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_secondaire" />
+    <corners android:topLeftRadius="20dp" android:topRightRadius="20dp"
+        android:bottomRightRadius="6dp" android:bottomLeftRadius="20dp" />
+</shape>

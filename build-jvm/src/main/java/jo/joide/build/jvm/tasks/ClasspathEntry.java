@@ -28,7 +28,7 @@ public final class ClasspathEntry {
         MODULE_KOTLIN,
         /** Jar ou répertoire hors du build (bibliothèque). */
         EXTERNAL,
-        /** Le R.jar du module (lot XX/h, la manière CodeAssist) :
+        /** Le R.jar du module (lot XX/h, la manière éprouvée) :
          *  classpath de la compilation JAVA et entrée d'empreinte
          *  partout — mais JAMAIS dans le -classpath du compilateur
          *  KOTLIN : kotlinc résout R depuis les sources R.java

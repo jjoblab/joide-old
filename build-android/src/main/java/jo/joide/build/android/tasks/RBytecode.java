@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * Fabrication du jar des classes R en BYTECODE direct — la manière
- * AGP ({@code R.jar}) et la doctrine CodeAssist
+ * AGP ({@code R.jar}) et la doctrine éprouvée
  * ({@code RBytecodeGenerator}) : un R n'est que des constantes
  * {@code public static final int} et des tableaux {@code int[]}
  * ({@code styleable}) — le compiler n'a RIEN à leur apporter, et le
@@ -31,7 +31,7 @@ import java.util.Map;
  * valeurs peuvent s'étendre sur plusieurs lignes). Les lignes et les
  * jetons non reconnus sont SAUTÉS plutôt que fataux : un symbole
  * malformé coûte un champ irrésoluble, une exception coûte tout le
- * build (le contrat CodeAssist).</p>
+ * build (le contrat éprouvé).</p>
  *
  * <p>L'émission écrit les class files À LA MAIN (aucune dépendance :
  * version 52 = V1_8, pool de constantes internée en DEUX phases —

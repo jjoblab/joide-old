@@ -14,7 +14,7 @@ import org.objectweb.asm.Opcodes;
  * (récepteur en premier argument).
  *
  * <p>Pourquoi : le plus gros cluster de crash natif du terrain
- * CodeAssist est un SIGSEGV dans {@code artInstanceOfFromCode} sous
+ * l'IDE de référence est un SIGSEGV dans {@code artInstanceOfFromCode} sous
  * {@code PsiBuilderImpl.bind} → {@code ProductionMarker.isCollapsed},
  * Android 12/12L seulement. {@code isCollapsed} est UN {@code
  * invokeinterface IntSet.contains(I)Z} sur un {@code IntOpenHashSet},

@@ -204,7 +204,7 @@ public final class ToolchainLocator {
      * resolved » sur compileJava après generateRJar (le plateau 35 ne
      * porte que LambdaMetafactory dans son jar system-modules ; AGP
      * pose core-lambda-stubs.jar du build-tools, la même doctrine
-     * CodeAssist ; jamais dexé, D8 désugare l'indy au dexage).
+     * l'IDE de référence ; jamais dexé, D8 désugare l'indy au dexage).
      *
      * <p>Sources, par priorité : le fichier DÉJÀ AU CACHE (l'APK
      * embarque la pièce en asset et l'extrait une fois dans le MÊME
@@ -213,7 +213,7 @@ public final class ToolchainLocator {
      * {@code JOIDE_LAMBDA_STUBS}, puis la ressource EMBARQUÉE du
      * module, extraite une fois au cache (le bureau, les tests).
      * Retourne nul si la pièce manque (contractuellement possible —
-     * les appelants acceptent le nul, comme le fait CodeAssist sur
+     * les appelants acceptent le nul, comme le fait l'IDE de référence sur
      * les vieux build-tools).</p>
      */
     private Path lambdaStubs() {

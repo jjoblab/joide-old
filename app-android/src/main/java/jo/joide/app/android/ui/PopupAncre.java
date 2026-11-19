@@ -9,7 +9,7 @@ import jo.joide.app.android.R;
  * Le popup ANCRÉ (lot T, ADR-065 ; généralisé au lot A7, ADR-085
  * décision 12) : une carte qui tombe — ou monte — depuis la vue qui
  * l'appelle, jamais un dialogue centré qui coupe la conversation. Le
- * précédent des menus d'en-tête de CodeAssist : le menu vit près de
+ * précédent des menus d'en-tête de l'IDE de référence : le menu vit près de
  * son bouton, le doigt ne quitte pas son contexte.
  *
  * <p>Lot A7 — la GÉNÉRALISATION : la carte (fond surface, liseré

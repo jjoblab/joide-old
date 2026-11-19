@@ -397,7 +397,7 @@ public final class BuildRunner implements AutoCloseable {
         // téléphones, même récents) : refuser signifiait « aucun
         // build » pour ces appareils — le rapport du 2026-11-17
         // (« build refused: memory budget 448 MiB exceeds daemon heap
-        // 256 MiB ») suivait exactement ce mur. La manière CodeAssist
+        // 256 MiB ») suivait exactement ce mur. La manière éprouvée
         // (AndroidMemory) : le matériel borne, l'outil s'adapte — le
         // budget reste un plafond d'usage, pas un droit d'entrée.
         int budgetMb = budgetEffectif(spec.heapMb);
@@ -520,7 +520,7 @@ public final class BuildRunner implements AutoCloseable {
     /**
      * Vrai si la VM hôte est ART (appareil Android) : le vendeur
      * « Android » ou un {@code java.home} sous {@code /apex} — la
-     * détection de CodeAssist (le vendor Dalvik/Android). Au bureau,
+     * détection de l'IDE de référence (le vendor Dalvik/Android). Au bureau,
      * la JVM hôte EST le JDK : les racines java.* y vivent.
      */
     private static boolean surAppareil() {
@@ -593,7 +593,7 @@ public final class BuildRunner implements AutoCloseable {
                 .withKotlinDriver(kotlinDriver())
                 .withSourceAnchors(roots);
         // lot XVIII : sur APPAREIL, la route console JVM n'a ni JDK
-        // ni racines java.* — la manière CodeAssist : -no-jdk et
+        // ni racines java.* — la manière éprouvée : -no-jdk et
         // android.jar DU CLASSPATH (le plateau compile-time du cache
         // SDK, le même que la route Android ; locate() télécharge les
         // pièces manquantes, épinglées par SHA-256). Au bureau, le

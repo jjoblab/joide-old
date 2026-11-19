@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 — la carte d'OUTIL : point d'état (8 dp, accent/en cours,
-  réussite, erreur), nom mono semi-gras, cible, libellé droit
-  (« 14 lignes ▸ » / « Refusé ») ; le résultat se déplie au tap de la
-  rangée quand l'outil est fini. Le fond et la bordure se posent par
-  code (la couleur du bord dépend de l'état).
+  Lot C5 — la ligne d'APPEL D'OUTIL au dessin de référence : l'icône
+  d'état 14 dp (le glyphe se pose par code : rotation qui tourne,
+  coche, croix), le TITRE où le VERBE (le premier mot) vit plus bas
+  que sa cible (la couleur se pose par code), le détail replié
+  (la première ligne du résultat, ≤ 160 dp), le chevron. Déplié, la
+  section « Résultat » : une étiquette 11 sp semi-grasse et le bloc
+  monospace sur conteneur tonal haut (rayon 8, rembourrage 10/8,
+  hauteur bornée 320 dp, il défile dedans).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -17,54 +21,91 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="11dp"
-        android:paddingEnd="11dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp">
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
 
-        <View
-            android:id="@+id/point_outil"
-            android:layout_width="8dp"
-            android:layout_height="8dp" />
-
-        <TextView
-            android:id="@+id/nom_outil"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="9dp"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:singleLine="true" />
+        <!-- l'icône d'état : le glyphe se pose par code -->
+        <FrameLayout
+            android:id="@+id/statut_outil"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:importantForAccessibility="no" />
 
         <TextView
-            android:id="@+id/cible_outil"
+            android:id="@+id/titre_outil"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:textSize="12sp"
-            android:textColor="?attr/jo_texte3"
-            android:fontFamily="monospace"
-            android:singleLine="true" />
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte"
+            android:singleLine="true"
+            android:ellipsize="end" />
 
         <TextView
-            android:id="@+id/libelle_outil"
+            android:id="@+id/detail_outil"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="?attr/jo_texte3"
-            android:singleLine="true" />
+            android:maxWidth="160dp"
+            android:layout_marginStart="8dp"
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte2"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:visibility="gone"
+            android:importantForAccessibility="no" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/chevron_outil"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            app:jo_icone_glyphe="chevron"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:importantForAccessibility="no" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/resultat_outil"
+    <!-- la section « Résultat » dépliée : l'étiquette + le bloc
+         monospace défilant borné 320 dp -->
+    <LinearLayout
+        android:id="@+id/bloc_resultat_outil"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="11dp"
-        android:paddingEnd="11dp"
-        android:paddingBottom="9dp"
-        android:textSize="11sp"
-        android:textColor="?attr/jo_texte2"
-        android:fontFamily="monospace"
-        android:visibility="gone" />
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingEnd="2dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/libelle_resultat_outil"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/agent_resultat"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="?attr/jo_texte2"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/resultat_outil"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bloc_resultat_outil"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:textSize="12sp"
+            android:textColor="?attr/jo_texte"
+            android:fontFamily="monospace"
+            android:maxHeight="320dp"
+            android:scrollbars="vertical"
+            android:importantForAccessibility="no" />
+    </LinearLayout>
 </LinearLayout>

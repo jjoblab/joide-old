@@ -17,10 +17,10 @@ import jo.joide.deps.repo.TransportResponse;
 import jo.joide.platform.Hashing;
 
 /**
- * Les packs d'outils DIFFÉRÉS (APK allégé, la manière CodeAssist) :
+ * Les packs d'outils DIFFÉRÉS (APK allégé, la manière éprouvée) :
  * D8/R8 et bundletool sont des jars Java — ART ne charge pas des
  * fichiers {@code .class}, ils partent en packs de DEX pré-construits
- * ({@code r8.dex.zip} chez CodeAssist) que l'application télécharge
+ * ({@code r8.dex.zip} chez l'IDE de référence) que l'application télécharge
  * UNE fois à la première construction, épinglés par taille et
  * SHA-256 dans le répertoire d'outillage partagé.
  *
@@ -65,7 +65,7 @@ public final class PacksOutils {
      *  bundle étant nouveau, l'omission n'avait jamais explosé : le
      *  terrain du 2026-11-18, « bundle[debug] : NoClassDefFoundError:
      *  Failed resolution of: Lcom/google/protobuf/GeneratedMessageV3; ».
-     *  Doctrine (manière CodeAssist, précédent du pack Kotlin qui
+     *  Doctrine (manière éprouvée, précédent du pack Kotlin qui
      *  porte STAX) : un pack est AUTOSUFFISANT — l'adaptateur du pack
      *  charge PAR NOM à travers le chargeur parent, jamais une
      *  dépendance ne voyage à côté. Règle dorée : l'artefact publié
@@ -84,10 +84,10 @@ public final class PacksOutils {
      *  javax.xml.stream + aalto unshadé + stax2-api : ART n'en livre
      *  pas), le JAR ORIGINAL de la stdlib en ressource du lot XVI
      *  (le classpath de compile exige un jar RÉEL — la manière
-     *  CodeAssist), régénéré contre android.jar 35. LOT XX : ce pack
+     *  l'IDE de référence), régénéré contre android.jar 35. LOT XX : ce pack
      *  est IMMUTABLE — le lot XIX l'avait muté (plugin Compose dexé)
      *  sans que le fichier de la release fût remplacé : « pack size
-     *  mismatch » sur l'appareil. Règle dorée (CodeAssist ne publie
+     *  mismatch » sur l'appareil. Règle dorée (l'IDE de référence ne publie
      *  RIEN — audit du 2026-11-17) : un artefact publié ne change
      *  JAMAIS — tout ajout vit dans l'APK ou dans un NOUVEAU fichier
      *  versionné. */
@@ -191,7 +191,7 @@ public final class PacksOutils {
      * <p>Le fichier retourné est TOUJOURS en LECTURE SEULE (lot XIII) :
      * ART refuse de charger un dex/jar MODIFIABLE par un chargeur de
      * classes (la politique W^X d'Android 10+, renforcée sur Android
-     * 14+ — la manière CodeAssist, {@code ArtKotlinPluginLoader} :
+     * 14+ — la manière éprouvée, {@code ArtKotlinPluginLoader} :
      * « Android 14+ won't load a writable dex/jar through a class
      * loader »). Sans cela, la VM ouvrière forkée abortait au
      * démarrage — {@code SecurityException: Writable dex file … is
@@ -306,7 +306,7 @@ public final class PacksOutils {
      * Téléchargement épinglé : écriture en staging, vérification
      * taille + SHA-256 AVANT le posage atomique — jamais un binaire
      * non vérifié au chemin final. Le staging passe en LECTURE SEULE
-     * AVANT le move (la manière CodeAssist, {@code
+     * AVANT le move (la manière éprouvée, {@code
      * ArtKotlinPluginLoader} : chmod le temporaire puis move
      * atomique) — le fichier final naît en lecture seule, ART le
      * charge sans l'objection W^X ; une cible déjà posée (un pack

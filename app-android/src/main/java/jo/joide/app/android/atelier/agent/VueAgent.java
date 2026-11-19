@@ -1,18 +1,21 @@
 package jo.joide.app.android.atelier.agent;
 
 import android.content.Context;
-import android.graphics.Typeface;
-import android.text.InputType;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jo.joide.agent.Permissions;
@@ -44,24 +47,24 @@ import jo.joide.app.android.atelier.agent.EtatAgentChat.TourEtat;
 import jo.joide.app.android.atelier.agent.EtatAgentChat.Tranche;
 
 /**
- * Le tiroir de l'agent (lot P, ADR-É11) : en-tête à puces (modèle,
- * permission, fermer), transcript de cartes (messages, raisonnement
- * replié, outils pliables, questions, usage, erreurs actionnables) et
- * composeur (envoyer / arrêter). La vue ne décide RIEN : l'état pur
+ * Le tiroir de l'agent — le transcript, la ligne d'activité et le
+ * composeur REFAITS AU DESSIN DE RÉFÉRENCE (mandat du propriétaire) :
+ * l'en-tête porte la marque (étincelle en pastille), le titre IA, le
+ * picker de modèle dessous, la puce de mode qui se teinte par
+ * permission, le menu ⋯ ; les messages de l'utilisateur vivent en
+ * BULLE sur le conteneur secondaire (coins 20/20/6/20, ≤ 320 dp) avec
+ * leur bouton copier ; la réponse vit pleine largeur avec le CARET
+ * qui clignote pendant l'écriture et le pied copier + usage ; le
+ * RAISONNEMENT vit à l'identique du ThinkingStep (étincelle qui pulse
+ * tant que le tour la remplit, « Réflexion » ouverte / « Pensée »
+ * repliée rouvrable au tap, conteneur tonal haut ouverte) ; le
+ * travail d'un tour se replie en UN BLOC (icône d'état agrégé, « N
+ * outils · M fichiers », le dernier appel, le rail vertical déplié) ;
+ * la ligne d'activité dit ce que le tour fait et depuis combien de
+ * temps ; le composeur porte le bouton d'envoi ROND 48 dp qui devient
+ * le bouton d'arrêt. La vue ne décide RIEN : l'état pur
  * {@link EtatAgentChat} arrive posé, elle le traduit ; les actions
- * repartent par l'{@link Auditeur} — jamais de logique ici.
- *
- * <p>Lot C4 (2026-11-20, demande du terrain : « la section thinking
- * identique à CodeAssist de tyron12233, toutes fonctionnalités
- * incluses » — consultation clean-room n° 4, mandat du propriétaire) :
- * le travail d'un tour (outils + raisonnements intermédiaires)
- * se replie en UN BLOC à en-tête pliable (point d'état, « N outils ·
- * M fichiers », dernier appel, rail vertical déplié — le WorkBlock
- * de CodeAssist) ; la carte de réflexion vit à l'identique du
- * ThinkingStep (ouverte tant que le tour la remplit, repliée en une
- * ligne « Pensée » rouvrable au tap, point accent PULSANT) ; la bande
- * d'avertissement d'usage (≥ 80 % de la fenêtre qui porte le modèle)
- * s'affiche au-dessus du composeur et ouvre l'écran Usages.</p>
+ * repartent par l'{@link Auditeur}.
  */
 public final class VueAgent extends LinearLayout {
 
@@ -110,14 +113,13 @@ public final class VueAgent extends LinearLayout {
         /**
          * Les options d'ajout du composeur (lot S) : image, photo,
          * fichier courant, projet — l'atelier compose le menu et
-         * porte les pièces, la vue n’affiche que les noms posés.
+         * porte les pièces, la vue n'affiche que les noms posés.
          */
         void ouvrirAjouts();
 
         /**
-         * La bande d'avertissement d'usage est TAPPÉE (lot C4, la
-         * manière CodeAssist du bandeau de limite) : l'écran Usages
-         * s'ouvre — la vue ne décide RIEN.
+         * La bande d'avertissement d'usage est TAPPÉE (lot C4) :
+         * l'écran Usages s'ouvre — la vue ne décide RIEN.
          */
         void ouvrirUsages();
 
@@ -136,13 +138,15 @@ public final class VueAgent extends LinearLayout {
     private final ScrollView defilement;
     private final EditText saisie;
     private final LinearLayout rangeePieces;
-    private final com.google.android.material.button.MaterialButton envoyer;
-    private final com.google.android.material.button.MaterialButton arreter;
-    private final Puce puceModele;
+    private final FrameLayout boutonEnvoi;
+    private final Icone glypheEnvoi;
+    private final LinearLayout pickerModele;
+    private final TextView nomModele;
     private final Puce puceMode;
     private final Icone vueMenu;
     private final Icone vueAjouter;
     private final LinearLayout ligneActivite;
+    private final Icone etincelleActivite;
     private final TextView texteActivite;
     private final TextView tempsActivite;
     private final LinearLayout bandeAvertissement;
@@ -152,10 +156,11 @@ public final class VueAgent extends LinearLayout {
     private final View resteAvertissement;
     private final android.os.Handler horloge = new android.os.Handler(
             android.os.Looper.getMainLooper());
-    /** La pulsation du point vivant (lot C4 — l'étoile qui clignote du
-     *  ThinkingStep de CodeAssist) : UN animateur, la vue du point
-     *  change à chaque rafraîchissement, l'animateur se réinstalle. */
-    private android.animation.ObjectAnimator pulsation;
+    /** Les pulsations vivantes (l'étincelle du tour, celle de la
+     *  réflexion, celle du bloc au travail) : le rafraîchissement les
+     *  arrête TOUTES avant d'en poser de neuves. */
+    private final List<android.animation.ValueAnimator> pulsations =
+            new ArrayList<>(3);
     private Long debutEnCours;
     private Auditeur auditeur;
     private EtatAgentChat etat = new EtatAgentChat();
@@ -169,11 +174,10 @@ public final class VueAgent extends LinearLayout {
         super(contexte, attributs);
         setOrientation(VERTICAL);
         palette = GraphiteVue.palette(contexte);
-        int fond = palette.fond;
 
-        // ---- la coque du XML (lot L5) : en-tête, transcript,
-        // ligne d'activité, composeur — les auditeurs et glyphes
-        // restent posés ici (le contrat des vues du kit ne change pas)
+        // ---- la coque du XML : en-tête (marque, titre, picker, mode,
+        // menu, fermer), transcript, bande d'avertissement, ligne
+        // d'activité, composeur — les auditeurs restent posés ici
         coque = TiroirAgentBinding.inflate(
                 LayoutInflater.from(contexte), this, true);
         composeur = coque.composeur;
@@ -181,13 +185,15 @@ public final class VueAgent extends LinearLayout {
         defilement = coque.defilementAgent;
         saisie = composeur.saisieAgent;
         rangeePieces = composeur.rangeePiecesAgent;
-        envoyer = composeur.btnEnvoyerAgent;
-        arreter = composeur.btnArreterAgent;
-        puceModele = coque.puceModeleAgent;
+        boutonEnvoi = composeur.btnEnvoyerAgent;
+        glypheEnvoi = composeur.glypheEnvoiAgent;
+        pickerModele = coque.pickerModeleAgent;
+        nomModele = coque.nomPickerAgent;
         puceMode = coque.puceModeAgent;
         vueMenu = coque.btnMenuAgent;
         vueAjouter = composeur.btnAjouterPiece;
         ligneActivite = coque.ligneActiviteAgent;
+        etincelleActivite = coque.etincelleActiviteAgent;
         texteActivite = coque.libelleActiviteAgent;
         tempsActivite = coque.ecouleActiviteAgent;
         bandeAvertissement = coque.avertissementUsageAgent;
@@ -201,32 +207,58 @@ public final class VueAgent extends LinearLayout {
             }
         });
 
-        // lot A9 : les couleurs de la saisie et du bouton vivent en XML
-        // (?attr/jo_texte, ?attr/jo_texte3, Widget.Jo.Button.Tonal) ; la
-        // police Graphite (400) reste posée ici (ADR-085 décision 7 :
-        // graisse non exprimable en textAppearance).
+        // la police Graphite du champ reste posée ici (ADR-085
+        // décision 7 : la graisse n'est pas exprimable en
+        // textAppearance)
         saisie.setTypeface(GraphiteVue.police(contexte, 400, false));
-        envoyer.setOnClickListener(vue -> envoyer());
-        arreter.setOnClickListener(vue -> {
-            if (auditeur != null) {
+        boutonEnvoi.setOnClickListener(vue -> {
+            if (auditeur == null) {
+                return;
+            }
+            if (etat.etat() == TourEtat.EN_COURS) {
                 auditeur.arreter();
+            } else {
+                envoyer();
             }
         });
-        puceModele.setOnClickListener(vue -> auditeurModele());
-        puceMode.setOnClickListener(vue -> auditeurMode());
+        pickerModele.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.ouvrirModele();
+            }
+        });
+        puceMode.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.ouvrirMode();
+            }
+        });
         vueMenu.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirMenuAgent();
             }
         });
-        // lot A9 : glyphe, couleur et description des icônes (menu,
-        // fermer, ajouter) vivent en XML (app:jo_icone_* sur
-        // tiroir_agent/composeur_agent) — une seule voie de thémage
         Icone fermer = coque.btnFermerAgent;
         fermer.setOnClickListener(vue -> demanderFermeture());
         vueAjouter.setOnClickListener(vue -> {
             if (auditeur != null) {
                 auditeur.ouvrirAjouts();
+            }
+        });
+        // la saisie suit son contenu : le bouton d'envoi s'active
+        // quand il y a quelque chose à envoyer
+        saisie.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start,
+                    int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start,
+                    int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                majBoutonEnvoi();
             }
         });
     }
@@ -250,9 +282,9 @@ public final class VueAgent extends LinearLayout {
         return vueAjouter;
     }
 
-    /** L'ancre de la puce modèle (le sélecteur ancré, lot T). */
+    /** L'ancre du picker de modèle (le sélecteur ancré, lot T). */
     public View ancreModele() {
-        return puceModele;
+        return pickerModele;
     }
 
     /** L'ancre de la puce de MODE de permission (le menu ancré des
@@ -295,14 +327,14 @@ public final class VueAgent extends LinearLayout {
         }
     }
 
-    /** Redessine depuis l'état courant. Lot C4 : les TRANCHES DE
-     *  TRAVAIL d'abord (tout ce qui précède la dernière carte d'outil
-     *  d'un tour se replie en un bloc — la décision vit dans
+    /** Redessine depuis l'état courant : les TRANCHES DE TRAVAIL
+     *  d'abord (tout ce qui précède la dernière carte d'outil d'un
+     *  tour se replie en un bloc — la décision vit dans
      *  {@link EtatAgentChat#tranches()}, la vue applique), puis les
-     *  cartes restantes au premier plan. */
+     *  cartes restantes au premier plan, espacées de 12 dp. */
     public void rafraichir() {
         Context contexte = getContext();
-        arreterPulsation();
+        arreterPulsations();
         colonneCartes.removeAllViews();
         List<Carte> cartes = etat.cartes();
         List<Tranche> tranches = etat.tranches();
@@ -323,14 +355,9 @@ public final class VueAgent extends LinearLayout {
             i++;
         }
         if (cartes.isEmpty()) {
-            // l'état vide du transcript (lot A7 : gonflé de
-            // item_vide_agent par binding — plus aucune vue du cadre
-            // instanciée ici)
-            ItemVideAgentBinding vide = ItemVideAgentBinding.inflate(
+            // l'état vide du transcript (gonflé de item_vide_agent)
+            ItemVideAgentBinding.inflate(
                     LayoutInflater.from(contexte), colonneCartes, true);
-            // lot A9 : les couleurs (glyphe et consigne) vivent déjà en
-            // XML (?attr/jo_texte3, item_vide_agent) — injections
-            // redondantes supprimées
         }
         if (etat.plafondAnnonce()) {
             ItemBorneAgentBinding borne = ItemBorneAgentBinding.inflate(
@@ -340,23 +367,55 @@ public final class VueAgent extends LinearLayout {
             colonneCartes.addView(borne.getRoot(), 0);
         }
         boolean enCours = etat.etat() == TourEtat.EN_COURS;
-        envoyer.setEnabled(!enCours);
-        envoyer.setVisibility(enCours ? GONE : VISIBLE);
-        arreter.setVisibility(enCours ? VISIBLE : GONE);
+        majBoutonEnvoi();
         majLigneActivite(enCours);
         if (etat.preRemplissage() != null) {
             saisie.setText(etat.preRemplissage());
         }
-        puceModele.setText(etat.modele().isEmpty()
+        nomModele.setText(etat.modele().isEmpty()
                 ? getContext().getString(R.string.agent_modele_vide)
                 : etat.modele());
-        puceMode.setText(texteMode(etat.mode()));
+        poserTeinteMode();
         defilement.post(() -> defilement.fullScroll(
                 View.FOCUS_DOWN));
     }
 
-    /** La vue d'une carte AU PREMIER PLAN (hors tranche de travail) :
-     *  le même barème d'hier, extrait du rafraîchissement (lot C4). */
+    /** Le bouton d'envoi : la flèche quand le champ porte un message
+     *  à envoyer, le carré d'arrêt quand un tour vit (il reste
+     *  activé : arrêter est TOUJOURS possible). */
+    private void majBoutonEnvoi() {
+        boolean enCours = etat.etat() == TourEtat.EN_COURS;
+        boolean peutEnvoyer = !enCours
+                && saisie.getText().toString().trim().length() > 0;
+        glypheEnvoi.setGlyphe(enCours ? Icone.Glyphe.STOP
+                : Icone.Glyphe.FLECHE);
+        boutonEnvoi.setEnabled(enCours || peutEnvoyer);
+        boutonEnvoi.setAlpha(enCours || peutEnvoyer ? 1f : 0.38f);
+        boutonEnvoi.setContentDescription(getContext().getString(
+                enCours ? R.string.agent_arreter
+                        : R.string.agent_envoyer));
+    }
+
+    /** La puce de MODE se teinte par ce qu'elle laisse faire l'agent :
+     *  l'acceptation auto voit le conteneur réussite, le plan seul le
+     *  conteneur secondaire, la demande le conteneur discret. */
+    private void poserTeinteMode() {
+        puceMode.setText(texteMode(etat.mode()));
+        switch (etat.mode()) {
+            case ACCEPTATION_AUTO -> puceMode.poserTeinte(
+                    Graphite.melange(palette.reussite, 0.14f,
+                            palette.surface),
+                    palette.reussite);
+            case PLAN_SEULEMENT -> puceMode.poserTeinte(
+                    Graphite.melange(palette.accent, 0.16f,
+                            palette.surface),
+                    palette.texte);
+            default -> puceMode.poserTeinte(palette.surfaceHaute,
+                    palette.texteSecondaire);
+        }
+    }
+
+    /** La vue d'une carte AU PREMIER PLAN (hors tranche de travail). */
     private View vueCarte(Carte carte) {
         Context contexte = getContext();
         return switch (carte.genre) {
@@ -380,7 +439,11 @@ public final class VueAgent extends LinearLayout {
     // Les cartes
     // ------------------------------------------------------------------
 
+    /** Le message UTILISATEUR : la bulle sur le conteneur secondaire
+     *  (≤ 320 dp, le petit coin côté queue), les pièces dessous, le
+     *  bouton COPIER qui revient en coche 1,5 s. */
     private View carteMessage(Carte carte) {
+        Context contexte = getContext();
         ItemMsgUtilisateurBinding item = ItemMsgUtilisateurBinding
                 .inflate(LayoutInflater.from(getContext()),
                         colonneCartes, false);
@@ -395,26 +458,45 @@ public final class VueAgent extends LinearLayout {
                         margeParams(getContext()));
             }
         }
+        brancherCopie(item.copierMessage, carte.texte);
         return item.getRoot();
     }
 
+    /** La réponse de l'agent : pleine largeur ; le CARET clignote
+     *  pendant que le tour écrit ; le pied porte le bouton COPIER et
+     *  la légende des jetons quand le tour est fini. */
     private View carteReponse(Carte carte) {
+        Context contexte = getContext();
         ItemMsgAgentBinding item = ItemMsgAgentBinding.inflate(
                 LayoutInflater.from(getContext()),
                 colonneCartes, false);
         TextView vue = item.texteReponse;
         GraphiteVue.typographie(vue, Graphite.CORPS);
         vue.setText(carte.reponse == null ? "" : carte.reponse);
+        boolean enCours = etat.etat() == TourEtat.EN_COURS;
+        boolean ecriture = enCours && estDerniereReponse(carte)
+                && !unOutilTourne();
+        if (ecriture) {
+            // le caret qui clignote : 7×14 dp au rayon 2, la couleur
+            // pulse comme la ligne d'activité
+            item.caretReponse.setVisibility(View.VISIBLE);
+            demarrerPulsationFond(item.caretReponse);
+        }
+        if (!enCours && carte.reponse != null
+                && !carte.reponse.isEmpty()) {
+            item.piedReponse.setVisibility(View.VISIBLE);
+            brancherCopie(item.copierReponse, carte.reponse);
+        }
         return item.getRoot();
     }
 
-    /** La carte de réflexion (lot C4 — l'IDENTIQUE du ThinkingStep de
-     *  CodeAssist) : l'en-tête [point accent PULSANT (tant que le tour
-     *  la remplit) · « Réflexion… » | « Pensée » · chevron], OUVERTE
-     *  tant que le tour vit (il se passe quelque chose à regarder),
-     *  repliée à UNE LIGNE quand il est fini — le tap rouvre ; plus de
-     *  compte de lignes dans l'en-tête (CodeAssist n'en montre pas).
-     */
+    /** La carte de RÉFLEXION au dessin de référence : l'en-tête
+     *  [étincelle 12 dp · « Réflexion » | « Pensée » · chevron],
+     *  OUVERTE tant que le tour la remplit (il se passe quelque chose
+     *  à regarder), repliée à UNE LIGNE quand il est fini — le tap
+     *  rouvre ; ouverte, la carte prend le conteneur tonal haut au
+     *  rayon 14 et le rembourrage 12/10 ; repliée, le fond se retire
+     *  et le rembourrage tombe à 2/4. */
     private View carteRaisonnement(Carte carte) {
         Context contexte = getContext();
         ItemRaisonnementBinding item = ItemRaisonnementBinding.inflate(
@@ -423,65 +505,69 @@ public final class VueAgent extends LinearLayout {
         boolean vivant = etat.etat() == TourEtat.EN_COURS
                 && estDernierRaisonnement(carte);
         boolean ouverte = carte.deplie || vivant;
-        if (!ouverte) {
-            bloc.setBackgroundResource(0);
-            int fin = GraphiteVue.dp(contexte, 2);
-            bloc.setPadding(fin, fin, fin, fin);
-        }
-        // le point vivant PULSE (la marque qui respire de CodeAssist)
-        item.pointRaisonnement.setVisibility(
-                vivant ? View.VISIBLE : View.GONE);
+        boolean pliable = !vivant && carte.raisonnement.length() > 0;
+
+        // l'étincelle : elle pulse tant que le tour remplit la carte,
+        // elle pose l'accent quand elle est finie
+        Icone etincelle = item.etincelleRaisonnement;
         if (vivant) {
-            item.pointRaisonnement.setBackground(
-                    cercle(contexte, palette.accent));
-            demarrerPulsation(item.pointRaisonnement);
+            demarrerPulsationTrait(etincelle);
+        } else {
+            etincelle.setCouleur(palette.accent);
         }
+
         TextView plis = item.plisRaisonnement;
-        GraphiteVue.typographie(plis, Graphite.LEGENDE);
-        plis.setTextColor(palette.texteSecondaire);
-        plis.setText(vivant
+        plis.setText(contexte.getString(vivant
                 ? R.string.agent_raisonnement_vivant
-                : R.string.agent_raisonnement_plie);
-        plis.setSingleLine(true);
-        plis.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        // le chevron suit l'état (la rotation du précédent CodeAssist)
-        LinearLayout entete = item.enteteRaisonnement;
-        Icone chevron = new Icone(contexte);
-        chevron.setGlyphe(Icone.Glyphe.CHEVRON);
-        chevron.setCouleur(palette.texteEstompe);
-        chevron.setTraitDp(1.6f);
-        chevron.setRotation(ouverte ? 180f : 0f);
-        entete.setOnClickListener(vue -> {
-            carte.deplie = !ouverte;
-            rafraichir();
+                : R.string.agent_raisonnement_plie));
+
+        // le chevron ne vit que sur une carte finie repliable
+        Icone chevron = item.chevronRaisonnement;
+        if (pliable) {
+            chevron.setVisibility(View.VISIBLE);
+            chevron.setRotation(ouverte ? 90f : 0f);
+        }
+
+        // la carte : conteneur tonal haut rayon 14 ouverte, transparente
+        // repliée ; le rembourrage suit (12/10 ouverte, 2/4 repliée)
+        if (ouverte) {
+            bloc.setBackgroundResource(R.drawable.carte_reflexion_ia);
+            bloc.setPadding(GraphiteVue.dp(contexte, 12),
+                    GraphiteVue.dp(contexte, 10),
+                    GraphiteVue.dp(contexte, 12),
+                    GraphiteVue.dp(contexte, 10));
+        } else {
+            bloc.setBackgroundResource(0);
+            bloc.setPadding(GraphiteVue.dp(contexte, 2),
+                    GraphiteVue.dp(contexte, 4),
+                    GraphiteVue.dp(contexte, 2),
+                    GraphiteVue.dp(contexte, 4));
+        }
+
+        bloc.setOnClickListener(vue -> {
+            if (pliable) {
+                carte.deplie = !ouverte;
+                rafraichir();
+            }
         });
-        entete.addView(chevron, new LinearLayout.LayoutParams(
-                GraphiteVue.dp(contexte, 16),
-                GraphiteVue.dp(contexte, 16)));
         if (ouverte && carte.raisonnement.length() > 0) {
             TextView texte = item.contenuRaisonnement;
-            GraphiteVue.typographie(texte, Graphite.LEGENDE);
+            GraphiteVue.typographie(texte, Graphite.NOTE);
             texte.setText(carte.raisonnement.toString());
             texte.setVisibility(View.VISIBLE);
         }
-        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.setLayoutParams(params);
         return bloc;
     }
 
     /**
-     * LE BLOC DE TRAVAIL d'un tour (lot C4 — l'IDENTIQUE du WorkBlock
-     * de CodeAssist) : tout ce qui précède la dernière carte d'outil
-     * se replie en UNE rangée [point d'état agrégé · « N outils · M
-     * fichiers » · le dernier appel · chevron] ; déplié, le RAIL
-     * VERTICAL porte les étapes dans l'ordre (la réflexion ouverte
-     * tant qu'elle vit, chaque appel d'outil pliable, les lignes
-     * tonales). Le pli vit dans l'état pur (clé = id d'appel du
-     * dernier outil — survit aux évictions) ; l'état agrégé suit
-     * en cours > refus > fini.
+     * LE BLOC DE TRAVAIL d'un tour : tout ce qui précède la dernière
+     * carte d'outil se replie en UNE rangée [icône d'état agrégé · « N
+     * outils · M fichiers » · le dernier appel · chevron] ; déplié,
+     * le RAIL VERTICAL (1 dp) porte les étapes dans l'ordre (la
+     * réflexion ouverte tant qu'elle vit, chaque appel d'outil
+     * pliable, les lignes tonales). Le pli vit dans l'état pur (clé =
+     * id d'appel du dernier outil — survit aux évictions) ; l'état
+     * agrégé suit en cours > erreur > refus > fini.
      */
     private View carteTravail(List<Carte> cartes, Tranche tranche) {
         Context contexte = getContext();
@@ -506,14 +592,7 @@ public final class VueAgent extends LinearLayout {
                 }
             }
         }
-        int couleur = agregat == EtatOutil.EN_COURS ? palette.accent
-                : agregat == EtatOutil.REFUSE ? palette.erreur
-                : palette.reussite;
-        item.pointTravail.setBackground(cercle(contexte, couleur));
-        if (agregat == EtatOutil.EN_COURS) {
-            // la marque respire tant qu'un appel tourne (CodeAssist)
-            demarrerPulsation(item.pointTravail);
-        }
+        poserIconeEtat(item.statutTravail, agregat, true);
 
         // le résumé « N outils · M fichiers » (M omis sans fichiers)
         int fichiers = EtatAgentChat.fichiersTouches(cartes, tranche);
@@ -523,10 +602,11 @@ public final class VueAgent extends LinearLayout {
             resume.append(" · ").append(contexte.getString(
                     R.string.agent_travail_fichiers, fichiers));
         }
+        item.resumeTravail.setTypeface(GraphiteVue.police(contexte,
+                500, false));
         item.resumeTravail.setText(resume);
 
-        // replié, l'en-tête dit le DERNIER appel (CodeAssist : folded,
-        // the header still says what the run did last)
+        // replié, l'en-tête dit le DERNIER appel
         String cle = EtatAgentChat.cleDeTranche(cartes, tranche);
         boolean deplie = etat.travailDeplie(cle);
         String titreDernier = dernierOutil == null ? ""
@@ -535,7 +615,7 @@ public final class VueAgent extends LinearLayout {
                         || dernierOutil.cible.isEmpty() ? ""
                         : " " + dernierOutil.cible);
         item.dernierTravail.setText(deplie ? "" : titreDernier);
-        item.chevronTravail.setRotation(deplie ? 180f : 0f);
+        item.chevronTravail.setRotation(deplie ? 90f : 0f);
         item.enteteTravail.setOnClickListener(vue -> {
             etat.poserTravailDeplie(cle, !deplie);
             rafraichir();
@@ -543,7 +623,7 @@ public final class VueAgent extends LinearLayout {
 
         if (deplie) {
             // le rail vertical porte les étapes DANS L'ORDRE (le
-            // drawBehind du rail de CodeAssist, ici une vue 1 dp)
+            // contenu vit à 19 dp du bord — le rail à 8, l'écart de 10)
             item.etapesTravail.setVisibility(View.VISIBLE);
             LinearLayout colonne = item.colonneEtapesTravail;
             for (int i = tranche.debut(); i <= tranche.fin(); i++) {
@@ -560,75 +640,134 @@ public final class VueAgent extends LinearLayout {
                     default -> null;
                 };
                 if (vue != null) {
+                    LinearLayout.LayoutParams params = new
+                            LinearLayout.LayoutParams(
+                            LayoutParams.MATCH_PARENT,
+                            LayoutParams.WRAP_CONTENT);
+                    params.bottomMargin = GraphiteVue.dp(contexte, 4);
+                    vue.setLayoutParams(params);
                     colonne.addView(vue);
                 }
             }
         }
-        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.setLayoutParams(params);
         return bloc;
     }
 
+    /** La ligne d'un APPEL D'OUTIL : l'icône d'état, le TITRE où le
+     *  VERBE vit plus bas que sa cible, le détail replié (première
+     *  ligne du résultat), le chevron ; déplié, la section
+     *  « Résultat » : le bloc monospace défilant borné 320 dp. */
     private View carteOutil(Carte carte) {
         Context contexte = getContext();
         ItemOutilBinding item = ItemOutilBinding.inflate(
                 LayoutInflater.from(contexte), colonneCartes, false);
         LinearLayout bloc = item.getRoot();
-        android.graphics.drawable.GradientDrawable fond =
-                new android.graphics.drawable.GradientDrawable();
-        fond.setColor(palette.surface);
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
-        int couleur = carte.etatOutil == EtatOutil.EN_COURS
-                ? palette.accent
-                : carte.etatOutil == EtatOutil.REFUSE
-                        ? palette.erreur : palette.reussite;
-        fond.setStroke(GraphiteVue.dp(contexte, 1),
-                carte.etatOutil == EtatOutil.REFUSE
-                        ? couleur : palette.bordFin);
-        bloc.setBackground(fond);
-        item.pointOutil.setBackground(cercle(contexte, couleur));
-        TextView nom = item.nomOutil;
-        nom.setTypeface(GraphiteVue.police(contexte, 500, true));
-        nom.setTextColor(carte.etatOutil == EtatOutil.REFUSE
-                ? palette.erreur : palette.texte);
-        nom.setText(carte.outil);
-        TextView cible = item.cibleOutil;
-        GraphiteVue.typographie(cible, Graphite.LEGENDE);
-        cible.setText(carte.cible);
-        if (carte.etatOutil != EtatOutil.EN_COURS
-                && carte.resultat != null) {
-            TextView resume = item.libelleOutil;
-            GraphiteVue.typographie(resume, Graphite.LEGENDE);
-            resume.setText(carte.etatOutil == EtatOutil.REFUSE
-                    ? contexte.getString(R.string.agent_refuse)
-                    : contexte.getString(R.string.agent_lignes,
-                            carte.lignesResultat));
+
+        poserIconeEtat(item.statutOutil, carte.etatOutil, false);
+
+        // le titre : le verbe (premier mot) vit plus bas que la cible
+        String titre = carte.outil
+                + (carte.cible == null || carte.cible.isEmpty() ? ""
+                        : " " + carte.cible);
+        TextView vueTitre = item.titreOutil;
+        vueTitre.setTypeface(GraphiteVue.police(contexte, 400, false));
+        vueTitre.setText(titreVerbe(titre));
+        vueTitre.setTextColor(palette.texte);
+
+        // le détail replié : la première ligne du résultat
+        TextView detail = item.detailOutil;
+        boolean ouvrable = carte.etatOutil != EtatOutil.EN_COURS
+                && carte.resultat != null;
+        if (ouvrable && !carte.deplie) {
+            detail.setVisibility(View.VISIBLE);
+            detail.setText(premiereLigne(carte.resultat));
+        }
+        Icone chevron = item.chevronOutil;
+        if (ouvrable) {
+            chevron.setVisibility(View.VISIBLE);
+            chevron.setRotation(carte.deplie ? 90f : 0f);
             item.rangeeOutil.setOnClickListener(vue -> {
                 carte.deplie = !carte.deplie;
                 rafraichir();
             });
         }
         if (carte.deplie && carte.resultat != null) {
-            TextView texte = item.resultatOutil;
-            texte.setTypeface(GraphiteVue.police(contexte, 400, true));
-            texte.setText(carte.resultat);
-            texte.setVisibility(View.VISIBLE);
+            item.blocResultatOutil.setVisibility(View.VISIBLE);
+            TextView resultat = item.resultatOutil;
+            resultat.setTypeface(GraphiteVue.police(contexte, 400,
+                    true));
+            resultat.setText(carte.resultat);
+            resultat.setMovementMethod(
+                    new android.text.method.ScrollingMovementMethod());
         }
-        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.setLayoutParams(params);
         return bloc;
+    }
+
+    /** Le titre d'un appel : le premier mot (le verbe de l'outil) en
+     *  graisse moyenne et couleur secondaire, le reste au premier
+     *  plan. */
+    private CharSequence titreVerbe(String titre) {
+        int coupe = titre.indexOf(' ');
+        if (coupe <= 0) {
+            return titre;
+        }
+        SpannableString span = new SpannableString(titre);
+        span.setSpan(new StyleSpan(android.graphics.Typeface.BOLD),
+                0, coupe, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        span.setSpan(new ForegroundColorSpan(palette.texteSecondaire),
+                0, coupe, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return span;
+    }
+
+    /** La première ligne d'un résultat pluri-lignes (le détail
+     *  replié d'un appel). */
+    private static String premiereLigne(String resultat) {
+        if (resultat == null) {
+            return "";
+        }
+        int fin = resultat.indexOf('\n');
+        return fin < 0 ? resultat : resultat.substring(0, fin);
+    }
+
+    /** L'icône d'état d'un appel ou du groupe : la rotation qui
+     *  tourne (14 dp, trait 1,5) tant qu'il vit, la coche réussite,
+     *  la croix erreur, la croix alerte du refus. */
+    private void poserIconeEtat(FrameLayout conteneur,
+                                EtatOutil etatOutil, boolean groupe) {
+        Context contexte = getContext();
+        conteneur.removeAllViews();
+        if (etatOutil == EtatOutil.EN_COURS) {
+            // la rotation qui tourne : une progression indéterminée
+            // teintée accent dans la case 14 dp
+            android.widget.ProgressBar rotation =
+                    new android.widget.ProgressBar(contexte, null,
+                            android.R.attr.progressBarStyleSmall);
+            rotation.setIndeterminate(true);
+            rotation.getIndeterminateDrawable().mutate()
+                    .setTint(palette.accent);
+            FrameLayout.LayoutParams params = new FrameLayout
+                    .LayoutParams(GraphiteVue.dp(contexte, 14),
+                    GraphiteVue.dp(contexte, 14),
+                    android.view.Gravity.CENTER);
+            conteneur.addView(rotation, params);
+            return;
+        }
+        Icone icone = new Icone(contexte);
+        icone.setGlyphe(etatOutil == EtatOutil.REFUSE
+                ? Icone.Glyphe.CROIX : Icone.Glyphe.COCHE);
+        icone.setCouleur(etatOutil == EtatOutil.REFUSE
+                ? (groupe ? palette.erreur : palette.erreur)
+                : palette.reussite);
+        icone.setTraitDp(1.5f);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                GraphiteVue.dp(contexte, 14),
+                GraphiteVue.dp(contexte, 14),
+                android.view.Gravity.CENTER);
+        conteneur.addView(icone, params);
     }
 
     private View ligneTonale(String texte) {
         Context contexte = getContext();
-        // lot A7 : gonflé d'item_ligne_tonale_agent par binding — la
-        // mono compact estompée d'hier vit dans le layout
         ItemLigneTonaleAgentBinding ligne =
                 ItemLigneTonaleAgentBinding.inflate(
                         LayoutInflater.from(contexte), colonneCartes,
@@ -639,10 +778,9 @@ public final class VueAgent extends LinearLayout {
 
     private View carteUsage(Carte carte) {
         Context contexte = getContext();
-        // la légende discrète de fin de tour (la manière CodeAssist) :
-        // les jetons compacts (« 940 », « 8.4k », « 1.2M »), la ligne
-        // qui monte tendance sans prendre la place — lot A7 : gonflée
-        // d'item_usage_agent par binding
+        // la légende discrète de fin de tour : les jetons compacts
+        // (« 940 », « 8.4k », « 1.2M »), la ligne qui monte tendance
+        // sans prendre la place
         ItemUsageAgentBinding vue = ItemUsageAgentBinding.inflate(
                 LayoutInflater.from(contexte), colonneCartes, false);
         UsageLlm u = carte.usage;
@@ -684,16 +822,16 @@ public final class VueAgent extends LinearLayout {
 
     private View carteErreur(Carte carte) {
         Context contexte = getContext();
-        // lot A7 : titre, détail et ACTION vivent dans le layout
-        // d'item — plus aucune vue du cadre instanciée ici
         ItemErreurAgentBinding item = ItemErreurAgentBinding.inflate(
                 LayoutInflater.from(contexte), colonneCartes, false);
         LinearLayout bloc = item.getRoot();
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
-        fond.setColor(0x12E06C75);
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
-        fond.setStroke(GraphiteVue.dp(contexte, 1), 0x66E06C75);
+        fond.setColor(Graphite.melange(palette.erreur, 0.14f,
+                palette.surface));
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 14));
+        fond.setStroke(GraphiteVue.dp(contexte, 1),
+                Graphite.melange(palette.erreur, 0.45f, palette.surface));
         bloc.setBackground(fond);
         item.titreErreur.setText(texteErreur(carte));
         item.detailErreur.setText(carte.detail);
@@ -707,11 +845,6 @@ public final class VueAgent extends LinearLayout {
             item.actionErreur.setOnClickListener(vue ->
                     ouvrirReglagesIa());
         }
-        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.setLayoutParams(params);
         return bloc;
     }
 
@@ -723,14 +856,12 @@ public final class VueAgent extends LinearLayout {
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
         fond.setColor(palette.surface);
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 12));
-        fond.setStroke(GraphiteVue.dp(contexte, 1), 0x5982AAFF);
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 14));
+        fond.setStroke(GraphiteVue.dp(contexte, 1),
+                Graphite.melange(palette.accent, 0.35f, palette.surface));
         bloc.setBackground(fond);
         for (int i = 0; i < carte.questions.size(); i++) {
             EtatAgentChat.Question question = carte.questions.get(i);
-            // lot A7 : la demande et sa rangée d'options vivent dans
-            // item_question_ligne gonflé par binding (les Puce du kit
-            // restent posées par code : elles portent l'état pointé)
             ItemQuestionLigneBinding ligne =
                     ItemQuestionLigneBinding.inflate(
                             LayoutInflater.from(contexte), bloc, true);
@@ -768,13 +899,45 @@ public final class VueAgent extends LinearLayout {
                 options.addView(puce, margeParams(contexte));
             }
         }
-        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT);
-        params.setMargins(0, GraphiteVue.dp(contexte, 3), 0,
-                GraphiteVue.dp(contexte, 3));
-        bloc.setLayoutParams(params);
         return bloc;
     }
+
+    // ------------------------------------------------------------------
+    // Le bouton copier (la coche revient 1,5 s)
+    // ------------------------------------------------------------------
+
+    /** Branche le bouton copier : le texte part au presse-papiers, le
+     *  glyphe revient en coche réussie 1,5 s. */
+    private void brancherCopie(Icone bouton, String texte) {
+        bouton.setGlyphe(Icone.Glyphe.COPIER);
+        bouton.setCouleur(palette.texteSecondaire);
+        bouton.setTraitDp(1.5f);
+        bouton.setOnClickListener(vue -> {
+            try {
+                android.content.ClipboardManager pressePapiers =
+                        (android.content.ClipboardManager)
+                                getContext().getSystemService(
+                                        Context.CLIPBOARD_SERVICE);
+                if (pressePapiers != null) {
+                    pressePapiers.setPrimaryClip(
+                            android.content.ClipData.newPlainText(
+                                    "message", texte));
+                }
+            } catch (RuntimeException e) {
+                // le presse-papiers reste un détail : rien ne crash
+            }
+            bouton.setGlyphe(Icone.Glyphe.COCHE);
+            bouton.setCouleur(palette.reussite);
+            horloge.postDelayed(() -> {
+                bouton.setGlyphe(Icone.Glyphe.COPIER);
+                bouton.setCouleur(palette.texteSecondaire);
+            }, 1500);
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // La ligne d'activité et la bande d'avertissement
+    // ------------------------------------------------------------------
 
     private void envoyer() {
         String message = saisie.getText().toString().trim();
@@ -785,23 +948,11 @@ public final class VueAgent extends LinearLayout {
         auditeur.envoyer(message);
     }
 
-    /**
-     * Le sélecteur de fournisseur et de modèle (puce d'en-tête, lot
-     * S) : l'atelier ouvre le dialogue in-situ — plus de détour par
-     * les réglages.
-     */
+    /** Le picker de modèle de l'en-tête : l'atelier ouvre le
+     *  dialogue in-situ. */
     private void auditeurModele() {
         if (auditeur != null) {
             auditeur.ouvrirModele();
-        }
-    }
-
-    /** La puce de mode de permission (ADR-É11 point 3) : l'atelier
-     *  compose le menu ANCRÉ des modes (lot A7 — la vue ne décide
-     *  RIEN du contenu). */
-    private void auditeurMode() {
-        if (auditeur != null) {
-            auditeur.ouvrirMode();
         }
     }
 
@@ -846,51 +997,72 @@ public final class VueAgent extends LinearLayout {
         void fermer();
     }
 
-    private android.graphics.drawable.GradientDrawable cercle(
-            Context contexte, int couleur) {
-        android.graphics.drawable.GradientDrawable rond =
-                new android.graphics.drawable.GradientDrawable();
-        rond.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-        rond.setColor(couleur);
-        return rond;
-    }
+    // ------------------------------------------------------------------
+    // Les pulsations (la marque qui respire)
+    // ------------------------------------------------------------------
 
     /**
-     * La marque vivante RESPIRE (lot C4, la pulsation de la marque de
-     * CodeAssist) : UN animateur pour UN point vivant à la fois (le
-     * point de réflexion vivant OU le point du bloc dont un outil
-     * tourne) — le rafraîchissement l'arrête avant d'en poser un
-     * neuf, jamais d'accumulateur.
+     * La pulsation du TRAIT d'une étincelle : la couleur glisse de la
+     * couleur secondaire vers l'accent et retour (900 ms, elle va et
+     * revient) — deux couleurs OPACQUES, jamais un alpha qui rend
+     * le glyphe translucide.
      *
-     * @param point la vue du point vivant
+     * @param icone l'étincelle vivante
      */
-    private void demarrerPulsation(View point) {
-        pulsation = android.animation.ObjectAnimator.ofFloat(point,
-                "alpha", 1f, 0.25f);
-        pulsation.setDuration(700);
+    private void demarrerPulsationTrait(Icone icone) {
+        android.animation.ValueAnimator pulsation =
+                android.animation.ValueAnimator.ofObject(
+                        new android.animation.ArgbEvaluator(),
+                        palette.texteSecondaire, palette.accent);
+        pulsation.setDuration(900);
         pulsation.setRepeatCount(
                 android.animation.ValueAnimator.INFINITE);
         pulsation.setRepeatMode(
                 android.animation.ValueAnimator.REVERSE);
+        pulsation.addUpdateListener(animation ->
+                icone.setCouleur((Integer) animation.getAnimatedValue()));
         pulsation.start();
-    }
-
-    /** Arrête la pulsation courante (un rafraîchissement arrive). */
-    private void arreterPulsation() {
-        if (pulsation != null) {
-            pulsation.cancel();
-            pulsation = null;
-        }
+        pulsations.add(pulsation);
     }
 
     /**
-     * La bande d'avertissement d'usage au-dessus du composeur (lot C4,
-     * l'IDENTIQUE du bandeau de limite de CodeAssist) : visible
-     * seulement quand la fenêtre qui porte le modèle courant est
-     * chargée (≥ 80 %), la mini-bande suit la fraction, la teinte dit
-     * la bande (alerte au seuil, erreur au plafond) — le tap ouvre
-     * l'écran Usages. Les données viennent du service (le contrôleur
-     * pose) : la vue ne lit RIEN.
+     * La pulsation du FOND du caret : la couleur du bloc glisse de
+     * la couleur secondaire vers l'accent et retour.
+     *
+     * @param vue le caret vivant
+     */
+    private void demarrerPulsationFond(View vue) {
+        android.animation.ValueAnimator pulsation =
+                android.animation.ValueAnimator.ofObject(
+                        new android.animation.ArgbEvaluator(),
+                        palette.texteSecondaire, palette.accent);
+        pulsation.setDuration(900);
+        pulsation.setRepeatCount(
+                android.animation.ValueAnimator.INFINITE);
+        pulsation.setRepeatMode(
+                android.animation.ValueAnimator.REVERSE);
+        pulsation.addUpdateListener(animation ->
+                vue.getBackground().mutate().setTint(
+                        (Integer) animation.getAnimatedValue()));
+        pulsation.start();
+        pulsations.add(pulsation);
+    }
+
+    /** Arrête TOUTES les pulsations (un rafraîchissement arrive). */
+    private void arreterPulsations() {
+        for (android.animation.ValueAnimator pulsation : pulsations) {
+            pulsation.cancel();
+        }
+        pulsations.clear();
+    }
+
+    /**
+     * La bande d'avertissement d'usage au-dessus du composeur :
+     * visible seulement quand la fenêtre qui porte le modèle courant
+     * est chargée (≥ 80 %), la mini-bande suit la fraction, la teinte
+     * dit le seuil (alerte au seuil, erreur au plafond) — le tap
+     * ouvre l'écran Usages. Les données viennent du service (le
+     * contrôleur pose) : la vue ne lit RIEN.
      *
      * @param fraction    l'occupation de la fenêtre qui porte (0..1)
      * @param requetes    vrai si la fenêtre porteuse compte des
@@ -916,14 +1088,20 @@ public final class VueAgent extends LinearLayout {
                 : contexte.getString(
                         R.string.agent_avertissement_relance,
                         relanceTexte));
-        // la teinte du bandeau : alerte au seuil, erreur au plafond
-        int teinte = epuise || fraction >= 1 ? palette.erreur
-                : palette.alerte;
+        // le bandeau : le conteneur tonal haut au seuil, le tonal
+        // erreur au plafond ; l'icône suit
+        boolean critique = epuise || fraction >= 1;
         android.graphics.drawable.GradientDrawable fond =
                 new android.graphics.drawable.GradientDrawable();
-        fond.setCornerRadius(GraphiteVue.dp(contexte, 10));
-        fond.setColor(Graphite.melange(teinte, 0.12f, palette.fond));
+        fond.setCornerRadius(GraphiteVue.dp(contexte, 14));
+        fond.setColor(critique
+                ? Graphite.melange(palette.erreur, 0.14f, palette.surface)
+                : palette.surfaceHaute);
         bandeAvertissement.setBackground(fond);
+        coque.iconeAvertissementAgent.setGlyphe(critique
+                ? Icone.Glyphe.TRIANGLE : Icone.Glyphe.INFO);
+        coque.iconeAvertissementAgent.setCouleur(critique
+                ? palette.erreur : palette.texte);
         // la mini-bande suit la fraction (le poids du remplissage)
         float rempli = (float) Math.max(0.02, Math.min(1, fraction));
         android.widget.LinearLayout.LayoutParams paramsRemplissage =
@@ -936,12 +1114,13 @@ public final class VueAgent extends LinearLayout {
                         resteAvertissement.getLayoutParams();
         paramsReste.weight = 1f - rempli;
         resteAvertissement.setLayoutParams(paramsReste);
-        remplissageAvertissement.getBackground().mutate().setTint(teinte);
+        remplissageAvertissement.getBackground().mutate().setTint(
+                critique ? palette.erreur : palette.alerte);
         bandeAvertissement.setVisibility(VISIBLE);
     }
 
-    /** Le seuil d'avertissement (CodeAssist : 0,8 — la bande ne
-     *  supplie JAMAIS en dessous). */
+    /** Le seuil d'avertissement (0,8 — la bande ne supplie JAMAIS en
+     *  dessous). */
     private static final double SEUIL_AVERTISSEMENT = 0.8;
 
     /** Vrai si cette carte est le dernier raisonnement du transcript. */
@@ -956,10 +1135,34 @@ public final class VueAgent extends LinearLayout {
         return false;
     }
 
+    /** Vrai si cette carte est la dernière réponse du transcript. */
+    private boolean estDerniereReponse(Carte carte) {
+        List<Carte> cartes = etat.cartes();
+        for (int i = cartes.size() - 1; i >= 0; i--) {
+            Carte c = cartes.get(i);
+            if (c.genre == Genre.REPONSE) {
+                return c == carte;
+            }
+        }
+        return false;
+    }
+
+    /** Vrai si un appel d'outil tourne (le caret se tait : la ligne
+     *  d'activité dit « Exécution… »). */
+    private boolean unOutilTourne() {
+        for (Carte c : etat.cartes()) {
+            if (c.genre == Genre.OUTIL
+                    && c.etatOutil == EtatOutil.EN_COURS) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
-     * La ligne d'activité (lot T, la manière CodeAssist) : le tour qui
-     * tourne annonce ce qu'il fait — réflexion, outil, rédaction — et
-     * depuis combien de temps, si un pas long ne lit jamais un blocage.
+     * La ligne d'activité : l'étincelle qui pulse, ce que le tour fait
+     * (réflexion, exécution d'un outil, rédaction) et depuis combien
+     * de temps — un pas long ne lit jamais un blocage.
      */
     private void majLigneActivite(boolean enCours) {
         if (!enCours) {
@@ -972,7 +1175,10 @@ public final class VueAgent extends LinearLayout {
             debutEnCours = android.os.SystemClock
                     .elapsedRealtime();
         }
+        etincelleActivite.setCouleur(palette.accent);
+        demarrerPulsationTrait(etincelleActivite);
         texteActivite.setText(labelActivite());
+        tempsActivite.setText(texteEcart());
         ligneActivite.setVisibility(VISIBLE);
         horloge.removeCallbacks(tic);
         horloge.postDelayed(tic, 1000);
@@ -1017,8 +1223,8 @@ public final class VueAgent extends LinearLayout {
                         R.string.agent_activite_outil, c.outil);
             }
             if (c.genre == Genre.ATTENTE) {
-                return getContext().getString(R.string.agent_attente,
-                        c.secondes);
+                return getContext().getString(
+                        R.string.agent_activite_attente);
             }
             if (c.genre == Genre.REPONSE) {
                 return getContext()

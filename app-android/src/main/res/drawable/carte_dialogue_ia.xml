@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — la carte des DIALOGUES IA (sélecteur de modèles, usages) :
+     le conteneur tonal haut, le liseré bord-fin 1 dp et le rayon 24
+     de la grande carte centrée. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="?attr/jo_contenant_haut" />
+    <stroke android:width="@dimen/jo_ligne" android:color="?attr/jo_bord_fin" />
+    <corners android:radius="24dp" />
+</shape>

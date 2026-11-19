@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 (§3.9) — le message UTILISATEUR du transcript : aligné à
-  droite, max 84 %, bulle surfaceHaute rayon 16/16/4/16, 14 sp ; les
-  puces de pièces jointes suivent, alignées à droite.
+  Lot C5 — le message UTILISATEUR au dessin de référence : colonne
+  alignée à droite, bulle ≤ 320 dp sur le conteneur secondaire, coins
+  20/20/6/20 (le petit coin côté queue, en bas à droite), texte 15 sp
+  sur conteneur secondaire ; les puces de pièces suivent, alignées à
+  droite ; le bouton COPIER vit dessous (la coche revient 1,5 s).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -14,16 +17,14 @@
         android:id="@+id/texte_message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/agent_bulle_utilisateur"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="2dp"
-        android:maxWidth="300dp"
-        android:textSize="14sp"
-        android:textColor="?attr/jo_texte" />
+        android:background="@drawable/bulle_utilisateur_ia"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:maxWidth="320dp"
+        android:textSize="15sp"
+        android:textColor="?attr/jo_sur_contenant_secondaire" />
 
     <LinearLayout
         android:id="@+id/pieces_message"
@@ -31,4 +32,21 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="end" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/copier_message"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            app:jo_icone_glyphe="copier"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/agent_copier" />
+    </LinearLayout>
 </LinearLayout>

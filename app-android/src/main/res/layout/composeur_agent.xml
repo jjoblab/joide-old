@@ -1,23 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 — le composeur ; lot A9 (ADR-085) : les Boutons du kit
-  quittent le XML au profit de MaterialButton habillé Widget.Jo (D2),
-  la saisie prend ses couleurs par ?attr/jo_* et l'icône d'ajout son
-  glyphe par app:jo_icone_* (une seule voie de thémage). Rangée de
-  pièces (puces retirables, masquée quand vide), saisie 14 sp dans la
-  pilule discrète, bouton envoyer ; la rangée d'arrêt (■ Arrêter le
-  tour) reste masquée tant qu'aucun tour ne vit. Seuls les auditeurs
-  et la police Graphite se posent par code.
+  Lot C5 — le composeur REFAIT AU DESSIN DE RÉFÉRENCE : la rangée de
+  pièces jointes, puis [bouton + 36 dp (le menu d'ajout)] [champ au
+  rayon 24 dp, conteneur tonal max, liseré 1 dp bord-fin → 2 dp accent
+  au focus] [bouton d'envoi ROND 48 dp plein accent, 20 dp de glyphe —
+  le bouton devient le bouton d'ARRÊT quand un tour vit]. La saisie
+  prend ses couleurs par ?attr/jo_* ; le glyphe et l'état du bouton
+  se posent par code.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="10dp">
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
     <LinearLayout
         android:id="@+id/rangee_pieces_agent"
@@ -30,7 +29,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="bottom">
+        android:gravity="center_vertical">
 
         <jo.joide.app.android.ui.Icone
             android:id="@+id/btn_ajouter_piece"
@@ -47,34 +46,40 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="6dp"
-            android:background="@drawable/agent_composeur_fond"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/champ_composeur_ia"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
             android:hint="@string/agent_ecrire_indice"
             android:textColor="?attr/jo_texte"
             android:textColorHint="?attr/jo_texte3"
-            android:textSize="14sp"
+            android:textSize="15sp"
             android:inputType="textMultiLine"
-            android:maxLines="4"
+            android:maxLines="5"
             android:importantForAutofill="no" />
 
-        <com.google.android.material.button.MaterialButton
+        <!-- le bouton rond 48 dp : envoyer (flèche) ↔ arrêter (carré),
+             le glyphe se pose par code -->
+        <FrameLayout
             android:id="@+id/btn_envoyer_agent"
-            style="@style/Widget.Jo.Button.Tonal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:text="@string/agent_envoyer" />
-    </LinearLayout>
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bouton_envoi_agent"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/agent_envoyer">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_arreter_agent"
-        style="@style/Widget.Jo.Button.Tonal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/agent_arreter_tour"
-        android:visibility="gone" />
+            <jo.joide.app.android.ui.Icone
+                android:id="@+id/glyphe_envoi_agent"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                app:jo_icone_glyphe="fleche"
+                app:jo_icone_couleur="?attr/jo_texte_sur_accent"
+                android:importantForAccessibility="no" />
+        </FrameLayout>
+    </LinearLayout>
 </LinearLayout>

@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * La réparation d'historique (ADR-É9, leçon 4 — le
- * {@code pairToolResults} de CodeAssist) : une conversation
+ * {@code pairToolResults} de l'IDE de référence) : une conversation
  * interrompue reste toujours VALIDE pour le fournisseur. Un appel
  * d'outil resté sans réponse (tour interrompu) reçoit un résultat
  * « interrompu » inséré au bon endroit ; un résultat orphelin (sans

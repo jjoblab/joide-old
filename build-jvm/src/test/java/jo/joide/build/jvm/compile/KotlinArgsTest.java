@@ -12,7 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Les arguments du compilateur Kotlin (lot XIV) : le drapeau
- * {@code -no-jdk} — la manière CodeAssist ({@code
+ * {@code -no-jdk} — la manière éprouvée ({@code
  * ForkedKotlincArtSpike} : « -no-jdk, -no-stdlib, -no-reflect » avec
  * {@code android.jar} au classpath) — suit le champ
  * {@code CompileRequest.noJdk}. Sur l'appareil, {@code java.home} est
@@ -41,7 +41,7 @@ class KotlinArgsTest {
                         + "(java.home n'est PAS un JDK sur l'appareil) : "
                         + args);
         // les drapeaux du classpath-only restent posés (la manière
-        // CodeAssist : -no-jdk, -no-stdlib, -no-reflect)
+        // l'IDE de référence : -no-jdk, -no-stdlib, -no-reflect)
         assertTrue(args.contains("-no-stdlib"));
         assertTrue(args.contains("-no-reflect"));
 

@@ -303,7 +303,7 @@ public final class AndroidTaskFactory {
         // doit être résolvable — android.jar les OMET et le plateau 35
         // n'a que LambdaMetafactory dans son jar system-modules ; AGP
         // pose core-lambda-stubs.jar du build-tools, la même doctrine
-        // CodeAssist (le localisateur embarque et extrait la pièce ;
+        // l'IDE de référence (le localisateur embarque et extrait la pièce ;
         // jamais dexé, D8 désugare l'indy au dexage).
         if (toolchain.lambdaStubsJar != null) {
             addExternalJar(graph, upstreamJava, upstreamKotlin,
@@ -317,7 +317,7 @@ public final class AndroidTaskFactory {
         if (modulesAvecR.contains(spec.name)) {
             Path rJar = buildDir.resolve("android").resolve(spec.name)
                     .resolve("r.jar");
-            // LOT XX/h — Kind.EXTERNAL_R (la manière CodeAssist) : le
+            // LOT XX/h — Kind.EXTERNAL_R (la manière éprouvée) : le
             // jar nourrit la compilation JAVA et l'empreinte des DEUX
             // compilations (le manifeste ABI invalide le Kotlin quand
             // R change), mais JAMAIS le -classpath du compilateur
@@ -433,7 +433,7 @@ public final class AndroidTaskFactory {
                     ClasspathEntry.Kind.MODULE_KOTLIN,
                     spec.name + ":kotlin", classesKotlin,
                     abiKotlin.resolve("current"), abiKotlin));
-            // la manière CodeAssist (lot XIV) : -no-jdk — java.*
+            // la manière éprouvée (lot XIV) : -no-jdk — java.*
             // se résout depuis android.jar DU CLASSPATH (posé plus
             // haut, « bibliothèque de plateforme ») ; sans cela la
             // détection JDK consulte java.home (/apex/com.android.art
@@ -738,7 +738,7 @@ public final class AndroidTaskFactory {
 
     /**
      * Les racines Java passées à kotlinc pour la RÉSOLUTION (lot XX/h,
-     * la manière CodeAssist « Kotlin keeps resolving it from R.java
+     * la manière éprouvée « Kotlin keeps resolving it from R.java
      * source ») : les .java du module, PLUS le répertoire gen des
      * sources R.java quand le module en porte. {@code KotlinArgs}
      * passe chaque fichier .java individuellement au compilateur —

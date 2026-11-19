@@ -2,7 +2,7 @@ package jo.joide.agent.espace;
 
 /**
  * Le confinement PAR CONSTRUCTION (ADR-É9, risque n° 2 : aucun
- * confinement chez CodeAssist — le mode auto-accept pouvait sortir
+ * confinement chez l'IDE de référence — le mode auto-accept pouvait sortir
  * du projet). Tout chemin d'outil passe ICI avant d'atteindre le
  * port : relatif, sans « .. », sans racine, sans séparateur
  * retour, borné en longueur — un chemin refusé ne touche JAMAIS le

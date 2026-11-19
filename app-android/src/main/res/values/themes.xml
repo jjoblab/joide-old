@@ -95,6 +95,11 @@
         <item name="jo_pastille_reussite">@color/jo_pastille_reussite</item>
         <item name="jo_pastille_accent">@color/jo_pastille_accent</item>
 
+        <item name="jo_contenant_haut">@color/jo_contenant_haut</item>
+        <item name="jo_contenant_max">@color/jo_contenant_max</item>
+        <item name="jo_contenant_secondaire">@color/jo_contenant_secondaire</item>
+        <item name="jo_sur_contenant_secondaire">@color/jo_sur_contenant_secondaire</item>
+
         <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle</item>
         <item name="jo_syntaxe_type">@color/jo_syntaxe_type</item>
         <item name="jo_syntaxe_fonction">@color/jo_syntaxe_fonction</item>
@@ -190,6 +195,11 @@
         <item name="jo_pastille_violet">@color/jo_pastille_violet_clair</item>
         <item name="jo_pastille_reussite">@color/jo_pastille_reussite_clair</item>
         <item name="jo_pastille_accent">@color/jo_pastille_accent_clair</item>
+
+        <item name="jo_contenant_haut">@color/jo_contenant_haut_clair</item>
+        <item name="jo_contenant_max">@color/jo_contenant_max_clair</item>
+        <item name="jo_contenant_secondaire">@color/jo_contenant_secondaire_clair</item>
+        <item name="jo_sur_contenant_secondaire">@color/jo_sur_contenant_secondaire_clair</item>
 
         <item name="jo_syntaxe_mot_cle">@color/jo_syntaxe_mot_cle_clair</item>
         <item name="jo_syntaxe_type">@color/jo_syntaxe_type_clair</item>

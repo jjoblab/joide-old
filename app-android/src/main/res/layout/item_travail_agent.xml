@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot C4 (2026-11-20, demande du terrain : la section thinking
-  identique à CodeAssist) — LE BLOC DE TRAVAIL d'un tour : tout ce qui
-  précède la dernière carte d'outil (outils, raisonnements, lignes
-  tonales) se replie en UNE rangée — point d'état agrégé, « N outils ·
-  M fichiers », le dernier appel replié, chevron. Déplié : le rail
-  vertical (1 dp) porte les étapes dans l'ordre (la réflexion ouverte
-  tant qu'elle vit, chaque appel d'outil pliable). Le point d'état et
-  les libellés se posent au bind (couleur par ligne, décision 8) ;
-  l'état de pli vit dans EtatAgentChat (clé = id d'appel du dernier
-  outil, survit aux évictions). Le chevron vit en XML (glyphe +
-  couleur, une seule voie de thémage).
+  Lot C5 — LE BLOC DE TRAVAIL d'un tour au dessin de référence : tout
+  ce qui précède la dernière carte d'outil se replie en UNE rangée —
+  l'icône d'état agrégé 14 dp (la rotation qui tourne tant qu'un
+  appel vit, la coche, la croix), le résumé « N outils · M fichiers »,
+  le DERNIER appel replié, le chevron. Déplié, le RAIL vertical 1 dp
+  (bord fin) porte les étapes dans l'ordre à 19 dp du bord — l'état
+  de pli vit dans EtatAgentChat (clé = id d'appel du dernier outil).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/bloc_travail"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -25,73 +20,76 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="@dimen/jo_pad_ligne_menu"
-        android:paddingEnd="@dimen/jo_pad_ligne_menu"
-        android:paddingTop="@dimen/jo_ecart_ligne_menu"
-        android:paddingBottom="@dimen/jo_ecart_ligne_menu"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
         android:background="@drawable/ligne_menu">
 
-        <View
-            android:id="@+id/point_travail"
-            android:layout_width="8dp"
-            android:layout_height="8dp" />
+        <!-- l'icône d'état agrégé : le glyphe se pose par code
+             (rotation tant qu'un appel vit, coche, croix) -->
+        <FrameLayout
+            android:id="@+id/statut_travail"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/resume_travail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="9dp"
-            android:textSize="12sp"
-            android:textStyle="bold"
+            android:layout_marginStart="8dp"
+            android:textSize="13sp"
             android:textColor="?attr/jo_texte"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/dernier_travail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="@dimen/jo_ecart_entete"
-            android:textSize="12sp"
-            android:textColor="?attr/jo_texte3"
+            android:layout_marginStart="8dp"
+            android:textSize="13sp"
+            android:textColor="?attr/jo_texte2"
             android:singleLine="true"
-            android:ellipsize="end" />
+            android:ellipsize="end"
+            android:importantForAccessibility="no" />
 
         <jo.joide.app.android.ui.Icone
             android:id="@+id/chevron_travail"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
             app:jo_icone_glyphe="chevron"
             app:jo_icone_couleur="?attr/jo_texte2"
             android:contentDescription="@string/agent_travail_deplier" />
     </LinearLayout>
 
-    <!-- les étapes dépliées : le RAIL (1 dp) à gauche, la colonne des
-         étapes à droite — les vues des étapes vivent dans leurs
-         propres layouts (item_raisonnement, item_outil, ligne
-         tonale), gonflées par binding, jamais posées à la main -->
+    <!-- les étapes dépliées : le RAIL (1 dp) à 8 dp, la colonne des
+         étapes à 10 dp du rail — les vues des étapes vivent dans
+         leurs propres layouts, gonflées par binding -->
     <LinearLayout
         android:id="@+id/etapes_travail"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingStart="@dimen/jo_pad_ligne_menu"
-        android:paddingEnd="@dimen/jo_pad_ligne_menu"
-        android:paddingBottom="@dimen/jo_ecart_ligne_menu"
+        android:paddingStart="8dp"
+        android:paddingTop="2dp"
         android:visibility="gone">
 
         <View
             android:id="@+id/rail_travail"
             android:layout_width="1dp"
             android:layout_height="match_parent"
-            android:background="?attr/jo_bord_fin" />
+            android:background="?attr/jo_bord_fin"
+            android:importantForAccessibility="no" />
 
         <LinearLayout
             android:id="@+id/colonne_etapes_travail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="@dimen/jo_ecart_entete_interieur"
+            android:layout_marginStart="10dp"
             android:orientation="vertical" />
     </LinearLayout>
 </LinearLayout>

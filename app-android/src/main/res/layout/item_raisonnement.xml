@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Lot L5 (§3.9) — la carte RÉFLEXION : en-tête 12,5 (« ▸ Réflexion ·
-  4 s », texte2 ; point accent 6 dp tant que ça réfléchit) ; ouverte
-  pendant le flux, PLIÉE À LA FIN, rouvrable au tap (l'état pli/ouvert
-  et la visibilité du contenu se posent par code depuis EtatAgentChat).
+  Lot C5 — la carte de RÉFLEXION au dessin de référence : l'en-tête
+  [étincelle 12 dp (elle pulse tant que le tour la remplit) · « Réflexion »
+  | « Pensée » · chevron 12 dp], OUVERTE tant que le tour vit, repliée
+  à UNE LIGNE quand il est fini — le tap rouvre. Ouverte, la carte
+  prend le conteneur tonal haut (rayon 14) et le rembourrage 12/10 ;
+  repliée, le fond et le rembourrage se retirent par code. Le texte
+  suit à 13 sp.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/carte_raisonnement"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/agent_raisonnement_fond"
-    android:paddingStart="11dp"
-    android:paddingEnd="11dp"
-    android:paddingTop="7dp"
-    android:paddingBottom="8dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:id="@+id/entete_raisonnement"
@@ -23,30 +21,42 @@
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <View
-            android:id="@+id/point_raisonnement"
-            android:layout_width="6dp"
-            android:layout_height="6dp"
-            android:layout_marginEnd="7dp"
-            android:background="@drawable/point_onglet"
-            android:visibility="gone" />
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/etincelle_raisonnement"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_marginEnd="6dp"
+            app:jo_icone_glyphe="etincelle"
+            app:jo_icone_couleur="?attr/jo_accent"
+            android:importantForAccessibility="no" />
 
         <TextView
             android:id="@+id/plis_raisonnement"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="12.5sp"
-            android:textColor="?attr/jo_texte2" />
+            android:layout_weight="1"
+            android:textSize="11sp"
+            android:textColor="?attr/jo_texte2"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:importantForAccessibility="no" />
+
+        <jo.joide.app.android.ui.Icone
+            android:id="@+id/chevron_raisonnement"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:visibility="gone"
+            app:jo_icone_glyphe="chevron"
+            app:jo_icone_couleur="?attr/jo_texte2"
+            android:importantForAccessibility="no" />
     </LinearLayout>
 
     <TextView
         android:id="@+id/contenu_raisonnement"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:textSize="12.5sp"
-        android:lineHeight="17sp"
+        android:layout_marginTop="4dp"
+        android:textSize="13sp"
         android:textColor="?attr/jo_texte2"
-        android:fontFamily="monospace"
         android:visibility="gone" />
 </LinearLayout>

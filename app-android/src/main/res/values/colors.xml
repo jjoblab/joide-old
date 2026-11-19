@@ -48,6 +48,17 @@
     <color name="jo_pastille_reussite_clair">#DDEDE5</color>
     <color name="jo_pastille_accent_clair">#E6ECFA</color>
 
+    <!-- conteneurs tonaux de la famille IA (lot C5) : marches de
+         surface au-dessus de surfaceHaute et conteneur secondaire -->
+    <color name="jo_contenant_haut">#212832</color>
+    <color name="jo_contenant_max">#28303B</color>
+    <color name="jo_contenant_secondaire">#222A3B</color>
+    <color name="jo_sur_contenant_secondaire">#E7ECF3</color>
+    <color name="jo_contenant_haut_clair">#E4EAF2</color>
+    <color name="jo_contenant_max_clair">#D8E2EE</color>
+    <color name="jo_contenant_secondaire_clair">#E6ECFA</color>
+    <color name="jo_sur_contenant_secondaire_clair">#1C2430</color>
+
     <!-- syntaxe (Graphite.SOMBRE.syntaxe) -->
     <color name="jo_syntaxe_mot_cle">#C678DD</color>
     <color name="jo_syntaxe_type">#E5C07B</color>

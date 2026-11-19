@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — la LIGNE D'UN MODÈLE du sélecteur : le pressed pose le
+     conteneur secondaire au rayon 14 (la sélection posée par code
+     garde le même fond, tenue). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/jo_contenant_secondaire" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/jo_contenant_secondaire" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

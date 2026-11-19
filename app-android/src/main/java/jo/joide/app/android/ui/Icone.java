@@ -56,7 +56,21 @@ public final class Icone extends View {
         /** Trois barres, la dernière courte (journal — atelier v2). */
         JOURNAL,
         /** Encadré à lignes (logcat — atelier v2). */
-        LOGCAT
+        LOGCAT,
+        /** Étincelle à quatre pointes (la marque de l'IA). */
+        ETINCELLE,
+        /** Flèche vers la droite (envoyer). */
+        FLECHE,
+        /** Carré plein (arrêter). */
+        STOP,
+        /** Deux feuillets superposés (copier). */
+        COPIER,
+        /** Cercle barré d'un point (information). */
+        INFO,
+        /** Trois points horizontaux (menu débordement). */
+        SUSPENSION,
+        /** Étoile en contour (favori non posé). */
+        ETOILE_CREUSE
     }
 
     private final Paint pinceau = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -315,6 +329,78 @@ public final class Icone extends View {
                 chemin.moveTo(15.5f * u, 15f * u);
                 chemin.lineTo(15.5f * u, 19.5f * u);
                 chemin.lineTo(11f * u, 19.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case ETINCELLE -> {
+                // l'étincelle à quatre pointes : quatre quadratiques
+                // vers le centre (les pointes respirent)
+                pinceau.setStyle(Paint.Style.FILL);
+                chemin.moveTo(12f * u, 3f * u);
+                chemin.quadTo(12.8f * u, 11.2f * u, 21f * u, 12f * u);
+                chemin.quadTo(12.8f * u, 12.8f * u, 12f * u, 21f * u);
+                chemin.quadTo(11.2f * u, 12.8f * u, 3f * u, 12f * u);
+                chemin.quadTo(11.2f * u, 11.2f * u, 12f * u, 3f * u);
+                chemin.close();
+                canvas.drawPath(chemin, pinceau);
+            }
+            case FLECHE -> {
+                chemin.moveTo(4f * u, 12f * u);
+                chemin.lineTo(17.5f * u, 12f * u);
+                canvas.drawPath(chemin, pinceau);
+                chemin.reset();
+                chemin.moveTo(13f * u, 6.5f * u);
+                chemin.lineTo(18.5f * u, 12f * u);
+                chemin.lineTo(13f * u, 17.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case STOP -> {
+                pinceau.setStyle(Paint.Style.FILL);
+                android.graphics.RectF carre = new android.graphics.RectF(
+                        6f * u, 6f * u, 18f * u, 18f * u);
+                canvas.drawRoundRect(carre, 2.5f * u, 2.5f * u, pinceau);
+            }
+            case COPIER -> {
+                android.graphics.RectF derriere = new android.graphics
+                        .RectF(4f * u, 8f * u, 14f * u, 18f * u);
+                canvas.drawRoundRect(derriere, 2f * u, 2f * u, pinceau);
+                chemin.reset();
+                chemin.moveTo(8f * u, 8f * u);
+                chemin.lineTo(8f * u, 5.5f * u);
+                chemin.quadTo(8f * u, 4f * u, 9.5f * u, 4f * u);
+                chemin.lineTo(16.5f * u, 4f * u);
+                chemin.quadTo(18f * u, 4f * u, 18f * u, 5.5f * u);
+                chemin.lineTo(18f * u, 12.5f * u);
+                chemin.quadTo(18f * u, 14f * u, 16.5f * u, 14f * u);
+                chemin.lineTo(14f * u, 14f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case INFO -> {
+                canvas.drawCircle(12f * u, 12f * u, 8.5f * u, pinceau);
+                pinceau.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(12f * u, 8.3f * u, 1.1f * u, pinceau);
+                chemin.reset();
+                chemin.moveTo(12f * u, 10.8f * u);
+                chemin.lineTo(12f * u, 15.5f * u);
+                canvas.drawPath(chemin, pinceau);
+            }
+            case SUSPENSION -> {
+                pinceau.setStyle(Paint.Style.FILL);
+                for (float x : new float[]{5f, 12f, 19f}) {
+                    canvas.drawCircle(x * u, 12f * u, 1.7f * u, pinceau);
+                }
+            }
+            case ETOILE_CREUSE -> {
+                float[][] sommets = {
+                        {10f, 2.8f}, {11.76f, 7.57f},
+                        {16.85f, 7.77f}, {12.85f, 10.93f},
+                        {14.23f, 15.83f}, {10f, 13f},
+                        {5.77f, 15.83f}, {7.15f, 10.93f},
+                        {3.15f, 7.77f}, {8.24f, 7.57f}};
+                chemin.moveTo(sommets[0][0] * u, sommets[0][1] * u);
+                for (float[] sommet : sommets) {
+                    chemin.lineTo(sommet[0] * u, sommet[1] * u);
+                }
+                chemin.close();
                 canvas.drawPath(chemin, pinceau);
             }
             default -> {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lot C5 — l'ondulation transparente des cibles discrètes (le picker
+     de modèle de l'en-tête). -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="?attr/jo_accent_tonal">
+    <item android:id="@android:id/mask">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFFFF" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</ripple>

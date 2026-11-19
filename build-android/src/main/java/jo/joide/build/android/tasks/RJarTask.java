@@ -21,7 +21,7 @@ import jo.joide.tasks.TaskOutputs;
 
 /**
  * Tâche de fabrication du jar des classes R en BYTECODE direct (la
- * manière AGP/CodeAssist) : les sources R.java générées par le lien
+ * manière AGP classique) : les sources R.java générées par le lien
  * aapt2 sont PARSED et leurs constantes émises en class files faits
  * main ({@link RBytecode}) — AUCUN compiler Java n'intervient. Le jar
  * entre au classpath de compilation du module et à son dex.
@@ -30,7 +30,7 @@ import jo.joide.tasks.TaskOutputs;
  * entières, aucun compilateur n'était nécessaire) et le terrain 2026-
  * 11-18 a tranché — sur ART, chaque diagnostic d'ecj réveille son
  * bundle de messages, ABSENT du dex (« ExceptionInInitializerError:
- * Missing message ») ; et à l'échelle CodeAssist, un R.java de
+ * Missing message ») ; et à l'échelle du terrain, un R.java de
  * millions de lignes OOM le compiler à tas plafonné. Le R.jar d'AGP
  * est un artefact de bytecode, jamais un artefact de compilation.</p>
  */
