@@ -467,6 +467,17 @@ dependencies {
     jarsOutils(libs.r8)
     jarsOutils(libs.bundletool)
     jarsOutils(libs.guava)
+    // Lot XXII — la fermeture runtime du pack bundletool (doctrine :
+    // le pack est AUTOSUFFISANT, dexé d'un seul D8 AVEC l'adaptateur).
+    // L'ordre de déclaration est l'ordre CANONIQUE du dexage : la
+    // tâche doit reproduire l'artefact publié octet pour octet.
+    jarsOutils(libs.protobuf.java)
+    jarsOutils(libs.protobuf.java.util)
+    jarsOutils(libs.failureaccess)
+    jarsOutils(libs.listenablefuture)
+    jarsOutils(libs.jsr305)
+    jarsOutils(libs.error.prone.annotations)
+    jarsOutils(libs.checker.qual)
     jarAdaptateurs(project(mapOf("path" to ":build-android",
             "configuration" to "toolsApi")))
     // Lot VII : le compilateur Kotlin et sa FERMETURE RUNTIME (les
@@ -543,6 +554,23 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         val r8Jar = jars.first { it.name.startsWith("r8-") }
         val bundletoolJar = jars.first { it.name.startsWith("bundletool-") }
         val guavaJar = jars.first { it.name.startsWith("guava-") }
+        // lot XXII : la fermeture runtime du pack, l'ordre CANONIQUE du
+        // dexage (le même que la fabrication publiée) — jamais
+        // jarsOutils.resolve() brut, l'ordre du résolveur n'est pas le
+        // nôtre et l'artefact doit se reproduire octet pour octet
+        val jarsBundletool = listOf(
+                jars.first { it.name.startsWith("bundletool-") },
+                guavaJar,
+                jars.first { it.name.startsWith("protobuf-java-")
+                        && !it.name.startsWith("protobuf-java-util-") },
+                jars.first { it.name.startsWith("protobuf-java-util-") },
+                jars.first { it.name.startsWith("failureaccess-") },
+                jars.first {
+                    it.name.startsWith("listenablefuture-") },
+                jars.first { it.name.startsWith("jsr305-") },
+                jars.first {
+                    it.name.startsWith("error_prone_annotations-") },
+                jars.first { it.name.startsWith("checker-qual-") })
         val adaptateursJar = jarAdaptateurs.resolve().single()
         val androidJar = sdkRepertoire.resolve("platforms")
                 .listFiles { f: File -> f.name.startsWith("android-") }
@@ -674,23 +702,40 @@ val dexPacksOutils = tasks.register("dexPacksOutils") {
         val atelier = File(temporaryDir, "atelier")
         val packR8 = File(entreprise, r8Jar.name.removeSuffix(".jar")
                 + ".dex.zip")
+        // lot XXII : le nom VERSIONNÉ (règle dorée : un artefact publié
+        // ne change JAMAIS — le pack corrigé vit dans le NOUVEAU fichier
+        // bundletool-1.18.3.2.dex.zip, les .0 et .1 restent en place) ;
+        // PacksOutils.BUNDLETOOL pointe le même nom
         val packBundletool = File(entreprise,
-                bundletoolJar.name.removeSuffix(".jar") + ".dex.zip")
+                "bundletool-" + libs.versions.bundletool.get()
+                        + ".2.dex.zip")
 
         // les jars assainis (dex embarqué de bundletool, multi-release
         // de guava) : le pack reste DÉTERMINISTE — mêmes entrées, même
-        // ordre, mêmes horodatages
+        // ordre, mêmes horodatages. Lot XXII : TOUTE la fermeture
+        // runtime passe par le même assainir, l'ordre canonique de
+        // jarsBundletool prime (la reproduction octet pour octet)
+        val assainis = jarsBundletool.mapIndexed { i, jar ->
+            assainir(jar, File(atelier, "bt-$i-${jar.name}"))
+        }
+
         val r8Propre = assainir(r8Jar, File(atelier, "r8-san.jar"))
-        val bundletoolPropre = assainir(bundletoolJar,
-                File(atelier, "bundletool-san.jar"))
-        val guavaPropre = assainir(guavaJar, File(atelier, "guava-san.jar"))
 
         empaqueter(packR8, dexter(File(atelier, "r8"), null,
                 r8Propre,
                 *extraire("jo/joide/build/android/tools/InProcessDexer",
                         File(atelier, "adaptateurs-r8")).toTypedArray()))
+        // lot XXII : le pack bundletool AUTOSUFFISANT — TOUTE la
+        // fermeture runtime du POM (protobuf-java, protobuf-java-util,
+        // failureaccess, listenablefuture, jsr305,
+        // error_prone_annotations, checker-qual) + L'ADAPTATEUR dexés
+        // ENSEMBLE (le terrain du 2026-11-22 : le pack .1 du script
+        // seul ne portait PAS l'adaptateur — « embedded build tool
+        // unavailable: BundletoolAssembler — ClassNotFoundException »,
+        // le bouton build mort) ; l'ordre des entrées est CANONIQUE
+        // (assainis dans l'ordre de jarsBundletool, adaptateur dernier)
         empaqueter(packBundletool, dexter(File(atelier, "bundletool"),
-                null, bundletoolPropre, guavaPropre,
+                null, *assainis.toTypedArray(),
                 *extraire("jo/joide/build/android/tools/BundletoolAssembler",
                         File(atelier, "adaptateurs-bt")).toTypedArray()))
 

@@ -57,27 +57,26 @@ public final class PacksOutils {
             = "756614a3cca7c9b34894fe802bb14edbc4b67dfc170ee90f682ea752d98cb18a";
 
     /** Taille attendue du pack bundletool complet (octets) — LOT
-     *  XXI/b : le pack d'origine (bundletool-1.18.3.dex.zip) ne
-     *  portait que bundletool SANS ses dépendances runtime — ni
-     *  protobuf-java (les 60 descripteurs com/google/protobuf/* des
-     *  dex n'étaient que des références, jamais des définitions), ni
-     *  même guava (aucune définition d'ImmutableList) ; le chemin
-     *  bundle étant nouveau, l'omission n'avait jamais explosé : le
-     *  terrain du 2026-11-18, « bundle[debug] : NoClassDefFoundError:
-     *  Failed resolution of: Lcom/google/protobuf/GeneratedMessageV3; ».
-     *  Doctrine (manière éprouvée, précédent du pack Kotlin qui
-     *  porte STAX) : un pack est AUTOSUFFISANT — l'adaptateur du pack
-     *  charge PAR NOM à travers le chargeur parent, jamais une
-     *  dépendance ne voyage à côté. Règle dorée : l'artefact publié
-     *  ne change JAMAIS — le pack corrigé vit dans le NOUVEAU fichier
-     *  versionné bundletool-1.18.3.1.dex.zip (l'ancien reste en place),
-     *  fabriqué par scripts/fabrique-pack-bundletool.sh avec
-     *  vérification dexdump des DÉFINITIONS avant publication. */
-    static final long TAILLE_BUNDLETOOL = 5_679_361L;
+     *  XXI/b puis LOT XXII : le pack 1.18.3.1 (fabrication du script
+     *  seul) portait bundletool + toutes ses dépendances runtime MAIS
+     *  PAS l'adaptateur jo/joide/build/android/tools/BundletoolAssembler
+     *  — le lot VIII l'a retiré de l'APK précisément parce que le pack
+     *  doit le porter : le terrain du 2026-11-22, « embedded build
+     *  tool unavailable: BundletoolAssembler — ClassNotFoundException »,
+     *  le bouton build mort. Règle dorée tenue (un artefact publié ne
+     *  change JAMAIS) : le pack corrigé vit dans le NOUVEAU fichier
+     *  versionné bundletool-1.18.3.2.dex.zip (les .1 et .0 restent en
+     *  place), bundletool + guava 32.0.1 + protobuf-java 3.22.3 +
+     *  protobuf-java-util 3.22.3 + failureaccess + listenablefuture +
+     *  jsr305 + error_prone_annotations + checker-qual + L'ADAPTATEUR,
+     *  tout dexé ENSEMBLE par le D8 du jar r8 du catalogue (le même
+     *  geste que la tâche :app-android:dexPacksOutils, qui reproduit
+     *  l'artefact octet pour octet). */
+    static final long TAILLE_BUNDLETOOL = 5_655_184L;
 
     /** SHA-256 attendu du pack bundletool complet. */
     static final String SHA_BUNDLETOOL
-            = "c1c133f009b6345297ab9a19f7c010eba1a9ae22a0c3dd3f6fc358d54d4257ca";
+            = "f5b09784a56d4b5552d8dddf999389ddd77440a218d7b39e4d740f27d9d5300a";
 
     /** Taille attendue du pack du compilateur Kotlin (octets) —
      *  le pack ART-patché du lot XI, la PILE STAX du lot XV (l'API
@@ -137,15 +136,17 @@ public final class PacksOutils {
                     + ToolchainLocator.R8_VERSION + ".dex.zip");
 
     /** Le pack bundletool complet (adaptateur BundletoolAssembler
-     *  inclus ; LOT XXI/b : bundletool + guava 32.0.1 + protobuf-java
-     *  3.22.3 + protobuf-java-util 3.22.3 + failureaccess +
-     *  listenablefuture + jsr305 + error_prone_annotations +
-     *  checker-qual — les dépendances runtime du POM, toutes dexées
-     *  dans le pack). */
+     *  inclus ; LOT XXI/b pour les dépendances runtime du POM, LOT
+     *  XXII pour l'adaptateur lui-même : bundletool + guava 32.0.1 +
+     *  protobuf-java 3.22.3 + protobuf-java-util 3.22.3 +
+     *  failureaccess + listenablefuture + jsr305 +
+     *  error_prone_annotations + checker-qual, toutes dexées dans le
+     *  pack AVEC l'adaptateur — le BuildRunner charge la classe PAR
+     *  NOM dans le chargeur du pack, jamais par ServiceLoader). */
     public static final Pack BUNDLETOOL = new Pack("bundletool",
-            "1.18.3", "bundletool-1.18.3.1.dex.zip",
+            "1.18.3", "bundletool-1.18.3.2.dex.zip",
             TAILLE_BUNDLETOOL, SHA_BUNDLETOOL,
-            BASE_URL_DEFAUT + "/bundletool-1.18.3.1.dex.zip");
+            BASE_URL_DEFAUT + "/bundletool-1.18.3.2.dex.zip");
 
     /** Le pack du compilateur Kotlin (lots VII + XI — VM forkée,
      *  ART-patché) : compilateur 2.3.0 réécrit par les sept passes

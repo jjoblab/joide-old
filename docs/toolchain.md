@@ -72,3 +72,42 @@ Procédure (script : `scripts/fabrique-pack-bundletool.sh`) :
 Note d'exécution : `set -o pipefail` + `grep -q` tue dexdump par
 SIGPIPE dès le premier match (141) et transforme un succès en échec —
 le vérificateur lit avec `grep -c` jusqu'à la fin.
+
+
+## Le pack bundletool porte AUSSI son adaptateur (lot XXII, 2026-11-22)
+
+Le terrain du 2026-11-22 : le pack 1.18.3.1 du lot XXI/b portait
+bundletool + toute sa fermeture runtime mais PAS l'adaptateur
+`jo/joide/build/android/tools/BundletoolAssembler` — le lot VIII
+(ADR-070) l'a retiré de l'APK précisément parce que le pack doit le
+porter (« aucune classe d'outil dans l'app, tout arrive déjà dexé ») :
+le bouton build mourrait de `IllegalStateException: embedded build
+tool unavailable: BundletoolAssembler — ClassNotFoundException` (le
+ServiceLoader de l'APK ne voit pas l'adaptateur, `Class.forName` sur
+l'APK non plus, et le chargeur du pack ne le définit pas non plus).
+
+Procédure inchangée en apparence, le vrai changement est le DÉXAGE
+ENSEMBLE de l'adaptateur avec la fermeture runtime — le miroir exact
+de la tâche `:app-android:dexPacksOutils`, qui reproduit l'artefact
+octet pour octet (D8 du jar r8 du catalogue, jamais le d8 du SDK) :
+
+1. Extraire du jar tools (`:build-android:toolsJar`) SEULES les
+   classes du préfixe `jo/joide/build/android/tools/
+   BundletoolAssembler` (le mur de chargeurs reste étanche : l'API
+   `BundleAssembler` et `packaging.ApkWriter` restent DANS l'APK,
+   chargées par nom à travers le chargeur parent).
+2. Assainir chacun des neuf jars (dex embarqué de bundletool,
+   module-info, variantes multi-release de guava hors) — entrées
+   triées, ordre canonique fixe : bundletool, guava, protobuf-java,
+   protobuf-java-util, failureaccess, listenablefuture, jsr305,
+   error_prone_annotations, checker-qual.
+3. `java -cp r8-<version>.jar com.android.tools.r8.D8 --release
+   --min-api 28 --lib android.jar` sur les neuf jars assainis +
+   l'adaptateur, D'UN SEUL COUP, l'ordre canonique prime.
+4. **Vérifier les définitions** — le marqueur du lot XXII est
+   `Ljo/joide/build/android/tools/BundletoolAssembler;` en plus des
+   cinq du lot XXI/b.
+5. Publier comme NOUVEAU fichier versionné (règle dorée tenue) :
+   `bundletool-1.18.3.2.dex.zip`, les .0 et .1 restent en place ;
+   taille et SHA-256 épinglés dans `PacksOutils` (5 655 184 octets,
+   `f5b09784…d9d5300a`).

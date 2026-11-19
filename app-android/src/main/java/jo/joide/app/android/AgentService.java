@@ -1583,8 +1583,15 @@ public final class AgentService extends Service {
     private ExecuteurOutils.PortOutils portOutils(
             EspaceTravailAgent espaceQuestions,
             EspaceTravailAgent espacePonte) {
-        List<jo.joide.agent.OutilAgent> outils = OutilsV1.tous(
-                espaceQuestions, transportWeb(), plan);
+        // rapporté le 2026-11-22 : la carte disait « Réponse illisible
+        // … UnsupportedOperationException » SANS message —
+        // OutilsV1.tous() rend une copie IMMUABLE (List.copyOf) et le
+        // addAll des outils MCP dessous jetait un UnsupportedOperationException
+        // nu au premier tour : la copie DÉFENSIVE se fait chez
+        // l'appelant qui veut étendre la surface (le même geste que
+        // BoucleAgent.tour sur les images)
+        List<jo.joide.agent.OutilAgent> outils = new ArrayList<>(
+                OutilsV1.tous(espaceQuestions, transportWeb(), plan));
         // les outils MCP distants rejoignent le port quand les
         // serveurs du projet sont approuvés (lot S)
         outils.addAll(gestionnaireMcp.outils());

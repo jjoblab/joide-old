@@ -31,8 +31,21 @@ r8 = "9.5.32"
 apksig = "9.5.1"
 bundletool = "1.18.3"
 # bundletool déclare ses dépendances en portée runtime seulement :
-# guava est requise à la compilation (API ImmutableList)
+# guava est requise à la compilation (API ImmutableList) ; les sept
+# autres du POM (protobuf-java, protobuf-java-util, failureaccess,
+# listenablefuture, jsr305, error_prone_annotations, checker-qual)
+# ne vivent que dans le PACK dex différé (lot XXI/b) — jamais dexées
+# dans l'APK, jamais compilées : le pack est autosuffisant.
 guava = "32.0.1-jre"
+# Lot XXII — fermeture runtime du pack bundletool (doctrine : un pack
+# est AUTOSUFFISANT, dexé d'un seul D8 avec l'adaptateur) : versions
+# alignées sur le POM de bundletool 1.18.3 (l'ère guava-32.0.1).
+protobuf = "3.22.3"
+failureaccess = "1.0.2"
+listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
+jsr305 = "3.0.2"
+errorProneAnnotations = "2.18.0"
+checkerQual = "2.5.8"
 # Modules Android P8 (ADR-015) : même Gradle 9.8.2 que celeris — le couple
 # AGP 9.5.0 / Gradle 9.8.2 est celui de la brique, prouvé en famille.
 agp = "9.5.0"
@@ -104,6 +117,16 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidxRecyclerview" }
 bundletool = { module = "com.android.tools.build:bundletool", version.ref = "bundletool" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+# Fermeture runtime du PACK bundletool (lot XXII) : résolues pour le
+# dexage différé (jarsOutils), jamais une dépendance de code — le
+# contrôle API 28 du source set principal n'en voit aucune.
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+failureaccess = { module = "com.google.guava:failureaccess", version.ref = "failureaccess" }
+listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "listenablefuture" }
+jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
+error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorProneAnnotations" }
+checker-qual = { module = "org.checkerframework:checker-qual", version.ref = "checkerQual" }
 # Éditeur (celeris) : le POM d'android-host tire android-view (et par lui
 # core-text, core-syntax, core-language, core-intelligence) ; les
 # dépendances ci-dessous ne listent que ce qu'ide-integration nomme.

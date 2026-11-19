@@ -1,3 +1,52 @@
+# CHANGES — la réponse illisible démasquée, le bouton build rendu au pack qui porte son adaptateur (2026-11-22)
+
+**Lot C8 — le rapport du terrain : « Réponse illisible (données cassées
+ou incohérentes) UnsupportedOperationException » ; le bouton build :
+« IllegalStateException: embedded build tool unavailable:
+jo.joide.build.android.tools.BundletoolAssembler — embarqué :
+ClassNotFoundException ; pack bundletool 1.18.3 : adaptateur :
+ClassNotFoundException ».**
+
+**L'UnsupportedOperationException muet démasqué.** OutilsV1.tous()
+rend sa surface en List.copyOf — une copie défensive IMMABLE par
+contrat ; le montage du port d'outils collait ensuite les outils MCP
+distants par addAll sur CETTE liste : le premier jet d'un
+UnsupportedOperationException NU (sans message, la taxonomy ne peut
+dire que la classe) remontait au fourre-tout du tour, classé
+« réponse illisible », carte « Réponse illisible (données cassées ou
+incohérentes) » pour un bug purement interne — la carte C7 faisait
+honnêtement son travail, le bug était sous le tapis depuis le lot S.
+La copie défensive se fait MAINTENANT chez l'appelant qui ÉTEND la
+surface (le même geste que BoucleAgent.tour sur les images), plus
+aucun addAll sur une liste immuable.
+
+**Le pack bundletool porte ENFIN son adaptateur (lot XXII).** Le
+bouton build mourrait en ClassNotFoundException sur l'adaptateur :
+le lot VIII l'a retiré de l'APK précisément parce que le PACK doit
+le porter (« aucune classe d'outil dans l'app, tout arrive déjà
+dexé ») — or le pack 1.18.3.1 du lot XXI/b, fabriqué par le script
+seul, ne portait QUE bundletool + sa fermeture runtime, l'adaptateur
+omis (la tâche Gradle, elle, l'a TOUJOURS dexé — le script n'avait
+pas rattrapé le geste). Le NOUVEAU pack versionné
+bundletool-1.18.3.2.dex.zip (règle dorée tenue : un artefact publié
+ne change jamais, les .0 et .1 restent en place) porte LES DEUX :
+les neuf jars assainis (bundletool, guava, protobuf-java,
+protobuf-java-util, failureaccess, listenablefuture, jsr305,
+error_prone_annotations, checker-qual) + L'ADAPTATEUR, D'UN SEUL D8
+— celui du jar r8 du catalogue, jamais le d8 du SDK : la tâche
+:app-android:dexPacksOutils reproduit l'artefact octet pour octet
+(l'ordre canonique des entrées prime, sept dépendances entrent au
+catalogue), le script scripts/fabrique-pack-bundletool.sh devient
+le miroir exact (même D8, même ordre). 5 655 184 octets, SHA-256
+f5b09784…d9d5300a, vérifié dexdump : l'adaptateur EST une
+définition, pas une référence. Publié dans la release toolchain-v1.
+
+**La doctrine du pack se réécrit une fois pour toutes** : un pack est
+AUTOSUFFISANT — la fermeture runtime (lot XXI/b) ET l'adaptateur
+(lot XXII) ; le marqueur dexdump du lot XXII est
+Ljo/joide/build/android/tools/BundletoolAssembler ; en plus des
+cinq du lot XXI/b.
+
 # CHANGES — la carte d'erreur qui dit pourquoi et offre le remède, la pastille du modèle qui survit au redémarrage (2026-11-21)
 
 **Lot C7 — le rapport du terrain, mot pour mot  « ça affiche le cadre
