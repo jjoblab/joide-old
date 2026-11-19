@@ -11,6 +11,7 @@ import jo.joide.app.android.atelier.agent.ConversationsAgent;
 import jo.joide.app.android.atelier.agent.EtatAgentChat;
 import jo.joide.app.android.databinding.ItemConversationHistoriqueBinding;
 import jo.joide.app.android.databinding.PopupHistoriqueBinding;
+import jo.joide.app.android.parametres.Reglages;
 
 /**
  * Lot A7 (ADR-085, découpage de {@code ControleurAgent}) — le
@@ -181,6 +182,12 @@ final class ControleurHistoriqueAgent {
                 hote.etatAgent().surEvenement(entree.evenement);
             }
         }
+        // rapporté le 2026-11-21 : l'état NEUF ci-dessus avait oublié
+        // le modèle — le journal ne le porte pas, la pastille de
+        // l'en-tête disait « aucun modèle » après chaque rejeu (le
+        // redémarrage compris) : le choix PERSISTÉ rejoint l'état
+        hote.etatAgent().poserModele(
+                Reglages.lire(hote.sourceReglages()).modeleIa);
         majQuestions();
         hote.vueAgent().poserEtat(hote.etatAgent());
     }

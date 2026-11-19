@@ -124,6 +124,14 @@ public final class VueAgent extends LinearLayout {
         void ouvrirUsages();
 
         /**
+         * Le bouton RÉESSAYER de la carte d'erreur (rapporté le
+         * 2026-11-21 : « aucun remède à côté de la raison ») : le
+         * dernier message utilisateur REPART tel quel — l'atelier le
+         * retrouve dans le transcript, la vue ne retient rien.
+         */
+        void reessayer();
+
+        /**
          * @param index la pièce retirée du composeur
          */
         void retirerPiece(int index);
@@ -834,7 +842,15 @@ public final class VueAgent extends LinearLayout {
                 Graphite.melange(palette.erreur, 0.45f, palette.surface));
         bloc.setBackground(fond);
         item.titreErreur.setText(texteErreur(carte));
-        item.detailErreur.setText(carte.detail);
+        // rapporté le 2026-11-21 : le détail muet (« null ») quittait
+        // la carte au lieu de l'habiter — la ligne se CACHE quand le
+        // fournisseur n'a rien dit
+        if (carte.detail == null || carte.detail.isBlank()) {
+            item.detailErreur.setVisibility(View.GONE);
+        } else {
+            item.detailErreur.setVisibility(View.VISIBLE);
+            item.detailErreur.setText(carte.detail);
+        }
         if (carte.action == ActionErreur.OUVRIR_REGLAGES
                 || carte.action == ActionErreur.CHANGER_MODELE) {
             item.actionErreur.setVisibility(VISIBLE);
@@ -845,7 +861,47 @@ public final class VueAgent extends LinearLayout {
             item.actionErreur.setOnClickListener(vue ->
                     ouvrirReglagesIa());
         }
+        // la rangée de secours : RÉESSAYER (le dernier message repart)
+        // et COPIER (le diagnostic complet part au presse-papiers)
+        item.reessayerErreur.setText(R.string.agent_reessayer);
+        item.reessayerErreur.setOnClickListener(vue -> {
+            if (auditeur != null) {
+                auditeur.reessayer();
+            }
+        });
+        item.copierErreur.setText(R.string.agent_copier);
+        item.copierErreur.setOnClickListener(vue ->
+                copierDiagnostic(item.copierErreur,
+                        texteErreur(carte), carte.detail));
         return bloc;
+    }
+
+    /** Le diagnostic complet part au presse-papiers ; le petit
+     * bouton dit « Copié » 1,5 s — la raison sans le détail se
+     * copie aussi (le fournisseur ne dit pas toujours plus). */
+    private void copierDiagnostic(TextView bouton,
+                                  String titre, String detail) {
+        String texte = detail == null || detail.isBlank()
+                ? titre : titre + "\n" + detail;
+        try {
+            android.content.ClipboardManager pressePapiers =
+                    (android.content.ClipboardManager)
+                            getContext().getSystemService(
+                                    Context.CLIPBOARD_SERVICE);
+            if (pressePapiers != null) {
+                pressePapiers.setPrimaryClip(
+                        android.content.ClipData.newPlainText(
+                                "diagnostic", texte));
+            }
+        } catch (RuntimeException e) {
+            // le presse-papiers reste un détail : rien ne crash
+        }
+        bouton.setText(R.string.agent_copie);
+        bouton.setTextColor(palette.reussite);
+        horloge.postDelayed(() -> {
+            bouton.setText(R.string.agent_copier);
+            bouton.setTextColor(palette.texteSecondaire);
+        }, 1500);
     }
 
     private View carteQuestions(Carte carte) {
@@ -967,8 +1023,30 @@ public final class VueAgent extends LinearLayout {
         };
     }
 
+    /** Le titre d'une carte d'erreur : la RAISON par genre (rapporté
+     *  le 2026-11-21 — « La requête a échoué » ne disait NI pourquoi
+     *  NI quoi faire ; chaque genre porte sa phrase qui guérit). */
     private String texteErreur(Carte carte) {
-        return getContext().getString(R.string.agent_erreur_generique);
+        if (carte.genreErreur == null) {
+            return getContext().getString(R.string.agent_erreur_generique);
+        }
+        int ressource = switch (carte.genreErreur) {
+            case RESEAU -> R.string.agent_erreur_reseau;
+            case DELAI -> R.string.agent_erreur_delai;
+            case LIMITE_DEBIT -> R.string.agent_erreur_limite_debit;
+            case LIMITE_JOUR -> R.string.agent_erreur_limite_jour;
+            case QUOTA_EPUISE -> R.string.agent_erreur_quota;
+            case CONTEXTE_TROP_LONG -> R.string.agent_erreur_contexte;
+            case MODELE_INCONNU -> R.string.agent_erreur_modele;
+            case CLE_MANQUANTE -> R.string.agent_erreur_cle_manquante;
+            case CLE_INVALIDE -> R.string.agent_erreur_cle_invalide;
+            case CLE_SANS_DROIT -> R.string.agent_erreur_cle_droit;
+            case CONTENU_REFUSE -> R.string.agent_erreur_contenu;
+            case ERREUR_SERVEUR -> R.string.agent_erreur_serveur;
+            case REPONSE_ILLISIBLE -> R.string.agent_erreur_illisible;
+            case FLUX_INTERROMPU -> R.string.agent_erreur_flux;
+        };
+        return getContext().getString(ressource);
     }
 
     private void ouvrirReglagesIa() {

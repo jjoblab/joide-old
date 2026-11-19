@@ -861,7 +861,7 @@ final class ControleurConnexionsMcp {
                 }
                 if (!propre.isEmpty()) {
                     return propre.length() > 160
-                            ? propre.substring(0, 160) + "…"
+                            ? propre.substring(0, 160) + "..."
                             : propre;
                 }
             }

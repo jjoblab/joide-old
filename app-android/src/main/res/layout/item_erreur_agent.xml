@@ -5,6 +5,10 @@
   bind — GradientDrawable d'hier) ; TITRE, DÉTAIL et ACTION
   actionnable (un verbe par genre, CLE_MANQUANTE → réglages,
   MODELE_INCONNU → sélecteur) — plus aucune vue instanciée en code.
+  Rapport du 2026-11-21 : la raison PAR GENRE gagne le titre muet, et
+  la rangée basse porte les DEUX petits verbes de secours —
+  RÉESSAYER (le dernier message utilisateur repart) et COPIER (le
+  diagnostic complet part au presse-papiers).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -40,4 +44,36 @@
         android:textAppearance="@style/TextAppearance.Jo.Corps"
         android:textColor="?attr/jo_accent"
         android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="2dp">
+
+        <TextView
+            android:id="@+id/reessayer_erreur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_accent" />
+
+        <TextView
+            android:id="@+id/copier_erreur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/jo_hauteur_cible"
+            android:gravity="center_vertical"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:layout_marginStart="12dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:textAppearance="@style/TextAppearance.Jo.Corps"
+            android:textColor="?attr/jo_texte2" />
+    </LinearLayout>
 </LinearLayout>

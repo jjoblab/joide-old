@@ -959,11 +959,15 @@ public final class AgentService extends Service {
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ANNULE), null));
         } else {
+            // rapporté le 2026-11-21 : la carte disait « La requête a
+            // échoué null » — getMessage() muet valait « null » en
+            // texte : le nom de la classe GAGNE le silence (il dit au
+            // moins QUI a planté), le message l'accompagne s'il vit
             ErreursLlm.ErreurLlm erreur = probleme instanceof
                     ErreursLlm.ErreurLlm classifie ? classifie
                     : new ErreursLlm.ErreurLlm(
                             ErreursLlm.Genre.REPONSE_ILLISIBLE,
-                            String.valueOf(probleme.getMessage()), -1);
+                            diagnosticInattendu(probleme), -1);
             consigner(new Entree(EvenementAgent.erreur(erreur), null));
             consigner(new Entree(EvenementAgent.fin(
                     EvenementAgent.RaisonFin.ERREUR), null));
@@ -986,6 +990,24 @@ public final class AgentService extends Service {
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
         });
+    }
+
+    /**
+     * Le diagnostic d'un échec INATTENDU (hors taxonomy) : le nom de
+     * la classe GAGNE le « null » muet de getMessage() — rapporté le
+     * 2026-11-21, la carte d'erreur disait « La requête a échoué
+     * null » sans raison ni remède : la classe nommée dit au moins
+     * QUI a planté, le message l'accompagne quand il existe.
+     *
+     * @param probleme l'exception attrapée par le bas du tour
+     * @return le diagnostic parlant, jamais « null »
+     */
+    private static String diagnosticInattendu(Throwable probleme) {
+        String texte = probleme.getMessage();
+        if (texte == null || texte.isBlank()) {
+            return probleme.getClass().getSimpleName();
+        }
+        return probleme.getClass().getSimpleName() + " : " + texte;
     }
 
     /** Le contexte volatile du tour (note de fin, ADR-055) — les

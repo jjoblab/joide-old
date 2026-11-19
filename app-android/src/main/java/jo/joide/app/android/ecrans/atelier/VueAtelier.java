@@ -782,6 +782,13 @@ final class VueAtelier implements HoteAtelier {
             }
 
             @Override
+            public void reessayer() {
+                // rapporté le 2026-11-21 : le RÉESSAYER de la carte
+                // d'erreur renvoie le dernier message utilisateur
+                controleurAgent.reessayerAgent();
+            }
+
+            @Override
             public void retirerPiece(int index) {
                 controleurAgent.retirerPiece(index);
             }

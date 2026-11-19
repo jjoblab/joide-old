@@ -178,6 +178,11 @@ final class ControleurAgent {
         // le tiroir se MONTE à la demande (stub) : l'appel gonfle la
         // surcouche la première fois
         hote.tiroirAgent().ouvrir();
+        // rapporté le 2026-11-21 : la pastille du modèle se pose DÈS
+        // l'ouverture — la liaison du service est asynchrone et le
+        // rejeu du journal repart d'un état neuf : l'en-tête ne dit
+        // plus « aucun modèle » en attendant
+        poserModeleRetenu();
         if (hote.agent() != null) {
             brancherEspaceAgent();
             historique.rejouerJournal();
@@ -220,7 +225,21 @@ final class ControleurAgent {
     /** Construit l'espace de travail du projet pour l'agent de
      *  l'hôte (le binder du service). */
     private void brancherEspaceAgent() {
-        if (hote.agent() == null || hote.racineProjet() == null || hote.scene() == null) {
+        if (hote.agent() == null) {
+            return;
+        }
+        // la pastille du modèle ne dépend PAS de l'espace de travail :
+        // le fournisseur et le modèle retenus partent au service et
+        // à l'état AVANT tout départ précoce — hier un tiroir ouvert
+        // sans scène (aucun fichier édité) gardait « aucun modèle »
+        // pour toute la session (rapporté le 2026-11-21)
+        Reglages reglages = Reglages.lire(hote.sourceReglages());
+        hote.agent().poserModele(reglages.fournisseurIa,
+                reglages.modeleIa);
+        poserModeleRetenu();
+        if (hote.racineProjet() == null || hote.scene() == null) {
+            // l'espace attend l'atelier prêt (un fichier édité) — la
+            // pastille vit déjà, le reste suivra l'ouverture
             return;
         }
         EspaceTravailIde espace = new EspaceTravailIde(hote.racineProjet(),
@@ -233,8 +252,6 @@ final class ControleurAgent {
             return null;
         });
         hote.agent().poserEspace(new EspaceCheckpoint(espace));
-        Reglages reglages = Reglages.lire(hote.sourceReglages());
-        hote.agent().poserModele(reglages.fournisseurIa, reglages.modeleIa);
         // le .mcp.json du projet, lu borné, part au service : les
         // serveurs déclarés sont parsés, pas activés (ADR-063)
         hote.agent().poserMcpJson(connexions.lireMcpJson());
@@ -251,10 +268,21 @@ final class ControleurAgent {
                 connexions.cleApprobationMcp()))) {
             hote.agent().poserApprobationMcp(true);
         }
-        hote.etatAgent().poserModele(reglages.modeleIa);
         hote.etatAgent().poserMode(EtatAgentChat.TourEtat.EN_COURS
                 == hote.etatAgent().etat()
                 ? hote.etatAgent().mode() : Permissions.Mode.DEMANDE_CHAQUE);
+    }
+
+    /** Le modèle RETENU dans les réglages rejoint la pastille du
+     *  tiroir (rapporté le 2026-11-21 : « la pastille affiche aucun
+     *  modèle » après le redémarrage) — le choix PERSISTÉ est la
+     *  vérité, l'état neuf l'avait oublié. */
+    private void poserModeleRetenu() {
+        hote.etatAgent().poserModele(
+                Reglages.lire(hote.sourceReglages()).modeleIa);
+        if (hote.vueAgent() != null) {
+            hote.vueAgent().rafraichir();
+        }
     }
 
     /** L'entrée live du service : événement ou message. */
@@ -316,6 +344,28 @@ final class ControleurAgent {
         hote.agent().envoyer(fondu, List.copyOf(hote.piecesAgent()));
         hote.piecesAgent().clear();
         hote.vueAgent().poserPieces(List.of());
+    }
+
+    /**
+     * Le RÉESSAYER de la carte d'erreur (rapporté le 2026-11-21 :
+     * « aucun remède à côté de la raison ») : le DERNIER message
+     * utilisateur du transcript repart tel quel — le texte avait déjà
+     * son contexte fondu, les pièces du tour déchu ont été consommées
+     * (les pièces jointes d'un renvoi repartiraient vides).
+     */
+    void reessayerAgent() {
+        String dernier = null;
+        for (EtatAgentChat.Carte carte : hote.etatAgent().cartes()) {
+            if (carte.genre == EtatAgentChat.Genre.MESSAGE_UTILISATEUR
+                    && carte.texte != null && !carte.texte.isBlank()) {
+                dernier = carte.texte;
+            }
+        }
+        if (dernier == null) {
+            // rien à renvoyer : la carte se contente de la raison
+            return;
+        }
+        envoyerAgent(dernier);
     }
 
     /** Le départ du message retenu : la liaison du service est là
