@@ -245,6 +245,53 @@ class AndroidPipelineTest {
     }
 
     /**
+     * Lot C10 — le terrain du 2026-11-20 : « :app:bundle[debug] :
+     * bundle assembly failed: Version code not found in manifest ».
+     * Le manifeste GABARIT des projets créés ne porte NI versionCode
+     * NI uses-sdk (la manière AGP : tout vit dans la variante) — le
+     * manifeste enrichi doit les synthétiser de la variante, sinon
+     * bundletool refuse d'assembler le module de base. Le build va
+     * jusqu'au bundle VALIDÉ.
+     */
+    @Test
+    void manifesteGabaritSansVersionCodeAssembleLeBundle(
+            @TempDir Path temp) throws Exception {
+        Path project = temp.resolve("project");
+        Path out = temp.resolve("out");
+        writeProject(project);
+        // le manifeste à la manière gabarit : paquet, PAS de version
+        write(project, "app/src/main/AndroidManifest.xml", """
+                <?xml version="1.0" encoding="utf-8"?>
+                <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    package="com.example.app">
+                  <application android:label="@string/app_name" />
+                </manifest>
+                """);
+        try (AndroidHarness harness = new AndroidHarness(project, out,
+                List.of(libSpec(), appSpec()), variants(), keystore)) {
+            BuildReport report = harness.build(harness.graph(),
+                    DirtySet.empty());
+            assertTrue(report.successful(), () -> AndroidHarness
+                    .allTasks(report).toString());
+            Path enrichi = out.resolve("android/app/manifest-enrichi.xml");
+            String manifeste = Files.readString(enrichi);
+            assertTrue(manifeste.contains("android:versionCode=\"7\""),
+                    "le code de version se synthétise de la variante : "
+                            + manifeste);
+            assertTrue(manifeste.contains("android:versionName=\"1.7\""),
+                    "le nom de version se synthétise de la variante : "
+                            + manifeste);
+            assertTrue(manifeste.contains("android:minSdkVersion=\"23\""),
+                    "le uses-sdk suit la variante (le dex y est taillé) : "
+                            + manifeste);
+            Path aab = out.resolve("android/app/variants/debug/"
+                    + "app-debug.aab");
+            assertTrue(Files.isRegularFile(aab), "bundle must exist");
+            BundletoolAssembler.validate(aab);
+        }
+    }
+
+    /**
      * Lot U/6 (rapport du 2026-11-17) : un frère JVM du graphe
      * Android n'a NI manifeste NI ressources — l'ancienne fabrique
      * NPEtait à la construction du graphe

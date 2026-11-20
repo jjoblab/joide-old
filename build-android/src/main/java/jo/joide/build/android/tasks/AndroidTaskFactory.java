@@ -251,6 +251,13 @@ public final class AndroidTaskFactory {
         if (spec.application) {
             flatDirs.addAll(libFlats);
         }
+        // la première variante porte le renommage de paquet ET les
+        // versions du manifeste enrichi (lot C10 : bundletool exige
+        // le code de version du manifeste du module de base — le
+        // gabarit AGP ne l'écrit pas dans le manifeste)
+        jo.joide.build.android.variant.AndroidVariant premiereVariante =
+                spec.application && !spec.variants.isEmpty()
+                        ? spec.variants.get(0) : null;
         graph.register(new Aapt2LinkTask(spec.name,
                 anchored(spec.manifest),
                 androidDir.resolve("manifest-enrichi.xml"),
@@ -261,8 +268,7 @@ public final class AndroidTaskFactory {
                 androidDir.resolve("proto"),
                 toolchain.aapt2.toAbsolutePath().normalize(),
                 toolchain.platformJar.toAbsolutePath().normalize(),
-                spec.application && !spec.variants.isEmpty()
-                        ? spec.variants.get(0).applicationId : null,
+                premiereVariante,
                 spec.assetsDir == null ? null : anchored(spec.assetsDir)));
         graph.register(new RJarTask(spec.name, androidDir.resolve("gen"),
                 androidDir.resolve("r-classes"),

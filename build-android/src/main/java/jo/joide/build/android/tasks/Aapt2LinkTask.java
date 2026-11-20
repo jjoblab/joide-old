@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 
 import jo.joide.build.android.aapt2.Aapt2;
+import jo.joide.build.android.variant.AndroidVariant;
 import jo.joide.platform.Problem;
 import jo.joide.platform.RootedPath;
 import jo.joide.tasks.ResourceClaim;
@@ -39,6 +40,18 @@ import jo.joide.tasks.TaskOutputs;
  * {@code identifiantPaquet} de SpecsBuild) ; une synthèse émet un
  * WARN qui nomme le correctif recommandé. Les DEUX liens (APK et
  * proto) consomment le manifeste enrichie.</p>
+ *
+ * <p><b>Lot C10 — le manifeste PORTANT SA VERSION</b> (le terrain du
+ * 2026-11-20 : « :app:bundle[debug] : bundle assembly failed:
+ * Version code not found in manifest ») : bundletool lit le code de
+ * version dans le manifeste du module de base — or depuis AGP 7 le
+ * versionCode vit dans la variante (le build.gradle), pas dans le
+ * manifeste. La même manière que le paquet : {@code enrichir()}
+ * synthétise AUSSI {@code android:versionCode},
+ * {@code android:versionName} et l'élément {@code <uses-sdk>}
+ * (min/target SDK de la variante, celle-là même qui a taillé le dex)
+ * quand ils manquent — toujours dans $OUT, jamais dans les sources
+ * utilisateur ; une synthèse émet un WARN qui nomme le correctif.</p>
  */
 public final class Aapt2LinkTask implements TaskDefinition {
 
@@ -52,7 +65,7 @@ public final class Aapt2LinkTask implements TaskDefinition {
     private final RootedPath protoDir;
     private final Path aapt2Binary;
     private final Path platformJar;
-    private final String packageName;
+    private final AndroidVariant variante;
     private final RootedPath assetsDir;
 
     /**
@@ -71,7 +84,10 @@ public final class Aapt2LinkTask implements TaskDefinition {
      * @param protoDir        répertoire des sorties proto (bundle)
      * @param aapt2Binary     binaire aapt2
      * @param platformJar     android.jar de la plateforme
-     * @param packageName     identifiant d'application (renommage)
+     * @param variante        première variante du module d'application,
+     *                        ou {@code null} (module bibliothèque) :
+     *                        renommage de paquet, code et nom de version,
+     *                        SDK minimum et cible du manifeste enrichi
      * @param assetsDir       répertoire d'actifs, ou {@code null}
      */
     public Aapt2LinkTask(String moduleName, RootedPath manifest,
@@ -79,7 +95,7 @@ public final class Aapt2LinkTask implements TaskDefinition {
                          List<RootedPath> flatDirs, RootedPath linkedApk,
                          RootedPath javaDir, RootedPath rTxt,
                          RootedPath protoDir, Path aapt2Binary,
-                         Path platformJar, String packageName,
+                         Path platformJar, AndroidVariant variante,
                          RootedPath assetsDir) {
         this.moduleName = Objects.requireNonNull(moduleName);
         this.manifest = Objects.requireNonNull(manifest);
@@ -91,7 +107,7 @@ public final class Aapt2LinkTask implements TaskDefinition {
         this.protoDir = Objects.requireNonNull(protoDir);
         this.aapt2Binary = Objects.requireNonNull(aapt2Binary);
         this.platformJar = Objects.requireNonNull(platformJar);
-        this.packageName = packageName;
+        this.variante = variante;
         this.assetsDir = assetsDir;
     }
 
@@ -116,8 +132,21 @@ public final class Aapt2LinkTask implements TaskDefinition {
             builder.dir(assetsDir);
         }
         builder.property("joide.aapt2.platform", platformJar.toString());
-        if (packageName != null) {
-            builder.property("joide.aapt2.package", packageName);
+        if (renommage() != null) {
+            builder.property("joide.aapt2.package", renommage());
+        }
+        if (variante != null) {
+            // le manifeste enrichi dépend des versions de la variante
+            // (lot C10) : elles sont des ENTRÉES — l'empreinte du cache
+            // les porte, une version qui change rejoue le lien
+            builder.property("joide.aapt2.version-code",
+                    String.valueOf(codeDeVersion(variante)));
+            builder.property("joide.aapt2.version-name",
+                    String.valueOf(nomDeVersion(variante)));
+            builder.property("joide.aapt2.min-sdk",
+                    String.valueOf(variante.minSdk));
+            builder.property("joide.aapt2.target-sdk",
+                    String.valueOf(variante.targetSdk));
         }
         return builder.build();
     }
@@ -146,7 +175,17 @@ public final class Aapt2LinkTask implements TaskDefinition {
 
     @Override
     public String optionsFingerprint() {
-        return "link-v1" + (packageName == null ? "" : ":" + packageName);
+        StringBuilder empreinte = new StringBuilder("link-v2");
+        if (renommage() != null) {
+            empreinte.append(":pkg=").append(renommage());
+        }
+        if (variante != null) {
+            empreinte.append(":vc=").append(codeDeVersion(variante))
+                    .append(":vn=").append(nomDeVersion(variante))
+                    .append(":sdk=").append(variante.minSdk)
+                    .append('/').append(variante.targetSdk);
+        }
+        return empreinte.toString();
     }
 
     @Override
@@ -200,8 +239,8 @@ public final class Aapt2LinkTask implements TaskDefinition {
         Path manifesteEffectif;
         try {
             manifesteEffectif = enrichir(manifesteSource,
-                    context.resolve(manifestEnrichi), packageName,
-                    moduleName, notes);
+                    context.resolve(manifestEnrichi), renommage(),
+                    moduleName, variante, notes);
         } catch (IOException e) {
             return TaskExecution.failed(List.of(Problem.error("aapt2.io",
                     "cannot write enriched manifest: " + e.getMessage())));
@@ -216,8 +255,8 @@ public final class Aapt2LinkTask implements TaskDefinition {
                     .javaOut(genDir)
                     .rTxtOut(context.resolve(rTxt))
                     .autoAddOverlay(true);
-            if (packageName != null) {
-                apkLink.packageName(packageName);
+            if (renommage() != null) {
+                apkLink.packageName(renommage());
             }
             if (assetsDir != null) {
                 apkLink.assetsDir(context.resolve(assetsDir));
@@ -234,8 +273,8 @@ public final class Aapt2LinkTask implements TaskDefinition {
                     .output(protoZip)
                     .protoFormat(true)
                     .autoAddOverlay(true);
-            if (packageName != null) {
-                protoLink.packageName(packageName);
+            if (renommage() != null) {
+                protoLink.packageName(renommage());
             }
             if (assetsDir != null) {
                 protoLink.assetsDir(context.resolve(assetsDir));
@@ -256,39 +295,52 @@ public final class Aapt2LinkTask implements TaskDefinition {
     }
 
     /**
-     * Le manifeste enrichie (lot XVII) : copie du manifeste source
-     * vers la cible, avec {@code package="…"} injecté dans la balise
-     * {@code &lt;manifest&gt;} s'il manque — aapt2 refuse l'attribut
-     * absent (le terrain : « &lt;manifest&gt; must have a 'package'
-     * attribute »). Le paquet se lit du manifeste, sinon de
+     * Le manifeste enrichie (lots XVII et C10) : copie du manifeste
+     * source vers la cible, avec {@code package="…"} (aapt2 refuse
+     * l'attribut absent — « &lt;manifest&gt; must have a 'package'
+     * attribute »), {@code android:versionCode} et
+     * {@code android:versionName} (bundletool lit le code de version
+     * dans le manifeste du module de base — « Version code not found
+     * in manifest »), puis l'élément {@code <uses-sdk>} (l'API
+     * déclarée suit celle de la variante qui a taillé le dex)
+     * injectés quand ils manquent. Tout vient de la variante (la
+     * manière AGP : le manifeste mergé porte les attributs
+     * synthétisés du build) ; le paquet se lit du manifeste, sinon de
      * l'identifiant d'application de la variante, sinon il se dérive
      * du nom du module (la règle d'{@code identifiantPaquet}) ; une
-     * synthèse ajoute un WARN qui nomme le correctif recommandé.
+     * synthèse émet un WARN qui nomme le correctif recommandé.
      *
      * @param source      manifeste du projet (LU, jamais écrit)
      * @param cible       manifeste enrichie ($OUT du module)
      * @param applicationId identifiant de la variante, ou {@code null}
      * @param nomModule   nom du module (dérivation en dernier recours)
+     * @param variante    la variante porteuse des versions, ou
+     *                    {@code null} (module bibliothèque : aucune
+     *                    synthèse de version)
      * @param notes       les diagnostics accumulés (WARN de synthèse)
      * @return la cible
      * @throws IOException si la lecture ou l'écriture échoue
      */
     static Path enrichir(Path source, Path cible, String applicationId,
-                         String nomModule, List<Problem> notes)
+                         String nomModule, AndroidVariant variante,
+                         List<Problem> notes)
             throws IOException {
         String texte = Files.readString(source);
-        String paquet = paquetDuManifeste(texte);
+        java.util.regex.Matcher ouverture = java.util.regex.Pattern
+                .compile("<manifest\\b[^>]*>").matcher(texte);
+        if (!ouverture.find()) {
+            throw new IOException(
+                    "balise <manifest> introuvable dans " + source);
+        }
+        String balise = ouverture.group();
+        String baliseEnrichie = balise;
+        String paquet = attributDe(baliseEnrichie, "package");
         if (paquet == null) {
             paquet = applicationId != null && !applicationId.isBlank()
                     ? applicationId
                     : paquetDerive(nomModule);
-            if (texte.contains("<manifest")) {
-                texte = texte.replaceFirst("<manifest\\b",
-                        "<manifest package=\"" + paquet + "\"");
-            } else {
-                throw new IOException(
-                        "balise <manifest> introuvable dans " + source);
-            }
+            baliseEnrichie = baliseEnrichie.replaceFirst("<manifest\\b",
+                    "<manifest package=\"" + paquet + "\"");
             notes.add(Problem.warn("aapt2.manifest",
                     "package synthétisé (« " + paquet + " », "
                             + (applicationId != null
@@ -297,9 +349,110 @@ public final class Aapt2LinkTask implements TaskDefinition {
                             + ") — ajoutez package=\"…\" à la balise "
                             + "<manifest> du manifeste du module"));
         }
+        if (variante != null) {
+            if (attributDe(baliseEnrichie, "android:versionCode") == null) {
+                baliseEnrichie = injecterAttribut(baliseEnrichie,
+                        "android:versionCode",
+                        String.valueOf(codeDeVersion(variante)));
+                notes.add(Problem.warn("aapt2.manifest",
+                        "android:versionCode synthétisé (« "
+                                + codeDeVersion(variante)
+                                + " », de la variante) — bundletool exige "
+                                + "le code de version dans le manifeste du "
+                                + "module de base : portez-le dans le "
+                                + "manifeste ou la variante"));
+            }
+            if (nomDeVersion(variante) != null && attributDe(baliseEnrichie,
+                    "android:versionName") == null) {
+                baliseEnrichie = injecterAttribut(baliseEnrichie,
+                        "android:versionName", nomDeVersion(variante));
+                notes.add(Problem.warn("aapt2.manifest",
+                        "android:versionName synthétisé (« "
+                                + nomDeVersion(variante)
+                                + " », de la variante) — portez-le dans le "
+                                + "manifeste ou la variante"));
+            }
+        }
+        texte = texte.replace(balise, baliseEnrichie);
+        // l'élément uses-sdk : un manifeste auto-fermé ne peut pas
+        // porter d'enfant — les attributs de version suffisent alors
+        // (bundletool ne lit que le code de version à l'assemblage)
+        if (variante != null && !baliseEnrichie.endsWith("/>")
+                && !texte.contains("<uses-sdk")) {
+            texte = texte.replace(baliseEnrichie, baliseEnrichie
+                    + "\n    <uses-sdk"
+                    + " android:minSdkVersion=\"" + variante.minSdk + "\""
+                    + " android:targetSdkVersion=\"" + variante.targetSdk
+                    + "\" />");
+            notes.add(Problem.warn("aapt2.manifest",
+                    "élément uses-sdk synthétisé (minSdkVersion "
+                            + variante.minSdk + ", targetSdkVersion "
+                            + variante.targetSdk + ", de la variante) — "
+                            + "portez-le dans le manifeste ou la variante"));
+        }
         Files.createDirectories(cible.getParent());
         Files.writeString(cible, texte);
         return cible;
+    }
+
+    /** L'identifiant de renommage de paquet de la variante, ou
+     *  {@code null} (pas de renommage : le paquet du manifeste tient). */
+    private String renommage() {
+        return variante == null || variante.applicationId == null
+                || variante.applicationId.isBlank()
+                ? null : variante.applicationId;
+    }
+
+    /** Le code de version EFFECTIF : celui de la variante, sinon 1
+     *  (−1 marque l'absence — un manifeste sans code de version ferait
+     *  échouer bundletool, jamais un bundle silencieux).
+     * @param variante la variante de l'application
+     * @return le code de version porté au manifeste */
+    private static int codeDeVersion(AndroidVariant variante) {
+        return variante.versionCode > 0 ? variante.versionCode : 1;
+    }
+
+    /** Le nom de version de la variante, ou {@code null} (rien à
+     *  écrire dans le manifeste).
+     * @param variante la variante de l'application
+     * @return le nom de version, ou {@code null} */
+    private static String nomDeVersion(AndroidVariant variante) {
+        return variante.versionName == null
+                || variante.versionName.isBlank()
+                ? null : variante.versionName;
+    }
+
+    /** La valeur d'un attribut de la balise d'ouverture du manifeste,
+     *  ou {@code null} : le nom ne peut pas être le suffixe d'un autre
+     *  (namespace:nom écarté par le regard arrière).
+     * @param balise   la balise &lt;manifest&gt; d'ouverture
+     * @param attribut le nom d'attribut cherché
+     * @return la valeur, ou {@code null} si l'attribut manque */
+    static String attributDe(String balise, String attribut) {
+        java.util.regex.Matcher trouve = java.util.regex.Pattern
+                .compile("(?<![\\w:-])"
+                        + java.util.regex.Pattern.quote(attribut)
+                        + "\\s*=\\s*\"([^\"]*)\"")
+                .matcher(balise);
+        return trouve.find() ? trouve.group(1) : null;
+    }
+
+    /** La balise avec l'attribut ajouté en queue : l'auto-fermeture
+     *  {@code />} reste valide, le séparateur ne se double jamais.
+     * @param balise   la balise d'ouverture (finissant par {@code >}
+     *                 ou {@code />})
+     * @param attribut le nom d'attribut à ajouter
+     * @param valeur   la valeur de l'attribut
+     * @return la balise enrichie */
+    static String injecterAttribut(String balise, String attribut,
+                                   String valeur) {
+        boolean autoFermee = balise.endsWith("/>");
+        int point = autoFermee ? balise.length() - 2 : balise.length() - 1;
+        String tete = balise.substring(0, point);
+        String separateur = tete.endsWith(" ") || tete.endsWith("\n")
+                || tete.endsWith("\t") || tete.endsWith("\r") ? "" : " ";
+        return tete + separateur + attribut + "=\"" + valeur + "\""
+                + (autoFermee ? "/>" : ">");
     }
 
     /** L'attribut {@code package} de la balise manifeste, ou

@@ -1,3 +1,59 @@
+# CHANGES — le manifeste porte enfin sa version, le bundle assemblé sans réserve (2026-11-20)
+
+**Lot C10 — le rapport du terrain, mot pour mot.** « Le build affiche :
+:app:bundle[debug] : bundle assembly failed: Version code not found in
+manifest. » Le chantier du bouton build (C8 : le pack des classes de
+l'assembleur ; C9 : les SIX dépendances runtime restantes du POM) avait
+fait franchir à l'assemblage la barrière des classes manquantes — il
+atteint ENFIN bundletool lui-même, qui REFUSE le module de base : son
+code de version ne se trouve nulle part. La cause est connue de tous les
+bureaux Android : depuis AGP 7, le versionCode vit dans le build.gradle
+(la variante), pas dans le manifeste — et le manifeste GABARIT des
+projets créés (application-android.toml) est fidèle à cette manière :
+paquet, rien de plus. Un seul correctif, la manière AGP exacte appliquée
+au manifeste enrichi du lot XVII.
+
+**Le manifeste enrichi porte sa version.** bundletool lit
+`android:versionCode` dans le manifeste du module de base qu'il
+assemble. Le manifeste enrichi — qui synthétisait déjà le paquet
+manquant (« &lt;manifest&gt; must have a 'package' attribute », lot
+XVII) — porte maintenant AUSSI `android:versionCode` et
+`android:versionName` (de la première variante du module
+d'application, défauts 1 et « 1.0 ») et l'élément `<uses-sdk>`
+(minSdk / targetSdk de la variante — celle-là même qui a taillé le dex :
+sans lui, l'APK mentait sur son API minimum). Toujours les règles du
+lot XVII : écrit dans `$OUT`, JAMAIS dans les sources ; chaque
+synthèse émet un WARN qui nomme le correctif ; un manifeste qui porte
+déjà tout reste copié SANS modification ; les modules bibliothèque
+n'injectent RIEN (pas porteurs de version) ; une balise auto-fermée
+reçoit les attributs, jamais l'enfant uses-sdk.
+
+**Les versions entrent dans l'empreinte du lien.** Le manifeste
+enrichi est une SORTIE de la tâche de lien : les valeurs de la
+variante l'affectent, elles sont donc des ENTRÉES —
+`optionsFingerprint` passe de `link-v1` à `link-v2` (paquet, code,
+nom, SDK) et quatre propriétés d'entrée portent les valeurs
+(`joide.aapt2.version-code` / `-name` / `-min-sdk` /
+`-target-sdk`) : une variante qui change rejoue le lien, jamais un
+bundle périmé servi du cache.
+
+**La reproduction sur le banc, rouge puis verte.** Le pipeline
+d'acceptation assemblait toujours un manifeste avec
+`android:versionCode="7"` — le bug ne pouvait pas s'y voir. Le
+nouveau test `manifesteGabaritSansVersionCodeAssembleLeBundle`
+écrit le manifeste du GABARIT (paquet, rien de plus) : SANS
+correctif il échoue EXACTEMENT comme l'appareil
+(« app:bundle[debug]:FAILED &lt;&lt; bundle assembly failed: Version
+code not found in manifest.&gt;&gt; », vérifié au stash près) ; AVEC
+correctif le build va jusqu'au bundle VALIDÉ par bundletool, et le
+manifeste enrichi porte 7 / « 1.7 » / minSdk 23. Quatre tests
+unitaires couvrent en plus la synthèse complète, l'intégrité (un
+manifeste complet reste inchangé), l'auto-fermeture (attributs,
+jamais d'enfant) et les bibliothèques (aucune version).
+
+**Bilan.** 654 tests verts (403 app-android + 184 agent + 67
+build-android, dont 5 nouveaux), APK C10 livré.
+
 # CHANGES — le 429 patienté proprement, le 400 dit enfin son nom, la réponse rendue lisible, le pack qui porte TOUT le POM (2026-11-22)
 
 **Lot C9 — le rapport du terrain, mot pour mot.** « Les réponses sont
