@@ -134,29 +134,41 @@ val fetchAapt2 = tasks.register("fetchAapt2") {
 // reconnaissait rien. Le SHA1/3DES se lit partout, appareil compris.
 // Un fichier moderne resté d'un build ancien se régénère : la garde
 // détecte l'OID PBES2 dans les octets et force la re-génération.
-val OID_PBES2 = intArrayOf(0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0D)
-
-/** Vrai quand le fichier porte l'OID PBES2 (un PKCS12 moderne, que
- *  l'appareil ne déchiffre pas) — le DER « 06 09 2A 86 48 86 F7 0D
- *  01 05 0D » de 1.2.840.113549.1.5.13. */
-fun portePbes2(fichier: File): Boolean {
-    if (!fichier.isFile) return false
-    val octets = fichier.readBytes()
-    var i = 0
-    while (i <= octets.size - OID_PBES2.size) {
-        var j = 0
-        while (j < OID_PBES2.size && (octets[i + j].toInt() and 0xFF) == OID_PBES2[j]) j++
-        if (j == OID_PBES2.size) return true
-        i++
-    }
-    return false
-}
-
+//
+// Lot C12 : la sonde vit DANS la tâche. Une FONCTION top-level du
+// script, appelée depuis upToDateWhen ou doLast, capture
+// L'INSTANCE DU SCRIPT — le cache de configuration refuse de la
+// sérialiser (« cannot serialize Gradle script object references »,
+// run CI 44664904866 du 2026-11-20 : les DEUX APK étaient assemblés
+// et signés, le rouge ne venait QUE du stockage du cache). La
+// discipline de fetchAapt2 et verifierOmbreApk (run CI 95cec9e du
+// 2026-11-17) : les lambdas ne capturent que des LOCALES
+// sérialisables (File, IntArray, fonction anonyme) — jamais un
+// membre du script.
 val genererKeystoreDebug = tasks.register("genererKeystoreDebug") {
     description = "Génère le keystore de débogage embarqué en asset (toolchain/debug.keystore)."
     group = "build setup"
     val dossier = File(projectDir, "src/main/assets/toolchain")
     val cible = File(dossier, "debug.keystore")
+    // L'OID PBES2 (1.2.840.113549.1.5.13) : le DER « 06 09 2A 86 48
+    // 86 F7 0D 01 05 0D » — sa présence dit un PKCS12 MODERNE, que
+    // l'appareil ne déchiffre pas.
+    val oidPbes2 = intArrayOf(0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0D)
+    /** Vrai quand le fichier porte l'OID PBES2 (un PKCS12 moderne,
+     * que l'appareil ne déchiffre pas) — lambda LOCALE, capturée
+     * sérialisable, jamais une fonction du script. */
+    val portePbes2 = fun(fichier: File): Boolean {
+        if (!fichier.isFile) return false
+        val octets = fichier.readBytes()
+        var i = 0
+        while (i <= octets.size - oidPbes2.size) {
+            var j = 0
+            while (j < oidPbes2.size && (octets[i + j].toInt() and 0xFF) == oidPbes2[j]) j++
+            if (j == oidPbes2.size) return true
+            i++
+        }
+        return false
+    }
     outputs.file(cible)
     outputs.upToDateWhen { cible.isFile && cible.length() > 1_000L && !portePbes2(cible) }
     doLast {

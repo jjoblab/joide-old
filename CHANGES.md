@@ -1,3 +1,45 @@
+# CHANGES — la sonde vit dans la tâche, le cache de configuration se stocke enfin (2026-11-20)
+
+**Lot C12 — le rapport du terrain, mot pour mot.** « Le CI est
+rouge. » Le run 108 (44664904866, commit a4e02ae) tombe à l'étape
+« Assemblage des APK signés » — alors que `assembleDebug` ET
+`assembleRelease` passent TOUS LES DEUX : les APK sont assemblés et
+signés, le rouge vient APRÈS, au STOCKAGE du cache de configuration.
+
+**Le diagnostic.** « Task `:app-android:genererKeystoreDebug` of type
+`org.gradle.api.DefaultTask`: cannot serialize Gradle script object
+references as these are not supported with the configuration cache. »
+La sonde PBES2 du lot C11 (`portePbes2`) vivait en FONCTION TOP-LEVEL
+du script Kotlin ; `outputs.upToDateWhen` et `doLast` l'invoquent
+depuis des lambdas que le cache DOIT sérialiser — chaque lambda
+capture L'INSTANCE DU SCRIPT, Gradle refuse de la porter. La panne
+était déjà connue du dépôt : `verifierOmbreApk` cite le run 95cec9e
+du 2026-11-17 (« les DEUX APK étaient construits, le rouge ne venait
+que de ce stockage ») ; `fetchAapt2` et lui suivent la discipline —
+ne capturer QUE des locales sérialisables. Le lot C11 a oublié :
+`portePbes2` est la seule fonction top-level du script.
+
+**Le déménagement.** L'OID (`oidPbes2`, IntArray) et la sonde
+(fonction anonyme `(File) -> Boolean`) vivent DANS le bloc de
+configuration de la tâche : des valeurs locales capturées — aussi
+sérialisables que les `cible` et `marqueur` de `fetchAapt2`. Zéro
+changement de comportement : mêmes octets OID, mêmes gardes (à-jour
+et post-génération), même command keytool avec
+`keystore.pkcs12.legacy=true`. UN fichier touché, aucun code Java,
+aucun test : les 658 tests verts du C11 restent la vérité
+d'exécution.
+
+**Le banc, rouge puis vert (Gradle 9.8.2, la version du CI).** La
+réplique exacte de la tâche fautive échoue MOT POUR MOT (« 2
+problems … cannot serialize Gradle script object references ») ; le
+patron corrigé : stockage SANS problème, rechargement avec
+UP-TO-DATE (la lambda dé-sérialisée vit et juge), garde de
+re-génération (un PKCS12 MODERNE openssl substitué force la
+re-génération, PBES2 absent du fichier rendu), `keytool -list` lit
+le magasin. Sur le dépôt même : premier run l'entrée se stocke
+proprement, deuxième run « Reusing configuration cache » et
+UP-TO-DATE, l'asset naît à 2 509 octets sans OID PBES2.
+
 # CHANGES — le magasin de la signature s'ouvre, le PKCS12 redevient lisible sur l'appareil (2026-11-20)
 
 **Lot C11 — le rapport du terrain, mot pour mot.** « Le nouveau
