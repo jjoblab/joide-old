@@ -124,22 +124,53 @@ val fetchAapt2 = tasks.register("fetchAapt2") {
 // keystore dans le dépôt ; .gitignore), régénéré à la main si
 // effacé. Le moteur d'une clé debug locale par machine est celui
 // d'Android Studio (~/.android/debug.keystore).
+//
+// Lot C11 : le PKCS12 se génère COMPATIBLE (SHA1/3DES, la propriété
+// keystore.pkcs12.legacy du keytool) — le terrain du 2026-11-20
+// rapportait « :app:sign[debug] : signing failed — Unrecognized
+// keystore format » : le lecteur de l'APPAREIL n'installe que PKCS12
+// et BKS, et son PKCS12 ne déchiffre pas un magasin moderne (PBES2,
+// la manière de keytool depuis Java 12) ; la sonde du JDK n'y
+// reconnaissait rien. Le SHA1/3DES se lit partout, appareil compris.
+// Un fichier moderne resté d'un build ancien se régénère : la garde
+// détecte l'OID PBES2 dans les octets et force la re-génération.
+val OID_PBES2 = intArrayOf(0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0D)
+
+/** Vrai quand le fichier porte l'OID PBES2 (un PKCS12 moderne, que
+ *  l'appareil ne déchiffre pas) — le DER « 06 09 2A 86 48 86 F7 0D
+ *  01 05 0D » de 1.2.840.113549.1.5.13. */
+fun portePbes2(fichier: File): Boolean {
+    if (!fichier.isFile) return false
+    val octets = fichier.readBytes()
+    var i = 0
+    while (i <= octets.size - OID_PBES2.size) {
+        var j = 0
+        while (j < OID_PBES2.size && (octets[i + j].toInt() and 0xFF) == OID_PBES2[j]) j++
+        if (j == OID_PBES2.size) return true
+        i++
+    }
+    return false
+}
+
 val genererKeystoreDebug = tasks.register("genererKeystoreDebug") {
     description = "Génère le keystore de débogage embarqué en asset (toolchain/debug.keystore)."
     group = "build setup"
     val dossier = File(projectDir, "src/main/assets/toolchain")
     val cible = File(dossier, "debug.keystore")
     outputs.file(cible)
-    outputs.upToDateWhen { cible.isFile && cible.length() > 1_000L }
+    outputs.upToDateWhen { cible.isFile && cible.length() > 1_000L && !portePbes2(cible) }
     doLast {
-        if (cible.isFile && cible.length() > 1_000L) {
+        if (cible.isFile && cible.length() > 1_000L && !portePbes2(cible)) {
             return@doLast
         }
+        cible.delete()
         dossier.mkdirs()
         val keytool = File(System.getProperty("java.home"), "bin/keytool")
         val dname = "CN=JoIDE Debug, OU=Build, O=JoIDE, C=FR"
         val commande = listOf(
-            keytool.absolutePath, "-genkeypair",
+            keytool.absolutePath,
+            "-J-Dkeystore.pkcs12.legacy=true",
+            "-genkeypair",
             "-keystore", cible.absolutePath,
             "-storetype", "PKCS12",
             "-alias", "joide",
@@ -153,7 +184,8 @@ val genererKeystoreDebug = tasks.register("genererKeystoreDebug") {
             .start()
         val journal = processus.inputStream.readBytes().decodeToString()
         if (processus.waitFor() != 0
-                || !cible.isFile || cible.length() < 1_000L) {
+                || !cible.isFile || cible.length() < 1_000L
+                || portePbes2(cible)) {
             cible.delete()
             throw GradleException(
                 "keytool a échoué (code ${processus.exitValue()}) :\n$journal")

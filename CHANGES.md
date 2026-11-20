@@ -1,15 +1,80 @@
+# CHANGES — le magasin de la signature s'ouvre, le PKCS12 redevient lisible sur l'appareil (2026-11-20)
+
+**Lot C11 — le rapport du terrain, mot pour mot.** « Le nouveau
+message du build est : app:sign[debug] : signig failed — Unrecognized
+keystore format please load with a specific type » (le signataire rend
+« signing failed: <panne> », la coquille « signig » est celle du
+terrain). Après le manifeste (C10), la chaîne atteint la SIGNATURE —
+et sonde le fichier de clés sans le reconnaître. Trois correctifs,
+trois volets du même terrain : la LECTURE, la GÉNÉRATION, la COPIE.
+
+**Le diagnostic.** `ApksigSigner` ouvrait le keystore par
+`KeyStore.getInstance(fichier, motDePasse)` — le lecteur à SONDE du
+JDK, qui exige qu'un fournisseur INSTALLÉ charge le fichier. Or
+l'appareil n'installe que PKCS12 et BKS, et son lecteur PKCS12 ne
+DÉCHIFFRE pas un magasin moderne — PBES2/PBKDF2, la manière
+d'écriture de keytool depuis Java 12. Le keystore de débogage
+embarqué en asset est justement écrit par le keytool du JDK de
+construction : la sonde ne reconnaissait RIEN (« Unrecognized
+keystore format, please load with a specific type ») — et le message
+ne nommait ni la cause ni le remède.
+
+**Le magasin s'ouvre par TYPE EXPLICITE.** `ApksigSigner.ouvrirMagasin`
+essaie à plat, dans l'ordre : PKCS12, JKS, BKS du lecteur installé
+(un type absent de la machine ne fait qu'une panne notée), puis
+PKCS12 et BKS du fournisseur cryptographique complémentaire chargé
+par RÉFLEXION — présent sur l'appareil, lui SAIT déchiffrer le
+PKCS12 moderne là où le lecteur installé ne peut pas. L'erreur
+finale, honnête, liste les types essayés avec leurs pannes ET le
+remède (« Regenerate it as a legacy PKCS12 »). La clé se récupère
+avec le mot de passe de clé PUIS celui du magasin (le PKCS12 protège
+la clé par le mot de passe du magasin, keytool ignore un mot de passe
+distinct ; le déverrouillage PKCS12 coûte des milliers de tours de
+dérivation sur l'appareil — jamais deux fois le même candidat), et la
+CHAÎNE de certificats passe entière au signataire (avant : le
+certificat seul).
+
+**La GÉNÉRATION écrit un PKCS12 compatible.** La tâche
+`genererKeystoreDebug` passe `keystore.pkcs12.legacy=true` au
+keytool : SHA1/3DES, lisible PARTOUT, appareil compris. La garde
+d'à-jour va aux OCTETS : l'OID PBES2
+(`1.2.840.113549.1.5.13`, DER `06 09 2A 86 48 86 F7 0D 01 05 0D`)
+détecté dans le fichier force la re-génération — un keystore
+moderne resté d'un build ancien ne survit jamais. La vérification
+après génération refuse aussi un fichier moderne.
+
+**La COPIE sur appareil suit l'asset.** `PreparationChaine` copiait
+le keystore UNE fois (« présent et non vide : ne rien refaire ») — un
+APK ancien y laissait le mauvais magasin POUR TOUJOURS : même une
+application mise à jour gardait la panne. L'empreinte SHA-256 de
+l'asset se tient à côté du fichier (`debug.keystore.marque`) : une
+empreinte changée (APK mis à jour), une marque absente ou muette —
+la copie se refait, atomiquement, avec sa marque.
+
+**Les tests.** Quatre nouveaux (`ApksigSignerMagasinTest`) : le
+PKCS12 MODERNE s'ouvre par le type installé (la manière de keytool
+actuel — le terrain exact), le JKS s'ouvre par le sien, un fichier
+aliéné rend le diagnostic avec le remède (jamais le message muet),
+un fichier absent se dit absent avec son chemin. Le pipeline
+d'acceptation signe toujours son APK jusqu'au bundle validé.
+
+**Bilan.** 658 tests verts (403 app-android + 184 agent + 71
+build-android, dont 4 nouveaux), APK C11 livré — son keystore
+embarqué vérifié PAR LES OCTETS (PBES2 absent, protections legacy
+présentes, `keytool -list` le lit).
+
 # CHANGES — le manifeste porte enfin sa version, le bundle assemblé sans réserve (2026-11-20)
 
-**Lot C10 — le rapport du terrain, mot pour mot.** « Le build affiche :
-:app:bundle[debug] : bundle assembly failed: Version code not found in
-manifest. » Le chantier du bouton build (C8 : le pack des classes de
-l'assembleur ; C9 : les SIX dépendances runtime restantes du POM) avait
+**Lot C10 — le rapport du terrain, mot pour mot.** « Le build affiche :
+:app:bundle[debug] : bundle assembly failed: Version code not found in
+manifest. » Le chantier du bouton build (C8 : le pack des classes de
+l'assembleur ; C9 : les SIX dépendances runtime restantes du POM) avait
 fait franchir à l'assemblage la barrière des classes manquantes — il
-atteint ENFIN bundletool lui-même, qui REFUSE le module de base : son
+atteint ENFIN bundletool lui-même, qui REFUSE le module de base : son
 code de version ne se trouve nulle part. La cause est connue de tous les
-bureaux Android : depuis AGP 7, le versionCode vit dans le build.gradle
+bureaux Android : depuis AGP 7, le versionCode vit dans le build.gradle
 (la variante), pas dans le manifeste — et le manifeste GABARIT des
-projets créés (application-android.toml) est fidèle à cette manière :
+projets créés (application-android.toml) est fidèle à cette manière :
 paquet, rien de plus. Un seul correctif, la manière AGP exacte appliquée
 au manifeste enrichi du lot XVII.
 
@@ -20,31 +85,31 @@ manquant (« &lt;manifest&gt; must have a 'package' attribute », lot
 XVII) — porte maintenant AUSSI `android:versionCode` et
 `android:versionName` (de la première variante du module
 d'application, défauts 1 et « 1.0 ») et l'élément `<uses-sdk>`
-(minSdk / targetSdk de la variante — celle-là même qui a taillé le dex :
+(minSdk / targetSdk de la variante — celle-là même qui a taillé le dex :
 sans lui, l'APK mentait sur son API minimum). Toujours les règles du
-lot XVII : écrit dans `$OUT`, JAMAIS dans les sources ; chaque
-synthèse émet un WARN qui nomme le correctif ; un manifeste qui porte
-déjà tout reste copié SANS modification ; les modules bibliothèque
-n'injectent RIEN (pas porteurs de version) ; une balise auto-fermée
+lot XVII : écrit dans `$OUT`, JAMAIS dans les sources ; chaque
+synthèse émet un WARN qui nomme le correctif ; un manifeste qui porte
+déjà tout reste copié SANS modification ; les modules bibliothèque
+n'injectent RIEN (pas porteurs de version) ; une balise auto-fermée
 reçoit les attributs, jamais l'enfant uses-sdk.
 
 **Les versions entrent dans l'empreinte du lien.** Le manifeste
-enrichi est une SORTIE de la tâche de lien : les valeurs de la
+enrichi est une SORTIE de la tâche de lien : les valeurs de la
 variante l'affectent, elles sont donc des ENTRÉES —
 `optionsFingerprint` passe de `link-v1` à `link-v2` (paquet, code,
 nom, SDK) et quatre propriétés d'entrée portent les valeurs
 (`joide.aapt2.version-code` / `-name` / `-min-sdk` /
-`-target-sdk`) : une variante qui change rejoue le lien, jamais un
+`-target-sdk`) : une variante qui change rejoue le lien, jamais un
 bundle périmé servi du cache.
 
 **La reproduction sur le banc, rouge puis verte.** Le pipeline
 d'acceptation assemblait toujours un manifeste avec
 `android:versionCode="7"` — le bug ne pouvait pas s'y voir. Le
 nouveau test `manifesteGabaritSansVersionCodeAssembleLeBundle`
-écrit le manifeste du GABARIT (paquet, rien de plus) : SANS
+écrit le manifeste du GABARIT (paquet, rien de plus) : SANS
 correctif il échoue EXACTEMENT comme l'appareil
 (« app:bundle[debug]:FAILED &lt;&lt; bundle assembly failed: Version
-code not found in manifest.&gt;&gt; », vérifié au stash près) ; AVEC
+code not found in manifest.&gt;&gt; », vérifié au stash près) ; AVEC
 correctif le build va jusqu'au bundle VALIDÉ par bundletool, et le
 manifeste enrichi porte 7 / « 1.7 » / minSdk 23. Quatre tests
 unitaires couvrent en plus la synthèse complète, l'intégrité (un
@@ -64,18 +129,18 @@ n(S) — c'est peu professionnel et en plus le cadre erreur est affiché
 2 fois. Limite de débit (429) — le délai passé, la reprise sert /
 rate limited (429): wait the announced delay then retry. Réponse
 illisible (données cassées ou incohérentes) unexpected response (400)
-: malformed_json, json: cannot unmarshal object… app:bundle[debug] :
+: malformed_json, json: cannot unmarshal object… app:bundle[debug] :
 NoClassDefFoundError: Failed resolution of:
 Lcom/android/aapt/Resources$XmlNode; » Quatre terrains, quatre
 correctifs — chacun vérifié contre le code de l'IDE de référence
 (consultation autorisée par le propriétaire).
 
 **Le 429 patienté PROPREMENT.** La boucle émettait un événement
-d'attente PAR SECONDE — l'état en faisait une carte tonale CHACUNE :
+d'attente PAR SECONDE — l'état en faisait une carte tonale CHACUNE :
 trente secondes de limite de débit laissaient trente lignes « Limite
-de débit — reprise dans N s » dans le transcript (le terrain :
+de débit — reprise dans N s » dans le transcript (le terrain :
 « un message spam… peu professionnel »). Le geste de l'IDE de
-référence (AgentLoop → Waiting, UNE ligne) arrive : la pause
+référence (AgentLoop → Waiting, UNE ligne) arrive : la pause
 s'énonce UNE SEULE fois par attente (BoucleAgent.attendre émet
 l'événement AVEC son délai avant de dormir), l'état tient UNE
 PASTILLE qui se RAFRAÎCHIT si une pause suivante arrive, et le
@@ -84,36 +149,36 @@ RETIRE — le transcript ne garde RIEN des pauses. La pastille vit au
 dessin de la maquette `.attente` : pilule alignée à gauche, fond
 alerte 8 %, bord alerte 30 %, rayon 999, point 8 dp qui PULSE tant
 que le tour vit (item_attente_agent.xml, drawable
-point_attente_agent.xml). Le libellé final du genre s'assainit :
+point_attente_agent.xml). Le libellé final du genre s'assainit :
 « Limite de débit (429) — les reprises automatiques sont épuisées,
 réessaie dans un moment ».
 
 **Le cadre erreur affiché 2 fois — jamais plus.** La boucle ANNONÇAIT
-l'événement d'erreur à l'écouteur puis LEVAIT l'exception ; le
-service, qui rattrape tout tour finissait par la re-consigner : DEUX
-cartes d'erreur identiques (le terrain : « le cadre erreur est
+l'événement d'erreur à l'écouteur puis LEVAIT l'exception ; le
+service, qui rattrape tout tour finissait par la re-consigner : DEUX
+cartes d'erreur identiques (le terrain : « le cadre erreur est
 affiché 2 fois »). L'erreur porte maintenant le drapeau transitif
 `dejaAnnoncee` : la boucle le pose en annonçant, le service le lit
 avant de consigner — UNE carte, la fin de tour suit. Le détail de la
-carte devient le DIAGNOSTIC TECHNIQUE : monospace discret sous la
+carte devient le DIAGNOSTIC TECHNIQUE : monospace discret sous la
 raison française (jamais une seconde phrase de même taille — le
 terrain voyait « Limite de débit (429) — le délai passé… » suivi
 de « rate limited (429): wait the announced delay… », deux fois la
 même chose).
 
-**Le 400 dit enfin son nom.** « Provider returned error (400) :
+**Le 400 dit enfin son nom.** « Provider returned error (400) :
 malformed_json, json: cannot unmarshal object… » s'affichait en
 « Réponse illisible (données cassées ou incohérentes) » — le
-serveur a LU la requête et l'a REFUSÉE : la taxonomy gagne le
+serveur a LU la requête et l'a REFUSÉE : la taxonomy gagne le
 QUINZIÈME genre REQUETE_REFUSEE (« Requête refusée par le
 fournisseur (400) — vérifier le modèle et la passerelle »), le
 diagnostic brut du fournisseur voyage dans le message (SAUF le
-wording « too long » : un 400 qui dit la fenêtre reste un contexte
-trop long). Mais la CAUSE était à nous : les arguments d'un appel
+wording « too long » : un 400 qui dit la fenêtre reste un contexte
+trop long). Mais la CAUSE était à nous : les arguments d'un appel
 d'outil partaient en OBJET dans tool_calls[].function.arguments —
 la spécification Chat Completions exige une CHAÎNE JSON, un serveur
 Go qui dé-sérialise en string répond exactement « json: cannot
-unmarshal object » : le round 2 d'un tour à outils mourrait à la
+unmarshal object » : le round 2 d'un tour à outils mourrait à la
 PREMIÈRE re-requête (hello passait, tout travail réel non). Les
 arguments repartent en TEXTE BRUT tel que le modèle les a dits
 («{}» s'ils sont muets), et le champ `tools` ne part JAMAIS vide (un
@@ -121,35 +186,35 @@ tableau vide est refusé par des passerelles — la passation du
 plafond d'itérations n'en porte pas).
 
 **La réponse rendue LISIBLE — le rendu Markdown arrive.** Le
-transcript affichait la réponse et la réflexion en TEXTE BRUT : les
+transcript affichait la réponse et la réflexion en TEXTE BRUT : les
 titres, listes, code et gras du modèle s'imprimaient en marqueurs
-visibles (le terrain : « pas bien représentés… plus moderne, plus
+visibles (le terrain : « pas bien représentés… plus moderne, plus
 intelligent, rendus propre »). Le moteur `RenduMarkdown` (pur, testé
-JVM : AUCUNE dépendance Android) découpe en BLOCS — titres à
+JVM : AUCUNE dépendance Android) découpe en BLOCS — titres à
 l'échelle, paragraphes, listes à puces ET ordonnées avec
 imbrication, citations à barre accent, séparateurs, blocs de code
 clôturés avec LANGUE — et nettoie l'inline en MARQUAGES (gras,
-italique, code en ligne, liens avec cible). La vue traduit :
+italique, code en ligne, liens avec cible). La vue traduit :
 paragraphes aux spans, blocs de code monospace sur conteneur haut
 rayon 10 avec étiquette de langue et bouton COPIER, citations
 imbriquées, listes indentées — la réponse ET la réflexion (en note
 13 sp secondaire). Une clôture manquée va jusqu'à la fin, un
-marqueur non apparié reste du texte : JAMAIS un mot perdu.
+marqueur non apparié reste du texte : JAMAIS un mot perdu.
 
 **Le pack bundletool porte TOUT le POM (lot XXIII).** Le bouton build
-mourrait : « app:bundle[debug] : NoClassDefFoundError: Failed
+mourrait : « app:bundle[debug] : NoClassDefFoundError: Failed
 resolution of: Lcom/android/aapt/Resources$XmlNode; » — le pack .2
 du lot XXII portait bundletool + sa fermeture GUAVA mais PAS les SIX
-dépendances runtime RESTANTES du POM de bundletool 1.18.3 :
+dépendances runtime RESTANTES du POM de bundletool 1.18.3 :
 aapt2-proto (7.3.0-alpha07-8248216 — les classes com.android.aapt du
 manifeste PROTO, le XmlNode du terrain !), dagger 2.28.3,
 javax.inject 1, jose4j 0.9.5, slf4j-api 1.7.30,
 auto-value-annotations 1.6.2. Le NOUVEAU pack versionné
-bundletool-1.18.3.3.dex.zip (règle dorée tenue : les .0/.1/.2
+bundletool-1.18.3.3.dex.zip (règle dorée tenue : les .0/.1/.2
 restent en place) porte les QUINZE jars assainis + L'ADAPTATEUR,
 d'un seul D8 — 5 992 495 octets, SHA-256
 151eb62e8ac980321e0240d21ff7b7a9dea02d2af1496f460af8af7371284615,
-épinglés dans PacksOutils.java (définitions vérifiées au dexdump :
+épinglés dans PacksOutils.java (définitions vérifiées au dexdump :
 com/android/aapt/Resources$XmlNode DÉFINI, l'adaptateur DÉFINI,
 BuildBundleCommand DÉFINI, slf4j.Logger DÉFINI). Six entrées
 rejoignent le catalogue, la tâche :app-android:dexPacksOutils prend

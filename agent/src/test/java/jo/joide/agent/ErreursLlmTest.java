@@ -197,7 +197,7 @@ class ErreursLlmTest {
     }
 
     @Test
-    void un400EstUneRequêteRefuseePasUneRéponseIllisible() {
+    void un400EstUneRequeteRefuseePasUneReponseIllisible() {
         // terrain du 2026-11-22 : « Provider returned error (400)
         // malformed_json : json: cannot unmarshal object … »
         // s'affichait en « réponse illisible » — le serveur a LU la
